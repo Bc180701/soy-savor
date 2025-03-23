@@ -9,6 +9,12 @@ import { useCart } from "./hooks/use-cart";
 import { useOrder } from "./hooks/use-order";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
+import Menu from "./pages/Menu";
+import Commander from "./pages/Commander";
+import APropos from "./pages/APropos";
+import Contact from "./pages/Contact";
+import Panier from "./pages/Panier";
+import Compte from "./pages/Compte";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,7 +45,54 @@ const App = () => {
                 </Layout>
               }
             />
-            {/* Routes supplémentaires à ajouter ici */}
+            <Route
+              path="/menu"
+              element={
+                <Layout>
+                  <Menu />
+                </Layout>
+              }
+            />
+            <Route
+              path="/commander"
+              element={
+                <Layout>
+                  <Commander />
+                </Layout>
+              }
+            />
+            <Route
+              path="/a-propos"
+              element={
+                <Layout>
+                  <APropos />
+                </Layout>
+              }
+            />
+            <Route
+              path="/contact"
+              element={
+                <Layout>
+                  <Contact />
+                </Layout>
+              }
+            />
+            <Route
+              path="/panier"
+              element={
+                <Layout>
+                  <Panier />
+                </Layout>
+              }
+            />
+            <Route
+              path="/compte"
+              element={
+                <Layout>
+                  <Compte />
+                </Layout>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
