@@ -2,15 +2,17 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, ShoppingCart, User, ChevronDown } from "lucide-react";
+import { Menu, X, ShoppingCart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useCart } from "@/hooks/use-cart";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const isMobile = useIsMobile();
   const location = useLocation();
+  const cart = useCart();
 
   // Fermer le menu quand on change de page
   useEffect(() => {
@@ -112,7 +114,7 @@ const Navbar = () => {
             >
               <ShoppingCart size={20} />
               <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-akane-600 text-white rounded-full text-xs">
-                0
+                {cart.itemCount || 0}
               </span>
             </Button>
           </Link>
@@ -133,7 +135,7 @@ const Navbar = () => {
             >
               <ShoppingCart size={20} />
               <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-akane-600 text-white rounded-full text-xs">
-                0
+                {cart.itemCount || 0}
               </span>
             </Button>
           </Link>

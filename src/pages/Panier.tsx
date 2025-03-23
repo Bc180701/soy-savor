@@ -18,15 +18,15 @@ const Panier = () => {
   const orderStore = useOrder();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleIncrement = (id: string | number) => {
+  const handleIncrement = (id: string) => {
     cart.incrementQuantity(id);
   };
 
-  const handleDecrement = (id: string | number) => {
+  const handleDecrement = (id: string) => {
     cart.decrementQuantity(id);
   };
 
-  const handleRemove = (id: string | number) => {
+  const handleRemove = (id: string) => {
     cart.removeItem(id);
     toast({
       title: "Article supprimé",
@@ -40,11 +40,13 @@ const Panier = () => {
     // Simuler un processus de commande
     setTimeout(() => {
       // Enregistrer les informations de commande
-      orderStore.setOrder({
+      const order = {
         items: cart.items,
         total: cart.total,
         date: new Date().toISOString()
-      });
+      };
+      
+      orderStore.createOrder(order);
       
       // Vider le panier
       cart.clearCart();
@@ -99,19 +101,19 @@ const Panier = () => {
                 <CardContent className="p-0">
                   <ul className="divide-y divide-gray-100">
                     {cart.items.map((item) => (
-                      <li key={item.id} className="py-6 px-6">
+                      <li key={item.menuItem.id} className="py-6 px-6">
                         <div className="flex items-center gap-4">
                           <div className="w-20 h-20 flex-shrink-0 rounded-md overflow-hidden">
                             <img
-                              src={item.image}
-                              alt={item.name}
+                              src={item.menuItem.imageUrl || '/placeholder.svg'}
+                              alt={item.menuItem.name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-medium">{item.name}</h3>
+                            <h3 className="text-lg font-medium">{item.menuItem.name}</h3>
                             <p className="text-akane-600 font-semibold mt-1">
-                              {item.price.toFixed(2)} €
+                              {item.menuItem.price.toFixed(2)} €
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -119,7 +121,7 @@ const Panier = () => {
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => handleDecrement(item.id)}
+                              onClick={() => handleDecrement(item.menuItem.id)}
                               disabled={item.quantity <= 1}
                             >
                               <Minus className="h-4 w-4" />
@@ -129,7 +131,7 @@ const Panier = () => {
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => handleIncrement(item.id)}
+                              onClick={() => handleIncrement(item.menuItem.id)}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -138,7 +140,7 @@ const Panier = () => {
                             variant="ghost"
                             size="icon"
                             className="text-gray-500 hover:text-red-500"
-                            onClick={() => handleRemove(item.id)}
+                            onClick={() => handleRemove(item.menuItem.id)}
                           >
                             <Trash2 className="h-5 w-5" />
                           </Button>
