@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlusCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
+import { MenuItem } from "@/types";
 
 const Commander = () => {
   const { toast } = useToast();
@@ -18,62 +19,62 @@ const Commander = () => {
   const menuItems = {
     sushi: [
       {
-        id: 1,
+        id: "1",
         name: "Assortiment de Sushi",
         description: "8 pièces variées de nos meilleurs sushi",
         price: 14.90,
+        category: "plateaux" as const,
         imageUrl: "/lovable-uploads/0f3ef4af-3737-45b0-a552-0c84028dd3cd.png"
       },
       {
-        id: 2,
+        id: "2",
         name: "Sashimi de Saumon",
         description: "Tranches fines de saumon frais",
         price: 12.50,
+        category: "sashimi" as const,
         imageUrl: "/lovable-uploads/8d6a0ad3-bf3f-48f8-b427-7d4db8f4b26b.png"
       },
       {
-        id: 3,
+        id: "3",
         name: "California Roll",
         description: "Avocat, crabe, concombre et tobiko",
         price: 10.90,
+        category: "california" as const,
         imageUrl: "/lovable-uploads/410b6967-e49b-4913-9f13-24e5279ee4f5.png"
       }
     ],
     plats: [
       {
-        id: 4,
+        id: "4",
         name: "Ramen au Porc",
         description: "Nouilles dans un bouillon riche avec porc chashu",
         price: 16.90,
+        category: "plateaux" as const,
         imageUrl: "/lovable-uploads/c30dd633-dfec-4589-afdf-9cf0abf72049.png"
       },
       {
-        id: 5,
+        id: "5",
         name: "Yakitori",
         description: "Brochettes de poulet grillées à la sauce teriyaki",
         price: 9.50,
+        category: "yakitori" as const,
         imageUrl: "/lovable-uploads/ab0cbaa4-7dab-449d-b422-e426b7812e41.png"
       }
     ],
     desserts: [
       {
-        id: 6,
+        id: "6",
         name: "Mochi Glacé",
         description: "Boules de glace enrobées de pâte de riz",
         price: 6.90,
+        category: "desserts" as const,
         imageUrl: "/lovable-uploads/2443ae61-1e76-42ea-a1fd-0506bb67f970.png"
       }
     ]
   };
 
-  const addToCart = (item) => {
-    cart.addItem({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      image: item.imageUrl,
-      quantity: 1
-    });
+  const addToCart = (item: MenuItem) => {
+    cart.addItem(item, 1);
     
     toast({
       title: "Ajouté au panier",
