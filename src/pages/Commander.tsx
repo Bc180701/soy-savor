@@ -10,10 +10,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 const Commander = () => {
   const { toast } = useToast();
   const cart = useCart();
+  const isMobile = useIsMobile();
   const [activeCategory, setActiveCategory] = useState("box_du_midi");
 
   // Using the complete menu data structure with all categories and items
@@ -1294,6 +1297,66 @@ const Commander = () => {
     });
   };
 
+  // Render horizontal categories for mobile
+  const renderMobileCategories = () => (
+    <div className="mb-6">
+      <h2 className="text-xl font-bold mb-4">Catégories</h2>
+      <Carousel
+        opts={{
+          align: "start",
+          loop: false,
+        }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-2">
+          {categories.map((category) => (
+            <CarouselItem key={category.id} className="pl-2 basis-auto">
+              <button
+                onClick={() => setActiveCategory(category.id)}
+                className={`whitespace-nowrap px-4 py-2 rounded-md transition-colors ${
+                  activeCategory === category.id
+                    ? "bg-akane-600 text-white"
+                    : "bg-gray-100 hover:bg-gray-200"
+                }`}
+              >
+                {category.name}
+              </button>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="hidden sm:flex left-0" />
+        <CarouselNext className="hidden sm:flex right-0" />
+      </Carousel>
+    </div>
+  );
+
+  // Render desktop sidebar categories
+  const renderDesktopCategories = () => (
+    <div className="md:w-1/4">
+      <div className="sticky top-24">
+        <h2 className="text-xl font-bold mb-4">Catégories</h2>
+        <ScrollArea className="h-[70vh] pr-4">
+          <ul className="space-y-2">
+            {categories.map((category) => (
+              <li key={category.id}>
+                <button
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
+                    activeCategory === category.id
+                      ? "bg-akane-600 text-white"
+                      : "hover:bg-gray-100"
+                  }`}
+                >
+                  {category.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </ScrollArea>
+      </div>
+    </div>
+  );
+
   return (
     <div className="container mx-auto py-24 px-4">
       <motion.div
@@ -1307,32 +1370,14 @@ const Commander = () => {
           Commandez en ligne et récupérez votre repas dans notre restaurant
         </p>
 
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="md:w-1/4">
-            <div className="sticky top-24">
-              <h2 className="text-xl font-bold mb-4">Catégories</h2>
-              <ScrollArea className="h-[70vh] pr-4">
-                <ul className="space-y-2">
-                  {categories.map((category) => (
-                    <li key={category.id}>
-                      <button
-                        onClick={() => setActiveCategory(category.id)}
-                        className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
-                          activeCategory === category.id
-                            ? "bg-akane-600 text-white"
-                            : "hover:bg-gray-100"
-                        }`}
-                      >
-                        {category.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-            </div>
-          </div>
+        {/* Show horizontal scrolling categories on mobile */}
+        {isMobile && renderMobileCategories()}
 
-          <div className="md:w-3/4">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Show vertical categories sidebar on desktop */}
+          {!isMobile && renderDesktopCategories()}
+
+          <div className={isMobile ? "w-full" : "md:w-3/4"}>
             {categories.map((category) => (
               <div 
                 key={category.id} 
@@ -1399,4 +1444,3 @@ const Commander = () => {
 };
 
 export default Commander;
-
