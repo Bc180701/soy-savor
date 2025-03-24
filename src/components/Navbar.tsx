@@ -1,18 +1,43 @@
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X, ShoppingCart, User } from "lucide-react";
+import { Menu, X, ShoppingCart, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCart } from "@/hooks/use-cart";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const isMobile = useIsMobile();
   const location = useLocation();
+  const navigate = useNavigate();
   const cart = useCart();
+  const { toast } = useToast();
+
+  // Vérifier si l'utilisateur est connecté
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user || null);
+    };
+    
+    checkUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   // Fermer le menu quand on change de page
   useEffect(() => {
@@ -35,6 +60,24 @@ const Navbar = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la déconnexion",
+      });
+    } else {
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès",
+      });
+      navigate("/");
+    }
+  };
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -97,15 +140,33 @@ const Navbar = () => {
 
         {/* Boutons actions */}
         <div className="hidden md:flex items-center space-x-4">
-          <Link to="/compte">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-gray-800 hover:text-akane-600 hover:bg-gray-100"
-            >
-              <User size={20} />
-            </Button>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/compte">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-gray-800 hover:text-akane-600 hover:bg-gray-100"
+                >
+                  <User size={20} />
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-800 hover:text-akane-600 hover:bg-gray-100"
+                onClick={handleLogout}
+              >
+                <LogOut size={20} />
+              </Button>
+            </>
+          ) : (
+            <Link to="/login">
+              <Button className="bg-white text-akane-600 border border-akane-200 hover:bg-gray-50">
+                Se connecter
+              </Button>
+            </Link>
+          )}
           <Link to="/panier">
             <Button
               variant="ghost"
@@ -175,12 +236,29 @@ const Navbar = () => {
                     {link.name}
                   </Link>
                 ))}
-                <Link
-                  to="/compte"
-                  className="text-xl py-3 border-b border-gray-100 text-gray-800"
-                >
-                  Mon compte
-                </Link>
+                {user ? (
+                  <>
+                    <Link
+                      to="/compte"
+                      className="text-xl py-3 border-b border-gray-100 text-gray-800"
+                    >
+                      Mon compte
+                    </Link>
+                    <Button
+                      className="text-xl py-3 justify-start border-b border-gray-100 text-gray-800 hover:text-akane-600 bg-transparent"
+                      onClick={handleLogout}
+                    >
+                      Se déconnecter
+                    </Button>
+                  </>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="text-xl py-3 border-b border-gray-100 text-gray-800"
+                  >
+                    Se connecter
+                  </Link>
+                )}
                 <Link to="/commander" className="pt-4">
                   <Button className="bg-akane-600 hover:bg-akane-700 text-white w-full py-6 text-lg">
                     Commander maintenant

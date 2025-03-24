@@ -16,6 +16,8 @@ import Contact from "./pages/Contact";
 import Panier from "./pages/Panier";
 import Compte from "./pages/Compte";
 import Admin from "./pages/Admin";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -102,6 +104,8 @@ const App = () => {
                 </Layout>
               }
             />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
