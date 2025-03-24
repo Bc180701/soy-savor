@@ -17,27 +17,24 @@ export const simulateOrder = async (): Promise<{ success: boolean; orderId?: str
       return { success: false, error: "Vous devez être connecté pour simuler une commande." };
     }
 
-    // Créer des produits simulés pour la commande
-    const simulatedItems: SimulatedOrderItem[] = [
-      {
-        productId: crypto.randomUUID(),
-        name: "Plateau Sushi Mix",
-        price: 24.99,
-        quantity: 1
-      },
-      {
-        productId: crypto.randomUUID(),
-        name: "California Roll",
-        price: 8.50,
-        quantity: 2
-      },
-      {
-        productId: crypto.randomUUID(), 
-        name: "Miso Soup",
-        price: 3.99,
-        quantity: 1
-      }
-    ];
+    // Récupérer des produits réels de la base de données
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id, name, price')
+      .limit(3);
+
+    if (productsError || !products || products.length === 0) {
+      console.error("Erreur lors de la récupération des produits:", productsError);
+      return { success: false, error: "Impossible de récupérer les produits pour la simulation." };
+    }
+
+    // Créer des articles simulés à partir des produits réels
+    const simulatedItems: SimulatedOrderItem[] = products.map((product, index) => ({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: index === 0 ? 2 : 1 // Premier produit avec quantité 2, les autres avec quantité 1
+    }));
 
     // Calculer les totaux
     const subtotal = simulatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -89,6 +86,11 @@ export const simulateOrder = async (): Promise<{ success: boolean; orderId?: str
       console.error("Erreur lors de l'ajout des articles à la commande simulée:", itemsError);
       return { success: false, error: itemsError.message };
     }
+
+    toast({
+      title: "Commande simulée créée",
+      description: `Une nouvelle commande (#${order.id.substring(0, 8)}) a été créée avec succès`,
+    });
 
     return { success: true, orderId: order.id };
   } catch (error) {
