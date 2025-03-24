@@ -87,10 +87,8 @@ export const simulateOrder = async (): Promise<{ success: boolean; orderId?: str
       return { success: false, error: itemsError.message };
     }
 
-    toast({
-      title: "Commande simulée créée",
-      description: `Une nouvelle commande (#${order.id.substring(0, 8)}) a été créée avec succès`,
-    });
+    // Utiliser le toast de Sonner avec la bonne syntaxe
+    toast.success(`Commande simulée #${order.id.substring(0, 8)} créée avec succès`);
 
     return { success: true, orderId: order.id };
   } catch (error) {
