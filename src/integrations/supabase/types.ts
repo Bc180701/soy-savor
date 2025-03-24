@@ -57,6 +57,33 @@ export type Database = {
         }
         Relationships: []
       }
+      order_analytics: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          total_orders: number | null
+          total_revenue: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -176,6 +203,74 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          order_id: string | null
+          provider: string
+          provider_payment_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          provider: string
+          provider_payment_id?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          provider?: string
+          provider_payment_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      popular_products: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          order_count: number | null
+          product_id: string
+          product_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          order_count?: number | null
+          product_id: string
+          product_name: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          order_count?: number | null
+          product_id?: string
+          product_name?: string
+        }
+        Relationships: []
       }
       products: {
         Row: {
@@ -412,15 +507,42 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          user_id: string
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "client" | "cuisinier" | "livreur" | "administrateur"
     }
     CompositeTypes: {
       [_ in never]: never
