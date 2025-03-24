@@ -10,7 +10,7 @@ type ToastActionElement = React.ReactElement<{
   onClick?: () => void
 }>
 
-export type Toast = {
+export interface Toast {
   id: string
   title?: string
   description?: string
@@ -18,8 +18,10 @@ export type Toast = {
   variant?: "default" | "destructive" | "success"
 }
 
-type ToasterToast = Toast & {
-  dismiss: () => void 
+interface ToasterToast extends Toast {
+  dismiss: () => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const actionTypes = {
@@ -45,7 +47,7 @@ type Action =
     }
   | {
       type: ActionType["UPDATE_TOAST"]
-      toast: Partial<ToasterToast>
+      toast: Partial<Toast> & { id: string }
     }
   | {
       type: ActionType["DISMISS_TOAST"]
@@ -132,12 +134,12 @@ function dispatch(action: Action) {
   })
 }
 
-interface Toast extends Omit<ToasterToast, "id" | "dismiss"> {}
+interface ToastProps extends Omit<Toast, "id"> {}
 
-function toast({ ...props }: Toast) {
+function toast({ ...props }: ToastProps) {
   const id = genId()
 
-  const update = (props: ToasterToast) =>
+  const update = (props: Partial<Toast>) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
