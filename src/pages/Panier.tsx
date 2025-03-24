@@ -10,6 +10,8 @@ import { useCart } from "@/hooks/use-cart";
 import { useOrder } from "@/hooks/use-order";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { createOrder } from "@/services/orderService";
+import { supabase } from "@/integrations/supabase/client";
 
 const Panier = () => {
   const { toast } = useToast();
@@ -17,6 +19,16 @@ const Panier = () => {
   const cart = useCart();
   const orderStore = useOrder();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // Vérifier si l'utilisateur est connecté
+  useState(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    checkAuth();
+  });
 
   const handleIncrement = (id: string) => {
     cart.incrementQuantity(id);
@@ -34,12 +46,38 @@ const Panier = () => {
     });
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     setIsProcessing(true);
     
-    // Simuler un processus de commande
-    setTimeout(() => {
-      // Enregistrer les informations de commande
+    // Vérifier l'authentification
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      setIsProcessing(false);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification",
+        description: "Vous devez être connecté pour passer une commande",
+      });
+      // Rediriger vers la page de connexion
+      navigate("/login");
+      return;
+    }
+    
+    // Créer la commande dans la base de données
+    const result = await createOrder({
+      items: cart.items,
+      subtotal: cart.total,
+      tax: cart.total * 0.1, // 10% de TVA
+      deliveryFee: 2.50,
+      total: cart.total + 2.50 + (cart.total * 0.1),
+      orderType: "delivery", // Par défaut
+      paymentMethod: "credit-card", // Par défaut
+      scheduledFor: new Date(Date.now() + 1800000) // 30 minutes à partir de maintenant
+    });
+    
+    if (result.success) {
+      // Enregistrer les informations de commande dans le stockage local
       const order = {
         items: cart.items,
         total: cart.total,
@@ -58,9 +96,17 @@ const Panier = () => {
         description: "Votre commande a été enregistrée avec succès",
       });
       
-      // Rediriger vers une page de confirmation (à créer plus tard)
-      navigate("/");
-    }, 2000);
+      // Rediriger vers la page de compte
+      navigate("/compte");
+    } else {
+      setIsProcessing(false);
+      
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: result.error || "Une erreur est survenue lors du traitement de votre commande",
+      });
+    }
   };
 
   return (
@@ -162,13 +208,17 @@ const Panier = () => {
                       <span>{cart.total.toFixed(2)} €</span>
                     </div>
                     <div className="flex justify-between">
+                      <span>TVA (10%)</span>
+                      <span>{(cart.total * 0.1).toFixed(2)} €</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span>Frais de livraison</span>
                       <span>2.50 €</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total</span>
-                      <span>{(cart.total + 2.50).toFixed(2)} €</span>
+                      <span>{(cart.total + 2.50 + (cart.total * 0.1)).toFixed(2)} €</span>
                     </div>
                   </div>
                 </CardContent>

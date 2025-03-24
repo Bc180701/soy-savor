@@ -17,12 +17,27 @@ import {
   ShoppingBag, 
   TrendingUp, 
   Settings,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { getAllOrders, updateOrderStatus } from "@/services/orderService";
+import { Order } from "@/types";
 
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,6 +78,77 @@ const Admin = () => {
     checkAdminStatus();
   }, [toast]);
 
+  // Fonction pour charger les commandes
+  const loadOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const { orders: fetchedOrders, error } = await getAllOrders();
+      
+      if (error) {
+        console.error("Erreur lors du chargement des commandes:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger les commandes."
+        });
+        return;
+      }
+      
+      setOrders(fetchedOrders);
+    } catch (error) {
+      console.error("Erreur inattendue lors du chargement des commandes:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors du chargement des commandes."
+      });
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  // Fonction pour mettre à jour le statut d'une commande
+  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { success, error } = await updateOrderStatus(orderId, newStatus);
+      
+      if (!success) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: error || "Impossible de mettre à jour le statut de la commande."
+        });
+        return;
+      }
+      
+      // Mettre à jour la liste des commandes
+      setOrders(prev => prev.map(order => 
+        order.id === orderId 
+          ? { ...order, status: newStatus as any } 
+          : order
+      ));
+      
+      toast({
+        title: "Succès",
+        description: "Le statut de la commande a été mis à jour."
+      });
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du statut:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la mise à jour du statut."
+      });
+    }
+  };
+
+  // Charger les commandes quand la tab est activée
+  const handleTabChange = (value: string) => {
+    if (value === "commandes") {
+      loadOrders();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[70vh]">
@@ -76,13 +162,65 @@ const Admin = () => {
     return <Navigate to="/" replace />;
   }
 
+  // Fonction pour obtenir la couleur du badge en fonction du statut
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return "default";
+      case 'confirmed':
+        return "secondary";
+      case 'preparing':
+        return "outline";
+      case 'ready':
+        return "secondary";
+      case 'out-for-delivery':
+        return "outline";
+      case 'delivered':
+        return "success";
+      case 'completed':
+        return "success";
+      case 'cancelled':
+        return "destructive";
+      default:
+        return "default";
+    }
+  };
+
+  // Traduire le statut en français
+  const translateStatus = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'pending': 'En attente',
+      'confirmed': 'Confirmée',
+      'preparing': 'En préparation',
+      'ready': 'Prête',
+      'out-for-delivery': 'En livraison',
+      'delivered': 'Livrée',
+      'completed': 'Terminée',
+      'cancelled': 'Annulée'
+    };
+    
+    return statusMap[status] || status;
+  };
+
+  // Statuts disponibles pour la mise à jour
+  const availableStatuses = [
+    'pending',
+    'confirmed',
+    'preparing',
+    'ready',
+    'out-for-delivery',
+    'delivered',
+    'completed',
+    'cancelled'
+  ];
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Tableau de bord administrateur</h1>
       </div>
 
-      <Tabs defaultValue="commandes" className="w-full">
+      <Tabs defaultValue="commandes" className="w-full" onValueChange={handleTabChange}>
         <TabsList className="mb-4">
           <TabsTrigger value="commandes" className="flex items-center gap-2">
             <ShoppingBag className="h-4 w-4" />
@@ -105,16 +243,87 @@ const Admin = () => {
         <TabsContent value="commandes" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Dernières commandes</CardTitle>
+              <CardTitle>Gestion des commandes</CardTitle>
               <CardDescription>
                 Gérez les commandes récentes et modifiez leur statut.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="p-8 text-center text-muted-foreground">
-                <AlertCircle className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <p>Les commandes s'afficheront ici</p>
-              </div>
+              {ordersLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : orders.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Paiement</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">{order.id.substring(0, 8)}...</TableCell>
+                          <TableCell>{new Date(order.createdAt).toLocaleString('fr-FR')}</TableCell>
+                          <TableCell>{order.total.toFixed(2)} €</TableCell>
+                          <TableCell>
+                            {order.orderType === 'delivery' ? 'Livraison' : 
+                             order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadgeVariant(order.status)}>
+                              {translateStatus(order.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={order.paymentStatus === 'paid' ? 'success' : 'outline'}>
+                              {order.paymentStatus === 'paid' ? 'Payé' : 
+                               order.paymentStatus === 'pending' ? 'En attente' : 'Échoué'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <select 
+                                className="text-xs border rounded p-1"
+                                value={order.status}
+                                onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                              >
+                                {availableStatuses.map(status => (
+                                  <option key={status} value={status}>
+                                    {translateStatus(status)}
+                                  </option>
+                                ))}
+                              </select>
+                              <Button size="sm" variant="ghost">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="p-8 text-center text-muted-foreground">
+                  <AlertCircle className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                  <p>Aucune commande trouvée</p>
+                  <Button 
+                    onClick={loadOrders} 
+                    variant="outline" 
+                    className="mt-4"
+                  >
+                    Rafraîchir
+                  </Button>
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex justify-between">
               <p className="text-sm text-muted-foreground">
