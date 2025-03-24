@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -15,9 +17,23 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  
+  // Vérifier si l'utilisateur est déjà connecté
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/compte");
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
     
     if (!email || !password) {
       toast({
@@ -31,18 +47,22 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      console.log("Tentative de connexion avec:", { email });
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) {
-        toast({
-          variant: "destructive",
-          title: "Erreur de connexion",
-          description: error.message,
-        });
+        console.error("Erreur de connexion:", error);
+        setAuthError(
+          error.message === "Invalid login credentials"
+            ? "Email ou mot de passe incorrect"
+            : error.message
+        );
       } else if (data.user) {
+        console.log("Connexion réussie:", data.user);
         toast({
           title: "Connexion réussie",
           description: "Vous êtes maintenant connecté",
@@ -50,12 +70,8 @@ const Login = () => {
         navigate("/compte");
       }
     } catch (error) {
-      console.error("Erreur de connexion:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur du serveur",
-        description: "Une erreur est survenue lors de la connexion",
-      });
+      console.error("Erreur inattendue lors de la connexion:", error);
+      setAuthError("Une erreur est survenue lors de la connexion");
     } finally {
       setIsLoading(false);
     }
@@ -77,6 +93,14 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {authError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erreur</AlertTitle>
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
+            )}
+            
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
