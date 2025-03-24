@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -59,19 +60,21 @@ const AdminLink = () => {
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/admin" className="flex items-center gap-1">
-            <Shield className="h-4 w-4" />
-            <span className="hidden md:inline">Admin</span>
-          </Link>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>Tableau de bord administrateur</p>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/admin" className="flex items-center gap-1">
+              <Shield className="h-4 w-4" />
+              <span className="hidden md:inline">Admin</span>
+            </Link>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Tableau de bord administrateur</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 

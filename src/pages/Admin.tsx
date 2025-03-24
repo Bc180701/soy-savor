@@ -35,6 +35,7 @@ const Admin = () => {
         
         if (!session) {
           setIsAdmin(false);
+          setIsLoading(false);
           return;
         }
         
@@ -71,11 +72,7 @@ const Admin = () => {
   }
 
   if (isAdmin === false) {
-    toast({
-      variant: "destructive",
-      title: "Accès refusé",
-      description: "Vous n'avez pas les autorisations nécessaires pour accéder à cette page."
-    });
+    // Don't call toast here, as it causes re-renders
     return <Navigate to="/" replace />;
   }
 
