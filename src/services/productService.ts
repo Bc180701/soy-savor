@@ -10,7 +10,7 @@ const transformProductToMenuItem = (product: any): MenuItem => {
     description: product.description,
     price: product.price,
     imageUrl: product.image_url || "/placeholder.svg",
-    category: product.category_id,
+    category: product.category_id as any, // Cast to SushiCategory
     isVegetarian: product.is_vegetarian || false,
     isSpicy: product.is_spicy || false,
     isNew: product.is_new || false,
@@ -60,7 +60,7 @@ export const addProduct = async (product: Omit<MenuItem, 'id'>) => {
       name: product.name,
       description: product.description,
       price: product.price,
-      category_id: product.category,
+      category_id: product.category, // This is now correctly typed
       image_url: product.imageUrl,
       is_vegetarian: product.isVegetarian,
       is_spicy: product.isSpicy,
