@@ -15,6 +15,7 @@ import APropos from "./pages/APropos";
 import Contact from "./pages/Contact";
 import Panier from "./pages/Panier";
 import Compte from "./pages/Compte";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -90,6 +91,14 @@ const App = () => {
               element={
                 <Layout>
                   <Compte />
+                </Layout>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <Layout>
+                  <Admin />
                 </Layout>
               }
             />
