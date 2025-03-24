@@ -179,14 +179,38 @@ const Commander = () => {
                                 {item.description && (
                                   <p className="text-gray-600 text-sm mt-1">{item.description}</p>
                                 )}
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {item.isVegetarian && (
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                      Végétarien
+                                    </Badge>
+                                  )}
+                                  {item.isSpicy && (
+                                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                      Épicé
+                                    </Badge>
+                                  )}
+                                  {item.isNew && (
+                                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                                      Nouveau
+                                    </Badge>
+                                  )}
+                                  {item.isBestSeller && (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                      Populaire
+                                    </Badge>
+                                  )}
+                                  {item.pieces && (
+                                    <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                                      {item.pieces} pièces
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex flex-col items-end">
                                 <Badge className="bg-akane-600">
                                   {item.price.toFixed(2)} €
                                 </Badge>
-                                {item.isBestSeller && (
-                                  <Badge variant="outline" className="mt-2">Populaire</Badge>
-                                )}
                               </div>
                             </div>
                             <Button 
