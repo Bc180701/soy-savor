@@ -41,7 +41,7 @@ const Admin = () => {
         // Vérifier si l'utilisateur a le rôle d'administrateur
         const { data, error } = await supabase.rpc(
           'has_role',
-          { user_id: session.user.id, role: 'admin' }
+          { user_id: session.user.id, role: 'administrateur' }
         );
         
         if (error) throw error;
