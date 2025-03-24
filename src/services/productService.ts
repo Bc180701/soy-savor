@@ -1,6 +1,6 @@
 
 import { supabase, fetchCategories, fetchProductsByCategory } from "@/integrations/supabase/client";
-import type { MenuItem, MenuCategory } from "@/types";
+import type { MenuItem, MenuCategory, SushiCategory } from "@/types";
 
 // Transform database product to MenuItem
 const transformProductToMenuItem = (product: any): MenuItem => {
@@ -10,7 +10,7 @@ const transformProductToMenuItem = (product: any): MenuItem => {
     description: product.description,
     price: product.price,
     imageUrl: product.image_url || "/placeholder.svg",
-    category: product.category_id as any, // Cast to SushiCategory
+    category: product.category_id as SushiCategory, // Cast to SushiCategory
     isVegetarian: product.is_vegetarian || false,
     isSpicy: product.is_spicy || false,
     isNew: product.is_new || false,
@@ -86,7 +86,7 @@ export const updateProduct = async (id: string, updates: Partial<MenuItem>) => {
       name: updates.name,
       description: updates.description,
       price: updates.price,
-      category_id: updates.category,
+      category_id: updates.category as string, // Cast to string for database
       image_url: updates.imageUrl,
       is_vegetarian: updates.isVegetarian,
       is_spicy: updates.isSpicy,

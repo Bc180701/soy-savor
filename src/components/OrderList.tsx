@@ -4,10 +4,10 @@ import { getAllOrders, updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Eye } from "lucide-react";
-import { OrderDetailsModal } from "@/components/OrderDetailsModal";
+import OrderDetailsModal from "@/components/OrderDetailsModal";
 
 const OrderList = () => {
   const [orders, setOrders] = useState<Order[]>([]);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Dialog, 
@@ -16,30 +15,30 @@ import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
 
 interface OrderDetailsModalProps {
-  orderId: string | null;
+  order: Order | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const OrderDetailsModal = ({ orderId, open, onOpenChange }: OrderDetailsModalProps) => {
+const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<any | null>(null);
   const [customerDetails, setCustomerDetails] = useState<any | null>(null);
   const [addressDetails, setAddressDetails] = useState<any | null>(null);
 
   useEffect(() => {
-    if (orderId && open) {
-      fetchOrderDetails();
+    if (order && open) {
+      fetchOrderDetails(order.id);
     }
-  }, [orderId, open]);
+  }, [order, open]);
 
-  const fetchOrderDetails = async () => {
+  const fetchOrderDetails = async (orderId: string) => {
     if (!orderId) return;
     
     setLoading(true);
     try {
       // Récupérer les détails de la commande et les articles
-      const { data: order, error: orderError } = await supabase
+      const { data: fetchedOrder, error: orderError } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .eq('id', orderId)
@@ -47,12 +46,12 @@ const OrderDetailsModal = ({ orderId, open, onOpenChange }: OrderDetailsModalPro
 
       if (orderError) throw orderError;
       
-      setOrderDetails(order);
+      setOrderDetails(fetchedOrder);
 
       // Récupérer les détails du produit pour chaque article
-      const orderWithProducts = { ...order };
-      if (order.order_items && order.order_items.length > 0) {
-        const productIds = order.order_items.map((item: any) => item.product_id);
+      const orderWithProducts = { ...fetchedOrder };
+      if (fetchedOrder.order_items && fetchedOrder.order_items.length > 0) {
+        const productIds = fetchedOrder.order_items.map((item: any) => item.product_id);
         
         const { data: products, error: productsError } = await supabase
           .from('products')
@@ -62,7 +61,7 @@ const OrderDetailsModal = ({ orderId, open, onOpenChange }: OrderDetailsModalPro
         if (productsError) throw productsError;
         
         // Associer les produits aux articles de commande
-        orderWithProducts.order_items = order.order_items.map((item: any) => {
+        orderWithProducts.order_items = fetchedOrder.order_items.map((item: any) => {
           const product = products.find((p: any) => p.id === item.product_id);
           return { ...item, product };
         });
@@ -71,28 +70,23 @@ const OrderDetailsModal = ({ orderId, open, onOpenChange }: OrderDetailsModalPro
       }
 
       // Récupérer les informations du client
-      if (order.user_id) {
+      if (fetchedOrder.user_id) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', order.user_id)
+          .eq('id', fetchedOrder.user_id)
           .single();
           
         if (!profileError) {
           setCustomerDetails(profile);
         }
         
-        const { data: authUser, error: authUserError } = await supabase.auth.admin.getUserById(order.user_id);
-        if (!authUserError && authUser?.user) {
-          setCustomerDetails(prev => ({ ...prev, email: authUser.user.email }));
-        }
-        
         // Récupérer l'adresse de livraison si disponible
-        if (order.delivery_address_id) {
+        if (fetchedOrder.delivery_address_id) {
           const { data: address, error: addressError } = await supabase
             .from('user_addresses')
             .select('*')
-            .eq('id', order.delivery_address_id)
+            .eq('id', fetchedOrder.delivery_address_id)
             .single();
             
           if (!addressError) {
