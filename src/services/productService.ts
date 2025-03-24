@@ -10,7 +10,7 @@ const transformProductToMenuItem = (product: any): MenuItem => {
     description: product.description,
     price: product.price,
     imageUrl: product.image_url || "/placeholder.svg",
-    category: product.category_id as SushiCategory, // Cast to SushiCategory
+    category: product.category_id as SushiCategory, // Explicitly cast to SushiCategory
     isVegetarian: product.is_vegetarian || false,
     isSpicy: product.is_spicy || false,
     isNew: product.is_new || false,
@@ -38,7 +38,7 @@ export const getMenuData = async (): Promise<MenuCategory[]> => {
       
       // Add category with its items to the result
       menuData.push({
-        id: category.id,
+        id: category.id as SushiCategory, // Cast to SushiCategory here
         name: category.name,
         description: category.description,
         items: menuItems
@@ -80,21 +80,24 @@ export const addProduct = async (product: Omit<MenuItem, 'id'>) => {
 
 // Update a product in the database
 export const updateProduct = async (id: string, updates: Partial<MenuItem>) => {
+  // Create an update object that maps MenuItem properties to database column names
+  const updateData: any = {};
+  
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.description !== undefined) updateData.description = updates.description;
+  if (updates.price !== undefined) updateData.price = updates.price;
+  if (updates.category !== undefined) updateData.category_id = updates.category; // No need to cast here
+  if (updates.imageUrl !== undefined) updateData.image_url = updates.imageUrl;
+  if (updates.isVegetarian !== undefined) updateData.is_vegetarian = updates.isVegetarian;
+  if (updates.isSpicy !== undefined) updateData.is_spicy = updates.isSpicy;
+  if (updates.isNew !== undefined) updateData.is_new = updates.isNew;
+  if (updates.isBestSeller !== undefined) updateData.is_best_seller = updates.isBestSeller;
+  if (updates.allergens !== undefined) updateData.allergens = updates.allergens;
+  if (updates.pieces !== undefined) updateData.pieces = updates.pieces;
+  
   const { data, error } = await supabase
     .from('products')
-    .update({
-      name: updates.name,
-      description: updates.description,
-      price: updates.price,
-      category_id: updates.category as string, // Cast to string for database
-      image_url: updates.imageUrl,
-      is_vegetarian: updates.isVegetarian,
-      is_spicy: updates.isSpicy,
-      is_new: updates.isNew,
-      is_best_seller: updates.isBestSeller,
-      allergens: updates.allergens,
-      pieces: updates.pieces
-    })
+    .update(updateData)
     .eq('id', id)
     .select();
     
