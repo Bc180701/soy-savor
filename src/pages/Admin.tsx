@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { getAllOrders, updateOrderStatus } from "@/services/orderService";
 import { simulateOrder } from "@/utils/simulateOrder";
 import { Order } from "@/types";
+import OrderDetailsModal from "@/components/OrderDetailsModal";
 
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -42,6 +42,8 @@ const Admin = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
   const { toast: toastHook } = useToast();
 
   useEffect(() => {
@@ -49,7 +51,6 @@ const Admin = () => {
       try {
         setIsLoading(true);
         
-        // Vérifier si l'utilisateur est connecté
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -58,7 +59,6 @@ const Admin = () => {
           return;
         }
         
-        // Vérifier si l'utilisateur a le rôle d'administrateur
         const { data, error } = await supabase.rpc(
           'has_role',
           { user_id: session.user.id, role: 'administrateur' }
@@ -82,7 +82,6 @@ const Admin = () => {
     checkAdminStatus();
   }, [toastHook]);
 
-  // Fonction pour charger les commandes
   const loadOrders = async () => {
     try {
       setOrdersLoading(true);
@@ -111,7 +110,6 @@ const Admin = () => {
     }
   };
 
-  // Fonction pour simuler une commande
   const handleSimulateOrder = async () => {
     try {
       setIsSimulating(true);
@@ -130,7 +128,6 @@ const Admin = () => {
         description: `ID de commande: ${orderId?.substring(0, 8)}...`
       });
       
-      // Recharger les commandes
       loadOrders();
     } catch (error) {
       console.error("Erreur lors de la simulation de commande:", error);
@@ -144,7 +141,6 @@ const Admin = () => {
     }
   };
 
-  // Fonction pour mettre à jour le statut d'une commande
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
       const { success, error } = await updateOrderStatus(orderId, newStatus);
@@ -158,7 +154,6 @@ const Admin = () => {
         return;
       }
       
-      // Mettre à jour la liste des commandes
       setOrders(prev => prev.map(order => 
         order.id === orderId 
           ? { ...order, status: newStatus as any } 
@@ -179,7 +174,11 @@ const Admin = () => {
     }
   };
 
-  // Charger les commandes quand la tab est activée
+  const openOrderDetails = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setOrderDetailsOpen(true);
+  };
+
   const handleTabChange = (value: string) => {
     if (value === "commandes") {
       loadOrders();
@@ -195,11 +194,9 @@ const Admin = () => {
   }
 
   if (isAdmin === false) {
-    // Don't call toast here, as it causes re-renders
     return <Navigate to="/" replace />;
   }
 
-  // Fonction pour obtenir la couleur du badge en fonction du statut
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'pending':
@@ -223,7 +220,6 @@ const Admin = () => {
     }
   };
 
-  // Traduire le statut en français
   const translateStatus = (status: string) => {
     const statusMap: Record<string, string> = {
       'pending': 'En attente',
@@ -239,7 +235,6 @@ const Admin = () => {
     return statusMap[status] || status;
   };
 
-  // Statuts disponibles pour la mise à jour
   const availableStatuses = [
     'pending',
     'confirmed',
@@ -348,7 +343,11 @@ const Admin = () => {
                                   </option>
                                 ))}
                               </select>
-                              <Button size="sm" variant="ghost">
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => openOrderDetails(order.id)}
+                              >
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </div>
@@ -446,6 +445,12 @@ const Admin = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <OrderDetailsModal 
+        orderId={selectedOrderId} 
+        open={orderDetailsOpen} 
+        onOpenChange={setOrderDetailsOpen} 
+      />
     </div>
   );
 };
