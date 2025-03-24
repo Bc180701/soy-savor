@@ -10,3 +10,47 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+// Helper function to fetch products by category
+export const fetchProductsByCategory = async (categoryId: string) => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('category_id', categoryId);
+  
+  if (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+  
+  return data || [];
+};
+
+// Helper function to fetch all categories
+export const fetchCategories = async () => {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('display_order', { ascending: true });
+  
+  if (error) {
+    console.error("Error fetching categories:", error);
+    return [];
+  }
+  
+  return data || [];
+};
+
+// Helper function to fetch all products
+export const fetchAllProducts = async () => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*, categories(name)');
+  
+  if (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+  
+  return data || [];
+};
