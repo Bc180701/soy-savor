@@ -73,7 +73,7 @@ const DeliveryMethod = ({ subtotal, onMethodChange }: DeliveryMethodProps) => {
       </RadioGroup>
 
       {method === "delivery" && (
-        <Alert variant="outline" className="bg-blue-50">
+        <Alert className="bg-blue-50">
           <InfoIcon className="h-4 w-4 text-blue-500" />
           <AlertDescription>
             {locations.length > 0 ? (
