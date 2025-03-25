@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -188,11 +187,10 @@ const Panier = () => {
     }
   };
 
-  // Reset delivery info if order type changes
+  // Reset delivery address if order type changes
   useEffect(() => {
     if (orderType === "pickup") {
       setDeliveryAddress(null);
-      setDeliveryFee(0);
     }
   }, [orderType]);
 
@@ -239,7 +237,7 @@ const Panier = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className={`md:col-span-2 ${currentStep !== CheckoutStep.CART && 'md:hidden'}`}>
+            <div className="md:col-span-2">
               {currentStep === CheckoutStep.CART && (
                 <>
                   <h2 className="text-xl font-semibold mb-4">Articles ({cart.items.length})</h2>

@@ -36,6 +36,6 @@ export const getDeliveryLocations = async (): Promise<{city: string, postalCode:
 };
 
 export const calculateDeliveryFee = (subtotal: number): number => {
-  // Free delivery for orders >= 30€
+  // Free delivery for orders >= 30€, otherwise 3€ delivery fee
   return subtotal >= 30 ? 0 : 3;
 };

@@ -61,14 +61,12 @@ const DeliveryMethod = ({ subtotal, onMethodChange }: DeliveryMethodProps) => {
             <p className="text-sm text-gray-500 mt-1">
               Nous livrons votre commande à votre adresse
             </p>
-            {method === "delivery" && deliveryFee > 0 && (
+            {method === "delivery" && (
               <div className="mt-2 text-akane-600 font-medium">
                 Frais de livraison: {deliveryFee.toFixed(2)} €
-              </div>
-            )}
-            {method === "delivery" && deliveryFee === 0 && (
-              <div className="mt-2 text-green-600 font-medium">
-                Livraison gratuite !
+                {subtotal >= 30 && (
+                  <span className="block text-green-600 text-sm">Livraison gratuite pour les commandes de plus de 30€ !</span>
+                )}
               </div>
             )}
           </div>
@@ -87,11 +85,6 @@ const DeliveryMethod = ({ subtotal, onMethodChange }: DeliveryMethodProps) => {
                     <li key={index}>{loc.city} ({loc.postalCode})</li>
                   ))}
                 </ul>
-                <p className="mt-2 text-sm font-medium">
-                  {subtotal < 30 ? 
-                    `Livraison offerte à partir de 30€ (il vous manque ${(30 - subtotal).toFixed(2)}€)` : 
-                    'Livraison offerte pour votre commande !'}
-                </p>
               </>
             ) : (
               <p>Chargement des zones de livraison...</p>
