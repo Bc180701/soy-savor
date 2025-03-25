@@ -27,14 +27,35 @@ const OrdersChart = () => {
       date: new Date(item.date).toLocaleDateString('fr-FR', {
         day: '2-digit',
         month: '2-digit'
-      })
+      }),
+      // Format revenue for display
+      formattedRevenue: `${Number(item.total_revenue).toFixed(2)} €`,
+      formattedOrders: `${item.total_orders} commandes`
     }));
+  };
+
+  // Calculate the domain for revenue Y-axis
+  const getRevenueYAxisDomain = () => {
+    if (data.length === 0) return [0, 10];
+    
+    const maxRevenue = Math.max(...data.map(item => Number(item.total_revenue)));
+    // Add 20% padding to the top
+    return [0, maxRevenue * 1.2];
+  };
+
+  // Calculate the domain for orders Y-axis
+  const getOrdersYAxisDomain = () => {
+    if (data.length === 0) return [0, 10];
+    
+    const maxOrders = Math.max(...data.map(item => item.total_orders));
+    // Add 20% padding to the top
+    return [0, maxOrders * 1.2];
   };
 
   return (
     <Card className="col-span-full">
       <CardHeader>
-        <CardTitle>Évolution des commandes (7 derniers jours)</CardTitle>
+        <CardTitle>Évolution des commandes et revenus (7 derniers jours)</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -61,27 +82,52 @@ const OrdersChart = () => {
             >
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={formatData(data)}>
-                  <XAxis dataKey="date" />
-                  <YAxis />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                  />
+                  {/* Primary Y-axis for orders */}
+                  <YAxis 
+                    yAxisId="left"
+                    orientation="left"
+                    tickFormatter={(value) => `${value}`}
+                    domain={getOrdersYAxisDomain()}
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                  />
+                  {/* Secondary Y-axis for revenue */}
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    tickFormatter={(value) => `${value} €`}
+                    domain={getRevenueYAxisDomain()}
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                  />
                   <Area
                     type="monotone"
                     dataKey="total_orders"
+                    yAxisId="left"
                     stroke="#1E40AF"
                     fill="#93C5FD"
                     strokeWidth={2}
                     name="orders"
+                    activeDot={{ r: 6 }}
                   />
                   <Area
                     type="monotone"
                     dataKey="total_revenue"
+                    yAxisId="right"
                     stroke="#047857"
                     fill="#86EFAC"
                     strokeWidth={2}
                     name="revenue"
+                    activeDot={{ r: 6 }}
                   />
                   <ChartTooltip
                     content={
-                      <ChartTooltipContent nameKey="name" labelKey="date" />
+                      <CustomTooltip />
                     }
                   />
                 </AreaChart>
@@ -92,6 +138,21 @@ const OrdersChart = () => {
       </CardContent>
     </Card>
   );
+};
+
+// Custom tooltip to better format the values
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <p className="text-sm font-medium">{`Date: ${label}`}</p>
+        <p className="text-sm text-blue-600">{`Commandes: ${payload[0].value}`}</p>
+        <p className="text-sm text-green-600">{`Revenus: ${Number(payload[1].value).toFixed(2)} €`}</p>
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export default OrdersChart;
