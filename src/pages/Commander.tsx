@@ -1,18 +1,15 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { getMenuData } from "@/services/productService";
+import MobileCategorySelector from "@/components/menu/MobileCategorySelector";
+import DesktopCategorySelector from "@/components/menu/DesktopCategorySelector";
+import CategoryContent from "@/components/menu/CategoryContent";
 
 const Commander = () => {
   const { toast } = useToast();
@@ -46,7 +43,7 @@ const Commander = () => {
     };
 
     fetchMenuData();
-  }, [toast]);
+  }, [toast, activeCategory]);
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
@@ -55,102 +52,6 @@ const Commander = () => {
       title: "Ajouté au panier",
       description: `${item.name} a été ajouté à votre panier`,
     });
-  };
-
-  // Render horizontal categories for mobile
-  const renderMobileCategories = () => (
-    <div className="mb-6">
-      <h2 className="text-xl font-bold mb-4">Catégories</h2>
-      <Carousel
-        opts={{
-          align: "start",
-          loop: false,
-        }}
-        className="w-full"
-      >
-        <CarouselContent className="-ml-2">
-          {categories.map((category) => (
-            <CarouselItem key={category.id} className="pl-2 basis-auto">
-              <button
-                onClick={() => setActiveCategory(category.id)}
-                className={`whitespace-nowrap px-4 py-2 rounded-md transition-colors ${
-                  activeCategory === category.id
-                    ? "bg-akane-600 text-white"
-                    : "bg-gray-100 hover:bg-gray-200"
-                }`}
-              >
-                {category.name}
-              </button>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="hidden sm:flex left-0" />
-        <CarouselNext className="hidden sm:flex right-0" />
-      </Carousel>
-    </div>
-  );
-
-  // Render desktop sidebar categories
-  const renderDesktopCategories = () => (
-    <div className="md:w-1/4">
-      <div className="sticky top-24">
-        <h2 className="text-xl font-bold mb-4">Catégories</h2>
-        <ScrollArea className="h-[70vh] pr-4">
-          <ul className="space-y-2">
-            {categories.map((category) => (
-              <li key={category.id}>
-                <button
-                  onClick={() => setActiveCategory(category.id)}
-                  className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
-                    activeCategory === category.id
-                      ? "bg-akane-600 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  {category.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </ScrollArea>
-      </div>
-    </div>
-  );
-
-  const renderCategoryDetails = (category: MenuCategory) => {
-    // Special descriptions for specific categories
-    const specialDescriptions: Record<string, string> = {
-      'box_du_midi': 'Midi uniquement de 11h à 14h. Accompagnements offerts : riz, salade de choux, soupe miso',
-      'plateaux': 'Assortiments variés pour tous les goûts',
-      'yakitori': 'Brochette et fritures japonaises',
-      'gunkan': 'Riz & garniture entouré d\'algue nori',
-      'sashimi': 'Tranches de poisson cru ou légèrement snacké',
-      'poke': 'Bol composé de riz, protéines, légumes et sauce',
-      'chirashi': 'Riz surmonté de lamelles de protéine',
-      'maki': 'Rouleau d\'algue nori, riz vinaigré et garniture',
-      'california': 'Rouleau inversé, riz à l\'extérieur',
-      'crispy': 'Rouleau inversé, riz à l\'extérieur garni d\'oignon frit',
-      'spring': 'Rouleau frais entouré de feuille de riz',
-      'salmon': 'Rouleau enrobé de saumon',
-      'green': 'Rouleau enrobé d\'avocat',
-      'nigiri': 'Boule de riz vinaigré surmontée d\'une tranche de poisson',
-      'signature': 'Les sushis by Sushieats',
-      'temaki': 'Cône d\'algue nori garni',
-      'maki_wrap': 'Wrap de sushi Maki, roulé d\'algue nori avec riz vinaigré et garniture'
-    };
-
-    // Use the special description if available, otherwise use the category description
-    const description = specialDescriptions[category.id] || category.description;
-
-    return (
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold bg-akane-600 text-white px-4 py-2 rounded-md">{category.name}</h2>
-        {description && (
-          <p className="text-gray-600 italic mt-2 mb-2">{description}</p>
-        )}
-        <Separator className="my-4" />
-      </div>
-    );
   };
 
   if (isLoading) {
@@ -176,11 +77,23 @@ const Commander = () => {
         </p>
 
         {/* Show horizontal scrolling categories on mobile */}
-        {isMobile && renderMobileCategories()}
+        {isMobile && (
+          <MobileCategorySelector 
+            categories={categories} 
+            activeCategory={activeCategory} 
+            onCategoryChange={setActiveCategory} 
+          />
+        )}
 
         <div className="flex flex-col md:flex-row gap-6">
           {/* Show vertical categories sidebar on desktop */}
-          {!isMobile && renderDesktopCategories()}
+          {!isMobile && (
+            <DesktopCategorySelector 
+              categories={categories} 
+              activeCategory={activeCategory} 
+              onCategoryChange={setActiveCategory} 
+            />
+          )}
 
           <div className={isMobile ? "w-full" : "md:w-3/4"}>
             {categories.map((category) => (
@@ -188,79 +101,7 @@ const Commander = () => {
                 key={category.id} 
                 className={activeCategory === category.id ? "block" : "hidden"}
               >
-                {renderCategoryDetails(category)}
-
-                {category.items.length === 0 ? (
-                  <p className="text-gray-500 italic text-center py-8">
-                    Aucun produit disponible dans cette catégorie pour le moment.
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-6">
-                    {category.items.map((item) => (
-                      <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                        <CardContent className="p-0">
-                          <div className="flex flex-col md:flex-row">
-                            <div className="w-full md:w-1/4 h-32 overflow-hidden">
-                              <img
-                                src={item.imageUrl || "/placeholder.svg"}
-                                alt={item.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="w-full md:w-3/4 p-6">
-                              <div className="flex justify-between items-start mb-2">
-                                <div>
-                                  <h3 className="text-lg font-bold">{item.name}</h3>
-                                  {item.description && (
-                                    <p className="text-gray-600 text-sm mt-1">{item.description}</p>
-                                  )}
-                                  <div className="mt-2 flex flex-wrap gap-2">
-                                    {item.isVegetarian && (
-                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                        Végétarien
-                                      </Badge>
-                                    )}
-                                    {item.isSpicy && (
-                                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                        Épicé
-                                      </Badge>
-                                    )}
-                                    {item.isNew && (
-                                      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                                        Nouveau
-                                      </Badge>
-                                    )}
-                                    {item.isBestSeller && (
-                                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                        Populaire
-                                      </Badge>
-                                    )}
-                                    {item.pieces && (
-                                      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                                        {item.pieces} pièces
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                  <Badge className="bg-akane-600">
-                                    {item.price.toFixed(2)} €
-                                  </Badge>
-                                </div>
-                              </div>
-                              <Button 
-                                onClick={() => addToCart(item)} 
-                                className="mt-4 bg-akane-600 hover:bg-akane-700 w-full md:w-auto self-end float-right"
-                              >
-                                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter au panier
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                <CategoryContent category={category} onAddToCart={addToCart} />
               </div>
             ))}
           </div>
