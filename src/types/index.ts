@@ -1,3 +1,4 @@
+
 export type SushiCategory = 
   | "box" 
   | "plateaux" 
@@ -122,6 +123,10 @@ export interface Order {
   deliveryInstructions?: string;
   scheduledFor: Date;
   createdAt: Date;
+  customerNotes?: string;
+  pickupTime?: string;
+  contactPreference?: string;
+  allergies?: string[];
 }
 
 export interface Review {

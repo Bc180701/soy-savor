@@ -155,7 +155,10 @@ export type Database = {
       }
       orders: {
         Row: {
+          allergies: string[] | null
+          contact_preference: string | null
           created_at: string | null
+          customer_notes: string | null
           delivery_address_id: string | null
           delivery_fee: number
           delivery_instructions: string | null
@@ -164,6 +167,7 @@ export type Database = {
           order_type: string
           payment_method: string
           payment_status: string
+          pickup_time: string | null
           promo_code: string | null
           scheduled_for: string
           status: string
@@ -174,7 +178,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          allergies?: string[] | null
+          contact_preference?: string | null
           created_at?: string | null
+          customer_notes?: string | null
           delivery_address_id?: string | null
           delivery_fee: number
           delivery_instructions?: string | null
@@ -183,6 +190,7 @@ export type Database = {
           order_type: string
           payment_method: string
           payment_status?: string
+          pickup_time?: string | null
           promo_code?: string | null
           scheduled_for: string
           status?: string
@@ -193,7 +201,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          allergies?: string[] | null
+          contact_preference?: string | null
           created_at?: string | null
+          customer_notes?: string | null
           delivery_address_id?: string | null
           delivery_fee?: number
           delivery_instructions?: string | null
@@ -202,6 +213,7 @@ export type Database = {
           order_type?: string
           payment_method?: string
           payment_status?: string
+          pickup_time?: string | null
           promo_code?: string | null
           scheduled_for?: string
           status?: string

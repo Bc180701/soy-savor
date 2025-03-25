@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Dialog, 
@@ -10,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard } from "lucide-react";
+import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
 
@@ -187,8 +188,42 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{customerDetails?.phone || 'Téléphone non renseigné'}</span>
                   </div>
+                  {orderDetails.contact_preference && (
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <span>Préférence de contact: {orderDetails.contact_preference}</span>
+                    </div>
+                  )}
                 </div>
               </div>
+              
+              {/* Informations supplémentaires */}
+              {(orderDetails.allergies || orderDetails.customer_notes) && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Informations supplémentaires</h3>
+                  {orderDetails.allergies && orderDetails.allergies.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+                      <div>
+                        <div className="font-medium">Allergies:</div>
+                        <div className="text-sm">
+                          {orderDetails.allergies.join(', ')}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {orderDetails.customer_notes && (
+                    <div className="flex items-start gap-2">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <div className="font-medium">Notes du client:</div>
+                        <div className="text-sm italic">"{orderDetails.customer_notes}"</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               
               {/* Informations de livraison */}
               <div className="space-y-2">
@@ -196,7 +231,11 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>Livraison prévue: {formatDate(orderDetails.scheduled_for)}</span>
+                    <span>
+                      {orderDetails.order_type === 'pickup' && orderDetails.pickup_time 
+                        ? `À emporter à: ${orderDetails.pickup_time}`
+                        : `Livraison prévue: ${formatDate(orderDetails.scheduled_for)}`}
+                    </span>
                   </div>
                   
                   <div className="flex items-start gap-2">
@@ -226,7 +265,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                     <div className="flex items-start gap-2 text-sm">
                       <div className="w-4"></div>
                       <div className="italic text-muted-foreground">
-                        "{orderDetails.delivery_instructions}"
+                        "Instructions de livraison: {orderDetails.delivery_instructions}"
                       </div>
                     </div>
                   )}

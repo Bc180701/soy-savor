@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem, Order } from "@/types";
 
@@ -16,6 +15,10 @@ export interface CreateOrderParams {
   deliveryAddressId?: string;
   deliveryInstructions?: string;
   scheduledFor: Date;
+  customerNotes?: string;
+  pickupTime?: string;
+  contactPreference?: string;
+  allergies?: string[];
 }
 
 export const createOrder = async (params: CreateOrderParams): Promise<{ success: boolean; orderId?: string; error?: string }> => {
@@ -43,6 +46,10 @@ export const createOrder = async (params: CreateOrderParams): Promise<{ success:
         delivery_address_id: params.deliveryAddressId,
         delivery_instructions: params.deliveryInstructions,
         scheduled_for: params.scheduledFor.toISOString(),
+        customer_notes: params.customerNotes,
+        pickup_time: params.pickupTime,
+        contact_preference: params.contactPreference,
+        allergies: params.allergies
       })
       .select('id')
       .single();
@@ -101,7 +108,11 @@ export const getOrdersByUser = async (): Promise<{ orders: Order[]; error?: stri
         payment_status,
         delivery_instructions,
         scheduled_for,
-        created_at
+        created_at,
+        customer_notes,
+        pickup_time,
+        contact_preference,
+        allergies
       `)
       .eq('user_id', session.user.id)
       .order('created_at', { ascending: false });
@@ -128,6 +139,10 @@ export const getOrdersByUser = async (): Promise<{ orders: Order[]; error?: stri
       deliveryInstructions: order.delivery_instructions || undefined,
       scheduledFor: new Date(order.scheduled_for),
       createdAt: new Date(order.created_at),
+      customerNotes: order.customer_notes || undefined,
+      pickupTime: order.pickup_time || undefined,
+      contactPreference: order.contact_preference || undefined,
+      allergies: order.allergies || undefined,
       items: [] // Nous allons les récupérer séparément
     }));
 
@@ -158,7 +173,11 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
         payment_status,
         delivery_instructions,
         scheduled_for,
-        created_at
+        created_at,
+        customer_notes,
+        pickup_time,
+        contact_preference,
+        allergies
       `)
       .order('created_at', { ascending: false });
 
@@ -185,6 +204,10 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
       deliveryInstructions: order.delivery_instructions || undefined,
       scheduledFor: new Date(order.scheduled_for),
       createdAt: new Date(order.created_at),
+      customerNotes: order.customer_notes || undefined,
+      pickupTime: order.pickup_time || undefined,
+      contactPreference: order.contact_preference || undefined,
+      allergies: order.allergies || undefined,
       items: [] // Nous allons les récupérer séparément
     }));
 
