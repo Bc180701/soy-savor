@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchOrderWithDetails } from "@/integrations/supabase/client";
 import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
@@ -38,68 +38,12 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     
     setLoading(true);
     try {
-      // Récupérer les détails de la commande et les articles
-      const { data: fetchedOrder, error: orderError } = await supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .eq('id', orderId)
-        .single();
-
-      if (orderError) throw orderError;
+      const completeOrderDetails = await fetchOrderWithDetails(orderId);
       
-      setOrderDetails(fetchedOrder);
-
-      // Récupérer les détails du produit pour chaque article
-      const orderWithProducts = { ...fetchedOrder };
-      if (fetchedOrder.order_items && fetchedOrder.order_items.length > 0) {
-        const productIds = fetchedOrder.order_items.map((item: any) => item.product_id);
-        
-        const { data: products, error: productsError } = await supabase
-          .from('products')
-          .select('*')
-          .in('id', productIds);
-          
-        if (productsError) throw productsError;
-        
-        // Associer les produits aux articles de commande
-        orderWithProducts.order_items = fetchedOrder.order_items.map((item: any) => {
-          const product = products.find((p: any) => p.id === item.product_id);
-          return { ...item, product };
-        });
-        
-        setOrderDetails(orderWithProducts);
-      }
-
-      // Récupérer les informations du client
-      if (fetchedOrder.user_id) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', fetchedOrder.user_id)
-          .single();
-          
-        if (!profileError && profile) {
-          setCustomerDetails(profile);
-          console.log("Profil client récupéré:", profile);
-        } else {
-          console.error("Erreur lors de la récupération du profil:", profileError);
-        }
-        
-        // Récupérer l'adresse de livraison si disponible
-        if (fetchedOrder.delivery_address_id) {
-          const { data: address, error: addressError } = await supabase
-            .from('user_addresses')
-            .select('*')
-            .eq('id', fetchedOrder.delivery_address_id)
-            .single();
-            
-          if (!addressError && address) {
-            setAddressDetails(address);
-            console.log("Adresse récupérée:", address);
-          } else {
-            console.error("Erreur lors de la récupération de l'adresse:", addressError);
-          }
-        }
+      if (completeOrderDetails) {
+        setOrderDetails(completeOrderDetails);
+        setCustomerDetails(completeOrderDetails.customer);
+        setAddressDetails(completeOrderDetails.delivery_address);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des détails de la commande:", error);
@@ -209,29 +153,21 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
               {/* Informations client */}
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Informations client</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {customerDetails?.first_name && customerDetails?.last_name
-                        ? `${customerDetails.first_name} ${customerDetails.last_name}`
-                        : 'Non renseigné'}
-                    </span>
+                    {customerDetails?.first_name && customerDetails?.last_name
+                      ? `${customerDetails.first_name} ${customerDetails.last_name}`
+                      : 'Non renseigné'}
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{customerDetails?.email || 'Email non disponible'}</span>
+                    <span>Email non disponible</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{customerDetails?.phone || 'Téléphone non renseigné'}</span>
                   </div>
-                  {orderDetails.contact_preference && (
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <span>Préférence de contact: {orderDetails.contact_preference}</span>
-                    </div>
-                  )}
                 </div>
               </div>
               
@@ -266,47 +202,32 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
               {/* Informations de livraison */}
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Informations de livraison</h3>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {orderDetails.order_type === 'pickup' && orderDetails.pickup_time 
-                        ? `À emporter à: ${orderDetails.pickup_time}`
-                        : `Livraison prévue: ${formatDate(orderDetails.scheduled_for)}`}
-                    </span>
+                    Livraison prévue: {formatDate(orderDetails.scheduled_for)}
                   </div>
                   
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      {addressDetails ? (
+                      <div>Adresse de livraison {addressDetails ? '' : 'non disponible'}</div>
+                      {addressDetails && (
                         <>
-                          <div className="font-medium">Adresse de livraison:</div>
                           <div>{addressDetails.street}</div>
                           <div>{addressDetails.postal_code} {addressDetails.city}</div>
                           {addressDetails.additional_info && (
                             <div className="text-sm text-muted-foreground">{addressDetails.additional_info}</div>
                           )}
                         </>
-                      ) : (
-                        <span>
-                          {orderDetails.order_type === 'delivery' 
-                            ? 'Adresse de livraison non disponible' 
-                            : orderDetails.order_type === 'pickup' 
-                              ? 'À emporter' 
-                              : 'Sur place'}
-                        </span>
                       )}
                     </div>
                   </div>
                   
                   {orderDetails.delivery_instructions && (
-                    <div className="flex items-start gap-2">
-                      <div className="w-4"></div>
-                      <div>
-                        <div className="font-medium">Instructions de livraison:</div>
-                        <div className="italic text-muted-foreground">"{orderDetails.delivery_instructions}"</div>
-                      </div>
+                    <div className="flex flex-col pl-6">
+                      <div>Instructions de livraison:</div>
+                      <div className="italic">"{orderDetails.delivery_instructions}"</div>
                     </div>
                   )}
                 </div>
@@ -317,17 +238,13 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <h3 className="text-lg font-semibold">Informations de paiement</h3>
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <span>
-                      {translatePaymentMethod(orderDetails.payment_method)}
-                    </span>
-                    <Badge 
-                      variant={orderDetails.payment_status === 'paid' ? 'success' : 'outline'}
-                      className="ml-2"
-                    >
-                      {translatePaymentStatus(orderDetails.payment_status)}
-                    </Badge>
-                  </div>
+                  {translatePaymentMethod(orderDetails.payment_method)}
+                  <Badge 
+                    variant={orderDetails.payment_status === 'paid' ? 'success' : 'outline'}
+                    className="ml-2"
+                  >
+                    {translatePaymentStatus(orderDetails.payment_status)}
+                  </Badge>
                 </div>
               </div>
               
@@ -340,7 +257,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                       <div key={item.id} className="p-4 flex justify-between">
                         <div className="flex-1">
                           <div className="font-medium text-lg">
-                            {item.product?.name || `Produit ${item.product_id.substring(0, 8)}`}
+                            {item.products?.name || `Produit ${item.product_id.substring(0, 8)}`}
                           </div>
                           {item.special_instructions && (
                             <div className="text-sm text-muted-foreground italic mt-1">
