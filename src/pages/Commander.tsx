@@ -42,8 +42,11 @@ const Commander = () => {
       }
     };
 
-    fetchMenuData();
-  }, [toast, activeCategory]);
+    // Seulement charger les données si les catégories sont vides
+    if (categories.length === 0) {
+      fetchMenuData();
+    }
+  }, [toast]); // Suppression de la dépendance activeCategory
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
