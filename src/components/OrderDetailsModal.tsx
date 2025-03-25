@@ -141,9 +141,39 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     return statusMap[status] || status;
   };
 
+  const translatePaymentMethod = (method: string) => {
+    const methodMap: Record<string, string> = {
+      'credit-card': 'Carte bancaire',
+      'cash': 'Espèces',
+      'paypal': 'PayPal'
+    };
+    
+    return methodMap[method] || method;
+  };
+
+  const translatePaymentStatus = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'paid': 'Payé',
+      'pending': 'En attente',
+      'failed': 'Échoué'
+    };
+    
+    return statusMap[status] || status;
+  };
+
+  const translateOrderType = (type: string) => {
+    const typeMap: Record<string, string> = {
+      'delivery': 'Livraison',
+      'pickup': 'À emporter',
+      'dine-in': 'Sur place'
+    };
+    
+    return typeMap[type] || type;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5" />
@@ -262,10 +292,10 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                   </div>
                   
                   {orderDetails.delivery_instructions && (
-                    <div className="flex items-start gap-2 text-sm">
+                    <div className="flex items-start gap-2">
                       <div className="w-4"></div>
                       <div className="italic text-muted-foreground">
-                        "Instructions de livraison: {orderDetails.delivery_instructions}"
+                        Instructions de livraison: "{orderDetails.delivery_instructions}"
                       </div>
                     </div>
                   )}
@@ -278,19 +308,14 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <span className="capitalize">
-                      {orderDetails.payment_method === 'credit-card' 
-                        ? 'Carte bancaire' 
-                        : orderDetails.payment_method === 'cash' 
-                          ? 'Espèces'
-                          : orderDetails.payment_method}
+                    <span>
+                      {translatePaymentMethod(orderDetails.payment_method)}
                     </span>
                     <Badge 
                       variant={orderDetails.payment_status === 'paid' ? 'success' : 'outline'}
                       className="ml-2"
                     >
-                      {orderDetails.payment_status === 'paid' ? 'Payé' : 
-                        orderDetails.payment_status === 'pending' ? 'En attente' : 'Échoué'}
+                      {translatePaymentStatus(orderDetails.payment_status)}
                     </Badge>
                   </div>
                 </div>
@@ -302,20 +327,20 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="border rounded-md divide-y">
                   {orderDetails.order_items && orderDetails.order_items.length > 0 ? (
                     orderDetails.order_items.map((item: any) => (
-                      <div key={item.id} className="p-3 flex justify-between">
-                        <div>
-                          <div className="font-medium">
+                      <div key={item.id} className="p-4 flex justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium text-lg">
                             {item.product?.name || `Produit ${item.product_id.substring(0, 8)}`}
                           </div>
                           {item.special_instructions && (
-                            <div className="text-sm text-muted-foreground italic">
+                            <div className="text-sm text-muted-foreground italic mt-1">
                               "{item.special_instructions}"
                             </div>
                           )}
                         </div>
-                        <div className="text-right">
-                          <div>{item.quantity} x {item.price.toFixed(2)} €</div>
-                          <div className="font-semibold">
+                        <div className="text-right min-w-[100px]">
+                          <div className="text-base">{item.quantity} x {item.price.toFixed(2)} €</div>
+                          <div className="font-semibold text-lg">
                             {(item.quantity * item.price).toFixed(2)} €
                           </div>
                         </div>
