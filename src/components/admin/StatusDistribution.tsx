@@ -19,7 +19,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const StatusDistribution = () => {
-  const [data, setData] = useState<{ name: string; value: number }[]>([]);
+  const [data, setData] = useState<{ name: string; value: number; status: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
