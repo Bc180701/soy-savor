@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { calculateDeliveryFee } from "@/services/deliveryService";
 
 interface SimulatedOrderItem {
   productId: string;
@@ -39,7 +40,13 @@ export const simulateOrder = async (): Promise<{ success: boolean; orderId?: str
     // Calculer les totaux
     const subtotal = simulatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const tax = subtotal * 0.1; // 10% de TVA
-    const deliveryFee = 2.99;
+    
+    // Randomly choose delivery or pickup
+    const orderType = Math.random() > 0.5 ? "delivery" : "pickup";
+    
+    // Calculate delivery fee based on subtotal
+    const deliveryFee = orderType === "delivery" ? calculateDeliveryFee(subtotal) : 0;
+    
     const total = subtotal + tax + deliveryFee;
 
     // Ajouter 30 minutes à l'heure actuelle pour la livraison prévue
@@ -54,12 +61,12 @@ export const simulateOrder = async (): Promise<{ success: boolean; orderId?: str
         tax,
         delivery_fee: deliveryFee,
         total,
-        order_type: "delivery",
+        order_type: orderType,
         payment_method: "credit-card",
         payment_status: "paid",
         status: "confirmed",
         scheduled_for: scheduledFor.toISOString(),
-        delivery_instructions: "Sonner à l'interphone et appeler si absence"
+        delivery_instructions: orderType === "delivery" ? "Sonner à l'interphone et appeler si absence" : null
       })
       .select('id')
       .single();

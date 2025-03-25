@@ -30,6 +30,30 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_locations: {
+        Row: {
+          city: string
+          created_at: string | null
+          id: number
+          is_active: boolean | null
+          postal_code: string
+        }
+        Insert: {
+          city: string
+          created_at?: string | null
+          id?: number
+          is_active?: boolean | null
+          postal_code: string
+        }
+        Update: {
+          city?: string
+          created_at?: string | null
+          id?: number
+          is_active?: boolean | null
+          postal_code?: string
+        }
+        Relationships: []
+      }
       delivery_zones: {
         Row: {
           available: boolean
