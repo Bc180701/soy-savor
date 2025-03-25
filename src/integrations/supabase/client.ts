@@ -54,3 +54,70 @@ export const fetchAllProducts = async () => {
   
   return data || [];
 };
+
+// Helper function to fetch order details
+export const fetchOrderWithDetails = async (orderId: string) => {
+  if (!orderId) {
+    console.error("No order ID provided");
+    return null;
+  }
+  
+  try {
+    // Fetch order with basic details
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
+      
+    if (orderError) throw orderError;
+    
+    // Fetch order items and associated products
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('order_items')
+      .select('*, products(*)')
+      .eq('order_id', orderId);
+      
+    if (itemsError) throw itemsError;
+    
+    // Fetch customer profile details
+    let customerDetails = null;
+    if (order.user_id) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', order.user_id)
+        .single();
+        
+      if (!profileError) {
+        customerDetails = profile;
+      }
+    }
+    
+    // Fetch delivery address if available
+    let addressDetails = null;
+    if (order.delivery_address_id) {
+      const { data: address, error: addressError } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('id', order.delivery_address_id)
+        .single();
+        
+      if (!addressError) {
+        addressDetails = address;
+      }
+    }
+    
+    // Return complete order details
+    return {
+      ...order,
+      order_items: orderItems,
+      customer: customerDetails,
+      delivery_address: addressDetails
+    };
+    
+  } catch (error) {
+    console.error("Error fetching order details:", error);
+    return null;
+  }
+};

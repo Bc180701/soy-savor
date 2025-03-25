@@ -78,8 +78,11 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
           .eq('id', fetchedOrder.user_id)
           .single();
           
-        if (!profileError) {
+        if (!profileError && profile) {
           setCustomerDetails(profile);
+          console.log("Profil client récupéré:", profile);
+        } else {
+          console.error("Erreur lors de la récupération du profil:", profileError);
         }
         
         // Récupérer l'adresse de livraison si disponible
@@ -90,8 +93,11 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
             .eq('id', fetchedOrder.delivery_address_id)
             .single();
             
-          if (!addressError) {
+          if (!addressError && address) {
             setAddressDetails(address);
+            console.log("Adresse récupérée:", address);
+          } else {
+            console.error("Erreur lors de la récupération de l'adresse:", addressError);
           }
         }
       }
@@ -275,6 +281,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                     <div>
                       {addressDetails ? (
                         <>
+                          <div className="font-medium">Adresse de livraison:</div>
                           <div>{addressDetails.street}</div>
                           <div>{addressDetails.postal_code} {addressDetails.city}</div>
                           {addressDetails.additional_info && (
@@ -296,8 +303,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                   {orderDetails.delivery_instructions && (
                     <div className="flex items-start gap-2">
                       <div className="w-4"></div>
-                      <div className="italic text-muted-foreground">
-                        Instructions de livraison: "{orderDetails.delivery_instructions}"
+                      <div>
+                        <div className="font-medium">Instructions de livraison:</div>
+                        <div className="italic text-muted-foreground">"{orderDetails.delivery_instructions}"</div>
                       </div>
                     </div>
                   )}
