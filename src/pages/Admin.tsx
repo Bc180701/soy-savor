@@ -1,81 +1,117 @@
+
 import { useEffect, useState } from "react";
-import { fetchAllProducts } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import OrderList from "@/components/OrderList";
+import DashboardStats from "@/components/admin/DashboardStats";
+import OrdersChart from "@/components/admin/OrdersChart";
+import StatusDistribution from "@/components/admin/StatusDistribution";
+import PopularProductsChart from "@/components/admin/PopularProductsChart";
 import { supabase } from "@/integrations/supabase/client";
 
 const Admin = () => {
-  const [products, setProducts] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
   useEffect(() => {
-    const loadProducts = async () => {
-      const productsData = await fetchAllProducts();
-      setProducts(productsData);
+    const checkAdminStatus = async () => {
+      try {
+        // Vérifier si l'utilisateur est connecté
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setIsAdmin(false);
+          setIsLoading(false);
+          toast({
+            title: "Accès non autorisé",
+            description: "Vous devez être connecté pour accéder à cette page.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Vérifier si l'utilisateur a le rôle d'administrateur
+        const { data, error } = await supabase.rpc(
+          'has_role',
+          { user_id: session.user.id, role: 'administrateur' }
+        );
+        
+        if (error) throw error;
+        
+        setIsAdmin(!!data);
+        
+        if (!data) {
+          toast({
+            title: "Accès non autorisé",
+            description: "Vous n'avez pas les droits d'administrateur pour accéder à cette page.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification du statut admin:", error);
+        setIsAdmin(false);
+        toast({
+          title: "Erreur",
+          description: "Impossible de vérifier vos droits d'accès.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
-    loadProducts();
-  }, []);
+
+    checkAdminStatus();
+  }, [toast]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-24 px-4 flex justify-center items-center min-h-screen">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto py-24 px-4 flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Accès Restreint</h1>
+          <p className="text-muted-foreground">
+            Vous n'avez pas les droits nécessaires pour accéder à cette page.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-24 px-4">
       <h1 className="text-3xl font-bold mb-8">Administration</h1>
       
-      <Tabs defaultValue="orders" className="w-full">
+      <Tabs defaultValue="dashboard" className="w-full">
         <TabsList className="mb-6">
+          <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
           <TabsTrigger value="orders">Commandes</TabsTrigger>
-          <TabsTrigger value="products">Produits</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="dashboard">
+          <div className="space-y-6">
+            <DashboardStats />
+            
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <OrdersChart />
+            </div>
+            
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <StatusDistribution />
+              <PopularProductsChart />
+            </div>
+          </div>
+        </TabsContent>
         
         <TabsContent value="orders">
           <OrderList />
-        </TabsContent>
-        
-        <TabsContent value="products">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Gestion des Produits</h2>
-            <p className="text-gray-600 mb-4">
-              {products.length} produits dans la base de données
-            </p>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 text-left border">Nom</th>
-                    <th className="p-2 text-left border">Description</th>
-                    <th className="p-2 text-left border">Prix</th>
-                    <th className="p-2 text-left border">Catégorie</th>
-                    <th className="p-2 text-left border">Populaire</th>
-                    <th className="p-2 text-left border">Image</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((product) => (
-                    <tr key={product.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2 border">{product.name}</td>
-                      <td className="p-2 border">{product.description || '-'}</td>
-                      <td className="p-2 border">{product.price.toFixed(2)} €</td>
-                      <td className="p-2 border">{product.categories?.name || product.category_id}</td>
-                      <td className="p-2 border">{product.is_best_seller ? 'Oui' : 'Non'}</td>
-                      <td className="p-2 border">
-                        {product.image_url ? (
-                          <img 
-                            src={product.image_url} 
-                            alt={product.name} 
-                            className="w-16 h-16 object-cover"
-                          />
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
