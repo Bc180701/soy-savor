@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -96,10 +95,10 @@ const Admin = () => {
         </TabsList>
         
         <TabsContent value="dashboard">
-          <div className="space-y-8">
+          <div className="space-y-12">
             <DashboardStats />
             
-            <div className="w-full mb-8">
+            <div className="w-full">
               <OrdersChart />
             </div>
             

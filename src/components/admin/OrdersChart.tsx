@@ -59,15 +59,15 @@ const OrdersChart = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[250px] items-center justify-center">
+          <div className="flex h-[200px] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : data.length === 0 ? (
-          <div className="flex h-[250px] items-center justify-center">
+          <div className="flex h-[200px] items-center justify-center">
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[250px]">
+          <div className="h-[200px]">
             <ChartContainer 
               config={{
                 orders: {
@@ -81,12 +81,16 @@ const OrdersChart = () => {
               }}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={formatData(data)} margin={{ top: 5, right: 45, left: 5, bottom: 5 }}>
+                <AreaChart 
+                  data={formatData(data)} 
+                  margin={{ top: 5, right: 50, left: 5, bottom: 15 }}
+                >
                   <XAxis 
                     dataKey="date" 
                     axisLine={{ strokeWidth: 1 }}
                     tickLine={false}
                     fontSize={10}
+                    dy={10}
                   />
                   {/* Primary Y-axis for orders */}
                   <YAxis 
@@ -108,7 +112,7 @@ const OrdersChart = () => {
                     axisLine={{ strokeWidth: 1 }}
                     tickLine={false}
                     fontSize={10}
-                    width={45}
+                    width={50}
                   />
                   <Area
                     type="monotone"
