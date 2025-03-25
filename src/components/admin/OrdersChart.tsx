@@ -53,21 +53,21 @@ const OrdersChart = () => {
   };
 
   return (
-    <Card className="col-span-full">
-      <CardHeader>
-        <CardTitle>Évolution des commandes et revenus (7 derniers jours)</CardTitle>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">Évolution des commandes et revenus (7 derniers jours)</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[300px] items-center justify-center">
+          <div className="flex h-[220px] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : data.length === 0 ? (
-          <div className="flex h-[300px] items-center justify-center">
+          <div className="flex h-[220px] items-center justify-center">
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[300px]">
+          <div className="h-[220px]">
             <ChartContainer 
               config={{
                 orders: {
@@ -86,6 +86,7 @@ const OrdersChart = () => {
                     dataKey="date" 
                     axisLine={{ strokeWidth: 1 }}
                     tickLine={false}
+                    fontSize={10}
                   />
                   {/* Primary Y-axis for orders */}
                   <YAxis 
@@ -95,6 +96,8 @@ const OrdersChart = () => {
                     domain={getOrdersYAxisDomain()}
                     axisLine={{ strokeWidth: 1 }}
                     tickLine={false}
+                    fontSize={10}
+                    width={25}
                   />
                   {/* Secondary Y-axis for revenue */}
                   <YAxis 
@@ -104,6 +107,8 @@ const OrdersChart = () => {
                     domain={getRevenueYAxisDomain()}
                     axisLine={{ strokeWidth: 1 }}
                     tickLine={false}
+                    fontSize={10}
+                    width={40}
                   />
                   <Area
                     type="monotone"
