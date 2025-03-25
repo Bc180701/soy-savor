@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
-import { calculateDeliveryFee, getDeliveryLocations } from "@/services/deliveryService";
+import { Truck, InfoIcon } from "lucide-react";
+import { calculateDeliveryFee, getDeliveryLocations, checkPostalCodeDelivery } from "@/services/deliveryService";
 
 interface DeliveryMethodProps {
   subtotal: number;
@@ -54,7 +54,10 @@ const DeliveryMethod = ({ subtotal, onMethodChange }: DeliveryMethodProps) => {
         <div className="flex items-start space-x-2 p-3 border rounded-md hover:bg-gray-50">
           <RadioGroupItem value="delivery" id="delivery" className="mt-1" />
           <div className="flex-1">
-            <Label htmlFor="delivery" className="font-medium">Livraison à domicile</Label>
+            <div className="flex items-center">
+              <Label htmlFor="delivery" className="font-medium">Livraison à domicile</Label>
+              <Truck className="h-4 w-4 ml-2 text-akane-600" />
+            </div>
             <p className="text-sm text-gray-500 mt-1">
               Nous livrons votre commande à votre adresse
             </p>
@@ -78,8 +81,8 @@ const DeliveryMethod = ({ subtotal, onMethodChange }: DeliveryMethodProps) => {
           <AlertDescription>
             {locations.length > 0 ? (
               <>
-                <p className="font-medium">Zones de livraison disponibles :</p>
-                <ul className="mt-1 text-sm list-disc list-inside">
+                <p className="font-medium mb-2">Zones de livraison disponibles :</p>
+                <ul className="mt-1 text-sm list-disc list-inside grid grid-cols-1 md:grid-cols-2 gap-1">
                   {locations.map((loc, index) => (
                     <li key={index}>{loc.city} ({loc.postalCode})</li>
                   ))}
