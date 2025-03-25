@@ -207,7 +207,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      {customerDetails?.first_name} {customerDetails?.last_name || 'Non renseigné'}
+                      {customerDetails?.first_name && customerDetails?.last_name
+                        ? `${customerDetails.first_name} ${customerDetails.last_name}`
+                        : 'Non renseigné'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
