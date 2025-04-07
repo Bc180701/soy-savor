@@ -105,17 +105,17 @@ const Index = () => {
     {
       title: "Livraison",
       description: "Livraison à domicile dans notre zone de chalandise",
-      icon: <Truck className="w-8 h-8 text-akane-600" />,
+      icon: <Truck className="w-8 h-8 text-gold-600" />,
     },
     {
       title: "À emporter",
       description: "Commandez et récupérez en restaurant",
-      icon: <ShoppingBag className="w-8 h-8 text-akane-600" />,
+      icon: <ShoppingBag className="w-8 h-8 text-gold-600" />,
     },
     {
       title: "Sur place",
       description: "Profitez de votre repas dans notre restaurant",
-      icon: <Users className="w-8 h-8 text-akane-600" />,
+      icon: <Users className="w-8 h-8 text-gold-600" />,
     },
   ];
 
@@ -204,7 +204,7 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-2 text-white">
               <Clock className="h-5 w-5 text-gold-500" />
-              <span>Mardi - Dimanche: 11h-14h & 18h-22h</span>
+              <span>Mardi - Dimanche: 11h-14h30 & 18h30-22h30</span>
             </div>
             <div>
               <Button asChild variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
@@ -236,7 +236,7 @@ const Index = () => {
                 <div className="flex flex-col md:flex-row h-full">
                   <div className="md:w-1/2 bg-cover bg-center h-64 md:h-auto" style={{ backgroundImage: `url(${promo.imageUrl})` }}></div>
                   <div className="md:w-1/2 bg-white p-8 flex flex-col justify-center">
-                    <Badge variant="outline" className="w-fit mb-3 bg-akane-50 text-akane-700 border-akane-200">
+                    <Badge variant="outline" className="w-fit mb-3 bg-gold-50 text-gold-700 border-gold-200">
                       Offre spéciale
                     </Badge>
                     <h3 className="text-2xl font-bold mb-3">{promo.title}</h3>
@@ -256,7 +256,7 @@ const Index = () => {
                 <button
                   key={index}
                   className={`w-2 h-2 rounded-full transition-colors ${
-                    index === activePromotion ? "bg-akane-600" : "bg-gray-300"
+                    index === activePromotion ? "bg-gold-600" : "bg-gray-300"
                   }`}
                   onClick={() => setActivePromotion(index)}
                   aria-label={`Go to slide ${index + 1}`}
@@ -294,7 +294,7 @@ const Index = () => {
                   <h3 className="font-bold text-xl mb-2">{item.name}</h3>
                   <p className="text-gray-600 text-sm mb-4">{item.description}</p>
                   <div className="flex justify-between items-center">
-                    <span className="text-akane-600 font-bold">{item.price.toFixed(2)} €</span>
+                    <span className="text-gold-600 font-bold">{item.price.toFixed(2)} €</span>
                     <Button asChild size="sm" variant="outline">
                       <Link to="/commander">Commander</Link>
                     </Button>
@@ -305,7 +305,7 @@ const Index = () => {
           </div>
 
           <div className="mt-12 text-center">
-            <Button asChild className="bg-akane-600 hover:bg-akane-700 text-white">
+            <Button asChild className="bg-gold-600 hover:bg-gold-700 text-white">
               <Link to="/menu">Voir toute notre carte</Link>
             </Button>
           </div>
