@@ -227,7 +227,7 @@ const Panier = () => {
                 <p className="text-gray-600 mb-6">
                   Vous n'avez pas encore ajouté d'articles à votre panier
                 </p>
-                <Button asChild className="bg-akane-600 hover:bg-akane-700">
+                <Button asChild className="bg-gold-600 hover:bg-gold-700">
                   <Link to="/commander">
                     Découvrir notre menu
                   </Link>
@@ -256,7 +256,7 @@ const Panier = () => {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-lg font-medium">{item.menuItem.name}</h3>
-                                <p className="text-akane-600 font-semibold mt-1">
+                                <p className="text-gold-600 font-semibold mt-1">
                                   {item.menuItem.price.toFixed(2)} €
                                 </p>
                               </div>
@@ -355,7 +355,11 @@ const Panier = () => {
                     <div>
                       <h4 className="text-lg font-medium">Horaire</h4>
                       <p className="mt-1">
-                        {orderType === "delivery" ? "Livraison prévue à " : "Retrait prévu à "} {deliveryTime}
+                        {orderType === "delivery" ? 
+                          deliveryTime === "Offerts" ? 
+                            "Livraison prévue à " : 
+                            `Livraison prévue à ${deliveryTime}` : 
+                          "Retrait prévu à " + deliveryTime}
                       </p>
                     </div>
                     
@@ -380,7 +384,7 @@ const Panier = () => {
                   
                   {currentStep === CheckoutStep.PAYMENT ? (
                     <Button 
-                      className="bg-akane-600 hover:bg-akane-700"
+                      className="bg-gold-600 hover:bg-gold-700"
                       onClick={handleCheckout}
                       disabled={isProcessing}
                     >
@@ -390,7 +394,7 @@ const Panier = () => {
                     <Button
                       onClick={goToNextStep}
                       disabled={isNextButtonDisabled()}
-                      className="bg-akane-600 hover:bg-akane-700"
+                      className="bg-gold-600 hover:bg-gold-700"
                     >
                       Continuer <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
@@ -432,7 +436,7 @@ const Panier = () => {
                 {currentStep === CheckoutStep.CART && (
                   <CardFooter>
                     <Button 
-                      className="w-full bg-akane-600 hover:bg-akane-700"
+                      className="w-full bg-gold-600 hover:bg-gold-700"
                       onClick={goToNextStep}
                       disabled={cart.items.length === 0}
                     >

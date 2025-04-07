@@ -30,7 +30,7 @@ const MobileCategorySelector = ({
                 onClick={() => onCategoryChange(category.id)}
                 className={`whitespace-nowrap px-4 py-2 rounded-md transition-colors ${
                   activeCategory === category.id
-                    ? "bg-akane-600 text-white"
+                    ? "bg-gold-600 text-white"
                     : "bg-gray-100 hover:bg-gray-200"
                 }`}
               >

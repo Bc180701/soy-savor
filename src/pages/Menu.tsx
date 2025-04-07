@@ -46,7 +46,7 @@ const Menu = () => {
   if (isLoading) {
     return (
       <div className="container mx-auto py-24 px-4 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-akane-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-gold-600" />
         <span className="ml-2">Chargement du menu...</span>
       </div>
     );
@@ -77,7 +77,7 @@ const Menu = () => {
                         onClick={() => setActiveCategory(category.id)}
                         className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
                           activeCategory === category.id
-                            ? "bg-akane-600 text-white"
+                            ? "bg-gold-600 text-white"
                             : "hover:bg-gray-100"
                         }`}
                       >
@@ -127,11 +127,11 @@ const Menu = () => {
                                 )}
                               </div>
                               <div className="flex flex-col items-end">
-                                <span className="font-semibold text-akane-600">
+                                <span className="font-semibold text-gold-600">
                                   {item.price.toFixed(2)} €
                                 </span>
                                 {item.isBestSeller && (
-                                  <Badge className="bg-akane-600 mt-2">Populaire</Badge>
+                                  <Badge className="bg-gold-600 mt-2">Populaire</Badge>
                                 )}
                               </div>
                             </div>

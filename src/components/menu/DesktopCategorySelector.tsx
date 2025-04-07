@@ -25,7 +25,7 @@ const DesktopCategorySelector = ({
                   onClick={() => onCategoryChange(category.id)}
                   className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
                     activeCategory === category.id
-                      ? "bg-akane-600 text-white"
+                      ? "bg-gold-600 text-white"
                       : "hover:bg-gray-100"
                   }`}
                 >
