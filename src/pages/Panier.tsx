@@ -115,6 +115,7 @@ const Panier = () => {
       scheduledFor: orderDate,
       clientName: deliveryAddress?.name,
       clientPhone: deliveryAddress?.phone,
+      clientEmail: deliveryAddress?.email,
       deliveryStreet: deliveryAddress?.street,
       deliveryCity: deliveryAddress?.city,
       deliveryPostalCode: deliveryAddress?.postalCode
@@ -153,14 +154,12 @@ const Panier = () => {
     }
   };
 
-  // Calculate total with the current delivery fee
   const calculateTotal = () => {
     const subtotal = cart.total;
     const tax = subtotal * 0.1; // 10% TVA
     return subtotal + tax + deliveryFee;
   };
 
-  // Function to proceed to next step
   const goToNextStep = () => {
     if (currentStep === CheckoutStep.CART) {
       setCurrentStep(CheckoutStep.DELIVERY_METHOD);
@@ -175,7 +174,6 @@ const Panier = () => {
     }
   };
 
-  // Function to go back to previous step
   const goToPreviousStep = () => {
     if (currentStep === CheckoutStep.DELIVERY_METHOD) {
       setCurrentStep(CheckoutStep.CART);
@@ -192,14 +190,12 @@ const Panier = () => {
     }
   };
 
-  // Reset delivery address if order type changes
   useEffect(() => {
     if (orderType === "pickup") {
       setDeliveryAddress(null);
     }
   }, [orderType]);
 
-  // Disable next button conditions
   const isNextButtonDisabled = () => {
     if (currentStep === CheckoutStep.CART) {
       return cart.items.length === 0;
@@ -350,6 +346,7 @@ const Panier = () => {
                           <p>{deliveryAddress.street}</p>
                           <p>{deliveryAddress.postalCode} {deliveryAddress.city}</p>
                           <p>Tél: {deliveryAddress.phone}</p>
+                          <p>Email: {deliveryAddress.email}</p>
                           {deliveryAddress.instructions && (
                             <p className="mt-1 text-sm italic">Instructions: {deliveryAddress.instructions}</p>
                           )}

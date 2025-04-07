@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem, Order } from "@/types";
 
@@ -20,7 +19,7 @@ export interface CreateOrderParams {
   pickupTime?: string;
   contactPreference?: string;
   allergies?: string[];
-  // Nouvelles informations de contact client
+  // Informations de contact client
   clientName?: string;
   clientPhone?: string;
   clientEmail?: string;
@@ -58,7 +57,7 @@ export const createOrder = async (params: CreateOrderParams): Promise<{ success:
         pickup_time: params.pickupTime,
         contact_preference: params.contactPreference,
         allergies: params.allergies,
-        // Ajout des nouveaux champs
+        // Ajout des champs
         client_name: params.clientName,
         client_phone: params.clientPhone,
         client_email: params.clientEmail,
@@ -232,7 +231,6 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
       pickupTime: order.pickup_time || undefined,
       contactPreference: order.contact_preference || undefined,
       allergies: order.allergies || undefined,
-      // Ajout des nouveaux champs
       clientName: order.client_name || undefined,
       clientPhone: order.client_phone || undefined,
       clientEmail: order.client_email || undefined,

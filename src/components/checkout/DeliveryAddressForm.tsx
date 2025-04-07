@@ -16,6 +16,7 @@ const formSchema = z.object({
   city: z.string().min(2, { message: "La ville doit contenir au moins 2 caractères" }),
   postalCode: z.string().min(5, { message: "Le code postal doit contenir 5 caractères" }),
   phone: z.string().min(10, { message: "Le numéro de téléphone doit contenir au moins 10 caractères" }),
+  email: z.string().email({ message: "Format d'email invalide" }),
   instructions: z.string().optional(),
 });
 
@@ -38,6 +39,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       city: "",
       postalCode: "",
       phone: "",
+      email: "",
       instructions: "",
     },
   });
@@ -141,19 +143,35 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Téléphone</FormLabel>
-                <FormControl>
-                  <Input placeholder="06 12 34 56 78" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Téléphone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="06 12 34 56 78" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Adresse e-mail</FormLabel>
+                  <FormControl>
+                    <Input placeholder="exemple@email.com" type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}
