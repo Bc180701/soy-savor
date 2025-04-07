@@ -23,8 +23,8 @@ const NotFound = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-9xl font-bold text-akane-600">404</h1>
-          <div className="w-16 h-1 bg-akane-600 mx-auto my-6"></div>
+          <h1 className="text-9xl font-bold text-gold-600">404</h1>
+          <div className="w-16 h-1 bg-gold-600 mx-auto my-6"></div>
           <h2 className="text-2xl font-medium text-gray-900 mb-4">
             Page introuvable
           </h2>
@@ -32,12 +32,12 @@ const NotFound = () => {
             Désolé, la page que vous recherchez n'existe pas ou a été déplacée.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild className="bg-akane-600 hover:bg-akane-700">
+            <Button asChild className="bg-gold-600 hover:bg-gold-700">
               <Link to="/">
                 <Home className="mr-2 h-4 w-4" /> Retour à l'accueil
               </Link>
             </Button>
-            <Button asChild variant="outline" className="border-akane-200 text-akane-600 hover:bg-akane-50">
+            <Button asChild variant="outline" className="border-gold-200 text-gold-600 hover:bg-gold-50">
               <Link to="/menu">
                 Voir notre menu
               </Link>

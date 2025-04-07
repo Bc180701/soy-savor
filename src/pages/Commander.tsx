@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
@@ -46,7 +45,7 @@ const Commander = () => {
     if (categories.length === 0) {
       fetchMenuData();
     }
-  }, [toast]); // Suppression de la dépendance activeCategory
+  }, [toast]);
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
@@ -60,7 +59,7 @@ const Commander = () => {
   if (isLoading) {
     return (
       <div className="container mx-auto py-24 px-4 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-akane-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-gold-600" />
         <span className="ml-2">Chargement du menu...</span>
       </div>
     );

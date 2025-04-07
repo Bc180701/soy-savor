@@ -16,7 +16,6 @@ const Admin = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        // Vérifier si l'utilisateur est connecté
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -30,7 +29,6 @@ const Admin = () => {
           return;
         }
         
-        // Vérifier si l'utilisateur a le rôle d'administrateur
         const { data, error } = await supabase.rpc(
           'has_role',
           { user_id: session.user.id, role: 'administrateur' }
