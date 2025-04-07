@@ -50,7 +50,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                             </Badge>
                           )}
                           {item.isSpicy && (
-                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                            <Badge variant="outline" className="bg-gold-50 text-gold-700 border-gold-200">
                               Épicé
                             </Badge>
                           )}
@@ -72,14 +72,14 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                         </div>
                       </div>
                       <div className="flex flex-col items-end">
-                        <Badge className="bg-akane-600">
+                        <Badge className="bg-gold-500">
                           {item.price.toFixed(2)} €
                         </Badge>
                       </div>
                     </div>
                     <Button 
                       onClick={() => onAddToCart(item)} 
-                      className="mt-4 bg-akane-600 hover:bg-akane-700 w-full md:w-auto self-end float-right"
+                      className="mt-4 bg-gold-500 hover:bg-gold-600 w-full md:w-auto self-end float-right"
                     >
                       <PlusCircle className="mr-2 h-4 w-4" /> Ajouter au panier
                     </Button>
