@@ -156,12 +156,18 @@ export type Database = {
       orders: {
         Row: {
           allergies: string[] | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
           contact_preference: string | null
           created_at: string | null
           customer_notes: string | null
           delivery_address_id: string | null
+          delivery_city: string | null
           delivery_fee: number
           delivery_instructions: string | null
+          delivery_postal_code: string | null
+          delivery_street: string | null
           discount: number | null
           id: string
           order_type: string
@@ -179,12 +185,18 @@ export type Database = {
         }
         Insert: {
           allergies?: string[] | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
           contact_preference?: string | null
           created_at?: string | null
           customer_notes?: string | null
           delivery_address_id?: string | null
+          delivery_city?: string | null
           delivery_fee: number
           delivery_instructions?: string | null
+          delivery_postal_code?: string | null
+          delivery_street?: string | null
           discount?: number | null
           id?: string
           order_type: string
@@ -202,12 +214,18 @@ export type Database = {
         }
         Update: {
           allergies?: string[] | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
           contact_preference?: string | null
           created_at?: string | null
           customer_notes?: string | null
           delivery_address_id?: string | null
+          delivery_city?: string | null
           delivery_fee?: number
           delivery_instructions?: string | null
+          delivery_postal_code?: string | null
+          delivery_street?: string | null
           discount?: number | null
           id?: string
           order_type?: string
