@@ -104,7 +104,7 @@ const Contact = () => {
             <div className="space-y-6">
               {contactInfo.map((info, index) => (
                 <div key={index} className="flex items-start">
-                  <div className="mt-1 mr-4 bg-akane-100 p-2 rounded-full text-akane-600">
+                  <div className="mt-1 mr-4 bg-gold-100 p-2 rounded-full text-gold-600">
                     <info.icon className="h-5 w-5" />
                   </div>
                   <div>
@@ -188,7 +188,7 @@ const Contact = () => {
                   />
                   <Button 
                     type="submit" 
-                    className="w-full bg-akane-600 hover:bg-akane-700"
+                    className="w-full bg-gold-600 hover:bg-gold-700"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
