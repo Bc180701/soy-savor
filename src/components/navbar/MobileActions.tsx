@@ -1,0 +1,41 @@
+
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Menu, X, ShoppingCart } from "lucide-react";
+import { useCart } from "@/hooks/use-cart";
+
+interface MobileActionsProps {
+  isOpen: boolean;
+  toggleMenu: () => void;
+}
+
+const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
+  const cart = useCart();
+  
+  return (
+    <div className="md:hidden flex items-center">
+      <Link to="/panier" className="mr-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-gray-800 relative"
+        >
+          <ShoppingCart size={20} />
+          <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-gold-500 text-black rounded-full text-xs">
+            {cart.itemCount || 0}
+          </span>
+        </Button>
+      </Link>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleMenu}
+        className="relative z-20 text-gray-800"
+      >
+        {isOpen ? <X size={24} /> : <Menu size={24} />}
+      </Button>
+    </div>
+  );
+};
+
+export default MobileActions;
