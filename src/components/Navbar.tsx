@@ -106,10 +106,13 @@ const Navbar = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
-            className="text-2xl font-japanese font-bold"
+            className="flex items-center"
           >
-            <span className="text-akane-600">Sushi</span>
-            <span className="text-black">Eats</span>
+            <img 
+              src="/lovable-uploads/80663134-a018-4c55-8a81-5ee048c700e3.png" 
+              alt="SushiEats Logo" 
+              className="h-12 w-auto"
+            />
           </motion.div>
         </Link>
 
@@ -121,13 +124,13 @@ const Navbar = () => {
               to={link.path}
               className={`text-sm font-medium relative overflow-hidden group ${
                 location.pathname === link.path
-                  ? "text-akane-600"
-                  : "text-gray-800 hover:text-akane-600"
+                  ? "text-gold-500"
+                  : "text-gray-800 hover:text-gold-500"
               }`}
             >
               {link.name}
               <motion.span
-                className="absolute bottom-0 left-0 w-full h-0.5 bg-akane-600 transform scale-x-0 origin-left transition-transform duration-300 group-hover:scale-x-100"
+                className="absolute bottom-0 left-0 w-full h-0.5 bg-gold-500 transform scale-x-0 origin-left transition-transform duration-300 group-hover:scale-x-100"
                 initial={false}
                 animate={
                   location.pathname === link.path ? { scaleX: 1 } : { scaleX: 0 }
@@ -146,7 +149,7 @@ const Navbar = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-800 hover:text-akane-600 hover:bg-gray-100"
+                  className="text-gray-800 hover:text-gold-500 hover:bg-gray-100"
                 >
                   <User size={20} />
                 </Button>
@@ -154,7 +157,7 @@ const Navbar = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-gray-800 hover:text-akane-600 hover:bg-gray-100"
+                className="text-gray-800 hover:text-gold-500 hover:bg-gray-100"
                 onClick={handleLogout}
               >
                 <LogOut size={20} />
@@ -162,7 +165,7 @@ const Navbar = () => {
             </>
           ) : (
             <Link to="/login">
-              <Button className="bg-white text-akane-600 border border-akane-200 hover:bg-gray-50">
+              <Button className="bg-white text-black border border-gold-200 hover:bg-gray-50">
                 Se connecter
               </Button>
             </Link>
@@ -171,16 +174,16 @@ const Navbar = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="text-gray-800 hover:text-akane-600 hover:bg-gray-100 relative"
+              className="text-gray-800 hover:text-gold-500 hover:bg-gray-100 relative"
             >
               <ShoppingCart size={20} />
-              <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-akane-600 text-white rounded-full text-xs">
+              <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-gold-500 text-black rounded-full text-xs">
                 {cart.itemCount || 0}
               </span>
             </Button>
           </Link>
           <Link to="/commander">
-            <Button className="bg-akane-600 hover:bg-akane-700 text-white">
+            <Button className="bg-gold-500 hover:bg-gold-600 text-black">
               Commander
             </Button>
           </Link>
@@ -195,7 +198,7 @@ const Navbar = () => {
               className="text-gray-800 relative"
             >
               <ShoppingCart size={20} />
-              <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-akane-600 text-white rounded-full text-xs">
+              <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-gold-500 text-black rounded-full text-xs">
                 {cart.itemCount || 0}
               </span>
             </Button>
@@ -229,7 +232,7 @@ const Navbar = () => {
                     to={link.path}
                     className={`text-xl py-3 border-b border-gray-100 ${
                       location.pathname === link.path
-                        ? "text-akane-600 font-medium"
+                        ? "text-gold-500 font-medium"
                         : "text-gray-800"
                     }`}
                   >
@@ -245,7 +248,7 @@ const Navbar = () => {
                       Mon compte
                     </Link>
                     <Button
-                      className="text-xl py-3 justify-start border-b border-gray-100 text-gray-800 hover:text-akane-600 bg-transparent"
+                      className="text-xl py-3 justify-start border-b border-gray-100 text-gray-800 hover:text-gold-500 bg-transparent"
                       onClick={handleLogout}
                     >
                       Se déconnecter
@@ -260,7 +263,7 @@ const Navbar = () => {
                   </Link>
                 )}
                 <Link to="/commander" className="pt-4">
-                  <Button className="bg-akane-600 hover:bg-akane-700 text-white w-full py-6 text-lg">
+                  <Button className="bg-gold-500 hover:bg-gold-600 text-black w-full py-6 text-lg">
                     Commander maintenant
                   </Button>
                 </Link>

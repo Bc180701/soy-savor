@@ -10,10 +10,13 @@ const Footer = () => {
           {/* Logo et informations */}
           <div className="space-y-4">
             <Link to="/" className="inline-block">
-              <h3 className="text-2xl font-japanese font-bold">
-                <span className="text-akane-500">Sushi</span>
-                <span className="text-white">Eats</span>
-              </h3>
+              <div className="flex items-center">
+                <img 
+                  src="/lovable-uploads/80663134-a018-4c55-8a81-5ee048c700e3.png" 
+                  alt="SushiEats Logo" 
+                  className="h-12 w-auto"
+                />
+              </div>
             </Link>
             <p className="text-gray-400 text-sm mt-2">
               Découvrez l'art du sushi à Châteaurenard. Des produits frais préparés avec soin pour une expérience gourmande unique.
@@ -23,7 +26,7 @@ const Footer = () => {
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-akane-500 transition-colors"
+                className="text-gray-400 hover:text-gold-500 transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook size={20} />
@@ -32,7 +35,7 @@ const Footer = () => {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-akane-500 transition-colors"
+                className="text-gray-400 hover:text-gold-500 transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram size={20} />
@@ -41,7 +44,7 @@ const Footer = () => {
                 href="https://linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-akane-500 transition-colors"
+                className="text-gray-400 hover:text-gold-500 transition-colors"
                 aria-label="LinkedIn"
               >
                 <Linkedin size={20} />
@@ -89,7 +92,7 @@ const Footer = () => {
               <div>
                 <p className="mb-1">Mardi - Dimanche</p>
                 <p className="mb-1">11h - 14h | 18h - 22h</p>
-                <p className="text-akane-500">Fermé le lundi</p>
+                <p className="text-gold-400">Fermé le lundi</p>
               </div>
             </div>
           </div>

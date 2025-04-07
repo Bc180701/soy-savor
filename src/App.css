@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -12,10 +13,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em #FABE00);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em #FABE00);
 }
 
 @keyframes logo-spin {
@@ -40,3 +41,17 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Couleurs SushiEats */
+.sushieats-gold {
+  color: #FABE00;
+}
+
+.sushieats-bg-gold {
+  background-color: #FABE00;
+}
+
+.sushieats-border-gold {
+  border-color: #FABE00;
+}
+

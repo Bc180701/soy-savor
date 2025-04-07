@@ -92,6 +92,19 @@ export default {
 					900: '#6A2129',
 					950: '#41141B',
 				},
+				gold: {
+					50: '#FFFAEB',
+					100: '#FFF1C5',
+					200: '#FFE17A',
+					300: '#FFD13D',
+					400: '#FABE00',
+					500: '#E6AB00',
+					600: '#C48A00',
+					700: '#9C6A00',
+					800: '#7A5500',
+					900: '#624400',
+					950: '#3D2900',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -162,6 +175,7 @@ export default {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
 				'texture-paper': "url('/public/lovable-uploads/b86e2eb2-fc3f-446a-9f46-d6abb91e54cd.png')",
 				'texture-wood': "url('/public/lovable-uploads/c30dd633-dfec-4589-afdf-9cf0abf72049.png')",
+				'sushi-logo': "url('/public/lovable-uploads/80663134-a018-4c55-8a81-5ee048c700e3.png')",
 			},
 		}
 	},
