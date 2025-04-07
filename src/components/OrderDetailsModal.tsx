@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { fetchOrderWithDetails } from "@/integrations/supabase/client";
-import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare } from "lucide-react";
+import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
 
@@ -179,13 +179,16 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
           </DialogTitle>
           <DialogDescription>
             {orderDetails && (
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant={getStatusBadgeVariant(orderDetails.status)}>
-                  {translateStatus(orderDetails.status)}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  Créée le {formatDate(orderDetails.created_at)}
-                </span>
+              <div className="flex flex-col gap-1 mt-1">
+                <div className="flex items-center gap-2">
+                  <Badge variant={getStatusBadgeVariant(orderDetails.status)}>
+                    {translateStatus(orderDetails.status)}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>Commande passée le {formatDate(orderDetails.created_at)}</span>
+                </div>
               </div>
             )}
           </DialogDescription>
@@ -251,16 +254,22 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    Livraison prévue: {formatDate(orderDetails.scheduled_for)}
+                    {orderDetails.orderType === 'delivery' ? (
+                      <span>Livraison prévue: {formatDate(orderDetails.scheduled_for)}</span>
+                    ) : (
+                      <span>Retrait prévu: {formatDate(orderDetails.scheduled_for)}</span>
+                    )}
                   </div>
                   
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <div>Adresse de livraison</div>
-                      {getDeliveryAddress()}
+                  {orderDetails.orderType === 'delivery' && (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <div>Adresse de livraison</div>
+                        {getDeliveryAddress()}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
                   {orderDetails.delivery_instructions && (
                     <div className="flex flex-col pl-6">

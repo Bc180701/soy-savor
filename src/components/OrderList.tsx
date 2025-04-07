@@ -116,7 +116,7 @@ const OrderList = () => {
               {orders.map((order) => (
                 <tr key={order.id} className="border-b hover:bg-gray-50">
                   <td className="p-2 border">{order.id.substring(0, 8)}...</td>
-                  <td className="p-2 border">{formatDate(order.createdAt)}</td>
+                  <td className="p-2 border">{formatDate(order.scheduledFor)}</td>
                   <td className="p-2 border">
                     {order.orderType === 'delivery' ? 'Livraison' : 
                      order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}
