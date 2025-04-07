@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem, Order } from "@/types";
 
@@ -169,7 +170,7 @@ export const getOrdersByUser = async (): Promise<{ orders: Order[]; error?: stri
 
 export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string }> => {
   try {
-    // Utiliser une vérification explicite des données retournées
+    // Use explicit error handling for the database query
     const response = await supabase
       .from('orders')
       .select(`
