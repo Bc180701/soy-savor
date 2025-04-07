@@ -112,7 +112,12 @@ const Panier = () => {
       orderType: orderType,
       paymentMethod: "credit-card", // Par défaut
       deliveryInstructions: deliveryAddress?.instructions || undefined,
-      scheduledFor: orderDate
+      scheduledFor: orderDate,
+      clientName: deliveryAddress?.name,
+      clientPhone: deliveryAddress?.phone,
+      deliveryStreet: deliveryAddress?.street,
+      deliveryCity: deliveryAddress?.city,
+      deliveryPostalCode: deliveryAddress?.postalCode
     });
     
     if (result.success) {

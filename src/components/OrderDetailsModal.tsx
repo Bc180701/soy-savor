@@ -121,6 +121,54 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     return typeMap[type] || type;
   };
 
+  const getClientName = () => {
+    // Priorité aux nouvelles informations client
+    if (orderDetails?.client_name) return orderDetails.client_name;
+    if (customerDetails?.first_name && customerDetails?.last_name) {
+      return `${customerDetails.first_name} ${customerDetails.last_name}`;
+    }
+    return 'Non renseigné';
+  };
+
+  const getClientPhone = () => {
+    if (orderDetails?.client_phone) return orderDetails.client_phone;
+    return customerDetails?.phone || 'Téléphone non renseigné';
+  };
+
+  const getClientEmail = () => {
+    if (orderDetails?.client_email) return orderDetails.client_email;
+    return 'Email non disponible';
+  };
+
+  const getDeliveryAddress = () => {
+    // Vérifier d'abord si nous avons les informations de livraison directement dans l'ordre
+    if (orderDetails?.delivery_street) {
+      return (
+        <>
+          <div>{orderDetails.delivery_street}</div>
+          {orderDetails.delivery_postal_code && orderDetails.delivery_city && (
+            <div>{orderDetails.delivery_postal_code} {orderDetails.delivery_city}</div>
+          )}
+        </>
+      );
+    }
+    
+    // Sinon, utiliser les informations d'adresse stockées
+    if (addressDetails) {
+      return (
+        <>
+          <div>{addressDetails.street}</div>
+          <div>{addressDetails.postal_code} {addressDetails.city}</div>
+          {addressDetails.additional_info && (
+            <div className="text-sm text-muted-foreground">{addressDetails.additional_info}</div>
+          )}
+        </>
+      );
+    }
+    
+    return <div>Adresse non disponible</div>;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col">
@@ -156,17 +204,15 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    {customerDetails?.first_name && customerDetails?.last_name
-                      ? `${customerDetails.first_name} ${customerDetails.last_name}`
-                      : 'Non renseigné'}
+                    {getClientName()}
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>Email non disponible</span>
+                    <span>{getClientEmail()}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{customerDetails?.phone || 'Téléphone non renseigné'}</span>
+                    <span>{getClientPhone()}</span>
                   </div>
                 </div>
               </div>
@@ -211,16 +257,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <div>Adresse de livraison {addressDetails ? '' : 'non disponible'}</div>
-                      {addressDetails && (
-                        <>
-                          <div>{addressDetails.street}</div>
-                          <div>{addressDetails.postal_code} {addressDetails.city}</div>
-                          {addressDetails.additional_info && (
-                            <div className="text-sm text-muted-foreground">{addressDetails.additional_info}</div>
-                          )}
-                        </>
-                      )}
+                      <div>Adresse de livraison</div>
+                      {getDeliveryAddress()}
                     </div>
                   </div>
                   

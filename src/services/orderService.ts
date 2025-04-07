@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem, Order } from "@/types";
 
@@ -19,6 +20,13 @@ export interface CreateOrderParams {
   pickupTime?: string;
   contactPreference?: string;
   allergies?: string[];
+  // Nouvelles informations de contact client
+  clientName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  deliveryStreet?: string;
+  deliveryCity?: string;
+  deliveryPostalCode?: string;
 }
 
 export const createOrder = async (params: CreateOrderParams): Promise<{ success: boolean; orderId?: string; error?: string }> => {
@@ -49,7 +57,14 @@ export const createOrder = async (params: CreateOrderParams): Promise<{ success:
         customer_notes: params.customerNotes,
         pickup_time: params.pickupTime,
         contact_preference: params.contactPreference,
-        allergies: params.allergies
+        allergies: params.allergies,
+        // Ajout des nouveaux champs
+        client_name: params.clientName,
+        client_phone: params.clientPhone,
+        client_email: params.clientEmail,
+        delivery_street: params.deliveryStreet,
+        delivery_city: params.deliveryCity,
+        delivery_postal_code: params.deliveryPostalCode
       })
       .select('id')
       .single();
@@ -177,7 +192,13 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
         customer_notes,
         pickup_time,
         contact_preference,
-        allergies
+        allergies,
+        client_name,
+        client_phone,
+        client_email,
+        delivery_street,
+        delivery_city,
+        delivery_postal_code
       `)
       .order('created_at', { ascending: false });
 
@@ -208,6 +229,13 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
       pickupTime: order.pickup_time || undefined,
       contactPreference: order.contact_preference || undefined,
       allergies: order.allergies || undefined,
+      // Ajout des nouveaux champs
+      clientName: order.client_name || undefined,
+      clientPhone: order.client_phone || undefined,
+      clientEmail: order.client_email || undefined,
+      deliveryStreet: order.delivery_street || undefined,
+      deliveryCity: order.delivery_city || undefined,
+      deliveryPostalCode: order.delivery_postal_code || undefined,
       items: [] // Nous allons les récupérer séparément
     }));
 
