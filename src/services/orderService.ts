@@ -170,7 +170,8 @@ export const getOrdersByUser = async (): Promise<{ orders: Order[]; error?: stri
 
 export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string }> => {
   try {
-    const { data: orders, error } = await supabase
+    // Utiliser une vérification explicite des données retournées
+    const response = await supabase
       .from('orders')
       .select(`
         id,
@@ -201,11 +202,13 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
         delivery_postal_code
       `)
       .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error("Erreur lors de la récupération des commandes:", error);
-      return { orders: [], error: error.message };
+      
+    if (response.error) {
+      console.error("Erreur lors de la récupération des commandes:", response.error);
+      return { orders: [], error: response.error.message };
     }
+    
+    const orders = response.data || [];
 
     // Convertir les données Supabase au format de notre application
     const formattedOrders: Order[] = orders.map(order => ({
