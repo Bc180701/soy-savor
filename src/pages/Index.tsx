@@ -154,7 +154,7 @@ const Index = () => {
             transition={{ duration: 0.7, delay: 0.2 }}
           >
             <motion.span
-              className="inline-block mb-4 text-sm uppercase tracking-wider text-akane-400 bg-black/30 backdrop-blur-md py-1 px-3 rounded-full"
+              className="inline-block mb-4 text-sm uppercase tracking-wider text-gold-400 bg-black/30 backdrop-blur-md py-1 px-3 rounded-full"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.6 }}
@@ -168,7 +168,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.7 }}
             >
-              L'art du sushi à <span className="text-akane-500">Châteaurenard</span>
+              L'art du sushi à <span className="text-gold-500">Châteaurenard</span>
             </motion.h1>
 
             <motion.p
@@ -186,7 +186,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.9 }}
             >
-              <Button asChild className="bg-akane-600 hover:bg-akane-700 text-white py-6 px-8 text-base">
+              <Button asChild className="bg-gold-600 hover:bg-gold-700 text-white py-6 px-8 text-base">
                 <Link to="/commander">Commander maintenant</Link>
               </Button>
               <Button asChild variant="outline" className="bg-black/40 text-white border-white/20 hover:bg-black/60 hover:text-white py-6 px-8 text-base backdrop-blur-md">
@@ -199,11 +199,11 @@ const Index = () => {
         <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md py-4 border-t border-white/20">
           <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 text-white">
-              <MapPin className="h-5 w-5 text-akane-500" />
+              <MapPin className="h-5 w-5 text-gold-500" />
               <span>16 cours Carnot, 13160 Châteaurenard</span>
             </div>
             <div className="flex items-center gap-2 text-white">
-              <Clock className="h-5 w-5 text-akane-500" />
+              <Clock className="h-5 w-5 text-gold-500" />
               <span>Mardi - Dimanche: 11h-14h & 18h-22h</span>
             </div>
             <div>
@@ -333,7 +333,7 @@ const Index = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <div className="bg-akane-50 w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center">
+                <div className="bg-gold-50 w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center">
                   {option.icon}
                 </div>
                 <h3 className="font-bold text-xl mb-2">{option.title}</h3>
@@ -343,7 +343,7 @@ const Index = () => {
           </div>
 
           <div className="mt-16 text-center">
-            <Button asChild className="bg-akane-600 hover:bg-akane-700 text-white py-6 px-8 text-base">
+            <Button asChild className="bg-gold-600 hover:bg-gold-700 text-white py-6 px-8 text-base">
               <Link to="/commander">Commander maintenant</Link>
             </Button>
           </div>
@@ -362,7 +362,7 @@ const Index = () => {
             </div>
 
             <div className="bg-white rounded-xl shadow-md p-8">
-              <Alert className="mb-6 bg-akane-50 text-akane-700 border-akane-200">
+              <Alert className="mb-6 bg-gold-50 text-gold-700 border-gold-200">
                 <AlertDescription>
                   Livraison offerte à partir de 30€ de commande, sinon 3€ de frais de livraison.
                 </AlertDescription>
@@ -371,7 +371,7 @@ const Index = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {deliveryZones.map((zone, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-akane-600" />
+                    <MapPin className="h-4 w-4 text-gold-600" />
                     <span>{zone}</span>
                   </div>
                 ))}
@@ -388,7 +388,7 @@ const Index = () => {
       </section>
 
       {/* Réservation CTA */}
-      <section className="py-16 bg-akane-600 text-white">
+      <section className="py-16 bg-gold-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold mb-4">Envie de déguster sur place ?</h2>
           <p className="mb-8 max-w-xl mx-auto">
