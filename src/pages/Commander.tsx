@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
@@ -6,9 +7,12 @@ import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getMenuData } from "@/services/productService";
+import { updateAllProductImages } from "@/services/imageService";
 import MobileCategorySelector from "@/components/menu/MobileCategorySelector";
 import DesktopCategorySelector from "@/components/menu/DesktopCategorySelector";
 import CategoryContent from "@/components/menu/CategoryContent";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 const Commander = () => {
   const { toast } = useToast();
@@ -17,6 +21,7 @@ const Commander = () => {
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingImages, setIsUpdatingImages] = useState(false);
 
   useEffect(() => {
     const fetchMenuData = async () => {
@@ -45,7 +50,38 @@ const Commander = () => {
     if (categories.length === 0) {
       fetchMenuData();
     }
-  }, [toast]);
+  }, [toast, activeCategory]);
+
+  const handleUpdateImages = async () => {
+    setIsUpdatingImages(true);
+    try {
+      const success = await updateAllProductImages();
+      if (success) {
+        toast({
+          title: "Images mises à jour",
+          description: "Les images des produits ont été mises à jour avec succès.",
+        });
+        // Rafraîchir les données du menu
+        const menuData = await getMenuData();
+        setCategories(menuData);
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la mise à jour des images.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error updating product images:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la mise à jour des images.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingImages(false);
+    }
+  };
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
@@ -73,7 +109,19 @@ const Commander = () => {
         transition={{ duration: 0.5 }}
         className="max-w-6xl mx-auto"
       >
-        <h1 className="text-4xl font-bold text-center mb-2">Commander</h1>
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-4xl font-bold">Commander</h1>
+          <Button 
+            onClick={handleUpdateImages}
+            disabled={isUpdatingImages}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className={`h-4 w-4 ${isUpdatingImages ? 'animate-spin' : ''}`} />
+            {isUpdatingImages ? 'Mise à jour...' : 'Actualiser les images'}
+          </Button>
+        </div>
         <p className="text-gray-600 text-center mb-12">
           Commandez en ligne et récupérez votre repas dans notre restaurant
         </p>
