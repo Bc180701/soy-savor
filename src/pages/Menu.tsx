@@ -10,7 +10,6 @@ import { Loader2 } from "lucide-react";
 import { getMenuData } from "@/services/productService";
 import { MenuCategory } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
-import { updateAllProductImages } from "@/services/imageService";
 
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState("");
@@ -22,10 +21,6 @@ const Menu = () => {
     const fetchMenuData = async () => {
       setIsLoading(true);
       try {
-        // D'abord mettre à jour les images
-        await updateAllProductImages();
-        
-        // Ensuite charger les données du menu
         const menuData = await getMenuData();
         setCategories(menuData);
         
@@ -65,9 +60,7 @@ const Menu = () => {
         transition={{ duration: 0.5 }}
         className="max-w-6xl mx-auto"
       >
-        <div className="mb-2">
-          <h1 className="text-4xl font-bold">Notre Menu</h1>
-        </div>
+        <h1 className="text-4xl font-bold text-center mb-2">Notre Menu</h1>
         <p className="text-gray-600 text-center mb-12">
           Découvrez nos spécialités japonaises préparées avec soin
         </p>
@@ -117,7 +110,7 @@ const Menu = () => {
                       <CardContent className="p-0">
                         <div className="flex flex-col md:flex-row">
                           {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                            <div className="w-full md:w-1/4 h-32 md:h-40 overflow-hidden">
+                            <div className="w-full md:w-1/4 h-32 overflow-hidden">
                               <img
                                 src={item.imageUrl}
                                 alt={item.name}
@@ -139,11 +132,6 @@ const Menu = () => {
                                 </span>
                                 {item.isBestSeller && (
                                   <Badge className="bg-gold-600 mt-2">Populaire</Badge>
-                                )}
-                                {item.isVegetarian && (
-                                  <Badge variant="outline" className="mt-2 border-wasabi-500 text-wasabi-700">
-                                    Végétarien
-                                  </Badge>
                                 )}
                               </div>
                             </div>

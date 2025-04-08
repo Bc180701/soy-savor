@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
@@ -7,7 +6,6 @@ import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getMenuData } from "@/services/productService";
-import { updateAllProductImages } from "@/services/imageService";
 import MobileCategorySelector from "@/components/menu/MobileCategorySelector";
 import DesktopCategorySelector from "@/components/menu/DesktopCategorySelector";
 import CategoryContent from "@/components/menu/CategoryContent";
@@ -24,10 +22,6 @@ const Commander = () => {
     const fetchMenuData = async () => {
       setIsLoading(true);
       try {
-        // D'abord mettre à jour les images
-        await updateAllProductImages();
-        
-        // Ensuite charger les données du menu
         const menuData = await getMenuData();
         setCategories(menuData);
         
@@ -47,8 +41,11 @@ const Commander = () => {
       }
     };
 
-    fetchMenuData();
-  }, [toast, activeCategory]);
+    // Seulement charger les données si les catégories sont vides
+    if (categories.length === 0) {
+      fetchMenuData();
+    }
+  }, [toast]);
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
@@ -76,9 +73,7 @@ const Commander = () => {
         transition={{ duration: 0.5 }}
         className="max-w-6xl mx-auto"
       >
-        <div className="flex justify-between items-center mb-2">
-          <h1 className="text-4xl font-bold">Commander</h1>
-        </div>
+        <h1 className="text-4xl font-bold text-center mb-2">Commander</h1>
         <p className="text-gray-600 text-center mb-12">
           Commandez en ligne et récupérez votre repas dans notre restaurant
         </p>
