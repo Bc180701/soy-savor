@@ -10,21 +10,22 @@ import { Loader2 } from "lucide-react";
 import { getMenuData } from "@/services/productService";
 import { MenuCategory } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 import { updateAllProductImages } from "@/services/imageService";
 
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUpdatingImages, setIsUpdatingImages] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
     const fetchMenuData = async () => {
       setIsLoading(true);
       try {
+        // D'abord mettre à jour les images
+        await updateAllProductImages();
+        
+        // Ensuite charger les données du menu
         const menuData = await getMenuData();
         setCategories(menuData);
         
@@ -47,37 +48,6 @@ const Menu = () => {
     fetchMenuData();
   }, [toast]);
 
-  const handleUpdateImages = async () => {
-    setIsUpdatingImages(true);
-    try {
-      const success = await updateAllProductImages();
-      if (success) {
-        toast({
-          title: "Images mises à jour",
-          description: "Les images des produits ont été mises à jour avec succès.",
-        });
-        // Rafraîchir les données du menu
-        const menuData = await getMenuData();
-        setCategories(menuData);
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors de la mise à jour des images.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Error updating product images:", error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la mise à jour des images.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdatingImages(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="container mx-auto py-24 px-4 flex justify-center items-center">
@@ -95,18 +65,8 @@ const Menu = () => {
         transition={{ duration: 0.5 }}
         className="max-w-6xl mx-auto"
       >
-        <div className="flex justify-between items-center mb-2">
+        <div className="mb-2">
           <h1 className="text-4xl font-bold">Notre Menu</h1>
-          <Button 
-            onClick={handleUpdateImages}
-            disabled={isUpdatingImages}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-          >
-            <RefreshCw className={`h-4 w-4 ${isUpdatingImages ? 'animate-spin' : ''}`} />
-            {isUpdatingImages ? 'Mise à jour...' : 'Actualiser les images'}
-          </Button>
         </div>
         <p className="text-gray-600 text-center mb-12">
           Découvrez nos spécialités japonaises préparées avec soin

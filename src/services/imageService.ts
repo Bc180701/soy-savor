@@ -3,7 +3,39 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { SushiCategory } from "@/types";
 
-// Liste d'URLs d'images cohérentes par catégorie
+// Liste d'URLs d'images spécifiques pour différents types de produits
+const productImageMapping: Record<string, string> = {
+  // Poke Bowls
+  "poke saumon": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1000&auto=format&fit=crop",
+  "poke thon": "https://images.unsplash.com/photo-1604259597308-5321e8c4ca24?q=80&w=1000&auto=format&fit=crop",
+  "poke veggie": "https://images.unsplash.com/photo-1607532941433-304659e8198a?q=80&w=1000&auto=format&fit=crop",
+  "poke crevette": "https://images.unsplash.com/photo-1626711934535-9749ea933747?q=80&w=1000&auto=format&fit=crop",
+  
+  // Sushi & Sashimi
+  "sushi saumon": "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1000&auto=format&fit=crop",
+  "sushi thon": "https://images.unsplash.com/photo-1617196034183-421b4917c92d?q=80&w=1000&auto=format&fit=crop",
+  "sushi crevette": "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
+  "sashimi saumon": "https://images.unsplash.com/photo-1534256958597-7fe685cbd745?q=80&w=1000&auto=format&fit=crop",
+  "sashimi thon": "https://images.unsplash.com/photo-1583623025817-d180a2221d0a?q=80&w=1000&auto=format&fit=crop",
+  
+  // Maki
+  "maki saumon": "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
+  "maki avocat": "https://images.unsplash.com/photo-1615361200141-f45040f367be?q=80&w=1000&auto=format&fit=crop",
+  "maki concombre": "https://images.unsplash.com/photo-1562802378-063ec186a863?q=80&w=1000&auto=format&fit=crop",
+  "california roll": "https://images.unsplash.com/photo-1617196034183-421b4917c92d?q=80&w=1000&auto=format&fit=crop",
+  
+  // Box et plateaux
+  "plateau": "https://images.unsplash.com/photo-1580822184713-fc5400e7fe10?q=80&w=1000&auto=format&fit=crop",
+  "box midi": "https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?q=80&w=1000&auto=format&fit=crop",
+  "box duo": "https://images.unsplash.com/photo-1596956470007-2bf6095e7e16?q=80&w=1000&auto=format&fit=crop",
+  
+  // Boissons et desserts
+  "mochi": "https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=1000&auto=format&fit=crop",
+  "thé vert": "https://images.unsplash.com/photo-1556881286-fc6915169721?q=80&w=1000&auto=format&fit=crop",
+  "bière japonaise": "https://images.unsplash.com/photo-1600788886242-5c96aabe3757?q=80&w=1000&auto=format&fit=crop"
+};
+
+// Liste d'URLs d'images par catégorie (fallback)
 const imagesByCategory: Record<SushiCategory, string[]> = {
   box: [
     "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
@@ -91,8 +123,19 @@ const imagesByCategory: Record<SushiCategory, string[]> = {
   ]
 };
 
-// Obtenir une image aléatoire pour une catégorie donnée
-export const getRandomImageForCategory = (category: SushiCategory): string => {
+// Obtenir une image en fonction du nom du produit ou de sa catégorie
+export const getImageForProduct = (productName: string, category: SushiCategory): string => {
+  // Convertir le nom du produit en minuscules pour la comparaison
+  const normalizedName = productName.toLowerCase();
+  
+  // Rechercher une correspondance exacte dans notre mapping
+  for (const [key, url] of Object.entries(productImageMapping)) {
+    if (normalizedName.includes(key)) {
+      return url;
+    }
+  }
+  
+  // Si aucune correspondance exacte, utiliser une image de la catégorie
   const images = imagesByCategory[category] || [];
   if (images.length === 0) {
     return "/placeholder.svg";
@@ -107,7 +150,7 @@ export const updateAllProductImages = async (): Promise<boolean> => {
     // D'abord récupérer tous les produits
     const { data: products, error: fetchError } = await supabase
       .from('products')
-      .select('id, category_id');
+      .select('id, name, category_id');
     
     if (fetchError || !products) {
       console.error("Erreur lors de la récupération des produits:", fetchError);
@@ -117,7 +160,7 @@ export const updateAllProductImages = async (): Promise<boolean> => {
     // Mettre à jour les images pour chaque produit
     for (const product of products) {
       const categoryId = product.category_id as SushiCategory;
-      const imageUrl = getRandomImageForCategory(categoryId);
+      const imageUrl = getImageForProduct(product.name, categoryId);
       
       const { error: updateError } = await supabase
         .from('products')
@@ -137,9 +180,9 @@ export const updateAllProductImages = async (): Promise<boolean> => {
 };
 
 // Mettre à jour l'image d'un produit spécifique
-export const updateProductImage = async (productId: string, category: SushiCategory): Promise<boolean> => {
+export const updateProductImage = async (productId: string, productName: string, category: SushiCategory): Promise<boolean> => {
   try {
-    const imageUrl = getRandomImageForCategory(category);
+    const imageUrl = getImageForProduct(productName, category);
     
     const { error } = await supabase
       .from('products')

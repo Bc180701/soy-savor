@@ -11,8 +11,6 @@ import { updateAllProductImages } from "@/services/imageService";
 import MobileCategorySelector from "@/components/menu/MobileCategorySelector";
 import DesktopCategorySelector from "@/components/menu/DesktopCategorySelector";
 import CategoryContent from "@/components/menu/CategoryContent";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 
 const Commander = () => {
   const { toast } = useToast();
@@ -21,12 +19,15 @@ const Commander = () => {
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUpdatingImages, setIsUpdatingImages] = useState(false);
 
   useEffect(() => {
     const fetchMenuData = async () => {
       setIsLoading(true);
       try {
+        // D'abord mettre à jour les images
+        await updateAllProductImages();
+        
+        // Ensuite charger les données du menu
         const menuData = await getMenuData();
         setCategories(menuData);
         
@@ -46,42 +47,8 @@ const Commander = () => {
       }
     };
 
-    // Seulement charger les données si les catégories sont vides
-    if (categories.length === 0) {
-      fetchMenuData();
-    }
+    fetchMenuData();
   }, [toast, activeCategory]);
-
-  const handleUpdateImages = async () => {
-    setIsUpdatingImages(true);
-    try {
-      const success = await updateAllProductImages();
-      if (success) {
-        toast({
-          title: "Images mises à jour",
-          description: "Les images des produits ont été mises à jour avec succès.",
-        });
-        // Rafraîchir les données du menu
-        const menuData = await getMenuData();
-        setCategories(menuData);
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors de la mise à jour des images.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Error updating product images:", error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la mise à jour des images.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdatingImages(false);
-    }
-  };
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
@@ -111,16 +78,6 @@ const Commander = () => {
       >
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-4xl font-bold">Commander</h1>
-          <Button 
-            onClick={handleUpdateImages}
-            disabled={isUpdatingImages}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1"
-          >
-            <RefreshCw className={`h-4 w-4 ${isUpdatingImages ? 'animate-spin' : ''}`} />
-            {isUpdatingImages ? 'Mise à jour...' : 'Actualiser les images'}
-          </Button>
         </div>
         <p className="text-gray-600 text-center mb-12">
           Commandez en ligne et récupérez votre repas dans notre restaurant
