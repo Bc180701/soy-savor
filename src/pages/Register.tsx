@@ -99,9 +99,12 @@ const Register = () => {
           description: error.message,
         });
       } else {
+        // Ne montrons pas le code ici, pour éviter la triche
+        let successMessage = "Vérifiez votre email pour confirmer votre compte et profitez de 10% de réduction sur votre prochaine commande!";
+        
         toast({
           title: "Inscription réussie",
-          description: "Vérifiez votre email pour confirmer votre compte et profitez de 10% de réduction sur votre prochaine commande!",
+          description: successMessage,
         });
         navigate("/login");
       }
@@ -134,12 +137,7 @@ const Register = () => {
             <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
             <h3 className="text-white text-xl font-bold mb-1">{promotion.title}</h3>
             <p className="text-white/90">{promotion.description}</p>
-            {promotion.code && (
-              <div className="mt-2 bg-white/20 p-2 rounded-md inline-block">
-                <span className="text-white font-medium">Code: </span>
-                <span className="text-white font-bold">{promotion.code}</span>
-              </div>
-            )}
+            {/* Le code de promotion est masqué intentionnellement */}
           </div>
         ) : (
           <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 p-4 rounded-lg shadow-lg text-center">

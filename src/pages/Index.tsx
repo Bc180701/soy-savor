@@ -1,16 +1,18 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, MapPin, Clock, Truck, ShoppingBag, Users } from "lucide-react";
+import { ChevronRight, MapPin, Clock, Truck, ShoppingBag, Users, BadgePercent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [activePromotion, setActivePromotion] = useState(0);
   const [isIntersecting, setIsIntersecting] = useState(false);
+  const [registerPromotion, setRegisterPromotion] = useState(null);
+  const [loadingPromotion, setLoadingPromotion] = useState(true);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -26,6 +28,28 @@ const Index = () => {
     const interval = setInterval(() => {
       setActivePromotion((prev) => (prev + 1) % promotions.length);
     }, 5000);
+
+    const fetchRegisterPromotion = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('promotions')
+          .select('*')
+          .eq('title', '-10% sur votre première commande')
+          .single();
+        
+        if (error) {
+          console.error("Erreur lors de la récupération de la promotion:", error);
+        } else {
+          setRegisterPromotion(data);
+        }
+      } catch (error) {
+        console.error("Erreur inattendue:", error);
+      } finally {
+        setLoadingPromotion(false);
+      }
+    };
+    
+    fetchRegisterPromotion();
 
     return () => {
       sections.forEach((section) => observer.unobserve(section));
@@ -264,6 +288,37 @@ const Index = () => {
               ))}
             </div>
           </div>
+
+          {/* Ajout de la bannière de promotion pour l'inscription */}
+          {!loadingPromotion && registerPromotion && (
+            <div className="mt-12 max-w-4xl mx-auto">
+              <div className="bg-gradient-to-r from-gold-500 to-gold-300 rounded-lg shadow-lg overflow-hidden">
+                <div className="relative">
+                  {registerPromotion.image_url ? (
+                    <img 
+                      src={registerPromotion.image_url}
+                      alt="Offre spéciale inscription" 
+                      className="w-full h-auto object-cover"
+                    />
+                  ) : (
+                    <div className="bg-gold-400 h-48 flex items-center justify-center">
+                      <BadgePercent className="w-20 h-20 text-white opacity-50" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6">
+                    <Badge className="bg-white text-gold-600 mb-2 self-start">OFFRE SPÉCIALE</Badge>
+                    <h3 className="text-white text-2xl font-bold mb-2">{registerPromotion.title}</h3>
+                    <p className="text-white/90 mb-4">{registerPromotion.description}</p>
+                    <Button asChild className="w-fit bg-white text-gold-600 hover:bg-white/90">
+                      <Link to="/register">
+                        Créer un compte <ChevronRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
