@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -53,7 +52,6 @@ const Index = () => {
     
     fetchRegisterPromotion();
 
-    // Vérifier si l'utilisateur est connecté
     const checkUser = async () => {
       const { data } = await supabase.auth.getSession();
       setUser(data.session?.user || null);
@@ -256,7 +254,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Promotions Carrousel - affiché seulement pour les utilisateurs non connectés */}
       {!user && (
         <section className="py-20 bg-white">
           <div className="container mx-auto px-4">
@@ -307,7 +304,6 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Bannière de promotion pour l'inscription - redesign en doré */}
             {!loadingPromotion && registerPromotion && (
               <div className="mt-12 max-w-4xl mx-auto">
                 <div className="rounded-lg shadow-lg overflow-hidden bg-gold-50 border border-gold-300">
@@ -324,7 +320,7 @@ const Index = () => {
                     </div>
                     <div className="md:w-1/2">
                       <img
-                        src="/public/lovable-uploads/e94446cb-ba03-42bd-a3bc-9562513a950e.png"
+                        src="https://img.freepik.com/free-photo/sushi-set-hot-rolls-avocado-california-salmon-rolls_141793-1279.jpg?t=st=1744876692~exp=1744880292~hmac=3b12a9326da6e322a4b26738c6708653d5983c480eccd6a510feac3bc90ae31a&w=1380"
                         alt="Promotion inscription"
                         className="w-full h-full object-cover"
                       />
@@ -337,7 +333,6 @@ const Index = () => {
         </section>
       )}
 
-      {/* Best Sellers */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -382,7 +377,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Commander CTA */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -420,7 +414,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Zones de livraison */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
@@ -457,7 +450,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Réservation CTA */}
       <section className="py-16 bg-gold-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold mb-4">Envie de déguster sur place ?</h2>
