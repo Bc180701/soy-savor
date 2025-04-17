@@ -289,31 +289,35 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Ajout de la bannière de promotion pour l'inscription */}
+          {/* Bannière de promotion pour l'inscription */}
           {!loadingPromotion && registerPromotion && (
             <div className="mt-12 max-w-4xl mx-auto">
-              <div className="bg-gradient-to-r from-gold-500 to-gold-300 rounded-lg shadow-lg overflow-hidden">
-                <div className="relative">
-                  {registerPromotion.image_url ? (
-                    <img 
-                      src={registerPromotion.image_url}
-                      alt="Offre spéciale inscription" 
-                      className="w-full h-auto object-cover"
-                    />
-                  ) : (
-                    <div className="bg-gold-400 h-48 flex items-center justify-center">
-                      <BadgePercent className="w-20 h-20 text-white opacity-50" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6">
-                    <Badge className="bg-white text-gold-600 mb-2 self-start">OFFRE SPÉCIALE</Badge>
-                    <h3 className="text-white text-2xl font-bold mb-2">{registerPromotion.title}</h3>
-                    <p className="text-white/90 mb-4">{registerPromotion.description}</p>
-                    <Button asChild className="w-fit bg-white text-gold-600 hover:bg-white/90">
+              <div className="rounded-lg shadow-lg overflow-hidden bg-white border border-gold-200">
+                <div className="flex flex-col md:flex-row">
+                  <div className="md:w-1/2 p-8 flex flex-col justify-center">
+                    <Badge className="bg-akane-100 text-akane-700 border-0 mb-3 w-fit">OFFRE SPÉCIALE</Badge>
+                    <h3 className="text-2xl font-bold mb-3">{registerPromotion.title}</h3>
+                    <p className="text-gray-600 mb-6">{registerPromotion.description}</p>
+                    <Button asChild className="w-fit bg-akane-600 hover:bg-akane-700">
                       <Link to="/register">
                         Créer un compte <ChevronRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
+                  </div>
+                  <div className="md:w-1/2">
+                    {registerPromotion.image_url ? (
+                      <img 
+                        src={registerPromotion.image_url}
+                        alt="Offre spéciale inscription" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src="/public/lovable-uploads/c2d085bb-4d47-41fc-b430-0ed97076ece3.png"
+                        alt="Promotion inscription"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
