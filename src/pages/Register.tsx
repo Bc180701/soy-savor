@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
+
+interface Promotion {
+  id: string;
+  title: string;
+  description: string;
+  discount: number;
+  image_url: string | null;
+  code: string | null;
+}
 
 const Register = () => {
   const navigate = useNavigate();
@@ -17,6 +27,32 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [promotion, setPromotion] = useState<Promotion | null>(null);
+  const [loadingPromotion, setLoadingPromotion] = useState(true);
+  
+  useEffect(() => {
+    const fetchPromotion = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('promotions')
+          .select('*')
+          .eq('title', '-10% sur votre première commande')
+          .single();
+        
+        if (error) {
+          console.error("Erreur lors de la récupération de la promotion:", error);
+        } else {
+          setPromotion(data);
+        }
+      } catch (error) {
+        console.error("Erreur inattendue:", error);
+      } finally {
+        setLoadingPromotion(false);
+      }
+    };
+    
+    fetchPromotion();
+  }, []);
   
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,11 +125,29 @@ const Register = () => {
         transition={{ duration: 0.5 }}
         className="max-w-md mx-auto"
       >
-        <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 p-4 rounded-lg shadow-lg text-center">
-          <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
-          <h3 className="text-white text-xl font-bold mb-1">-10% sur votre première commande</h3>
-          <p className="text-white/90">Créez un compte maintenant et profitez de 10% de réduction</p>
-        </div>
+        {loadingPromotion ? (
+          <div className="flex justify-center items-center mb-6 p-4">
+            <Loader2 className="h-6 w-6 animate-spin text-gold-600" />
+          </div>
+        ) : promotion ? (
+          <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 p-4 rounded-lg shadow-lg text-center">
+            <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
+            <h3 className="text-white text-xl font-bold mb-1">{promotion.title}</h3>
+            <p className="text-white/90">{promotion.description}</p>
+            {promotion.code && (
+              <div className="mt-2 bg-white/20 p-2 rounded-md inline-block">
+                <span className="text-white font-medium">Code: </span>
+                <span className="text-white font-bold">{promotion.code}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 p-4 rounded-lg shadow-lg text-center">
+            <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
+            <h3 className="text-white text-xl font-bold mb-1">-10% sur votre première commande</h3>
+            <p className="text-white/90">Créez un compte maintenant et profitez de 10% de réduction</p>
+          </div>
+        )}
         
         <Card>
           <CardHeader className="space-y-1">
