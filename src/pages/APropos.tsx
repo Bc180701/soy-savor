@@ -6,10 +6,10 @@ import { Separator } from "@/components/ui/separator";
 const APropos = () => {
   const team = [
     {
-      name: "Hiroshi Tanaka",
+      name: "Benjamin Martinez",
       role: "Chef Sushi",
       bio: "Formé à Tokyo, Hiroshi apporte 20 ans d'expérience dans l'art du sushi.",
-      image: "/lovable-uploads/8d6a0ad3-bf3f-48f8-b427-7d4db8f4b26b.png"
+      image: "https://img.freepik.com/free-photo/17-lifestyle-people-ordering-sushi-home_52683-100628.jpg?t=st=1744878011~exp=1744881611~hmac=ddde7d5b646e0e5be96a25f6606613df658b19e837cc049ff3f6f8f411a9dd51&w=1480"
     },
     {
       name: "Anais Remuaux",
