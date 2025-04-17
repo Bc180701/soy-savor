@@ -130,40 +130,22 @@ const Register = () => {
             <Loader2 className="h-6 w-6 animate-spin text-gold-600" />
           </div>
         ) : promotion ? (
-          <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 rounded-lg shadow-lg overflow-hidden">
-            <div className="relative">
-              <img 
-                src="public/lovable-uploads/b98ad866-9694-4e53-ab2d-2a0ef1a1b2d3.png" 
-                alt="Offre spéciale" 
-                className="w-full h-auto object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
-                <Badge className="bg-white text-gold-600 mb-2 self-start">OFFRE SPÉCIALE</Badge>
-                <h3 className="text-white text-xl font-bold mb-1">{promotion.title}</h3>
-                <p className="text-white/90">{promotion.description}</p>
-                {promotion.code && (
-                  <div className="mt-2 bg-white/20 p-2 rounded-md inline-block">
-                    <span className="text-white font-medium">Code: </span>
-                    <span className="text-white font-bold">{promotion.code}</span>
-                  </div>
-                )}
+          <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 p-4 rounded-lg shadow-lg text-center">
+            <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
+            <h3 className="text-white text-xl font-bold mb-1">{promotion.title}</h3>
+            <p className="text-white/90">{promotion.description}</p>
+            {promotion.code && (
+              <div className="mt-2 bg-white/20 p-2 rounded-md inline-block">
+                <span className="text-white font-medium">Code: </span>
+                <span className="text-white font-bold">{promotion.code}</span>
               </div>
-            </div>
+            )}
           </div>
         ) : (
-          <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 rounded-lg shadow-lg overflow-hidden">
-            <div className="relative">
-              <img 
-                src="public/lovable-uploads/b98ad866-9694-4e53-ab2d-2a0ef1a1b2d3.png" 
-                alt="Offre spéciale" 
-                className="w-full h-auto object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
-                <Badge className="bg-white text-gold-600 mb-2 self-start">OFFRE SPÉCIALE</Badge>
-                <h3 className="text-white text-xl font-bold mb-1">-10% sur votre première commande</h3>
-                <p className="text-white/90">Créez un compte maintenant et profitez de 10% de réduction</p>
-              </div>
-            </div>
+          <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 p-4 rounded-lg shadow-lg text-center">
+            <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
+            <h3 className="text-white text-xl font-bold mb-1">-10% sur votre première commande</h3>
+            <p className="text-white/90">Créez un compte maintenant et profitez de 10% de réduction</p>
           </div>
         )}
         
