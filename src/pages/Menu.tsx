@@ -10,14 +10,26 @@ import { Loader2 } from "lucide-react";
 import { getMenuData } from "@/services/productService";
 import { MenuCategory } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const { toast } = useToast();
   
   useEffect(() => {
+    // Vérifier si l'utilisateur est connecté
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    
+    checkAuth();
+    
     const fetchMenuData = async () => {
       setIsLoading(true);
       try {
@@ -41,7 +53,7 @@ const Menu = () => {
     };
 
     fetchMenuData();
-  }, [toast]);
+  }, [toast, activeCategory]);
 
   if (isLoading) {
     return (
@@ -64,6 +76,22 @@ const Menu = () => {
         <p className="text-gray-600 text-center mb-12">
           Découvrez nos spécialités japonaises préparées avec soin
         </p>
+
+        {!isAuthenticated && (
+          <motion.div 
+            className="mb-8 bg-gradient-to-r from-gold-500 to-gold-300 p-6 rounded-lg shadow-lg text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
+            <h3 className="text-white text-xl font-bold mb-2">-10% sur votre première commande</h3>
+            <p className="text-white/90 mb-4">Créez un compte maintenant pour profiter de cette promotion exclusive</p>
+            <Button asChild className="bg-white hover:bg-gray-100 text-gold-600">
+              <Link to="/register">Créer un compte</Link>
+            </Button>
+          </motion.div>
+        )}
 
         <div className="flex flex-col md:flex-row gap-6">
           <div className="md:w-1/4">

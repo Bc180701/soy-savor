@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
@@ -9,6 +10,10 @@ import { getMenuData } from "@/services/productService";
 import MobileCategorySelector from "@/components/menu/MobileCategorySelector";
 import DesktopCategorySelector from "@/components/menu/DesktopCategorySelector";
 import CategoryContent from "@/components/menu/CategoryContent";
+import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const Commander = () => {
   const { toast } = useToast();
@@ -17,8 +22,17 @@ const Commander = () => {
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Vérifier si l'utilisateur est connecté
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    
+    checkAuth();
+    
     const fetchMenuData = async () => {
       setIsLoading(true);
       try {
@@ -45,7 +59,7 @@ const Commander = () => {
     if (categories.length === 0) {
       fetchMenuData();
     }
-  }, [toast]);
+  }, [toast, categories.length, activeCategory]);
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
@@ -74,9 +88,25 @@ const Commander = () => {
         className="max-w-6xl mx-auto"
       >
         <h1 className="text-4xl font-bold text-center mb-2">Commander</h1>
-        <p className="text-gray-600 text-center mb-12">
+        <p className="text-gray-600 text-center mb-8">
           Commandez en ligne et récupérez votre repas dans notre restaurant
         </p>
+
+        {!isAuthenticated && (
+          <motion.div 
+            className="mb-8 bg-gradient-to-r from-gold-500 to-gold-300 p-6 rounded-lg shadow-lg text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
+            <h3 className="text-white text-xl font-bold mb-2">-10% sur votre première commande</h3>
+            <p className="text-white/90 mb-4">Créez un compte maintenant pour profiter de cette promotion exclusive</p>
+            <Button asChild className="bg-white hover:bg-gray-100 text-gold-600">
+              <Link to="/register">Créer un compte</Link>
+            </Button>
+          </motion.div>
+        )}
 
         {/* Show horizontal scrolling categories on mobile */}
         {isMobile && (

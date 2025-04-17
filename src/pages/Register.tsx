@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const Register = () => {
       } else {
         toast({
           title: "Inscription réussie",
-          description: "Vérifiez votre email pour confirmer votre compte",
+          description: "Vérifiez votre email pour confirmer votre compte et profitez de 10% de réduction sur votre prochaine commande!",
         });
         navigate("/login");
       }
@@ -88,6 +89,12 @@ const Register = () => {
         transition={{ duration: 0.5 }}
         className="max-w-md mx-auto"
       >
+        <div className="mb-6 bg-gradient-to-r from-gold-500 to-gold-300 p-4 rounded-lg shadow-lg text-center">
+          <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
+          <h3 className="text-white text-xl font-bold mb-1">-10% sur votre première commande</h3>
+          <p className="text-white/90">Créez un compte maintenant et profitez de 10% de réduction</p>
+        </div>
+        
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Créer un compte</CardTitle>
