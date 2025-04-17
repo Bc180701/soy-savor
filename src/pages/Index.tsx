@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -176,7 +177,6 @@ const Index = () => {
 
   return (
     <div className="pt-16">
-      {/* Hero section */}
       <section className="relative h-[85vh] flex items-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -268,7 +268,6 @@ const Index = () => {
             </div>
 
             <div className="relative max-w-4xl mx-auto overflow-hidden rounded-xl shadow-lg">
-              {/* Promotions carousel */}
               {promotions.map((promo, index) => (
                 <div
                   key={promo.id}
@@ -295,7 +294,6 @@ const Index = () => {
               ))}
 
               <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center space-x-2">
-                {/* Carousel dots */}
                 {promotions.map((_, index) => (
                   <button
                     key={index}
@@ -312,9 +310,9 @@ const Index = () => {
             {/* Bannière de promotion pour l'inscription - redesign en doré */}
             {!loadingPromotion && registerPromotion && (
               <div className="mt-12 max-w-4xl mx-auto">
-                <div className="rounded-lg shadow-lg overflow-hidden border border-gold-300">
+                <div className="rounded-lg shadow-lg overflow-hidden bg-gold-50 border border-gold-300">
                   <div className="flex flex-col md:flex-row">
-                    <div className="md:w-1/2 p-8 flex flex-col justify-center bg-gold-50">
+                    <div className="md:w-1/2 p-8 flex flex-col justify-center">
                       <Badge className="bg-gold-100 text-gold-800 border-0 mb-3 w-fit">OFFRE SPÉCIALE</Badge>
                       <h3 className="text-2xl font-bold mb-3 text-gold-900">-10% sur votre première commande</h3>
                       <p className="text-gold-800 mb-6">Créez un compte maintenant et profitez de 10% de réduction sur votre prochaine commande!</p>
@@ -326,7 +324,7 @@ const Index = () => {
                     </div>
                     <div className="md:w-1/2">
                       <img
-                        src="/public/lovable-uploads/62332d2f-851b-40fd-b1b5-0e5f36978d6c.png"
+                        src="/public/lovable-uploads/e94446cb-ba03-42bd-a3bc-9562513a950e.png"
                         alt="Promotion inscription"
                         className="w-full h-full object-cover"
                       />
