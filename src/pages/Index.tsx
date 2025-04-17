@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -13,6 +14,7 @@ const Index = () => {
   const [isIntersecting, setIsIntersecting] = useState(false);
   const [registerPromotion, setRegisterPromotion] = useState(null);
   const [loadingPromotion, setLoadingPromotion] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -51,9 +53,24 @@ const Index = () => {
     
     fetchRegisterPromotion();
 
+    // Vérifier si l'utilisateur est connecté
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user || null);
+    };
+    
+    checkUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
     return () => {
       sections.forEach((section) => observer.unobserve(section));
       clearInterval(interval);
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
@@ -239,92 +256,86 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Promotions Carrousel */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Nos offres spéciales</h2>
-            <p className="text-gray-600 max-w-xl mx-auto">
-              Profitez de nos promotions exclusives pour vos commandes sur place, à emporter ou en livraison.
-            </p>
-          </div>
+      {/* Promotions Carrousel - affiché seulement pour les utilisateurs non connectés */}
+      {!user && (
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-4">Nos offres spéciales</h2>
+              <p className="text-gray-600 max-w-xl mx-auto">
+                Profitez de nos promotions exclusives pour vos commandes sur place, à emporter ou en livraison.
+              </p>
+            </div>
 
-          <div className="relative max-w-4xl mx-auto overflow-hidden rounded-xl shadow-lg">
-            {promotions.map((promo, index) => (
-              <div
-                key={promo.id}
-                className={`absolute inset-0 transition-opacity duration-500 ${
-                  index === activePromotion ? "opacity-100 z-10" : "opacity-0 z-0"
-                }`}
-              >
-                <div className="flex flex-col md:flex-row h-full">
-                  <div className="md:w-1/2 bg-cover bg-center h-64 md:h-auto" style={{ backgroundImage: `url(${promo.imageUrl})` }}></div>
-                  <div className="md:w-1/2 bg-white p-8 flex flex-col justify-center">
-                    <Badge variant="outline" className="w-fit mb-3 bg-gold-50 text-gold-700 border-gold-200">
-                      Offre spéciale
-                    </Badge>
-                    <h3 className="text-2xl font-bold mb-3">{promo.title}</h3>
-                    <p className="text-gray-600 mb-6">{promo.description}</p>
-                    <Button asChild className="w-fit">
-                      <Link to={promo.buttonLink}>
-                        {promo.buttonText} <ChevronRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
+            <div className="relative max-w-4xl mx-auto overflow-hidden rounded-xl shadow-lg">
+              {promotions.map((promo, index) => (
+                <div
+                  key={promo.id}
+                  className={`absolute inset-0 transition-opacity duration-500 ${
+                    index === activePromotion ? "opacity-100 z-10" : "opacity-0 z-0"
+                  }`}
+                >
+                  <div className="flex flex-col md:flex-row h-full">
+                    <div className="md:w-1/2 bg-cover bg-center h-64 md:h-auto" style={{ backgroundImage: `url(${promo.imageUrl})` }}></div>
+                    <div className="md:w-1/2 bg-white p-8 flex flex-col justify-center">
+                      <Badge variant="outline" className="w-fit mb-3 bg-gold-50 text-gold-700 border-gold-200">
+                        Offre spéciale
+                      </Badge>
+                      <h3 className="text-2xl font-bold mb-3">{promo.title}</h3>
+                      <p className="text-gray-600 mb-6">{promo.description}</p>
+                      <Button asChild className="w-fit">
+                        <Link to={promo.buttonLink}>
+                          {promo.buttonText} <ChevronRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-
-            <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center space-x-2">
-              {promotions.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    index === activePromotion ? "bg-gold-600" : "bg-gray-300"
-                  }`}
-                  onClick={() => setActivePromotion(index)}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
               ))}
-            </div>
-          </div>
 
-          {/* Bannière de promotion pour l'inscription */}
-          {!loadingPromotion && registerPromotion && (
-            <div className="mt-12 max-w-4xl mx-auto">
-              <div className="rounded-lg shadow-lg overflow-hidden bg-white border border-gold-200">
-                <div className="flex flex-col md:flex-row">
-                  <div className="md:w-1/2 p-8 flex flex-col justify-center">
-                    <Badge className="bg-akane-100 text-akane-700 border-0 mb-3 w-fit">OFFRE SPÉCIALE</Badge>
-                    <h3 className="text-2xl font-bold mb-3">{registerPromotion.title}</h3>
-                    <p className="text-gray-600 mb-6">{registerPromotion.description}</p>
-                    <Button asChild className="w-fit bg-akane-600 hover:bg-akane-700">
-                      <Link to="/register">
-                        Créer un compte <ChevronRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                  <div className="md:w-1/2">
-                    {registerPromotion.image_url ? (
-                      <img 
-                        src={registerPromotion.image_url}
-                        alt="Offre spéciale inscription" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
+              <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center space-x-2">
+                {promotions.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      index === activePromotion ? "bg-gold-600" : "bg-gray-300"
+                    }`}
+                    onClick={() => setActivePromotion(index)}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Bannière de promotion pour l'inscription - redesign en doré */}
+            {!loadingPromotion && registerPromotion && (
+              <div className="mt-12 max-w-4xl mx-auto">
+                <div className="rounded-lg shadow-lg overflow-hidden bg-gold-50 border border-gold-300">
+                  <div className="flex flex-col md:flex-row">
+                    <div className="md:w-1/2 p-8 flex flex-col justify-center">
+                      <Badge className="bg-gold-100 text-gold-800 border-0 mb-3 w-fit">OFFRE SPÉCIALE</Badge>
+                      <h3 className="text-2xl font-bold mb-3 text-gold-900">-10% sur votre première commande</h3>
+                      <p className="text-gold-800 mb-6">Créez un compte maintenant et profitez de 10% de réduction sur votre prochaine commande!</p>
+                      <Button asChild className="w-fit bg-gold-600 hover:bg-gold-700 text-white">
+                        <Link to="/register">
+                          Créer un compte <ChevronRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
+                    <div className="md:w-1/2">
                       <img
-                        src="/public/lovable-uploads/c2d085bb-4d47-41fc-b430-0ed97076ece3.png"
+                        src="/public/lovable-uploads/e94446cb-ba03-42bd-a3bc-9562513a950e.png"
                         alt="Promotion inscription"
                         className="w-full h-full object-cover"
                       />
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      </section>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Best Sellers */}
       <section className="py-20 bg-gray-50">
