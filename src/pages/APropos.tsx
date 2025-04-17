@@ -35,7 +35,7 @@ const APropos = () => {
         <div className="mb-16">
           <div className="rounded-lg overflow-hidden mb-8">
             <img
-              src="/lovable-uploads/c30dd633-dfec-4589-afdf-9cf0abf72049.png"
+              src="https://img.freepik.com/free-photo/top-view-variety-sushi-nigiri-sashimi-yakisoba-edamame-restaurant-wooden-table_181624-35322.jpg?t=st=1744878118~exp=1744881718~hmac=c0b5253dbb41cdbd760b0f5a9ae01846fb2c6cb30d502ff740f4df4ec672133f&w=1480"
               alt="Restaurant SushiEats"
               className="w-full h-80 object-cover"
             />
