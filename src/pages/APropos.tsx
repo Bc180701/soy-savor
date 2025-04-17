@@ -12,7 +12,7 @@ const APropos = () => {
       image: "/lovable-uploads/8d6a0ad3-bf3f-48f8-b427-7d4db8f4b26b.png"
     },
     {
-      name: "Sophie Dubois",
+      name: "Anais Remuaux",
       role: "Manager",
       bio: "Passionnée de cuisine japonaise, Sophie veille à la qualité de votre expérience.",
       image: "https://clwebdesign.fr/wp-content/uploads/2025/04/309394283_5360481447404041_82840468670811713_n.jpg"
