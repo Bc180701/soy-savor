@@ -15,7 +15,7 @@ const APropos = () => {
       name: "Sophie Dubois",
       role: "Manager",
       bio: "Passionnée de cuisine japonaise, Sophie veille à la qualité de votre expérience.",
-      image: "/lovable-uploads/2443ae61-1e76-42ea-a1fd-0506bb67f970.png"
+      image: "https://clwebdesign.fr/wp-content/uploads/2025/04/309394283_5360481447404041_82840468670811713_n.jpg"
     }
   ];
 
