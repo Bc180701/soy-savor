@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -7,6 +8,7 @@ import OrdersChart from "@/components/admin/OrdersChart";
 import StatusDistribution from "@/components/admin/StatusDistribution";
 import PopularProductsChart from "@/components/admin/PopularProductsChart";
 import { supabase } from "@/integrations/supabase/client";
+import ProductManager from "@/components/admin/ProductManager";
 
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -90,6 +92,7 @@ const Admin = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
           <TabsTrigger value="orders">Commandes</TabsTrigger>
+          <TabsTrigger value="products">Produits</TabsTrigger>
         </TabsList>
         
         <TabsContent value="dashboard">
@@ -109,6 +112,10 @@ const Admin = () => {
         
         <TabsContent value="orders">
           <OrderList />
+        </TabsContent>
+
+        <TabsContent value="products">
+          <ProductManager />
         </TabsContent>
       </Tabs>
     </div>
