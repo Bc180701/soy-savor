@@ -10,7 +10,7 @@ const transformProductToMenuItem = (product: any): MenuItem => {
     description: product.description,
     price: product.price,
     imageUrl: product.image_url || "/placeholder.svg",
-    category: product.category_id as SushiCategory,
+    category: product.category_id as SushiCategory, // Assurer que category est de type SushiCategory
     isVegetarian: product.is_vegetarian || false,
     isSpicy: product.is_spicy || false,
     isNew: product.is_new || false,
