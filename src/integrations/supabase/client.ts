@@ -16,7 +16,8 @@ export const fetchProductsByCategory = async (categoryId: string) => {
   const { data, error } = await supabase
     .from('products')
     .select('*')
-    .eq('category_id', categoryId);
+    .eq('category_id', categoryId)
+    .order('name');
   
   if (error) {
     console.error("Error fetching products:", error);
@@ -45,7 +46,8 @@ export const fetchCategories = async () => {
 export const fetchAllProducts = async () => {
   const { data, error } = await supabase
     .from('products')
-    .select('*, categories(name)');
+    .select('*, categories(name)')
+    .order('name');
   
   if (error) {
     console.error("Error fetching products:", error);
@@ -53,6 +55,55 @@ export const fetchAllProducts = async () => {
   }
   
   return data || [];
+};
+
+// Helper function to insert a new category
+export const insertCategory = async (category: {
+  id: string;
+  name: string;
+  description?: string | null;
+  display_order: number;
+}) => {
+  const { data, error } = await supabase
+    .from('categories')
+    .insert(category)
+    .select('*')
+    .single();
+    
+  if (error) {
+    console.error("Error inserting category:", error);
+    throw error;
+  }
+  
+  return data;
+};
+
+// Helper function to insert a new product
+export const insertProduct = async (product: {
+  name: string;
+  description?: string | null;
+  price: number;
+  category_id: string;
+  image_url?: string | null;
+  is_vegetarian?: boolean | null;
+  is_spicy?: boolean | null;
+  is_new?: boolean | null;
+  is_best_seller?: boolean | null;
+  allergens?: string[] | null;
+  pieces?: number | null;
+}) => {
+  const { data, error } = await supabase
+    .from('products')
+    .insert(product)
+    .select('*')
+    .single();
+    
+  if (error) {
+    console.error("Error inserting product:", error);
+    throw error;
+  }
+  
+  return data;
 };
 
 // Helper function to fetch order details
