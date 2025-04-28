@@ -106,6 +106,22 @@ export const insertProduct = async (product: {
   return data;
 };
 
+// Helper function to check if a product with the same name exists in a category
+export const productExistsInCategory = async (name: string, categoryId: string) => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('id')
+    .eq('name', name)
+    .eq('category_id', categoryId);
+  
+  if (error) {
+    console.error("Error checking product existence:", error);
+    return false;
+  }
+  
+  return data && data.length > 0;
+};
+
 // Helper function to fetch order details
 export const fetchOrderWithDetails = async (orderId: string) => {
   if (!orderId) {

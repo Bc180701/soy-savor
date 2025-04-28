@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getMenuData, initializeCategories, initializeSampleProducts } from "@/services/productService";
+import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
 import MobileCategorySelector from "@/components/menu/MobileCategorySelector";
 import DesktopCategorySelector from "@/components/menu/DesktopCategorySelector";
 import CategoryContent from "@/components/menu/CategoryContent";
@@ -79,8 +79,8 @@ const Commander = () => {
         throw new Error("Échec de l'initialisation des catégories");
       }
       
-      // Ensuite, initialiser les produits
-      const productsInitialized = await initializeSampleProducts();
+      // Ensuite, initialiser les produits complets
+      const productsInitialized = await initializeFullMenu();
       if (!productsInitialized) {
         throw new Error("Échec de l'initialisation des produits");
       }
