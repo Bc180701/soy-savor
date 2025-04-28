@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -21,10 +20,11 @@ import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import NotFound from "./pages/NotFound";
+import ComposerSushi from "./pages/ComposerSushi";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+function App() {
   // Initialiser les stores persistés après le chargement de la page
   const hydrate = () => {
     useCart.persist.rehydrate();
@@ -42,80 +42,27 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route
-              path="/"
-              element={
-                <Layout>
-                  <Index />
-                </Layout>
-              }
-            />
-            <Route
-              path="/menu"
-              element={
-                <Layout>
-                  <Menu />
-                </Layout>
-              }
-            />
-            <Route
-              path="/commander"
-              element={
-                <Layout>
-                  <Commander />
-                </Layout>
-              }
-            />
-            <Route
-              path="/a-propos"
-              element={
-                <Layout>
-                  <APropos />
-                </Layout>
-              }
-            />
-            <Route
-              path="/contact"
-              element={
-                <Layout>
-                  <Contact />
-                </Layout>
-              }
-            />
-            <Route
-              path="/panier"
-              element={
-                <Layout>
-                  <Panier />
-                </Layout>
-              }
-            />
-            <Route
-              path="/compte"
-              element={
-                <Layout>
-                  <Compte />
-                </Layout>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <Layout>
-                  <Admin />
-                </Layout>
-              }
-            />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/update-password" element={<UpdatePassword />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Index />} />
+              <Route path="menu" element={<Menu />} />
+              <Route path="commander" element={<Commander />} />
+              <Route path="composer-sushi" element={<ComposerSushi />} />
+              <Route path="a-propos" element={<APropos />} />
+              <Route path="contact" element={<Contact />} />
+              <Route path="login" element={<Login />} />
+              <Route path="register" element={<Register />} />
+              <Route path="reset-password" element={<ResetPassword />} />
+              <Route path="update-password" element={<UpdatePassword />} />
+              <Route path="compte" element={<Compte />} />
+              <Route path="panier" element={<Panier />} />
+              <Route path="admin" element={<Admin />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;

@@ -3,9 +3,10 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { MenuItem, MenuCategory } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -13,6 +14,13 @@ interface CategoryContentProps {
 }
 
 const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
+  // Check if an item is the custom sushi creation product
+  const isCustomSushi = (item: MenuItem) => {
+    return item.name.toLowerCase().includes("poke crea") || 
+           item.name.toLowerCase().includes("sushi créa") ||
+           item.name.toLowerCase().includes("compose");
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -91,12 +99,23 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                         )}
                       </div>
                       <div className="flex justify-end mt-4">
-                        <Button
-                          onClick={() => onAddToCart(item)}
-                          className="bg-gold-500 hover:bg-gold-600 text-black"
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Ajouter
-                        </Button>
+                        {isCustomSushi(item) ? (
+                          <Button
+                            asChild
+                            className="bg-gold-500 hover:bg-gold-600 text-black"
+                          >
+                            <Link to="/composer-sushi" state={{ baseItem: item }}>
+                              <Pencil className="mr-2 h-4 w-4" /> Composer
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => onAddToCart(item)}
+                            className="bg-gold-500 hover:bg-gold-600 text-black"
+                          >
+                            <Plus className="mr-2 h-4 w-4" /> Ajouter
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
