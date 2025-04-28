@@ -1,4 +1,3 @@
-
 export type SushiCategory = 
   | "box" 
   | "plateaux" 
@@ -20,7 +19,8 @@ export type SushiCategory =
   | "spring" 
   | "salmon" 
   | "boissons"
-  | "box_du_midi";
+  | "box_du_midi"
+  | "custom";
 
 export interface MenuItem {
   id: string;

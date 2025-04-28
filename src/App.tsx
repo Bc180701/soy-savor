@@ -1,9 +1,10 @@
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { useCart } from "./hooks/use-cart";
 import { useOrder } from "./hooks/use-order";
 import Layout from "./components/Layout";
@@ -42,7 +43,7 @@ function App() {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Layout />}>
+            <Route path="/" element={<Layout><Outlet /></Layout>}>
               <Route index element={<Index />} />
               <Route path="menu" element={<Menu />} />
               <Route path="commander" element={<Commander />} />
