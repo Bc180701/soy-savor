@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -123,58 +123,75 @@ const Menu = () => {
           </div>
 
           <div className="md:w-3/4">
-            {categories.map((category) => (
-              <div 
-                key={category.id} 
-                className={activeCategory === category.id ? "block" : "hidden"}
-              >
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold">{category.name}</h2>
-                  {category.description && (
-                    <p className="text-gray-600 italic mt-1">{category.description}</p>
-                  )}
-                  <Separator className="my-4" />
-                </div>
+            <AnimatePresence mode="wait">
+              {categories.map((category) => (
+                activeCategory === category.id && (
+                  <motion.div 
+                    key={category.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="mb-8">
+                      <h2 className="text-2xl font-bold">{category.name}</h2>
+                      {category.description && (
+                        <p className="text-gray-600 italic mt-1">{category.description}</p>
+                      )}
+                      <Separator className="my-4" />
+                    </div>
 
-                <div className="grid grid-cols-1 gap-6">
-                  {category.items.map((item) => (
-                    <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                      <CardContent className="p-0">
-                        <div className="flex flex-col md:flex-row">
-                          {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                            <div className="w-full md:w-1/4 h-32 overflow-hidden">
-                              <img
-                                src={item.imageUrl}
-                                alt={item.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                          <div className={`w-full ${item.imageUrl && item.imageUrl !== "/placeholder.svg" ? "md:w-3/4" : ""} p-6`}>
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <h3 className="text-lg font-bold">{item.name}</h3>
-                                {item.description && (
-                                  <p className="text-gray-600 text-sm mt-1">{item.description}</p>
-                                )}
-                              </div>
-                              <div className="flex flex-col items-end">
-                                <span className="font-semibold text-gold-600">
-                                  {item.price.toFixed(2)} €
-                                </span>
-                                {item.isBestSeller && (
-                                  <Badge className="bg-gold-600 mt-2">Populaire</Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            ))}
+                    <div className="grid grid-cols-1 gap-6">
+                      <AnimatePresence>
+                        {category.items.map((item, index) => (
+                          <motion.div
+                            key={item.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.2, delay: index * 0.05 }}
+                          >
+                            <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                              <CardContent className="p-0">
+                                <div className="flex flex-col md:flex-row">
+                                  {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
+                                    <div className="w-full md:w-1/4 h-32 overflow-hidden">
+                                      <img
+                                        src={item.imageUrl}
+                                        alt={item.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <div className={`w-full ${item.imageUrl && item.imageUrl !== "/placeholder.svg" ? "md:w-3/4" : ""} p-6`}>
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div>
+                                        <h3 className="text-lg font-bold">{item.name}</h3>
+                                        {item.description && (
+                                          <p className="text-gray-600 text-sm mt-1">{item.description}</p>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-col items-end">
+                                        <span className="font-semibold text-gold-600">
+                                          {item.price.toFixed(2)} €
+                                        </span>
+                                        {item.isBestSeller && (
+                                          <Badge className="bg-gold-600 mt-2">Populaire</Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </motion.div>
+                )
+              ))}
+            </AnimatePresence>
           </div>
         </div>
       </motion.div>

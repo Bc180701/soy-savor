@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
@@ -164,14 +164,21 @@ const Commander = () => {
           )}
 
           <div className={isMobile ? "w-full" : "md:w-3/4"}>
-            {categories.map((category) => (
-              <div 
-                key={category.id} 
-                className={activeCategory === category.id ? "block" : "hidden"}
-              >
-                <CategoryContent category={category} onAddToCart={addToCart} />
-              </div>
-            ))}
+            <AnimatePresence mode="wait">
+              {categories.map((category) => (
+                activeCategory === category.id && (
+                  <motion.div 
+                    key={category.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <CategoryContent category={category} onAddToCart={addToCart} />
+                  </motion.div>
+                )
+              ))}
+            </AnimatePresence>
           </div>
         </div>
       </motion.div>
