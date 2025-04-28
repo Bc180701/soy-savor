@@ -11,7 +11,7 @@ import {
   DialogTitle, DialogFooter 
 } from "@/components/ui/dialog";
 import { Pencil, Trash2, EyeOff, Eye, Plus } from "lucide-react";
-import { fetchAllProducts, fetchCategories } from "@/integrations/supabase/client";
+import { fetchAllProducts, fetchCategories, supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import ProductForm from "./ProductForm";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
