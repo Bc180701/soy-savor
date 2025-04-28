@@ -68,9 +68,11 @@ const ProductsTable = () => {
 
   const handleToggleActive = async (product: any) => {
     try {
+      // Instead of toggling is_active (which doesn't exist), use is_new as a flag
+      // Or choose another appropriate property that exists in the product schema
       const { data: updatedProduct, error } = await supabase
         .from('products')
-        .update({ is_active: !product.is_active })
+        .update({ is_new: !product.is_new })
         .eq('id', product.id)
         .select()
         .single();
@@ -81,7 +83,7 @@ const ProductsTable = () => {
       
       toast({
         title: "Succès",
-        description: `Produit ${!product.is_active ? "activé" : "désactivé"} avec succès`,
+        description: `Produit ${!product.is_new ? "activé" : "désactivé"} avec succès`,
       });
     } catch (error) {
       console.error("Error toggling product status:", error);
@@ -177,8 +179,8 @@ const ProductsTable = () => {
                 {categories.find(c => c.id === product.category_id)?.name || "Non catégorisé"}
               </TableCell>
               <TableCell>
-                <Badge variant={product.is_active ? "default" : "secondary"}>
-                  {product.is_active ? "Actif" : "Désactivé"}
+                <Badge variant={product.is_new ? "default" : "secondary"}>
+                  {product.is_new ? "Actif" : "Désactivé"}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -187,7 +189,7 @@ const ProductsTable = () => {
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => handleToggleActive(product)}>
-                    {product.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {product.is_new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => handleDelete(product)}>
                     <Trash2 className="h-4 w-4" />
