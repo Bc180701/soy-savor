@@ -1,3 +1,4 @@
+
 import { supabase, fetchCategories, fetchProductsByCategory, insertCategory, insertProduct, productExistsInCategory, fetchAllMenuData } from "@/integrations/supabase/client";
 import type { MenuItem, MenuCategory, SushiCategory } from "@/types";
 
@@ -817,4 +818,35 @@ export const initializeFullMenu = async () => {
     
     await tryInsertProduct({
       name: 'TEMAKI POULET TEMPURA',
-      description: 'Poulet tempura, avocat
+      description: 'Poulet tempura, avocat, concombre, salade',
+      price: 5.50,
+      category_id: 'temaki',
+      is_vegetarian: false,
+      pieces: 1,
+      allergens: ['gluten']
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error initializing menu:", error);
+    return false;
+  }
+};
+
+// Helper function to try inserting a product after checking if it exists
+const tryInsertProduct = async (productData: any) => {
+  try {
+    // Check if the product already exists
+    const exists = await productExistsInCategory(productData.name, productData.category_id);
+    
+    if (!exists) {
+      // Insert the product if it doesn't exist
+      await insertProduct(productData);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error inserting product ${productData.name}:`, error);
+    return false;
+  }
+};
