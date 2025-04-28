@@ -340,6 +340,7 @@ export type Database = {
           is_vegetarian: boolean | null
           name: string
           pieces: number | null
+          prep_time: number | null
           price: number
           updated_at: string | null
         }
@@ -356,6 +357,7 @@ export type Database = {
           is_vegetarian?: boolean | null
           name: string
           pieces?: number | null
+          prep_time?: number | null
           price: number
           updated_at?: string | null
         }
@@ -372,6 +374,7 @@ export type Database = {
           is_vegetarian?: boolean | null
           name?: string
           pieces?: number | null
+          prep_time?: number | null
           price?: number
           updated_at?: string | null
         }

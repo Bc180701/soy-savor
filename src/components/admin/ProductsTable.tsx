@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Table, TableBody, TableCell, TableHead, 
@@ -170,6 +171,7 @@ const ProductsTable = () => {
             <TableHead>Nom</TableHead>
             <TableHead>Prix</TableHead>
             <TableHead>Catégorie</TableHead>
+            <TableHead>Temps (min)</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -196,6 +198,7 @@ const ProductsTable = () => {
                 <TableCell>
                   {categories.find(c => c.id === product.category_id)?.name || "Non catégorisé"}
                 </TableCell>
+                <TableCell>{product.prep_time || 10}</TableCell>
                 <TableCell>
                   <Badge variant={product.is_new ? "default" : "secondary"}>
                     {product.is_new ? "Actif" : "Désactivé"}
@@ -218,7 +221,7 @@ const ProductsTable = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
+              <TableCell colSpan={7} className="h-24 text-center">
                 {searchQuery ? (
                   <div className="text-muted-foreground">Aucun produit ne correspond à la recherche</div>
                 ) : (

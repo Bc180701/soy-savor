@@ -40,6 +40,9 @@ const productFormSchema = z.object({
   }),
   image_url: z.string().optional().nullable(),
   pieces: z.coerce.number().optional().nullable(),
+  prep_time: z.coerce.number().min(0, {
+    message: "Le temps de préparation doit être un nombre positif",
+  }).default(10),
   is_vegetarian: z.boolean().default(false),
   is_spicy: z.boolean().default(false),
   is_new: z.boolean().default(false),
@@ -67,6 +70,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     category_id: product?.category_id || "",
     image_url: product?.image_url || "",
     pieces: product?.pieces || null,
+    prep_time: product?.prep_time || 10,
     is_vegetarian: product?.is_vegetarian || false,
     is_spicy: product?.is_spicy || false,
     is_new: product?.is_new || false,
@@ -94,6 +98,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             category_id: data.category_id,
             image_url: data.image_url,
             pieces: data.pieces,
+            prep_time: data.prep_time,
             is_vegetarian: data.is_vegetarian,
             is_spicy: data.is_spicy,
             is_new: data.is_new,
@@ -129,6 +134,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             category_id: data.category_id,
             image_url: data.image_url,
             pieces: data.pieces,
+            prep_time: data.prep_time,
             is_vegetarian: data.is_vegetarian,
             is_spicy: data.is_spicy,
             is_new: data.is_new,
@@ -243,7 +249,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
             name="image_url"
@@ -280,6 +286,33 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
                     }}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="prep_time"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Temps de préparation (min)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    {...field}
+                    value={field.value === null ? "" : field.value}
+                    onChange={(e) => {
+                      const value = e.target.value === "" ? 10 : parseInt(e.target.value, 10);
+                      field.onChange(value);
+                    }}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Temps de préparation en minutes
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

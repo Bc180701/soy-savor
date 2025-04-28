@@ -36,6 +36,7 @@ export interface MenuItem {
   isBestSeller?: boolean;
   allergens?: string[];
   pieces?: number;
+  prepTime?: number; // Ajout du temps de préparation
 }
 
 export interface MenuCategory {
