@@ -24,6 +24,7 @@ const Commander = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isCategoryChanging, setIsCategoryChanging] = useState(false);
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
@@ -95,6 +96,11 @@ const Commander = () => {
     loadMenuData();
   }, [toast, activeCategory]);
 
+  // Fonction pour changer de catégorie sans montrer de chargement
+  const handleCategoryChange = (categoryId: string) => {
+    setActiveCategory(categoryId);
+  };
+
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
     
@@ -104,7 +110,8 @@ const Commander = () => {
     });
   };
 
-  if (isLoading || isInitializing) {
+  // Afficher uniquement le chargement initial, pas lors des changements de catégorie
+  if ((isLoading && categories.length === 0) || isInitializing) {
     return (
       <div className="container mx-auto py-24 px-4 flex justify-center items-center">
         <Loader2 className="h-8 w-8 animate-spin text-gold-600" />
@@ -149,7 +156,7 @@ const Commander = () => {
           <MobileCategorySelector 
             categories={categories} 
             activeCategory={activeCategory} 
-            onCategoryChange={setActiveCategory} 
+            onCategoryChange={handleCategoryChange} 
           />
         )}
 
@@ -159,7 +166,7 @@ const Commander = () => {
             <DesktopCategorySelector 
               categories={categories} 
               activeCategory={activeCategory} 
-              onCategoryChange={setActiveCategory} 
+              onCategoryChange={handleCategoryChange} 
             />
           )}
 
