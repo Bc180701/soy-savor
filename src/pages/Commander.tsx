@@ -14,8 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Commander = () => {
   const { toast } = useToast();
@@ -26,7 +24,6 @@ const Commander = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [dataInitialized, setDataInitialized] = useState(false);
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
@@ -37,22 +34,44 @@ const Commander = () => {
     
     checkAuth();
     
-    const fetchMenuData = async () => {
+    const loadMenuData = async () => {
       setIsLoading(true);
       try {
-        const menuData = await getMenuData();
+        let menuData = await getMenuData();
         
-        // Vérifier si nous avons besoin d'initialiser les données
+        // Si aucune donnée n'existe, initialiser automatiquement
         if (menuData.length === 0) {
-          setDataInitialized(false);
-        } else {
-          setCategories(menuData);
-          setDataInitialized(true);
+          console.log("Aucune donnée de menu trouvée, initialisation automatique...");
+          setIsInitializing(true);
           
-          // Set the active category to the first one if available
-          if (menuData.length > 0 && !activeCategory) {
-            setActiveCategory(menuData[0].id);
+          // D'abord initialiser les catégories
+          const categoriesInitialized = await initializeCategories();
+          if (!categoriesInitialized) {
+            throw new Error("Échec de l'initialisation des catégories");
           }
+          
+          // Ensuite, initialiser les produits complets
+          const productsInitialized = await initializeFullMenu();
+          if (!productsInitialized) {
+            throw new Error("Échec de l'initialisation des produits");
+          }
+          
+          // Récupérer les données du menu après l'initialisation
+          menuData = await getMenuData();
+          
+          toast({
+            title: "Menu initialisé",
+            description: "Les catégories et produits ont été chargés avec succès.",
+          });
+          
+          setIsInitializing(false);
+        }
+        
+        setCategories(menuData);
+        
+        // Set the active category to the first one if available
+        if (menuData.length > 0 && !activeCategory) {
+          setActiveCategory(menuData[0].id);
         }
       } catch (error) {
         console.error("Error loading menu data:", error);
@@ -61,55 +80,13 @@ const Commander = () => {
           description: "Impossible de charger les données du menu.",
           variant: "destructive"
         });
-        setDataInitialized(false);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchMenuData();
+    loadMenuData();
   }, [toast, activeCategory]);
-
-  const initializeData = async () => {
-    setIsInitializing(true);
-    try {
-      // D'abord initialiser les catégories
-      const categoriesInitialized = await initializeCategories();
-      if (!categoriesInitialized) {
-        throw new Error("Échec de l'initialisation des catégories");
-      }
-      
-      // Ensuite, initialiser les produits complets
-      const productsInitialized = await initializeFullMenu();
-      if (!productsInitialized) {
-        throw new Error("Échec de l'initialisation des produits");
-      }
-      
-      // Rafraîchir les données
-      const menuData = await getMenuData();
-      setCategories(menuData);
-      
-      if (menuData.length > 0) {
-        setActiveCategory(menuData[0].id);
-      }
-      
-      setDataInitialized(true);
-      
-      toast({
-        title: "Données initialisées",
-        description: "Les catégories et produits ont été initialisés avec succès.",
-      });
-    } catch (error) {
-      console.error("Error initializing data:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'initialiser les données du menu.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsInitializing(false);
-    }
-  };
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
@@ -120,44 +97,13 @@ const Commander = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || isInitializing) {
     return (
       <div className="container mx-auto py-24 px-4 flex justify-center items-center">
         <Loader2 className="h-8 w-8 animate-spin text-gold-600" />
-        <span className="ml-2">Chargement du menu...</span>
-      </div>
-    );
-  }
-
-  if (!dataInitialized) {
-    return (
-      <div className="container mx-auto py-24 px-4">
-        <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Base de données vide</AlertTitle>
-            <AlertDescription>
-              La base de données du menu est vide. Veuillez initialiser les données pour pouvoir commander.
-            </AlertDescription>
-          </Alert>
-          
-          <div className="mt-6">
-            <Button 
-              onClick={initializeData} 
-              className="w-full" 
-              disabled={isInitializing}
-            >
-              {isInitializing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Initialisation...
-                </>
-              ) : (
-                "Initialiser les données du menu"
-              )}
-            </Button>
-          </div>
-        </div>
+        <span className="ml-2">
+          {isInitializing ? "Initialisation du menu..." : "Chargement du menu..."}
+        </span>
       </div>
     );
   }
