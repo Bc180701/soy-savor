@@ -22,6 +22,7 @@ import ResetPassword from "./pages/ResetPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import NotFound from "./pages/NotFound";
 import ComposerSushi from "./pages/ComposerSushi";
+import ComposerPoke from "./pages/ComposerPoke";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ function App() {
               <Route path="menu" element={<Menu />} />
               <Route path="commander" element={<Commander />} />
               <Route path="composer-sushi" element={<ComposerSushi />} />
+              <Route path="composer-poke" element={<ComposerPoke />} />
               <Route path="a-propos" element={<APropos />} />
               <Route path="contact" element={<Contact />} />
               <Route path="login" element={<Login />} />

@@ -14,11 +14,22 @@ interface CategoryContentProps {
 }
 
 const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
-  // Check if an item is the custom sushi creation product
-  const isCustomSushi = (item: MenuItem) => {
-    return item.name.toLowerCase().includes("poke crea") || 
-           item.name.toLowerCase().includes("sushi créa") ||
-           item.name.toLowerCase().includes("compose");
+  // Check if an item is a custom product (sushi or poke)
+  const isCustomProduct = (item: MenuItem) => {
+    // Check if it's a custom sushi product
+    if (item.name.toLowerCase().includes("poke crea") || 
+        item.name.toLowerCase().includes("sushi créa") ||
+        item.name.toLowerCase().includes("compose")) {
+      
+      // Determine if it's a poke bowl or sushi
+      if (item.name.toLowerCase().includes("poke")) {
+        return "poke";
+      } else {
+        return "sushi";
+      }
+    }
+    
+    return false;
   };
 
   return (
@@ -99,12 +110,15 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                         )}
                       </div>
                       <div className="flex justify-end mt-4">
-                        {isCustomSushi(item) ? (
+                        {isCustomProduct(item) ? (
                           <Button
                             asChild
                             className="bg-gold-500 hover:bg-gold-600 text-black"
                           >
-                            <Link to="/composer-sushi" state={{ baseItem: item }}>
+                            <Link 
+                              to={isCustomProduct(item) === "poke" ? "/composer-poke" : "/composer-sushi"} 
+                              state={{ baseItem: item }}
+                            >
                               <Pencil className="mr-2 h-4 w-4" /> Composer
                             </Link>
                           </Button>

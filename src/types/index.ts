@@ -20,7 +20,8 @@ export type SushiCategory =
   | "salmon" 
   | "boissons"
   | "box_du_midi"
-  | "custom";
+  | "custom"
+  | "poke_custom";
 
 export interface MenuItem {
   id: string;
