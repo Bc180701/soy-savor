@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Table, TableBody, TableCell, TableHead, 
@@ -10,11 +9,12 @@ import {
   Dialog, DialogContent, DialogHeader, 
   DialogTitle, DialogFooter 
 } from "@/components/ui/dialog";
-import { Pencil, Trash2, EyeOff, Eye, Plus } from "lucide-react";
+import { Pencil, Trash2, EyeOff, Eye, Plus, Search } from "lucide-react";
 import { fetchAllProducts, fetchCategories, supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import ProductForm from "./ProductForm";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Input } from "@/components/ui/input";
 
 const ProductsTable = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -24,6 +24,7 @@ const ProductsTable = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const productsPerPage = 10;
   const { toast } = useToast();
 
@@ -68,8 +69,6 @@ const ProductsTable = () => {
 
   const handleToggleActive = async (product: any) => {
     try {
-      // Instead of toggling is_active (which doesn't exist), use is_new as a flag
-      // Or choose another appropriate property that exists in the product schema
       const { data: updatedProduct, error } = await supabase
         .from('products')
         .update({ is_new: !product.is_new })
@@ -123,10 +122,18 @@ const ProductsTable = () => {
     }
   };
 
+  const filteredProducts = products.filter(product => 
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(products.length / productsPerPage);
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const handleSaveProduct = (updatedProducts: any[]) => {
     setProducts(updatedProducts);
@@ -146,6 +153,16 @@ const ProductsTable = () => {
         </Button>
       </div>
       
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher un produit..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 w-full md:max-w-xs"
+        />
+      </div>
+      
       <Table>
         <TableHeader>
           <TableRow>
@@ -158,46 +175,58 @@ const ProductsTable = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {currentProducts.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>
-                {product.image_url ? (
-                  <img 
-                    src={product.image_url} 
-                    alt={product.name} 
-                    className="h-10 w-10 object-cover rounded"
-                  />
-                ) : (
-                  <div className="h-10 w-10 bg-gray-200 rounded flex items-center justify-center text-gray-500">
-                    Aucune
+          {currentProducts.length > 0 ? (
+            currentProducts.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell>
+                  {product.image_url ? (
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name} 
+                      className="h-10 w-10 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 bg-gray-200 rounded flex items-center justify-center text-gray-500">
+                      Aucune
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>{product.name}</TableCell>
+                <TableCell>{product.price.toFixed(2)}€</TableCell>
+                <TableCell>
+                  {categories.find(c => c.id === product.category_id)?.name || "Non catégorisé"}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={product.is_new ? "default" : "secondary"}>
+                    {product.is_new ? "Actif" : "Désactivé"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => handleEdit(product)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleToggleActive(product)}>
+                      {product.is_new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(product)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={6} className="h-24 text-center">
+                {searchQuery ? (
+                  <div className="text-muted-foreground">Aucun produit ne correspond à la recherche</div>
+                ) : (
+                  <div className="text-muted-foreground">Aucun produit disponible</div>
                 )}
               </TableCell>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>{product.price.toFixed(2)}€</TableCell>
-              <TableCell>
-                {categories.find(c => c.id === product.category_id)?.name || "Non catégorisé"}
-              </TableCell>
-              <TableCell>
-                <Badge variant={product.is_new ? "default" : "secondary"}>
-                  {product.is_new ? "Actif" : "Désactivé"}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => handleEdit(product)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleToggleActive(product)}>
-                    {product.is_new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => handleDelete(product)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
 
@@ -230,7 +259,6 @@ const ProductsTable = () => {
         </Pagination>
       )}
 
-      {/* Product Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-screen overflow-y-auto">
           <DialogHeader>
@@ -245,7 +273,6 @@ const ProductsTable = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
