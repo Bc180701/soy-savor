@@ -1,3 +1,4 @@
+
 export type SushiCategory = 
   | "box" 
   | "plateaux" 
@@ -36,7 +37,7 @@ export interface MenuItem {
   isBestSeller?: boolean;
   allergens?: string[];
   pieces?: number;
-  prepTime?: number; // Ajout du temps de préparation
+  prepTime?: number;
 }
 
 export interface MenuCategory {

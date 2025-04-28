@@ -47,7 +47,6 @@ const productFormSchema = z.object({
   is_spicy: z.boolean().default(false),
   is_new: z.boolean().default(false),
   is_best_seller: z.boolean().default(false),
-  is_active: z.boolean().default(true),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -75,7 +74,6 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     is_spicy: product?.is_spicy || false,
     is_new: product?.is_new || false,
     is_best_seller: product?.is_best_seller || false,
-    is_active: product?.is_active !== undefined ? product.is_active : true,
   };
 
   const form = useForm<ProductFormValues>({
@@ -103,7 +101,6 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_spicy: data.is_spicy,
             is_new: data.is_new,
             is_best_seller: data.is_best_seller,
-            is_active: data.is_active,
             updated_at: new Date().toISOString(),
           })
           .eq("id", product.id)
@@ -139,7 +136,6 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_spicy: data.is_spicy,
             is_new: data.is_new,
             is_best_seller: data.is_best_seller,
-            is_active: data.is_active,
           })
           .select();
 
@@ -319,7 +315,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
           />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <FormField
             control={form.control}
             name="is_vegetarian"
@@ -358,24 +354,6 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
 
           <FormField
             control={form.control}
-            name="is_new"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Nouveau</FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="is_best_seller"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
@@ -394,7 +372,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
 
           <FormField
             control={form.control}
-            name="is_active"
+            name="is_new"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                 <FormControl>
