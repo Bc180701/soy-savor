@@ -33,7 +33,11 @@ const Menu = () => {
     const fetchMenuData = async () => {
       setIsLoading(true);
       try {
+        console.time('Loading Menu Data');
+        // Utiliser la fonction optimisée qui charge tout en une seule requête
         const menuData = await getMenuData();
+        console.timeEnd('Loading Menu Data');
+        
         setCategories(menuData);
         
         // Set the active category to the first one if available

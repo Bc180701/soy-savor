@@ -37,7 +37,10 @@ const Commander = () => {
     const loadMenuData = async () => {
       setIsLoading(true);
       try {
+        console.time('Loading Menu Data');
+        // Utiliser la fonction optimisée qui charge tout en une seule requête
         let menuData = await getMenuData();
+        console.timeEnd('Loading Menu Data');
         
         // Si aucune donnée n'existe, initialiser automatiquement
         if (menuData.length === 0) {
