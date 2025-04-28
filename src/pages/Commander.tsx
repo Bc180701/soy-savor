@@ -45,16 +45,20 @@ const Commander = () => {
           setIsInitializing(true);
           
           // D'abord initialiser les catégories
+          console.log("Initialisation des catégories...");
           const categoriesInitialized = await initializeCategories();
           if (!categoriesInitialized) {
             throw new Error("Échec de l'initialisation des catégories");
           }
+          console.log("Catégories initialisées avec succès");
           
           // Ensuite, initialiser les produits complets
+          console.log("Initialisation des produits...");
           const productsInitialized = await initializeFullMenu();
           if (!productsInitialized) {
             throw new Error("Échec de l'initialisation des produits");
           }
+          console.log("Produits initialisés avec succès");
           
           // Récupérer les données du menu après l'initialisation
           menuData = await getMenuData();
@@ -77,7 +81,7 @@ const Commander = () => {
         console.error("Error loading menu data:", error);
         toast({
           title: "Erreur",
-          description: "Impossible de charger les données du menu.",
+          description: "Impossible de charger les données du menu. Vérifiez les autorisations de la base de données.",
           variant: "destructive"
         });
       } finally {
