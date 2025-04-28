@@ -16,17 +16,26 @@ interface CategoryContentProps {
 const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   // Check if an item is a custom product (sushi or poke)
   const isCustomProduct = (item: MenuItem) => {
-    // Check if it's a custom sushi product
+    // Check product name for custom product keywords
     if (item.name.toLowerCase().includes("poke crea") || 
-        item.name.toLowerCase().includes("sushi créa") ||
+        item.name.toLowerCase().includes("poké crea") || 
+        item.name.toLowerCase().includes("poké créa") ||
+        item.name.toLowerCase().includes("sushi crea") || 
+        item.name.toLowerCase().includes("sushi créa") || 
         item.name.toLowerCase().includes("compose")) {
       
       // Determine if it's a poke bowl or sushi
-      if (item.name.toLowerCase().includes("poke")) {
+      if (item.name.toLowerCase().includes("poke") || 
+          item.name.toLowerCase().includes("poké")) {
         return "poke";
       } else {
         return "sushi";
       }
+    }
+    
+    // Also check by category for custom products
+    if (item.category === "custom" || item.category === "poke_custom") {
+      return item.category === "poke_custom" ? "poke" : "sushi";
     }
     
     return false;
