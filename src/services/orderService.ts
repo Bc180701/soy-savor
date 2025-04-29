@@ -149,7 +149,7 @@ export const getOrdersByUser = async (): Promise<{ orders: Order[]; error?: stri
       promoCode: order.promo_code || undefined,
       orderType: order.order_type as "delivery" | "pickup" | "dine-in",
       status: order.status as "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled",
-      paymentMethod: order.payment_method as "credit-card" | "cash" | "paypal",
+      paymentMethod: "credit-card", // Modifié: toujours carte bancaire
       paymentStatus: order.payment_status as "pending" | "paid" | "failed",
       deliveryInstructions: order.delivery_instructions || undefined,
       scheduledFor: new Date(order.scheduled_for),
@@ -223,7 +223,7 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
       promoCode: order.promo_code || undefined,
       orderType: order.order_type as "delivery" | "pickup" | "dine-in",
       status: order.status as "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled",
-      paymentMethod: order.payment_method as "credit-card" | "cash" | "paypal",
+      paymentMethod: "credit-card", // Modifié: toujours carte bancaire
       paymentStatus: order.payment_status as "pending" | "paid" | "failed",
       deliveryInstructions: order.delivery_instructions || undefined,
       scheduledFor: new Date(order.scheduled_for),
