@@ -12,7 +12,7 @@ export interface CreateOrderParams {
   discount?: number;
   promoCode?: string;
   orderType: "delivery" | "pickup" | "dine-in";
-  paymentMethod: "credit-card" | "cash" | "paypal";
+  paymentMethod: "credit-card"; // Modifié pour n'accepter que carte bancaire
   deliveryAddressId?: string;
   deliveryInstructions?: string;
   scheduledFor: Date;
@@ -50,7 +50,7 @@ export const createOrder = async (params: CreateOrderParams): Promise<{ success:
         discount: params.discount,
         promo_code: params.promoCode,
         order_type: params.orderType,
-        payment_method: params.paymentMethod,
+        payment_method: 'credit-card', // Toujours carte bancaire
         delivery_address_id: params.deliveryAddressId,
         delivery_instructions: params.deliveryInstructions,
         scheduled_for: params.scheduledFor.toISOString(),

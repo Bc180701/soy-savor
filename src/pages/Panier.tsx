@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft } from "lucide-react";
+import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft, CreditCard } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useOrder } from "@/hooks/use-order";
 import { useToast } from "@/components/ui/use-toast";
@@ -110,7 +110,7 @@ const Panier = () => {
       deliveryFee: deliveryFee,
       total: cart.total + deliveryFee + (cart.total * 0.1),
       orderType: orderType,
-      paymentMethod: "credit-card", // Par défaut
+      paymentMethod: "credit-card", // Toujours par carte bancaire
       deliveryInstructions: deliveryAddress?.instructions || undefined,
       scheduledFor: orderDate,
       clientName: deliveryAddress?.name,
@@ -367,7 +367,15 @@ const Panier = () => {
                     
                     <div>
                       <h4 className="text-lg font-medium">Paiement</h4>
-                      <p className="mt-1">Carte bancaire</p>
+                      <div className="mt-2 flex items-center bg-gray-50 p-3 rounded-md border">
+                        <CreditCard className="mr-2 text-gold-600" />
+                        <p>Carte bancaire</p>
+                        <div className="ml-auto flex space-x-2">
+                          <img src="/visa.svg" alt="Visa" className="h-6" />
+                          <img src="/mastercard.svg" alt="Mastercard" className="h-6" />
+                        </div>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-600">Paiement sécurisé en ligne uniquement</p>
                     </div>
                   </div>
                 </div>

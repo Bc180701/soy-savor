@@ -120,7 +120,7 @@ export interface Order {
   promoCode?: string;
   orderType: "delivery" | "pickup" | "dine-in";
   status: "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled";
-  paymentMethod: "credit-card" | "cash" | "paypal";
+  paymentMethod: "credit-card"; // Modifié pour n'accepter que la carte bancaire
   paymentStatus: "pending" | "paid" | "failed";
   deliveryAddress?: UserAddress;
   deliveryInstructions?: string;
