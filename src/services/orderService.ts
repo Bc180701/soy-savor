@@ -246,10 +246,12 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
       const { data: items, error: itemsError } = await supabase
         .from('order_items')
         .select(`
+          id,
           product_id,
           quantity,
           price,
-          special_instructions
+          special_instructions,
+          products(name)
         `)
         .eq('order_id', order.id);
 
@@ -258,11 +260,11 @@ export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string 
         continue;
       }
 
-      // Simuler les articles de commande car nous n'avons pas accès aux détails complets des produits
+      // Mettre en forme les articles de commande
       order.items = items.map(item => ({
         menuItem: {
           id: item.product_id,
-          name: `Produit ${item.product_id.slice(0, 6)}...`, // Nom temporaire
+          name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
           price: item.price,
           category: "plateaux" // Catégorie par défaut
         },

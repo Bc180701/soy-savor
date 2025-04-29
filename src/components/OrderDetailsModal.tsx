@@ -137,7 +137,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
 
   const getClientEmail = () => {
     if (orderDetails?.client_email) return orderDetails.client_email;
-    return 'Email non disponible';
+    return customerDetails?.email || 'Email non disponible';
   };
 
   const getDeliveryAddress = () => {
@@ -254,27 +254,27 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    {orderDetails.orderType === 'delivery' ? (
+                    {orderDetails.order_type === 'delivery' ? (
                       <span>Livraison prévue: {formatDate(orderDetails.scheduled_for)}</span>
                     ) : (
                       <span>Retrait prévu: {formatDate(orderDetails.scheduled_for)}</span>
                     )}
                   </div>
                   
-                  {orderDetails.orderType === 'delivery' && (
+                  {(orderDetails.order_type === 'delivery' || orderDetails.delivery_street) && (
                     <div className="flex items-start gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                       <div>
-                        <div>Adresse de livraison</div>
+                        <div className="font-medium">Adresse de livraison:</div>
                         {getDeliveryAddress()}
                       </div>
                     </div>
                   )}
                   
                   {orderDetails.delivery_instructions && (
-                    <div className="flex flex-col pl-6">
-                      <div>Instructions de livraison:</div>
-                      <div className="italic">"{orderDetails.delivery_instructions}"</div>
+                    <div className="flex flex-col gap-1 mt-1">
+                      <div className="font-medium">Instructions de livraison:</div>
+                      <div className="italic text-sm">"{orderDetails.delivery_instructions}"</div>
                     </div>
                   )}
                 </div>
@@ -300,11 +300,11 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <h3 className="text-lg font-semibold">Produits commandés</h3>
                 <div className="border rounded-md divide-y">
                   {orderDetails.order_items && orderDetails.order_items.length > 0 ? (
-                    orderDetails.order_items.map((item: any) => (
-                      <div key={item.id} className="p-4 flex justify-between">
+                    orderDetails.order_items.map((item: any, index: number) => (
+                      <div key={item.id || index} className="p-4 flex justify-between">
                         <div className="flex-1">
                           <div className="font-medium text-lg">
-                            {item.products?.name || `Produit ${item.product_id.substring(0, 8)}`}
+                            {item.products?.name || `Produit ${item.product_id?.substring(0, 8) || 'inconnu'}`}
                           </div>
                           {item.special_instructions && (
                             <div className="text-sm text-muted-foreground italic mt-1">
@@ -313,9 +313,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                           )}
                         </div>
                         <div className="text-right min-w-[100px]">
-                          <div className="text-base">{item.quantity} x {item.price.toFixed(2)} €</div>
+                          <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
                           <div className="font-semibold text-lg">
-                            {(item.quantity * item.price).toFixed(2)} €
+                            {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
                           </div>
                         </div>
                       </div>
