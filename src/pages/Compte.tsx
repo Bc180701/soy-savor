@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import ProfileForm from "@/components/profile/ProfileForm";
 
 const Compte = () => {
   const { orders: localOrders, clearOrders } = useOrder();
@@ -148,17 +149,18 @@ const Compte = () => {
             <TabsContent value="profil">
               <Card>
                 <CardHeader>
-                  <CardTitle>Information Personnelles</CardTitle>
+                  <CardTitle>Informations Personnelles</CardTitle>
                   <CardDescription>
-                    Modifiez vos informations personnelles ici
+                    Modifiez vos informations personnelles et adresses de livraison
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p>Cette section est en cours de développement.</p>
-                  <p className="text-gray-500 mt-4">
-                    Vous pourrez bientôt mettre à jour vos informations de contact, 
-                    adresses de livraison et préférences.
-                  </p>
+                  <ProfileForm onProfileUpdated={() => {
+                    toast({
+                      title: "Profil mis à jour",
+                      description: "Vos informations ont été enregistrées avec succès."
+                    });
+                  }} />
                 </CardContent>
               </Card>
             </TabsContent>
