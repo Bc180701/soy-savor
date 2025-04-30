@@ -6,8 +6,8 @@ export type OrderResponse = {
   error: Error | null;
 };
 
-export const placeOrder = async (
-  orderData: {
+export const createOrder = async (
+  orderInput: {
     items: CartItem[];
     subtotal: number;
     tax: number;
@@ -18,12 +18,6 @@ export const placeOrder = async (
     promoCode?: string;
     orderType: "delivery" | "pickup" | "dine-in";
     paymentMethod: "credit-card" | "cash" | "paypal";
-    deliveryAddress?: {
-      street: string;
-      city: string;
-      postalCode: string;
-      additionalInfo?: string;
-    };
     deliveryInstructions?: string;
     scheduledFor: Date;
     customerNotes?: string;
@@ -32,55 +26,58 @@ export const placeOrder = async (
     clientName: string;
     clientPhone: string;
     clientEmail: string;
+    deliveryStreet?: string;
+    deliveryCity?: string;
+    deliveryPostalCode?: string;
   }
-): Promise<{ order: Order | null; error: Error | null }> => {
+): Promise<{ success: boolean; order?: Order; error?: any }> => {
   try {
     // Vérifier si l'utilisateur est connecté
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
 
     // Création de la commande dans la base de données
-    const { data: orderData, error: orderError } = await supabase
+    const { data: newOrder, error: orderError } = await supabase
       .from("orders")
       .insert({
         user_id: userId, // null si pas connecté
-        subtotal: orderData.subtotal,
-        tax: orderData.tax,
-        delivery_fee: orderData.deliveryFee,
-        tip: orderData.tip || 0,
-        total: orderData.total,
-        discount: orderData.discount || 0,
-        promo_code: orderData.promoCode,
-        order_type: orderData.orderType,
+        subtotal: orderInput.subtotal,
+        tax: orderInput.tax,
+        delivery_fee: orderInput.deliveryFee,
+        tip: orderInput.tip || 0,
+        total: orderInput.total,
+        discount: orderInput.discount || 0,
+        promo_code: orderInput.promoCode,
+        order_type: orderInput.orderType,
         status: "pending",
-        payment_method: orderData.paymentMethod,
+        payment_method: orderInput.paymentMethod,
         payment_status: "pending",
-        delivery_instructions: orderData.deliveryInstructions,
-        scheduled_for: orderData.scheduledFor,
-        customer_notes: orderData.customerNotes,
-        pickup_time: orderData.pickupTime,
-        allergies: orderData.allergies,
-        client_name: orderData.clientName,
-        client_phone: orderData.clientPhone,
-        client_email: orderData.clientEmail,
-        delivery_street: orderData.deliveryAddress?.street,
-        delivery_city: orderData.deliveryAddress?.city,
-        delivery_postal_code: orderData.deliveryAddress?.postalCode,
+        delivery_instructions: orderInput.deliveryInstructions,
+        scheduled_for: orderInput.scheduledFor,
+        customer_notes: orderInput.customerNotes,
+        pickup_time: orderInput.pickupTime,
+        allergies: orderInput.allergies,
+        client_name: orderInput.clientName,
+        client_phone: orderInput.clientPhone,
+        client_email: orderInput.clientEmail,
+        delivery_street: orderInput.deliveryStreet,
+        delivery_city: orderInput.deliveryCity,
+        delivery_postal_code: orderInput.deliveryPostalCode,
       })
       .select()
       .single();
 
     if (orderError) {
       console.error("Erreur lors de la création de la commande:", orderError);
-      return { order: null, error: orderError };
+      return { success: false, error: orderError };
     }
 
     // Ajouter les articles de la commande
-    const orderItemPromises = orderData.items.map((item) => {
+    const orderItemPromises = orderInput.items.map((item) => {
       return supabase
         .from("order_items")
         .insert({
-          order_id: orderData.id,
+          order_id: newOrder.id,
           product_id: item.menuItem.id,
           quantity: item.quantity,
           price: item.menuItem.price,
@@ -90,13 +87,42 @@ export const placeOrder = async (
 
     await Promise.all(orderItemPromises);
 
+    // Transform the response to match the Order type
+    const orderResult: Order = {
+      id: newOrder.id,
+      userId: newOrder.user_id,
+      items: orderInput.items,
+      subtotal: newOrder.subtotal,
+      tax: newOrder.tax,
+      deliveryFee: newOrder.delivery_fee,
+      tip: newOrder.tip,
+      total: newOrder.total,
+      discount: newOrder.discount,
+      promoCode: newOrder.promo_code,
+      orderType: newOrder.order_type as "delivery" | "pickup" | "dine-in",
+      status: newOrder.status as "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled",
+      paymentMethod: newOrder.payment_method as "credit-card",
+      paymentStatus: newOrder.payment_status as "pending" | "paid" | "failed",
+      deliveryInstructions: newOrder.delivery_instructions,
+      scheduledFor: new Date(newOrder.scheduled_for),
+      createdAt: new Date(newOrder.created_at),
+      customerNotes: newOrder.customer_notes,
+      pickupTime: newOrder.pickup_time,
+      clientName: newOrder.client_name,
+      clientPhone: newOrder.client_phone,
+      clientEmail: newOrder.client_email,
+      deliveryStreet: newOrder.delivery_street,
+      deliveryCity: newOrder.delivery_city,
+      deliveryPostalCode: newOrder.delivery_postal_code
+    };
+
     return {
-      order: orderData as Order,
-      error: null,
+      success: true,
+      order: orderResult
     };
   } catch (error) {
     console.error("Erreur lors de la création de la commande:", error);
-    return { order: null, error: error as Error };
+    return { success: false, error };
   }
 };
 

@@ -1,8 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -99,7 +99,18 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
   async function onSubmit(data: ProfileFormValues) {
     setSaving(true);
     try {
-      const { success, error } = await saveUserProfile(data);
+      // Ensure all required fields are present before saving
+      const profileData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        street: data.street,
+        city: data.city,
+        postalCode: data.postalCode,
+        additionalInfo: data.additionalInfo || ""
+      };
+      
+      const { success, error } = await saveUserProfile(profileData);
       
       if (!success) {
         console.error("Erreur lors de l'enregistrement du profil:", error);
