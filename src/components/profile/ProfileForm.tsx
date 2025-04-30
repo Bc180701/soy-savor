@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
+import { getUserProfile, saveUserProfile } from "@/services/profileService";
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, {
@@ -48,7 +48,6 @@ interface ProfileFormProps {
 export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [addressId, setAddressId] = useState<string | null>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -67,52 +66,25 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
     const loadUserProfile = async () => {
       setLoading(true);
       try {
-        // Charger le profil utilisateur
-        const { data: { session } } = await supabase.auth.getSession();
+        const { profile, address, error } = await getUserProfile();
         
-        if (!session) {
-          setLoading(false);
-          return;
-        }
-
-        // Récupérer les informations de profil
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        if (profileError && profileError.code !== "PGRST116") {
-          console.error("Erreur lors du chargement du profil:", profileError);
-          return;
-        }
-
-        // Récupérer l'adresse par défaut
-        const { data: addressData, error: addressError } = await supabase
-          .from("user_addresses")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .eq("is_default", true)
-          .maybeSingle();
-
-        if (addressError && addressError.code !== "PGRST116") {
-          console.error("Erreur lors du chargement de l'adresse:", addressError);
+        if (error && error !== "Utilisateur non connecté") {
+          console.error("Erreur lors du chargement du profil:", error);
           return;
         }
 
         // Mettre à jour le formulaire avec les données récupérées
-        if (profileData) {
-          form.setValue("firstName", profileData.first_name || "");
-          form.setValue("lastName", profileData.last_name || "");
-          form.setValue("phone", profileData.phone || "");
+        if (profile) {
+          form.setValue("firstName", profile.first_name || "");
+          form.setValue("lastName", profile.last_name || "");
+          form.setValue("phone", profile.phone || "");
         }
 
-        if (addressData) {
-          setAddressId(addressData.id);
-          form.setValue("street", addressData.street || "");
-          form.setValue("city", addressData.city || "");
-          form.setValue("postalCode", addressData.postal_code || "");
-          form.setValue("additionalInfo", addressData.additional_info || "");
+        if (address) {
+          form.setValue("street", address.street || "");
+          form.setValue("city", address.city || "");
+          form.setValue("postalCode", address.postal_code || "");
+          form.setValue("additionalInfo", address.additional_info || "");
         }
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
@@ -127,59 +99,11 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
   async function onSubmit(data: ProfileFormValues) {
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { success, error } = await saveUserProfile(data);
       
-      if (!session) {
+      if (!success) {
+        console.error("Erreur lors de l'enregistrement du profil:", error);
         return;
-      }
-
-      // Mettre à jour le profil
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: session.user.id,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          phone: data.phone,
-        });
-
-      if (profileError) {
-        console.error("Erreur lors de la mise à jour du profil:", profileError);
-        return;
-      }
-
-      // Mettre à jour ou créer l'adresse
-      if (addressId) {
-        const { error: addressError } = await supabase
-          .from("user_addresses")
-          .update({
-            street: data.street,
-            city: data.city,
-            postal_code: data.postalCode,
-            additional_info: data.additionalInfo,
-          })
-          .eq("id", addressId);
-
-        if (addressError) {
-          console.error("Erreur lors de la mise à jour de l'adresse:", addressError);
-          return;
-        }
-      } else {
-        const { error: addressError } = await supabase
-          .from("user_addresses")
-          .insert({
-            user_id: session.user.id,
-            street: data.street,
-            city: data.city,
-            postal_code: data.postalCode,
-            additional_info: data.additionalInfo,
-            is_default: true,
-          });
-
-        if (addressError) {
-          console.error("Erreur lors de la création de l'adresse:", addressError);
-          return;
-        }
       }
 
       // Notifier que le profil a été mis à jour

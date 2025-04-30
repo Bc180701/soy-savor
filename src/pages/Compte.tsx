@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -104,6 +103,13 @@ const Compte = () => {
     }
   };
 
+  const handleProfileUpdated = () => {
+    toast({
+      title: "Profil mis à jour",
+      description: "Vos informations ont été enregistrées avec succès."
+    });
+  };
+
   return (
     <div className="container mx-auto py-24 px-4">
       <motion.div
@@ -155,12 +161,7 @@ const Compte = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ProfileForm onProfileUpdated={() => {
-                    toast({
-                      title: "Profil mis à jour",
-                      description: "Vos informations ont été enregistrées avec succès."
-                    });
-                  }} />
+                  <ProfileForm onProfileUpdated={handleProfileUpdated} />
                 </CardContent>
               </Card>
             </TabsContent>

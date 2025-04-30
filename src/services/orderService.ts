@@ -1,174 +1,137 @@
-
-import { supabase } from "@/integrations/supabase/client";
 import { CartItem, Order } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
-export interface CreateOrderParams {
-  items: CartItem[];
-  subtotal: number;
-  tax: number;
-  deliveryFee: number;
-  tip?: number;
-  total: number;
-  discount?: number;
-  promoCode?: string;
-  orderType: "delivery" | "pickup" | "dine-in";
-  paymentMethod: "credit-card"; // Modifié pour n'accepter que carte bancaire
-  deliveryAddressId?: string;
-  deliveryInstructions?: string;
-  scheduledFor: Date;
-  customerNotes?: string;
-  pickupTime?: string;
-  contactPreference?: string;
-  allergies?: string[];
-  // Informations de contact client
-  clientName?: string;
-  clientPhone?: string;
-  clientEmail?: string;
-  deliveryStreet?: string;
-  deliveryCity?: string;
-  deliveryPostalCode?: string;
-}
+export type OrderResponse = {
+  orders: Order[];
+  error: Error | null;
+};
 
-export const createOrder = async (params: CreateOrderParams): Promise<{ success: boolean; orderId?: string; error?: string }> => {
+export const placeOrder = async (
+  orderData: {
+    items: CartItem[];
+    subtotal: number;
+    tax: number;
+    deliveryFee: number;
+    tip?: number;
+    total: number;
+    discount?: number;
+    promoCode?: string;
+    orderType: "delivery" | "pickup" | "dine-in";
+    paymentMethod: "credit-card" | "cash" | "paypal";
+    deliveryAddress?: {
+      street: string;
+      city: string;
+      postalCode: string;
+      additionalInfo?: string;
+    };
+    deliveryInstructions?: string;
+    scheduledFor: Date;
+    customerNotes?: string;
+    pickupTime?: string;
+    allergies?: string[];
+    clientName: string;
+    clientPhone: string;
+    clientEmail: string;
+  }
+): Promise<{ order: Order | null; error: Error | null }> => {
   try {
     // Vérifier si l'utilisateur est connecté
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return { success: false, error: "Vous devez être connecté pour passer une commande." };
-    }
+    const userId = session?.user?.id;
 
-    // Créer la commande
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
+    // Création de la commande dans la base de données
+    const { data: orderData, error: orderError } = await supabase
+      .from("orders")
       .insert({
-        user_id: session.user.id,
-        subtotal: params.subtotal,
-        tax: params.tax,
-        delivery_fee: params.deliveryFee,
-        tip: params.tip,
-        total: params.total,
-        discount: params.discount,
-        promo_code: params.promoCode,
-        order_type: params.orderType,
-        payment_method: 'credit-card', // Toujours carte bancaire
-        delivery_address_id: params.deliveryAddressId,
-        delivery_instructions: params.deliveryInstructions,
-        scheduled_for: params.scheduledFor.toISOString(),
-        customer_notes: params.customerNotes,
-        pickup_time: params.pickupTime,
-        contact_preference: params.contactPreference,
-        allergies: params.allergies,
-        // Ajout des champs
-        client_name: params.clientName,
-        client_phone: params.clientPhone,
-        client_email: params.clientEmail,
-        delivery_street: params.deliveryStreet,
-        delivery_city: params.deliveryCity,
-        delivery_postal_code: params.deliveryPostalCode
+        user_id: userId, // null si pas connecté
+        subtotal: orderData.subtotal,
+        tax: orderData.tax,
+        delivery_fee: orderData.deliveryFee,
+        tip: orderData.tip || 0,
+        total: orderData.total,
+        discount: orderData.discount || 0,
+        promo_code: orderData.promoCode,
+        order_type: orderData.orderType,
+        status: "pending",
+        payment_method: orderData.paymentMethod,
+        payment_status: "pending",
+        delivery_instructions: orderData.deliveryInstructions,
+        scheduled_for: orderData.scheduledFor,
+        customer_notes: orderData.customerNotes,
+        pickup_time: orderData.pickupTime,
+        allergies: orderData.allergies,
+        client_name: orderData.clientName,
+        client_phone: orderData.clientPhone,
+        client_email: orderData.clientEmail,
+        delivery_street: orderData.deliveryAddress?.street,
+        delivery_city: orderData.deliveryAddress?.city,
+        delivery_postal_code: orderData.deliveryAddress?.postalCode,
       })
-      .select('id')
+      .select()
       .single();
 
     if (orderError) {
       console.error("Erreur lors de la création de la commande:", orderError);
-      return { success: false, error: orderError.message };
+      return { order: null, error: orderError };
     }
 
     // Ajouter les articles de la commande
-    const orderItems = params.items.map(item => ({
-      order_id: order.id,
-      product_id: item.menuItem.id,
-      quantity: item.quantity,
-      price: item.menuItem.price,
-      special_instructions: item.specialInstructions,
-    }));
+    const orderItemPromises = orderData.items.map((item) => {
+      return supabase
+        .from("order_items")
+        .insert({
+          order_id: orderData.id,
+          product_id: item.menuItem.id,
+          quantity: item.quantity,
+          price: item.menuItem.price,
+          special_instructions: item.specialInstructions,
+        });
+    });
 
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
+    await Promise.all(orderItemPromises);
 
-    if (itemsError) {
-      console.error("Erreur lors de l'ajout des articles à la commande:", itemsError);
-      return { success: false, error: itemsError.message };
-    }
-
-    return { success: true, orderId: order.id };
+    return {
+      order: orderData as Order,
+      error: null,
+    };
   } catch (error) {
-    console.error("Erreur inattendue lors de la création de la commande:", error);
-    return { success: false, error: "Une erreur inattendue s'est produite lors de la création de la commande." };
+    console.error("Erreur lors de la création de la commande:", error);
+    return { order: null, error: error as Error };
   }
 };
 
-export const getOrdersByUser = async (): Promise<{ orders: Order[]; error?: string }> => {
+export const getOrdersByUser = async (): Promise<OrderResponse> => {
   try {
+    // Vérifier si l'utilisateur est connecté
     const { data: { session } } = await supabase.auth.getSession();
+    
     if (!session) {
-      return { orders: [], error: "Vous devez être connecté pour voir vos commandes." };
+      return { orders: [], error: new Error("Utilisateur non connecté") };
     }
 
-    const { data: orders, error } = await supabase
-      .from('orders')
-      .select(`
-        id,
-        subtotal,
-        tax,
-        delivery_fee,
-        tip,
-        total,
-        discount,
-        promo_code,
-        order_type,
-        status,
-        payment_method,
-        payment_status,
-        delivery_instructions,
-        scheduled_for,
-        created_at,
-        customer_notes,
-        pickup_time,
-        contact_preference,
-        allergies
-      `)
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false });
+    // Récupérer les commandes de l'utilisateur
+    const { data: ordersData, error: ordersError } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Erreur lors de la récupération des commandes:", error);
-      return { orders: [], error: error.message };
+    if (ordersError) {
+      console.error("Erreur lors de la récupération des commandes:", ordersError);
+      return { orders: [], error: ordersError };
     }
 
-    // Convertir les données Supabase au format de notre application
-    const formattedOrders: Order[] = orders.map(order => ({
-      id: order.id,
-      subtotal: order.subtotal,
-      tax: order.tax,
-      deliveryFee: order.delivery_fee,
-      tip: order.tip || undefined,
-      total: order.total,
-      discount: order.discount || undefined,
-      promoCode: order.promo_code || undefined,
-      orderType: order.order_type as "delivery" | "pickup" | "dine-in",
-      status: order.status as "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled",
-      paymentMethod: "credit-card", // Modifié: toujours carte bancaire
-      paymentStatus: order.payment_status as "pending" | "paid" | "failed",
-      deliveryInstructions: order.delivery_instructions || undefined,
-      scheduledFor: new Date(order.scheduled_for),
-      createdAt: new Date(order.created_at),
-      customerNotes: order.customer_notes || undefined,
-      pickupTime: order.pickup_time || undefined,
-      contactPreference: order.contact_preference || undefined,
-      allergies: order.allergies || undefined,
-      items: [] // Nous allons les récupérer séparément
-    }));
-
-    return { orders: formattedOrders };
+    return {
+      orders: ordersData as Order[],
+      error: null,
+    };
   } catch (error) {
     console.error("Erreur inattendue lors de la récupération des commandes:", error);
-    return { orders: [], error: "Une erreur inattendue s'est produite lors de la récupération des commandes." };
+    return { orders: [], error: error as Error };
   }
 };
 
-export const getAllOrders = async (): Promise<{ orders: Order[]; error?: string }> => {
+export const getAllOrders = async (): Promise<OrderResponse> => {
   try {
     // Use explicit error handling for the database query
     const response = await supabase
