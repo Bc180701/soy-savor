@@ -1,3 +1,4 @@
+
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -53,7 +54,7 @@ export const createOrder = async (
         payment_method: orderInput.paymentMethod,
         payment_status: "pending",
         delivery_instructions: orderInput.deliveryInstructions,
-        scheduled_for: orderInput.scheduledFor,
+        scheduled_for: orderInput.scheduledFor.toISOString(), // Convert Date to string
         customer_notes: orderInput.customerNotes,
         pickup_time: orderInput.pickupTime,
         allergies: orderInput.allergies,
@@ -147,13 +148,44 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
       return { orders: [], error: ordersError };
     }
 
+    // Convert database orders to Order type
+    const orders: Order[] = (ordersData || []).map(order => ({
+      id: order.id,
+      userId: order.user_id,
+      subtotal: order.subtotal,
+      tax: order.tax,
+      deliveryFee: order.delivery_fee,
+      tip: order.tip || undefined,
+      total: order.total,
+      discount: order.discount || undefined,
+      promoCode: order.promo_code || undefined,
+      orderType: order.order_type as "delivery" | "pickup" | "dine-in",
+      status: order.status as "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled",
+      paymentMethod: "credit-card",
+      paymentStatus: order.payment_status as "pending" | "paid" | "failed",
+      deliveryInstructions: order.delivery_instructions || undefined,
+      scheduledFor: new Date(order.scheduled_for),
+      createdAt: new Date(order.created_at),
+      customerNotes: order.customer_notes || undefined,
+      pickupTime: order.pickup_time || undefined,
+      contactPreference: order.contact_preference || undefined,
+      allergies: order.allergies || undefined,
+      clientName: order.client_name || undefined,
+      clientPhone: order.client_phone || undefined,
+      clientEmail: order.client_email || undefined,
+      deliveryStreet: order.delivery_street || undefined,
+      deliveryCity: order.delivery_city || undefined,
+      deliveryPostalCode: order.delivery_postal_code || undefined,
+      items: [] // We'll fetch items separately if needed
+    }));
+
     return {
-      orders: ordersData as Order[],
-      error: null,
+      orders,
+      error: null
     };
   } catch (error) {
     console.error("Erreur inattendue lors de la récupération des commandes:", error);
-    return { orders: [], error: error as Error };
+    return { orders: [], error: error instanceof Error ? error : new Error(String(error)) };
   }
 };
 
@@ -194,7 +226,7 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
       
     if (response.error) {
       console.error("Erreur lors de la récupération des commandes:", response.error);
-      return { orders: [], error: response.error.message };
+      return { orders: [], error: new Error(response.error.message) };
     }
     
     const orders = response.data || [];
@@ -262,10 +294,13 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
       }));
     }
 
-    return { orders: formattedOrders };
+    return { orders: formattedOrders, error: null };
   } catch (error) {
     console.error("Erreur inattendue lors de la récupération des commandes:", error);
-    return { orders: [], error: "Une erreur inattendue s'est produite lors de la récupération des commandes." };
+    return { 
+      orders: [], 
+      error: error instanceof Error ? error : new Error(String(error))
+    };
   }
 };
 
@@ -284,6 +319,9 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
     return { success: true };
   } catch (error) {
     console.error("Erreur inattendue lors de la mise à jour du statut de la commande:", error);
-    return { success: false, error: "Une erreur inattendue s'est produite lors de la mise à jour du statut de la commande." };
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Une erreur inattendue s'est produite lors de la mise à jour du statut de la commande." 
+    };
   }
 };
