@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -19,7 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Salad, Wakame, Soup, Nigiri, Pineapple, Banana } from "lucide-react";
+import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 
 // Enum for checkout steps
 enum CheckoutStep {
@@ -59,10 +58,10 @@ const Panier = () => {
   // Liste des produits offerts
   const freeProducts: FreeProduct[] = [
     { id: "salade-chou", name: "Salade de chou", icon: <Salad className="h-5 w-5 text-green-600" /> },
-    { id: "salade-wakame", name: "Salade wakame", icon: <Wakame className="h-5 w-5 text-green-700" /> },
+    { id: "salade-wakame", name: "Salade wakame", icon: <Leaf className="h-5 w-5 text-green-700" /> },
     { id: "soupe-miso", name: "Soupe miso", icon: <Soup className="h-5 w-5 text-amber-600" /> },
-    { id: "nigiri-saumon", name: "Nigiri saumon (2 pièces)", icon: <Nigiri className="h-5 w-5 text-salmon-600" /> },
-    { id: "perle-ananas", name: "Perle du Japon Ananas", icon: <Pineapple className="h-5 w-5 text-yellow-500" /> },
+    { id: "nigiri-saumon", name: "Nigiri saumon (2 pièces)", icon: <Fish className="h-5 w-5 text-blue-500" /> },
+    { id: "perle-ananas", name: "Perle du Japon Ananas", icon: <Apple className="h-5 w-5 text-yellow-500" /> },
     { id: "perle-banane", name: "Perle du Japon Banane", icon: <Banana className="h-5 w-5 text-yellow-400" /> },
   ];
 
