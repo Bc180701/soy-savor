@@ -99,7 +99,7 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
   async function onSubmit(data: ProfileFormValues) {
     setSaving(true);
     try {
-      // Ensure all required fields are present before saving
+      // S'assurer que toutes les données requises sont présentes
       const profileData = {
         firstName: data.firstName,
         lastName: data.lastName,
