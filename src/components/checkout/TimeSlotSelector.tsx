@@ -62,6 +62,10 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
         const openingHour = 11; // 11h00
         const closingHour = 22; // 22h00
         
+        // Plage horaire indisponible (14h00 - 18h00)
+        const unavailableStartHour = 14;
+        const unavailableEndHour = 18;
+        
         // Déterminer l'heure de départ pour les créneaux
         let startHour = roundedHour;
         let startMinute = roundedMinutes;
@@ -92,6 +96,11 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
         
         // Générer les créneaux par intervalles de 30 minutes
         for (let h = startHour; h < closingHour; h++) {
+          // Vérifier si l'heure actuelle est dans la plage horaire indisponible (14h-18h)
+          if (h >= unavailableStartHour && h < unavailableEndHour) {
+            continue; // Sauter cette heure
+          }
+          
           // Pour la première heure, commencer à partir de la minute calculée
           const minutesToInclude = h === startHour ? [startMinute] : [0, 30];
           
