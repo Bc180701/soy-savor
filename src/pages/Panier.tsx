@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -14,6 +15,11 @@ import { supabase } from "@/integrations/supabase/client";
 import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/DeliveryAddressForm";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Salad, Wakame, Soup, Nigiri, Pineapple, Banana } from "lucide-react";
 
 // Enum for checkout steps
 enum CheckoutStep {
@@ -22,6 +28,13 @@ enum CheckoutStep {
   DELIVERY_ADDRESS = 'delivery-address',
   TIME_SLOT = 'time-slot',
   PAYMENT = 'payment',
+}
+
+// Type pour les produits offerts
+interface FreeProduct {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
 }
 
 const Panier = () => {
@@ -38,6 +51,20 @@ const Panier = () => {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddressData | null>(null);
   const [deliveryTime, setDeliveryTime] = useState<string>("");
+  
+  // États pour la promotion
+  const [isPromotionApplicable, setIsPromotionApplicable] = useState(false);
+  const [selectedFreeProduct, setSelectedFreeProduct] = useState<string | null>(null);
+  
+  // Liste des produits offerts
+  const freeProducts: FreeProduct[] = [
+    { id: "salade-chou", name: "Salade de chou", icon: <Salad className="h-5 w-5 text-green-600" /> },
+    { id: "salade-wakame", name: "Salade wakame", icon: <Wakame className="h-5 w-5 text-green-700" /> },
+    { id: "soupe-miso", name: "Soupe miso", icon: <Soup className="h-5 w-5 text-amber-600" /> },
+    { id: "nigiri-saumon", name: "Nigiri saumon (2 pièces)", icon: <Nigiri className="h-5 w-5 text-salmon-600" /> },
+    { id: "perle-ananas", name: "Perle du Japon Ananas", icon: <Pineapple className="h-5 w-5 text-yellow-500" /> },
+    { id: "perle-banane", name: "Perle du Japon Banane", icon: <Banana className="h-5 w-5 text-yellow-400" /> },
+  ];
 
   // Vérifier si l'utilisateur est connecté
   useEffect(() => {
@@ -47,6 +74,29 @@ const Panier = () => {
     };
     checkAuth();
   }, []);
+  
+  // Vérifier l'éligibilité à la promotion
+  useEffect(() => {
+    const checkPromotionEligibility = () => {
+      // Vérifier si c'est un mardi, mercredi ou jeudi
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 = dim, 1 = lun, 2 = mar, 3 = mer, 4 = jeu
+      const isEligibleDay = dayOfWeek >= 2 && dayOfWeek <= 4;
+      
+      // Vérifier si le montant est suffisant (≥ 70€) et si c'est à emporter
+      const isEligibleAmount = cart.total >= 70;
+      const isEligibleOrderType = orderType === "pickup";
+      
+      setIsPromotionApplicable(isEligibleDay && isEligibleAmount && isEligibleOrderType);
+      
+      // Réinitialiser le produit gratuit si la promotion n'est plus applicable
+      if (!isEligibleDay || !isEligibleAmount || !isEligibleOrderType) {
+        setSelectedFreeProduct(null);
+      }
+    };
+    
+    checkPromotionEligibility();
+  }, [cart.total, orderType]);
 
   const handleIncrement = (id: string) => {
     cart.incrementQuantity(id);
@@ -78,6 +128,14 @@ const Panier = () => {
     setDeliveryTime(time);
     setCurrentStep(CheckoutStep.PAYMENT);
   };
+  
+  const handleFreeProductSelect = (productId: string) => {
+    setSelectedFreeProduct(productId);
+    toast({
+      title: "Produit offert sélectionné",
+      description: `Votre ${freeProducts.find(p => p.id === productId)?.name} gratuit sera ajouté à votre commande.`,
+    });
+  };
 
   const handleCheckout = async () => {
     setIsProcessing(true);
@@ -102,6 +160,13 @@ const Panier = () => {
     const [hours, minutes] = deliveryTime.split(':').map(Number);
     orderDate.setHours(hours, minutes, 0, 0);
     
+    // Ajouter une note concernant le produit gratuit si la promotion est applicable
+    let customerNotes = "";
+    if (isPromotionApplicable && selectedFreeProduct) {
+      const freeProductName = freeProducts.find(p => p.id === selectedFreeProduct)?.name || "";
+      customerNotes = `Produit offert sélectionné: ${freeProductName}`;
+    }
+    
     // Créer la commande dans la base de données
     const result = await createOrder({
       items: cart.items,
@@ -118,7 +183,8 @@ const Panier = () => {
       clientEmail: deliveryAddress?.email,
       deliveryStreet: deliveryAddress?.street,
       deliveryCity: deliveryAddress?.city,
-      deliveryPostalCode: deliveryAddress?.postalCode
+      deliveryPostalCode: deliveryAddress?.postalCode,
+      customerNotes: customerNotes || undefined
     });
     
     if (result.success) {
@@ -203,8 +269,15 @@ const Panier = () => {
     if (currentStep === CheckoutStep.TIME_SLOT) {
       return !deliveryTime;
     }
+    // Si la promotion est applicable mais qu'aucun produit n'est sélectionné
+    if (currentStep === CheckoutStep.PAYMENT && isPromotionApplicable && !selectedFreeProduct) {
+      return true;
+    }
     return false;
   };
+
+  // Formatage de la date du jour
+  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
 
   return (
     <div className="container mx-auto py-24 px-4">
@@ -336,6 +409,35 @@ const Panier = () => {
                       </ul>
                     </div>
                     
+                    {/* Affichage de la promotion si applicable */}
+                    {isPromotionApplicable && (
+                      <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                        <h4 className="font-semibold text-amber-800">Promotion spéciale</h4>
+                        <p className="text-sm text-amber-700 mt-1">
+                          Valable uniquement à emporter les mardis, mercredis et jeudis soirs.
+                        </p>
+                        <p className="text-sm font-medium text-amber-700 mt-1">
+                          Dès 70€ d'achat → Un produit offert au choix :
+                        </p>
+                        
+                        <RadioGroup 
+                          value={selectedFreeProduct || ""}
+                          onValueChange={handleFreeProductSelect}
+                          className="mt-3 space-y-2"
+                        >
+                          {freeProducts.map((product) => (
+                            <div key={product.id} className="flex items-center space-x-2">
+                              <RadioGroupItem value={product.id} id={product.id} />
+                              <Label htmlFor={product.id} className="flex items-center cursor-pointer">
+                                {product.icon}
+                                <span className="ml-2">{product.name}</span>
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    )}
+                    
                     <div>
                       <h4 className="text-lg font-medium">Mode de réception</h4>
                       <p className="mt-1">{orderType === "delivery" ? "Livraison à domicile" : "Retrait en magasin"}</p>
@@ -396,9 +498,12 @@ const Panier = () => {
                     <Button 
                       className="bg-gold-600 hover:bg-gold-700"
                       onClick={handleCheckout}
-                      disabled={isProcessing}
+                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct)}
                     >
                       {isProcessing ? "Traitement en cours..." : "Payer maintenant"}
+                      {isPromotionApplicable && !selectedFreeProduct && (
+                        <span className="sr-only">Veuillez choisir votre produit offert</span>
+                      )}
                     </Button>
                   ) : (
                     <Button
@@ -436,6 +541,15 @@ const Panier = () => {
                           "—"}
                       </span>
                     </div>
+                    
+                    {/* Afficher si la promotion est applicable */}
+                    {isPromotionApplicable && (
+                      <div className="flex justify-between text-amber-700 font-medium">
+                        <span>Promotion</span>
+                        <span>1 produit offert</span>
+                      </div>
+                    )}
+                    
                     <Separator />
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total</span>
@@ -456,6 +570,19 @@ const Panier = () => {
                   </CardFooter>
                 )}
               </Card>
+              
+              {/* Bannière d'information sur la promotion */}
+              {orderType === "pickup" && cart.total >= 50 && cart.total < 70 && (
+                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800 font-medium">
+                    {formattedCurrentDay === "mardi" || formattedCurrentDay === "mercredi" || formattedCurrentDay === "jeudi" ? (
+                      <>Plus que <strong>{(70 - cart.total).toFixed(2)}€</strong> pour bénéficier d'un produit offert!</>
+                    ) : (
+                      <>Cette commande sera éligible à un produit offert les mardis, mercredis et jeudis si elle atteint 70€</>
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
