@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { fetchOrderWithDetails } from "@/integrations/supabase/client";
-import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare, Calendar } from "lucide-react";
+import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare, Calendar, Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -169,9 +169,21 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     
     return <div>Adresse non disponible</div>;
   };
+  
+  // Extraire le produit offert des notes client
+  const getFreeProduct = () => {
+    if (!orderDetails?.customer_notes) return null;
+    
+    const match = orderDetails.customer_notes.match(/Produit offert sélectionné: (.*)/i);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return null;
+  };
 
   // Utilisation d'une feuille latérale pour les petits écrans et d'une boîte de dialogue pour les écrans plus grands
   const isMobile = window.innerWidth < 768;
+  const freeProduct = getFreeProduct();
 
   // Si c'est un appareil mobile, utiliser Sheet
   if (isMobile) {
@@ -225,7 +237,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 </div>
                 
                 {/* Informations supplémentaires */}
-                {(orderDetails.allergies || orderDetails.customer_notes) && (
+                {(orderDetails.allergies || orderDetails.customer_notes || freeProduct) && (
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold">Informations supplémentaires</h3>
                     {orderDetails.allergies && orderDetails.allergies.length > 0 && (
@@ -240,7 +252,19 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                       </div>
                     )}
                     
-                    {orderDetails.customer_notes && (
+                    {freeProduct && (
+                      <div className="flex items-start gap-2">
+                        <Gift className="h-4 w-4 text-amber-600 mt-0.5" />
+                        <div>
+                          <div className="font-medium">Produit offert:</div>
+                          <div className="text-sm font-semibold text-amber-700">
+                            {freeProduct}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {orderDetails.customer_notes && !freeProduct && (
                       <div className="flex items-start gap-2">
                         <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
                         <div>
@@ -327,6 +351,22 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                     ) : (
                       <div className="p-3 text-center text-muted-foreground">
                         Aucun produit trouvé
+                      </div>
+                    )}
+                    
+                    {/* Afficher le produit offert comme un élément distinct dans la liste des produits commandés */}
+                    {freeProduct && (
+                      <div className="p-4 flex justify-between bg-amber-50">
+                        <div className="flex-1">
+                          <div className="font-medium text-lg flex items-center">
+                            <Gift className="h-4 w-4 text-amber-600 mr-2" />
+                            {freeProduct} <span className="ml-2 text-amber-600">(OFFERT)</span>
+                          </div>
+                        </div>
+                        <div className="text-right min-w-[100px]">
+                          <div className="text-base">1 x 0.00 €</div>
+                          <div className="font-semibold text-lg">0.00 €</div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -432,7 +472,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
               </div>
               
               {/* Informations supplémentaires */}
-              {(orderDetails.allergies || orderDetails.customer_notes) && (
+              {(orderDetails.allergies || orderDetails.customer_notes || freeProduct) && (
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Informations supplémentaires</h3>
                   {orderDetails.allergies && orderDetails.allergies.length > 0 && (
@@ -447,7 +487,19 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                     </div>
                   )}
                   
-                  {orderDetails.customer_notes && (
+                  {freeProduct && (
+                    <div className="flex items-start gap-2">
+                      <Gift className="h-4 w-4 text-amber-600 mt-0.5" />
+                      <div>
+                        <div className="font-medium">Produit offert:</div>
+                        <div className="text-sm font-semibold text-amber-700">
+                          {freeProduct}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {orderDetails.customer_notes && !freeProduct && (
                     <div className="flex items-start gap-2">
                       <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
                       <div>
@@ -534,6 +586,22 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                   ) : (
                     <div className="p-3 text-center text-muted-foreground">
                       Aucun produit trouvé
+                    </div>
+                  )}
+                  
+                  {/* Afficher le produit offert comme un élément distinct dans la liste des produits commandés */}
+                  {freeProduct && (
+                    <div className="p-4 flex justify-between bg-amber-50">
+                      <div className="flex-1">
+                        <div className="font-medium text-lg flex items-center">
+                          <Gift className="h-4 w-4 text-amber-600 mr-2" />
+                          {freeProduct} <span className="ml-2 text-amber-600">(OFFERT)</span>
+                        </div>
+                      </div>
+                      <div className="text-right min-w-[100px]">
+                        <div className="text-base">1 x 0.00 €</div>
+                        <div className="font-semibold text-lg">0.00 €</div>
+                      </div>
                     </div>
                   )}
                 </div>
