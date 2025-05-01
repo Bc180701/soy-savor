@@ -10,7 +10,11 @@ import {
   Dialog, DialogContent, DialogHeader, 
   DialogTitle, DialogFooter 
 } from "@/components/ui/dialog";
-import { Pencil, Trash2, EyeOff, Eye, Plus, Search } from "lucide-react";
+import { 
+  Select, SelectContent, SelectItem, 
+  SelectTrigger, SelectValue 
+} from "@/components/ui/select";
+import { Filter, Pencil, Trash2, EyeOff, Eye, Plus, Search } from "lucide-react";
 import { fetchAllProducts, fetchCategories, supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import ProductForm from "./ProductForm";
@@ -26,6 +30,7 @@ const ProductsTable = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const productsPerPage = 10;
   const { toast } = useToast();
 
@@ -123,9 +128,12 @@ const ProductsTable = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filtrer les produits par recherche et catégorie
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = categoryFilter === "all" || product.category_id === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
@@ -134,7 +142,7 @@ const ProductsTable = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, categoryFilter]);
 
   const handleSaveProduct = (updatedProducts: any[]) => {
     setProducts(updatedProducts);
@@ -154,14 +162,36 @@ const ProductsTable = () => {
         </Button>
       </div>
       
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Rechercher un produit..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 w-full md:max-w-xs"
-        />
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+        <div className="relative w-full md:max-w-xs">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un produit..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 w-full"
+          />
+        </div>
+        
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select
+            value={categoryFilter}
+            onValueChange={setCategoryFilter}
+          >
+            <SelectTrigger className="w-full md:w-[200px]">
+              <SelectValue placeholder="Filtrer par catégorie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les catégories</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       
       <Table>
@@ -222,8 +252,8 @@ const ProductsTable = () => {
           ) : (
             <TableRow>
               <TableCell colSpan={7} className="h-24 text-center">
-                {searchQuery ? (
-                  <div className="text-muted-foreground">Aucun produit ne correspond à la recherche</div>
+                {searchQuery || categoryFilter !== "all" ? (
+                  <div className="text-muted-foreground">Aucun produit ne correspond aux critères de recherche</div>
                 ) : (
                   <div className="text-muted-foreground">Aucun produit disponible</div>
                 )}
