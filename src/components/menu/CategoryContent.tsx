@@ -8,6 +8,8 @@ import { MenuItem, MenuCategory } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useState } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -15,6 +17,9 @@ interface CategoryContentProps {
 }
 
 const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageAlt, setSelectedImageAlt] = useState<string>("");
+
   // Check if an item is a custom product (sushi or poke)
   const isCustomProduct = (item: MenuItem) => {
     // Check product name for custom product keywords
@@ -40,6 +45,15 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     }
     
     return false;
+  };
+
+  const handleImageClick = (imageUrl: string, alt: string) => {
+    setSelectedImage(imageUrl);
+    setSelectedImageAlt(alt);
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedImage(null);
   };
 
   return (
@@ -78,7 +92,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                             <img
                               src={item.imageUrl}
                               alt={item.name}
-                              className="w-full h-full object-contain bg-gray-50"
+                              className="w-full h-full object-contain bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => handleImageClick(item.imageUrl, item.name)}
                             />
                           </AspectRatio>
                         </div>
@@ -153,6 +168,19 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Image Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={handleCloseDialog}>
+        <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
+          <div className="w-full bg-white rounded-lg overflow-hidden">
+            <img
+              src={selectedImage || ''}
+              alt={selectedImageAlt}
+              className="w-full h-auto object-contain max-h-[80vh]"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
