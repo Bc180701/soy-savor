@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -132,7 +133,7 @@ const Compte = () => {
                 <p className="text-gray-600 mb-6">
                   Connectez-vous pour accéder à votre compte et voir vos commandes
                 </p>
-                <Button asChild className="bg-akane-600 hover:bg-akane-700">
+                <Button asChild className="bg-gold-500 hover:bg-gold-600 text-black">
                   <a href="/login">
                     Se connecter
                   </a>
@@ -209,7 +210,7 @@ const Compte = () => {
                       ))}
                       <Button 
                         onClick={loadOrders} 
-                        className="mt-4 bg-akane-600 hover:bg-akane-700"
+                        className="mt-4 bg-gold-500 hover:bg-gold-600 text-black"
                       >
                         Rafraîchir
                       </Button>

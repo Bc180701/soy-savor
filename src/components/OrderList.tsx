@@ -144,6 +144,7 @@ const OrderList = () => {
                     {order.status === 'pending' && (
                       <Button
                         size="sm"
+                        className="bg-gold-500 hover:bg-gold-600 text-black"
                         onClick={() => handleUpdateStatus(order.id, 'confirmed')}
                       >
                         Confirmer
@@ -153,6 +154,7 @@ const OrderList = () => {
                     {order.status === 'confirmed' && (
                       <Button
                         size="sm"
+                        className="bg-gold-500 hover:bg-gold-600 text-black"
                         onClick={() => handleUpdateStatus(order.id, 'preparing')}
                       >
                         Préparer
@@ -162,6 +164,7 @@ const OrderList = () => {
                     {order.status === 'preparing' && (
                       <Button
                         size="sm"
+                        className="bg-gold-500 hover:bg-gold-600 text-black"
                         onClick={() => handleUpdateStatus(order.id, order.orderType === 'delivery' ? 'out-for-delivery' : 'ready')}
                       >
                         {order.orderType === 'delivery' ? 'Envoyer en livraison' : 'Prêt'}
@@ -171,6 +174,7 @@ const OrderList = () => {
                     {order.status === 'out-for-delivery' && (
                       <Button
                         size="sm"
+                        className="bg-gold-500 hover:bg-gold-600 text-black"
                         onClick={() => handleUpdateStatus(order.id, 'delivered')}
                       >
                         Livré
@@ -180,6 +184,7 @@ const OrderList = () => {
                     {(order.status === 'ready' || order.status === 'delivered') && (
                       <Button
                         size="sm"
+                        className="bg-gold-500 hover:bg-gold-600 text-black"
                         onClick={() => handleUpdateStatus(order.id, 'completed')}
                       >
                         Terminer

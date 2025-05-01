@@ -254,7 +254,7 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
           </div>
         </div>
 
-        <Button type="submit" disabled={saving} className="bg-akane-600 hover:bg-akane-700">
+        <Button type="submit" disabled={saving} className="bg-gold-500 hover:bg-gold-600 text-black">
           {saving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
