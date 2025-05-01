@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { getOrderAnalytics, OrderAnalytics } from "@/services/analyticsService";
 
 const OrdersChart = () => {
@@ -80,21 +80,21 @@ const OrdersChart = () => {
                 }
               }}
             >
-              <AreaChart 
+              <BarChart
                 width={800}
                 height={250}
-                data={formatData(data)} 
+                data={formatData(data)}
                 margin={{ top: 5, right: 50, left: 5, bottom: 15 }}
               >
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="date"
                   axisLine={{ strokeWidth: 1 }}
                   tickLine={false}
                   fontSize={10}
                   dy={10}
                 />
                 {/* Primary Y-axis for orders */}
-                <YAxis 
+                <YAxis
                   yAxisId="left"
                   orientation="left"
                   tickFormatter={(value) => `${value}`}
@@ -105,7 +105,7 @@ const OrdersChart = () => {
                   width={30}
                 />
                 {/* Secondary Y-axis for revenue */}
-                <YAxis 
+                <YAxis
                   yAxisId="right"
                   orientation="right"
                   tickFormatter={(value) => `${value} €`}
@@ -115,32 +115,30 @@ const OrdersChart = () => {
                   fontSize={10}
                   width={50}
                 />
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="total_orders"
                   yAxisId="left"
+                  fill="#93C5FD" // Light blue
                   stroke="#1E40AF"
-                  fill="#93C5FD"
-                  strokeWidth={2}
+                  strokeWidth={1}
                   name="orders"
-                  activeDot={{ r: 6 }}
+                  barSize={20}
                 />
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="total_revenue"
                   yAxisId="right"
+                  fill="#86EFAC" // Light green
                   stroke="#047857"
-                  fill="#86EFAC"
-                  strokeWidth={2}
+                  strokeWidth={1}
                   name="revenue"
-                  activeDot={{ r: 6 }}
+                  barSize={20}
                 />
                 <ChartTooltip
                   content={
                     <CustomTooltip />
                   }
                 />
-              </AreaChart>
+              </BarChart>
             </ChartContainer>
           </div>
         )}
