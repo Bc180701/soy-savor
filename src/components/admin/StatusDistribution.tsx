@@ -40,7 +40,7 @@ const StatusDistribution = () => {
   }, []);
 
   return (
-    <Card className="col-span-1 h-[300px]">
+    <Card className="w-full h-[300px]">
       <CardHeader>
         <CardTitle>Distribution des statuts</CardTitle>
       </CardHeader>

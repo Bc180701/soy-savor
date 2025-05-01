@@ -53,7 +53,7 @@ const OrdersChart = () => {
   };
 
   return (
-    <Card className="w-full h-[350px]">
+    <Card className="w-full">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Évolution des commandes et revenus (7 derniers jours)</CardTitle>
       </CardHeader>
@@ -67,7 +67,7 @@ const OrdersChart = () => {
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[250px] w-full">
+          <div className="h-[250px]">
             <ChartContainer 
               config={{
                 orders: {

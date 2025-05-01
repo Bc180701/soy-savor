@@ -20,7 +20,7 @@ const PopularProductsChart = () => {
   }, []);
 
   return (
-    <Card className="col-span-1 h-[300px]">
+    <Card className="w-full h-[300px]">
       <CardHeader>
         <CardTitle>Produits les plus commandés</CardTitle>
       </CardHeader>
@@ -38,10 +38,10 @@ const PopularProductsChart = () => {
             <ChartContainer config={{ product: { color: "#1E40AF" } }}>
               <BarChart 
                 width={320} 
-                height={200} 
+                height={180} 
                 data={data}
                 layout="vertical"
-                margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
+                margin={{ top: 5, right: 30, left: 90, bottom: 5 }}
               >
                 <XAxis type="number" />
                 <YAxis 

@@ -99,11 +99,11 @@ const Admin = () => {
           <div className="space-y-8">
             <DashboardStats />
             
-            <div className="mb-8">
+            <div className="mb-10">
               <OrdersChart />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
               <StatusDistribution />
               <PopularProductsChart />
             </div>
