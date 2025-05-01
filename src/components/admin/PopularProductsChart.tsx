@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { getPopularProducts, PopularProduct } from "@/services/analyticsService";
 
 const PopularProductsChart = () => {
@@ -34,29 +34,33 @@ const PopularProductsChart = () => {
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[200px]">
+          <div className="h-[200px] flex items-center justify-center">
             <ChartContainer config={{ product: { color: "#1E40AF" } }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={data}>
-                  <XAxis type="number" />
-                  <YAxis 
-                    type="category" 
-                    dataKey="product_name" 
-                    width={100}
-                    tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 12)}...` : value}
-                  />
-                  <Bar 
-                    dataKey="order_count" 
-                    fill="#93C5FD" 
-                    name="product"
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent />
-                    }
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <BarChart 
+                width={320} 
+                height={200} 
+                data={data}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
+              >
+                <XAxis type="number" />
+                <YAxis 
+                  type="category" 
+                  dataKey="product_name" 
+                  width={120}
+                  tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 12)}...` : value}
+                />
+                <Bar 
+                  dataKey="order_count" 
+                  fill="#93C5FD" 
+                  name="product"
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent />
+                  }
+                />
+              </BarChart>
             </ChartContainer>
           </div>
         )}
