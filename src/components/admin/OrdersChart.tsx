@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { getOrderAnalytics, OrderAnalytics } from "@/services/analyticsService";
 
 const OrdersChart = () => {
@@ -67,7 +67,7 @@ const OrdersChart = () => {
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[200px]">
+          <div className="h-[280px] max-h-[280px] flex items-center justify-center">
             <ChartContainer 
               config={{
                 orders: {
@@ -80,67 +80,67 @@ const OrdersChart = () => {
                 }
               }}
             >
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart 
-                  data={formatData(data)} 
-                  margin={{ top: 5, right: 50, left: 5, bottom: 15 }}
-                >
-                  <XAxis 
-                    dataKey="date" 
-                    axisLine={{ strokeWidth: 1 }}
-                    tickLine={false}
-                    fontSize={10}
-                    dy={10}
-                  />
-                  {/* Primary Y-axis for orders */}
-                  <YAxis 
-                    yAxisId="left"
-                    orientation="left"
-                    tickFormatter={(value) => `${value}`}
-                    domain={getOrdersYAxisDomain()}
-                    axisLine={{ strokeWidth: 1 }}
-                    tickLine={false}
-                    fontSize={10}
-                    width={30}
-                  />
-                  {/* Secondary Y-axis for revenue */}
-                  <YAxis 
-                    yAxisId="right"
-                    orientation="right"
-                    tickFormatter={(value) => `${value} €`}
-                    domain={getRevenueYAxisDomain()}
-                    axisLine={{ strokeWidth: 1 }}
-                    tickLine={false}
-                    fontSize={10}
-                    width={50}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="total_orders"
-                    yAxisId="left"
-                    stroke="#1E40AF"
-                    fill="#93C5FD"
-                    strokeWidth={2}
-                    name="orders"
-                    activeDot={{ r: 6 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="total_revenue"
-                    yAxisId="right"
-                    stroke="#047857"
-                    fill="#86EFAC"
-                    strokeWidth={2}
-                    name="revenue"
-                    activeDot={{ r: 6 }}
-                  />
-                  <ChartTooltip
-                    content={
-                      <CustomTooltip />
-                    }
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <AreaChart 
+                width={800}
+                height={250}
+                data={formatData(data)} 
+                margin={{ top: 5, right: 50, left: 5, bottom: 15 }}
+              >
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={{ strokeWidth: 1 }}
+                  tickLine={false}
+                  fontSize={10}
+                  dy={10}
+                />
+                {/* Primary Y-axis for orders */}
+                <YAxis 
+                  yAxisId="left"
+                  orientation="left"
+                  tickFormatter={(value) => `${value}`}
+                  domain={getOrdersYAxisDomain()}
+                  axisLine={{ strokeWidth: 1 }}
+                  tickLine={false}
+                  fontSize={10}
+                  width={30}
+                />
+                {/* Secondary Y-axis for revenue */}
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  tickFormatter={(value) => `${value} €`}
+                  domain={getRevenueYAxisDomain()}
+                  axisLine={{ strokeWidth: 1 }}
+                  tickLine={false}
+                  fontSize={10}
+                  width={50}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total_orders"
+                  yAxisId="left"
+                  stroke="#1E40AF"
+                  fill="#93C5FD"
+                  strokeWidth={2}
+                  name="orders"
+                  activeDot={{ r: 6 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total_revenue"
+                  yAxisId="right"
+                  stroke="#047857"
+                  fill="#86EFAC"
+                  strokeWidth={2}
+                  name="revenue"
+                  activeDot={{ r: 6 }}
+                />
+                <ChartTooltip
+                  content={
+                    <CustomTooltip />
+                  }
+                />
+              </AreaChart>
             </ChartContainer>
           </div>
         )}

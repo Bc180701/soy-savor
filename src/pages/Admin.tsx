@@ -96,10 +96,10 @@ const Admin = () => {
         </TabsList>
         
         <TabsContent value="dashboard">
-          <div className="space-y-12">
+          <div className="space-y-8">
             <DashboardStats />
             
-            <div className="w-full">
+            <div className="w-full mb-8">
               <OrdersChart />
             </div>
             
