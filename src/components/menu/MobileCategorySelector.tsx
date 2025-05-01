@@ -1,13 +1,6 @@
 
 import { MenuCategory } from "@/types";
-import { 
-  Carousel, 
-  CarouselContent, 
-  CarouselItem, 
-  CarouselNext, 
-  CarouselPrevious 
-} from "@/components/ui/carousel";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,19 +16,43 @@ const MobileCategorySelector = ({
   activeCategory, 
   onCategoryChange 
 }: MobileCategorySelectorProps) => {
-  // État local pour suivre si l'utilisateur fait défiler le carrousel
-  const [isDragging, setIsDragging] = useState(false);
-
+  // Référence au conteneur de défilement
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // État pour suivre si l'utilisateur fait défiler
+  const [isScrolling, setIsScrolling] = useState(false);
+  
+  // Minuterie pour réinitialiser l'état de défilement
+  const scrollTimerRef = useRef<number | null>(null);
+  
   // Détermine l'index actif pour le scroll
   const activeIndex = categories.findIndex(cat => cat.id === activeCategory);
+
+  // Gestionnaires d'événements pour le défilement
+  const handleScrollStart = () => {
+    setIsScrolling(true);
+    
+    // Effacer tout minuteur existant
+    if (scrollTimerRef.current) {
+      window.clearTimeout(scrollTimerRef.current);
+    }
+  };
   
-  // Référence au conteneur du carrousel
-  const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
+  const handleScrollEnd = () => {
+    // Utiliser un délai pour éviter les faux "fins de défilement"
+    if (scrollTimerRef.current) {
+      window.clearTimeout(scrollTimerRef.current);
+    }
+    
+    scrollTimerRef.current = window.setTimeout(() => {
+      setIsScrolling(false);
+    }, 150) as unknown as number;
+  };
 
   // Faire défiler vers la catégorie active lorsqu'elle change
   useEffect(() => {
-    if (containerElement && activeIndex >= 0 && !isDragging) {
-      const buttons = containerElement.querySelectorAll('button');
+    if (scrollContainerRef.current && activeIndex >= 0 && !isScrolling) {
+      const buttons = scrollContainerRef.current.querySelectorAll('button');
       if (buttons[activeIndex]) {
         buttons[activeIndex].scrollIntoView({
           behavior: 'smooth',
@@ -44,23 +61,33 @@ const MobileCategorySelector = ({
         });
       }
     }
-  }, [activeCategory, activeIndex, containerElement, isDragging]);
+  }, [activeCategory, activeIndex, isScrolling]);
+  
+  // Nettoyer les minuteries lors du démontage
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        window.clearTimeout(scrollTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="mb-6">
       <h2 className="text-xl font-bold mb-4">Catégories</h2>
       <div className="relative">
         <div
-          ref={setContainerElement}
+          ref={scrollContainerRef}
           className="flex overflow-x-auto scrollbar-hide py-2 px-1 -mx-1 snap-x scroll-smooth"
           style={{ 
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'
           }}
-          onMouseDown={() => setIsDragging(true)}
-          onMouseUp={() => setIsDragging(false)}
-          onTouchStart={() => setIsDragging(true)}
-          onTouchEnd={() => setIsDragging(false)}
+          onMouseDown={handleScrollStart}
+          onMouseUp={handleScrollEnd}
+          onTouchStart={handleScrollStart}
+          onTouchEnd={handleScrollEnd}
+          onScroll={handleScrollStart}
         >
           {categories.map((category) => (
             <div 
@@ -69,9 +96,7 @@ const MobileCategorySelector = ({
             >
               <button
                 onClick={() => {
-                  if (!isDragging) {
-                    onCategoryChange(category.id);
-                  }
+                  onCategoryChange(category.id);
                 }}
                 className={cn(
                   "whitespace-nowrap px-4 py-2 rounded-md transition-colors",
