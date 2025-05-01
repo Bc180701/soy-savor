@@ -91,31 +91,24 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     try {
       setUploadingImage(true);
       
-      // Vérifier si le bucket products existe déjà, sinon le créer
-      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('products');
-      if (!bucketData && bucketError) {
-        const { error: createBucketError } = await supabase.storage.createBucket('products', {
-          public: true,
-          fileSizeLimit: 5242880, // 5MB
-        });
-        if (createBucketError) throw createBucketError;
-      }
-      
       // Générer un nom de fichier unique
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
       
       // Télécharger l'image
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data } = await supabase.storage
         .from('products')
         .upload(filePath, file);
       
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Erreur détaillée:", uploadError);
+        throw new Error(`Erreur de téléchargement: ${uploadError.message}`);
+      }
       
       // Obtenir l'URL publique
-      const { data } = supabase.storage.from('products').getPublicUrl(filePath);
-      const publicUrl = data.publicUrl;
+      const { data: publicUrlData } = supabase.storage.from('products').getPublicUrl(filePath);
+      const publicUrl = publicUrlData.publicUrl;
       
       // Mettre à jour le formulaire avec l'URL de l'image
       form.setValue("image_url", publicUrl);
@@ -124,6 +117,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
       toast({
         title: "Image téléchargée",
         description: "L'image a été téléchargée avec succès",
+        variant: "success",
       });
     } catch (error: any) {
       console.error("Erreur lors du téléchargement de l'image:", error);
@@ -175,6 +169,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
         toast({
           title: "Produit mis à jour",
           description: `${data.name} a été mis à jour avec succès`,
+          variant: "success",
         });
       } else {
         // Ajout d'un nouveau produit
@@ -208,6 +203,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
         toast({
           title: "Produit ajouté",
           description: `${data.name} a été ajouté avec succès`,
+          variant: "success",
         });
       }
     } catch (error: any) {
