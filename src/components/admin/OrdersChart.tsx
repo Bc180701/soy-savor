@@ -59,15 +59,15 @@ const OrdersChart = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[250px] items-center justify-center">
+          <div className="flex h-[200px] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : data.length === 0 ? (
-          <div className="flex h-[250px] items-center justify-center">
+          <div className="flex h-[200px] items-center justify-center">
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[250px]">
+          <div className="h-[200px]">
             <ChartContainer 
               config={{
                 orders: {
@@ -81,10 +81,10 @@ const OrdersChart = () => {
               }}
             >
               <BarChart
-                width={800}
-                height={250}
+                width={700}
+                height={200}
                 data={formatData(data)}
-                margin={{ top: 5, right: 50, left: 5, bottom: 15 }}
+                margin={{ top: 5, right: 40, left: 5, bottom: 15 }}
               >
                 <XAxis
                   dataKey="date"

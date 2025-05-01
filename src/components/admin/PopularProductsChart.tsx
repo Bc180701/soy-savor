@@ -20,35 +20,35 @@ const PopularProductsChart = () => {
   }, []);
 
   return (
-    <Card className="w-full h-[300px]">
-      <CardHeader>
-        <CardTitle>Produits les plus commandés</CardTitle>
+    <Card className="w-full h-[250px]">
+      <CardHeader className="pb-0">
+        <CardTitle className="text-lg">Produits les plus commandés</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[200px] items-center justify-center">
+          <div className="flex h-[180px] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : data.length === 0 ? (
-          <div className="flex h-[200px] items-center justify-center">
+          <div className="flex h-[180px] items-center justify-center">
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[200px] w-full flex items-center justify-center">
+          <div className="h-[180px] w-full flex items-center justify-center">
             <ChartContainer config={{ product: { color: "#1E40AF" } }}>
               <BarChart 
-                width={320} 
-                height={180} 
+                width={300} 
+                height={160} 
                 data={data}
                 layout="vertical"
-                margin={{ top: 5, right: 30, left: 90, bottom: 5 }}
+                margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
               >
                 <XAxis type="number" />
                 <YAxis 
                   type="category" 
                   dataKey="product_name" 
-                  width={120}
-                  tickFormatter={(value) => value.length > 12 ? `${value.substring(0, 12)}...` : value}
+                  width={100}
+                  tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
                 />
                 <Bar 
                   dataKey="order_count" 

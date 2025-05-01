@@ -40,21 +40,21 @@ const StatusDistribution = () => {
   }, []);
 
   return (
-    <Card className="w-full h-[300px]">
-      <CardHeader>
-        <CardTitle>Distribution des statuts</CardTitle>
+    <Card className="w-full h-[250px]">
+      <CardHeader className="pb-0">
+        <CardTitle className="text-lg">Distribution des statuts</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[200px] items-center justify-center">
+          <div className="flex h-[180px] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : data.length === 0 ? (
-          <div className="flex h-[200px] items-center justify-center">
+          <div className="flex h-[180px] items-center justify-center">
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[200px] w-full flex items-center justify-center">
+          <div className="h-[180px] w-full flex items-center justify-center">
             <ChartContainer 
               config={data.reduce((acc, item, index) => {
                 acc[item.status] = {
@@ -64,13 +64,13 @@ const StatusDistribution = () => {
                 return acc;
               }, {} as Record<string, any>)}
             >
-              <PieChart width={200} height={200}>
+              <PieChart width={160} height={160}>
                 <Pie
                   data={data}
-                  cx={100}
-                  cy={100}
+                  cx={80}
+                  cy={80}
                   labelLine={false}
-                  outerRadius={80}
+                  outerRadius={65}
                   fill="#8884d8"
                   dataKey="value"
                   nameKey="status"
