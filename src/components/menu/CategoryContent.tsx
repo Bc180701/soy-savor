@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -172,6 +172,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
       {/* Image Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={handleCloseDialog}>
         <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
+          {/* Titre caché pour accessibilité */}
+          <DialogTitle className="sr-only">Image de {selectedImageAlt}</DialogTitle>
           <div className="w-full bg-white rounded-lg overflow-hidden">
             <img
               src={selectedImage || ''}
