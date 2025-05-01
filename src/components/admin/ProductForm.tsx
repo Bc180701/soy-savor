@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Image as ImageIcon, Upload } from "lucide-react";
 
 // Schéma de validation pour le formulaire
 const productFormSchema = z.object({
@@ -60,6 +61,8 @@ interface ProductFormProps {
 
 const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(product?.image_url || null);
   const { toast } = useToast();
 
   const defaultValues: Partial<ProductFormValues> = {
@@ -80,6 +83,59 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     resolver: zodResolver(productFormSchema),
     defaultValues,
   });
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      setUploadingImage(true);
+      
+      // Vérifier si le bucket products existe déjà, sinon le créer
+      const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('products');
+      if (!bucketData && bucketError) {
+        const { error: createBucketError } = await supabase.storage.createBucket('products', {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+        });
+        if (createBucketError) throw createBucketError;
+      }
+      
+      // Générer un nom de fichier unique
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+      
+      // Télécharger l'image
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      // Obtenir l'URL publique
+      const { data } = supabase.storage.from('products').getPublicUrl(filePath);
+      const publicUrl = data.publicUrl;
+      
+      // Mettre à jour le formulaire avec l'URL de l'image
+      form.setValue("image_url", publicUrl);
+      setPreviewImage(publicUrl);
+      
+      toast({
+        title: "Image téléchargée",
+        description: "L'image a été téléchargée avec succès",
+      });
+    } catch (error: any) {
+      console.error("Erreur lors du téléchargement de l'image:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors du téléchargement de l'image",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const onSubmit = async (data: ProductFormValues) => {
     try {
@@ -245,19 +301,53 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="image_url"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL de l'image</FormLabel>
-                <FormControl>
-                  <Input placeholder="URL de l'image" {...field} value={field.value || ""} />
-                </FormControl>
-                <FormDescription>
-                  URL vers l'image du produit
-                </FormDescription>
+              <FormItem className="col-span-2">
+                <FormLabel>Image du produit</FormLabel>
+                <div className="space-y-4">
+                  {/* Prévisualisation de l'image */}
+                  {previewImage && (
+                    <div className="relative w-full max-w-[200px] h-[200px] border rounded-md overflow-hidden">
+                      <img 
+                        src={previewImage} 
+                        alt="Aperçu" 
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Champ d'URL caché */}
+                  <Input
+                    type="hidden"
+                    {...field}
+                    value={field.value || ""}
+                  />
+                  
+                  {/* Bouton de téléchargement */}
+                  <div>
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <div className="flex items-center gap-2 p-2 border rounded-md hover:bg-gray-50 transition-colors w-fit">
+                        <Upload size={16} />
+                        <span>{uploadingImage ? "Téléchargement..." : "Télécharger une image"}</span>
+                      </div>
+                      <input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                    <FormDescription>
+                      Formats acceptés: JPG, PNG, GIF (max 5MB)
+                    </FormDescription>
+                  </div>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -393,7 +483,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
           <Button type="button" variant="outline" onClick={onCancel}>
             Annuler
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || uploadingImage}>
             {isSubmitting ? "Enregistrement..." : product ? "Mettre à jour" : "Ajouter"}
           </Button>
         </div>
