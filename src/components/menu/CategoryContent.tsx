@@ -7,6 +7,7 @@ import { Plus, Pencil } from "lucide-react";
 import { MenuItem, MenuCategory } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -71,12 +72,14 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row">
                     {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                      <div className="w-full md:w-1/4 h-32 md:h-40 overflow-hidden">
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="w-full md:w-1/4 overflow-hidden">
+                        <AspectRatio ratio={1/1} className="h-full">
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-full h-full object-contain bg-gray-50"
+                          />
+                        </AspectRatio>
                       </div>
                     )}
                     <div

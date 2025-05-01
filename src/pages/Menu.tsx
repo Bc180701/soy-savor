@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState("");
@@ -155,12 +156,14 @@ const Menu = () => {
                               <CardContent className="p-0">
                                 <div className="flex flex-col md:flex-row">
                                   {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                                    <div className="w-full md:w-1/4 h-32 overflow-hidden">
-                                      <img
-                                        src={item.imageUrl}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover"
-                                      />
+                                    <div className="w-full md:w-1/4 overflow-hidden">
+                                      <AspectRatio ratio={1/1} className="h-full">
+                                        <img
+                                          src={item.imageUrl}
+                                          alt={item.name}
+                                          className="w-full h-full object-contain bg-gray-50"
+                                        />
+                                      </AspectRatio>
                                     </div>
                                   )}
                                   <div className={`w-full ${item.imageUrl && item.imageUrl !== "/placeholder.svg" ? "md:w-3/4" : ""} p-6`}>
