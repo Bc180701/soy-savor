@@ -116,7 +116,7 @@ const Login = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Mot de passe</Label>
-                  <Link to="/reset-password" className="text-sm text-akane-600 hover:underline">
+                  <Link to="/reset-password" className="text-sm text-gold-600 hover:underline">
                     Mot de passe oublié?
                   </Link>
                 </div>
@@ -130,7 +130,7 @@ const Login = () => {
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-akane-600 hover:bg-akane-700" 
+                className="w-full bg-gold-500 hover:bg-gold-600 text-black" 
                 disabled={isLoading}
               >
                 {isLoading ? "Connexion en cours..." : "Se connecter"}
@@ -140,7 +140,7 @@ const Login = () => {
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-sm text-center text-gray-600">
               Vous n'avez pas de compte?{" "}
-              <Link to="/register" className="text-akane-600 hover:underline">
+              <Link to="/register" className="text-gold-600 hover:underline">
                 Créer un compte
               </Link>
             </div>

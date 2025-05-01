@@ -189,7 +189,7 @@ const Register = () => {
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-akane-600 hover:bg-akane-700" 
+                className="w-full bg-gold-500 hover:bg-gold-600 text-black" 
                 disabled={isLoading}
               >
                 {isLoading ? "Inscription en cours..." : "S'inscrire"}
@@ -199,7 +199,7 @@ const Register = () => {
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-sm text-center text-gray-600">
               Vous avez déjà un compte?{" "}
-              <Link to="/login" className="text-akane-600 hover:underline">
+              <Link to="/login" className="text-gold-600 hover:underline">
                 Se connecter
               </Link>
             </div>
