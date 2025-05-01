@@ -73,13 +73,15 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                   <div className="flex flex-col md:flex-row">
                     {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
                       <div className="w-full md:w-1/4 overflow-hidden">
-                        <AspectRatio ratio={1/1} className="h-full">
-                          <img
-                            src={item.imageUrl}
-                            alt={item.name}
-                            className="w-full h-full object-contain bg-gray-50"
-                          />
-                        </AspectRatio>
+                        <div className="max-w-[120px] md:max-w-full mx-auto">
+                          <AspectRatio ratio={1/1}>
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="w-full h-full object-contain bg-gray-50"
+                            />
+                          </AspectRatio>
+                        </div>
                       </div>
                     )}
                     <div
