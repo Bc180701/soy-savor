@@ -20,7 +20,7 @@ const PopularProductsChart = () => {
   }, []);
 
   return (
-    <Card className="col-span-1">
+    <Card className="col-span-1 h-[300px]">
       <CardHeader>
         <CardTitle>Produits les plus commandés</CardTitle>
       </CardHeader>
@@ -34,7 +34,7 @@ const PopularProductsChart = () => {
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[200px] flex items-center justify-center">
+          <div className="h-[200px] w-full flex items-center justify-center">
             <ChartContainer config={{ product: { color: "#1E40AF" } }}>
               <BarChart 
                 width={320} 

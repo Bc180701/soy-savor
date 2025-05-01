@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { Cell, Pie, PieChart } from "recharts";
 import { getOrderCountsByStatus } from "@/services/analyticsService";
 
 const COLORS = ['#1E40AF', '#047857', '#B91C1C', '#C2410C', '#7C3AED', '#4F46E5'];
@@ -40,7 +40,7 @@ const StatusDistribution = () => {
   }, []);
 
   return (
-    <Card className="col-span-1">
+    <Card className="col-span-1 h-[300px]">
       <CardHeader>
         <CardTitle>Distribution des statuts</CardTitle>
       </CardHeader>
@@ -54,7 +54,7 @@ const StatusDistribution = () => {
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[200px] flex items-center justify-center">
+          <div className="h-[200px] w-full flex items-center justify-center">
             <ChartContainer 
               config={data.reduce((acc, item, index) => {
                 acc[item.status] = {

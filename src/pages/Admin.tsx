@@ -99,7 +99,7 @@ const Admin = () => {
           <div className="space-y-8">
             <DashboardStats />
             
-            <div className="w-full mb-8">
+            <div className="mb-8">
               <OrdersChart />
             </div>
             

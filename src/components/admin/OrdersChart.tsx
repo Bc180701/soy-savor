@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { getOrderAnalytics, OrderAnalytics } from "@/services/analyticsService";
 
@@ -53,21 +53,21 @@ const OrdersChart = () => {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full h-[350px]">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Évolution des commandes et revenus (7 derniers jours)</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[200px] items-center justify-center">
+          <div className="flex h-[250px] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : data.length === 0 ? (
-          <div className="flex h-[200px] items-center justify-center">
+          <div className="flex h-[250px] items-center justify-center">
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[280px] max-h-[280px] flex items-center justify-center">
+          <div className="h-[250px] w-full">
             <ChartContainer 
               config={{
                 orders: {
