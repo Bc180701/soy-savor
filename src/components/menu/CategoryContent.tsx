@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { MenuItem, MenuCategory } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -56,20 +56,6 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     setSelectedImage(null);
   };
 
-  // Handle navigation for multiple product images - simulating a carousel
-  // This would be expanded if items have multiple images in the future
-  const handlePrevImage = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    // For now just prevent the default behavior
-    // In the future, this would navigate to the previous image if items have multiple images
-  };
-
-  const handleNextImage = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    // For now just prevent the default behavior
-    // In the future, this would navigate to the next image if items have multiple images
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -100,33 +86,17 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row">
                     {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                      <div className="w-full md:w-1/4 overflow-hidden relative">
+                      <div className="w-full md:w-1/4 overflow-hidden">
                         <div className="max-w-[120px] md:max-w-full mx-auto">
                           <AspectRatio ratio={1/1}>
                             <img
                               src={item.imageUrl}
                               alt={item.name}
-                              className="w-full h-full object-contain bg-[#f9fafb] cursor-pointer hover:opacity-90 transition-opacity"
+                              className="w-full h-full object-contain bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => handleImageClick(item.imageUrl, item.name)}
                             />
                           </AspectRatio>
                         </div>
-                        
-                        {/* Navigation buttons */}
-                        <button
-                          onClick={handlePrevImage}
-                          className="absolute left-0 top-1/2 -translate-y-1/2 bg-red-600 text-white h-10 w-8 flex items-center justify-center rounded-r-md shadow-md hover:bg-red-700 transition-colors"
-                          aria-label="Image précédente"
-                        >
-                          <ChevronLeft className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={handleNextImage}
-                          className="absolute right-0 top-1/2 -translate-y-1/2 bg-red-600 text-white h-10 w-8 flex items-center justify-center rounded-l-md shadow-md hover:bg-red-700 transition-colors"
-                          aria-label="Image suivante"
-                        >
-                          <ChevronRight className="h-5 w-5" />
-                        </button>
                       </div>
                     )}
                     <div
