@@ -11,13 +11,19 @@ interface MobileMenuProps {
   navLinks: { name: string; path: string }[];
   user: any;
   handleLogout: () => Promise<void>;
+  onClose: () => void;  // Nouvelle prop pour fermer le menu
 }
 
-const MobileMenu = ({ isOpen, navLinks, user, handleLogout }: MobileMenuProps) => {
+const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMenuProps) => {
   const location = useLocation();
   const isMobile = useIsMobile();
   
   if (!isOpen || !isMobile) return null;
+  
+  // Fonction pour gérer le clic sur un lien
+  const handleLinkClick = () => {
+    onClose();
+  };
   
   return (
     <AnimatePresence>
@@ -39,6 +45,7 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout }: MobileMenuProps) =
                     ? "text-gold-500 font-medium"
                     : "text-gray-800"
                 }`}
+                onClick={handleLinkClick}
               >
                 {link.name}
               </Link>
@@ -48,12 +55,16 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout }: MobileMenuProps) =
                 <Link
                   to="/compte"
                   className="text-xl py-3 border-b border-gray-100 text-gray-800"
+                  onClick={handleLinkClick}
                 >
                   Mon compte
                 </Link>
                 <Button
                   className="text-xl py-3 justify-start border-b border-gray-100 text-gray-800 hover:text-gold-500 bg-transparent"
-                  onClick={handleLogout}
+                  onClick={() => {
+                    handleLogout();
+                    onClose();
+                  }}
                 >
                   Se déconnecter
                 </Button>
@@ -62,11 +73,12 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout }: MobileMenuProps) =
               <Link
                 to="/login"
                 className="text-xl py-3 border-b border-gray-100 text-gray-800"
+                onClick={handleLinkClick}
               >
                 Se connecter
               </Link>
             )}
-            <Link to="/commander" className="pt-4">
+            <Link to="/commander" className="pt-4" onClick={handleLinkClick}>
               <Button className="bg-gold-500 hover:bg-gold-600 text-black w-full py-6 text-lg">
                 Commander maintenant
               </Button>

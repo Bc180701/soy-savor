@@ -75,6 +75,10 @@ const Navbar = () => {
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
+  
+  const closeMenu = () => {
+    setIsOpen(false);
+  };
 
   const navLinks = [
     { name: "Accueil", path: "/" },
@@ -112,6 +116,7 @@ const Navbar = () => {
         navLinks={navLinks} 
         user={user}
         handleLogout={handleLogout}
+        onClose={closeMenu}
       />
     </header>
   );
