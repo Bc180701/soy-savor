@@ -161,7 +161,7 @@ const Menu = () => {
                                         <img
                                           src={item.imageUrl}
                                           alt={item.name}
-                                          className="w-full h-full object-contain bg-gray-50"
+                                          className="w-full h-full object-contain bg-[#f9fafb]"
                                         />
                                       </AspectRatio>
                                     </div>
