@@ -5,22 +5,47 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { Shield } from "lucide-react";
 
 interface MobileMenuProps {
   isOpen: boolean;
   navLinks: { name: string; path: string }[];
   user: any;
   handleLogout: () => Promise<void>;
-  onClose: () => void;  // Nouvelle prop pour fermer le menu
+  onClose: () => void;
 }
 
 const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMenuProps) => {
   const location = useLocation();
   const isMobile = useIsMobile();
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase.rpc(
+          'has_role',
+          { user_id: user.id, role: 'administrateur' }
+        );
+        
+        if (error) throw error;
+        setIsAdmin(!!data);
+      } catch (error) {
+        console.error("Erreur lors de la vérification du statut admin:", error);
+        setIsAdmin(false);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
   
   if (!isOpen || !isMobile) return null;
   
-  // Fonction pour gérer le clic sur un lien
   const handleLinkClick = () => {
     onClose();
   };
@@ -59,6 +84,16 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMen
                 >
                   Mon compte
                 </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="text-xl py-3 border-b border-gray-100 text-gray-800 flex items-center"
+                    onClick={handleLinkClick}
+                  >
+                    <Shield className="mr-2 h-5 w-5" />
+                    Administration
+                  </Link>
+                )}
                 <Button
                   className="text-xl py-3 justify-start border-b border-gray-100 text-gray-800 hover:text-gold-500 bg-transparent"
                   onClick={() => {

@@ -9,6 +9,7 @@ import StatusDistribution from "@/components/admin/StatusDistribution";
 import PopularProductsChart from "@/components/admin/PopularProductsChart";
 import { supabase } from "@/integrations/supabase/client";
 import ProductManager from "@/components/admin/ProductManager";
+import AdminManager from "@/components/admin/AdminManager";
 
 const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -93,6 +94,7 @@ const Admin = () => {
           <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
           <TabsTrigger value="orders">Commandes</TabsTrigger>
           <TabsTrigger value="products">Produits</TabsTrigger>
+          <TabsTrigger value="administrators">Administrateurs</TabsTrigger>
         </TabsList>
         
         <TabsContent value="dashboard">
@@ -116,6 +118,10 @@ const Admin = () => {
 
         <TabsContent value="products">
           <ProductManager />
+        </TabsContent>
+
+        <TabsContent value="administrators">
+          <AdminManager />
         </TabsContent>
       </Tabs>
     </div>
