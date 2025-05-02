@@ -41,20 +41,27 @@ const AdminManager = () => {
       if (rolesError) throw rolesError;
 
       if (roles && roles.length > 0) {
-        const userIds = roles.map((role) => role.user_id);
-        const { data: users, error: usersError } = await supabase.auth.admin.listUsers({
-          userIds: userIds,
-        });
-
-        if (usersError) throw usersError;
-
-        const adminUsers = users.users.map((user) => ({
-          id: user.id,
-          email: user.email || "",
-          created_at: user.created_at,
-        }));
-
-        setAdminUsers(adminUsers);
+        // Instead of trying to use userIds parameter, we'll fetch users individually
+        const adminUsersData: AdminUser[] = [];
+        
+        for (const role of roles) {
+          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(role.user_id);
+          
+          if (userError) {
+            console.error(`Error fetching user ${role.user_id}:`, userError);
+            continue;
+          }
+          
+          if (userData && userData.user) {
+            adminUsersData.push({
+              id: userData.user.id,
+              email: userData.user.email || "",
+              created_at: userData.user.created_at,
+            });
+          }
+        }
+        
+        setAdminUsers(adminUsersData);
       } else {
         setAdminUsers([]);
       }
