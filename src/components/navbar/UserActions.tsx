@@ -1,8 +1,10 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, User, LogOut } from "lucide-react";
+import { ShoppingCart, User, LogOut, Shield } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserActionsProps {
   user: any;
@@ -11,11 +13,47 @@ interface UserActionsProps {
 
 const UserActions = ({ user, handleLogout }: UserActionsProps) => {
   const cart = useCart();
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase.rpc(
+          'has_role',
+          { user_id: user.id, role: 'administrateur' }
+        );
+        
+        if (error) throw error;
+        setIsAdmin(!!data);
+      } catch (error) {
+        console.error("Erreur lors de la vérification du statut admin:", error);
+        setIsAdmin(false);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
   
   return (
     <div className="hidden md:flex items-center space-x-4">
       {user ? (
         <>
+          {isAdmin && (
+            <Link to="/admin">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-800 hover:text-gold-500 hover:bg-gray-100"
+              >
+                <Shield size={20} />
+              </Button>
+            </Link>
+          )}
           <Link to="/compte">
             <Button
               variant="ghost"
