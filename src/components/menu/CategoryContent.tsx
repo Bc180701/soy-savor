@@ -92,7 +92,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                             <img
                               src={item.imageUrl}
                               alt={item.name}
-                              className="w-full h-full object-contain bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity"
+                              className="w-full h-full object-contain bg-[#f9fafb] cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => handleImageClick(item.imageUrl, item.name)}
                             />
                           </AspectRatio>

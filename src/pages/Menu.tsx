@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
@@ -161,7 +160,7 @@ const Menu = () => {
                                         <img
                                           src={item.imageUrl}
                                           alt={item.name}
-                                          className="w-full h-full object-contain bg-gray-50"
+                                          className="w-full h-full object-contain bg-[#f9fafb]"
                                         />
                                       </AspectRatio>
                                     </div>
