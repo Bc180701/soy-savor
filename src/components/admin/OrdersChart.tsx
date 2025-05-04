@@ -1,9 +1,10 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { getOrderAnalytics, OrderAnalytics } from "@/services/analyticsService";
+import { TrendingUp, ChartBar } from "lucide-react";
 
 const OrdersChart = () => {
   const [data, setData] = useState<OrderAnalytics[]>([]);
@@ -53,93 +54,92 @@ const OrdersChart = () => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Évolution des commandes et revenus (7 derniers jours)</CardTitle>
+    <Card className="w-full mb-8">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="flex items-center space-x-2">
+          <ChartBar className="h-5 w-5 text-primary" />
+          <CardTitle className="text-lg">Évolution des commandes et revenus (7 derniers jours)</CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[200px] items-center justify-center">
+          <div className="flex h-[300px] items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : data.length === 0 ? (
-          <div className="flex h-[200px] items-center justify-center">
+          <div className="flex h-[300px] items-center justify-center">
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[200px]">
-            <ChartContainer 
-              config={{
-                orders: {
-                  label: "Commandes",
-                  color: "#1E40AF" // Blue
-                },
-                revenue: {
-                  label: "Revenus (€)",
-                  color: "#047857" // Green
-                }
-              }}
-            >
-              <BarChart
-                width={700}
-                height={200}
-                data={formatData(data)}
-                margin={{ top: 5, right: 40, left: 5, bottom: 15 }}
-              >
-                <XAxis
-                  dataKey="date"
-                  axisLine={{ strokeWidth: 1 }}
-                  tickLine={false}
-                  fontSize={10}
-                  dy={10}
-                />
-                {/* Primary Y-axis for orders */}
-                <YAxis
-                  yAxisId="left"
-                  orientation="left"
-                  tickFormatter={(value) => `${value}`}
-                  domain={getOrdersYAxisDomain()}
-                  axisLine={{ strokeWidth: 1 }}
-                  tickLine={false}
-                  fontSize={10}
-                  width={30}
-                />
-                {/* Secondary Y-axis for revenue */}
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tickFormatter={(value) => `${value} €`}
-                  domain={getRevenueYAxisDomain()}
-                  axisLine={{ strokeWidth: 1 }}
-                  tickLine={false}
-                  fontSize={10}
-                  width={50}
-                />
-                <Bar
-                  dataKey="total_orders"
-                  yAxisId="left"
-                  fill="#93C5FD" // Light blue
-                  stroke="#1E40AF"
-                  strokeWidth={1}
-                  name="orders"
-                  barSize={20}
-                />
-                <Bar
-                  dataKey="total_revenue"
-                  yAxisId="right"
-                  fill="#86EFAC" // Light green
-                  stroke="#047857"
-                  strokeWidth={1}
-                  name="revenue"
-                  barSize={20}
-                />
-                <ChartTooltip
-                  content={
-                    <CustomTooltip />
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ChartContainer 
+                config={{
+                  orders: {
+                    label: "Commandes",
+                    color: "#1E40AF" // Blue
+                  },
+                  revenue: {
+                    label: "Revenus (€)",
+                    color: "#047857" // Green
                   }
-                />
-              </BarChart>
-            </ChartContainer>
+                }}
+              >
+                <BarChart
+                  data={formatData(data)}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                >
+                  <XAxis
+                    dataKey="date"
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                    fontSize={12}
+                    dy={10}
+                  />
+                  {/* Primary Y-axis for orders */}
+                  <YAxis
+                    yAxisId="left"
+                    orientation="left"
+                    tickFormatter={(value) => `${value}`}
+                    domain={getOrdersYAxisDomain()}
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                    fontSize={12}
+                    width={40}
+                  />
+                  {/* Secondary Y-axis for revenue */}
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tickFormatter={(value) => `${value} €`}
+                    domain={getRevenueYAxisDomain()}
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                    fontSize={12}
+                    width={60}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar
+                    dataKey="total_orders"
+                    yAxisId="left"
+                    fill="#93C5FD" // Light blue
+                    stroke="#1E40AF"
+                    strokeWidth={1}
+                    name="orders"
+                    barSize={20}
+                  />
+                  <Bar
+                    dataKey="total_revenue"
+                    yAxisId="right"
+                    fill="#86EFAC" // Light green
+                    stroke="#047857"
+                    strokeWidth={1}
+                    name="revenue"
+                    barSize={20}
+                  />
+                </BarChart>
+              </ChartContainer>
+            </ResponsiveContainer>
           </div>
         )}
       </CardContent>

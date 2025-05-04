@@ -98,14 +98,12 @@ const Admin = () => {
         </TabsList>
         
         <TabsContent value="dashboard">
-          <div className="space-y-8">
+          <div className="space-y-6">
             <DashboardStats />
             
-            <div className="mb-10">
-              <OrdersChart />
-            </div>
+            <OrdersChart />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <StatusDistribution />
               <PopularProductsChart />
             </div>
