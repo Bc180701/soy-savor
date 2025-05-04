@@ -2,8 +2,14 @@
 import { Order } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Eye, Clock } from "lucide-react";
+import { MapPin, Phone, Eye, Clock, Navigation } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 interface OrdersDeliveryViewProps {
   orders: Order[];
@@ -40,6 +46,25 @@ const OrdersDeliveryView = ({
     }
   };
 
+  const openInMaps = (address: string, app: 'google' | 'apple' | 'waze') => {
+    const encodedAddress = encodeURIComponent(address);
+    let url = '';
+    
+    switch (app) {
+      case 'google':
+        url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+        break;
+      case 'apple':
+        url = `maps://?q=${encodedAddress}`;
+        break;
+      case 'waze':
+        url = `https://waze.com/ul?q=${encodedAddress}&navigate=yes`;
+        break;
+    }
+    
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Vue Livraison ({deliveryOrders.length})</h2>
@@ -74,19 +99,65 @@ const OrdersDeliveryView = ({
                 {order.deliveryStreet && (
                   <div className="flex items-start space-x-2">
                     <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-500" />
-                    <span className="text-sm">
-                      {order.deliveryStreet}, {order.deliveryPostalCode} {order.deliveryCity}
-                      {order.deliveryInstructions && (
-                        <p className="text-xs text-gray-500 mt-1">{order.deliveryInstructions}</p>
-                      )}
-                    </span>
+                    <div className="flex-1">
+                      <span className="text-sm">
+                        {order.deliveryStreet}, {order.deliveryPostalCode} {order.deliveryCity}
+                        {order.deliveryInstructions && (
+                          <p className="text-xs text-gray-500 mt-1">{order.deliveryInstructions}</p>
+                        )}
+                      </span>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className="p-0 h-auto text-xs text-gold-600 flex items-center gap-1 mt-1"
+                          >
+                            <Navigation className="h-3 w-3" />
+                            Naviguer
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem 
+                            onClick={() => openInMaps(
+                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
+                              'google'
+                            )}
+                          >
+                            Google Maps
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => openInMaps(
+                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
+                              'apple'
+                            )}
+                          >
+                            Apple Plans
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => openInMaps(
+                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
+                              'waze'
+                            )}
+                          >
+                            Waze
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 )}
                 
                 {order.clientPhone && (
                   <div className="flex items-center space-x-2">
                     <Phone className="h-4 w-4 flex-shrink-0 text-gray-500" />
-                    <span className="text-sm">{order.clientPhone}</span>
+                    <a 
+                      href={`tel:${order.clientPhone}`} 
+                      className="text-sm hover:underline text-gold-600"
+                    >
+                      {order.clientPhone}
+                    </a>
                   </div>
                 )}
                 
