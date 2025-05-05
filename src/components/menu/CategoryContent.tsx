@@ -86,8 +86,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row">
                     {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                      <div className="w-full md:w-1/4 p-4 flex items-center justify-center bg-[#f9fafb]">
-                        <div className="max-w-[100px] md:max-w-[120px]">
+                      <div className="w-full md:w-1/4 overflow-hidden bg-[#f9fafb]">
+                        <div className="max-w-[120px] md:max-w-full mx-auto">
                           <AspectRatio ratio={1/1} className="bg-[#f9fafb]">
                             <img
                               src={item.imageUrl}
@@ -104,7 +104,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                         item.imageUrl && item.imageUrl !== "/placeholder.svg"
                           ? "md:w-3/4"
                           : ""
-                      } p-4 md:p-6 flex flex-col justify-between`}
+                      } p-6 flex flex-col justify-between`}
                     >
                       <div>
                         <div className="flex justify-between items-start mb-2">
