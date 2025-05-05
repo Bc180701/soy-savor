@@ -15,12 +15,17 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageAlt, setSelectedImageAlt] = useState<string>("");
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   
   useEffect(() => {
@@ -60,6 +65,15 @@ const Menu = () => {
 
     fetchMenuData();
   }, [toast, activeCategory]);
+
+  const handleImageClick = (imageUrl: string, alt: string) => {
+    setSelectedImage(imageUrl);
+    setSelectedImageAlt(alt);
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedImage(null);
+  };
 
   if (isLoading) {
     return (
@@ -157,14 +171,17 @@ const Menu = () => {
                               <CardContent className="p-0">
                                 <div className="flex flex-col md:flex-row">
                                   {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                                    <div className="w-full md:w-1/4 overflow-hidden">
-                                      <AspectRatio ratio={1/1} className="h-full">
-                                        <img
-                                          src={item.imageUrl}
-                                          alt={item.name}
-                                          className="w-full h-full object-contain bg-[#f9fafb]"
-                                        />
-                                      </AspectRatio>
+                                    <div className={`w-full md:w-1/4 overflow-hidden ${isMobile ? "p-4" : ""}`}>
+                                      <div className={cn("max-w-[120px] mx-auto md:max-w-full", isMobile && "bg-[#f9fafb] rounded-lg")}>
+                                        <AspectRatio ratio={1/1} className="bg-[#f9fafb]">
+                                          <img
+                                            src={item.imageUrl}
+                                            alt={item.name}
+                                            className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                            onClick={() => handleImageClick(item.imageUrl, item.name)}
+                                          />
+                                        </AspectRatio>
+                                      </div>
                                     </div>
                                   )}
                                   <div className={`w-full ${item.imageUrl && item.imageUrl !== "/placeholder.svg" ? "md:w-3/4" : ""} p-6`}>
@@ -202,6 +219,20 @@ const Menu = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Image Dialog pour afficher l'image en plein écran */}
+      <Dialog open={!!selectedImage} onOpenChange={handleCloseDialog}>
+        <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
+          <DialogTitle className="sr-only">Image de {selectedImageAlt}</DialogTitle>
+          <div className="w-full bg-[#f9fafb] rounded-lg overflow-hidden">
+            <img
+              src={selectedImage || ''}
+              alt={selectedImageAlt}
+              className="w-full h-auto object-contain max-h-[80vh]"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
