@@ -1,12 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, MapPin, Clock, Truck, ShoppingBag, Users, BadgePercent } from "lucide-react";
+import { ChevronRight, MapPin, Clock, Truck, ShoppingBag, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import FeaturedProductsSection from "@/components/FeaturedProductsSection";
 
 const Index = () => {
   const [activePromotion, setActivePromotion] = useState(0);
@@ -14,6 +16,12 @@ const Index = () => {
   const [registerPromotion, setRegisterPromotion] = useState(null);
   const [loadingPromotion, setLoadingPromotion] = useState(true);
   const [user, setUser] = useState(null);
+  const [featuredProducts, setFeaturedProducts] = useState({
+    new: [],
+    popular: [],
+    exclusive: []
+  });
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -50,7 +58,67 @@ const Index = () => {
       }
     };
     
+    const fetchFeaturedProducts = async () => {
+      try {
+        // Get new products (flagged as is_new)
+        const { data: newProducts } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_new', true)
+          .order('created_at', { ascending: false })
+          .limit(3);
+        
+        // Get popular products (based on order count)
+        const { data: popularProducts } = await supabase
+          .from('popular_products')
+          .select('products(*)')
+          .order('order_count', { ascending: false })
+          .limit(4);
+        
+        // Get exclusive products (best sellers)
+        const { data: exclusiveProducts } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_best_seller', true)
+          .limit(3);
+          
+        const formattedPopularProducts = popularProducts?.map(item => ({
+          id: item.products.id,
+          name: item.products.name,
+          description: item.products.description,
+          price: item.products.price,
+          image: item.products.image_url || "/placeholder.svg",
+          category: "populaire"
+        })) || [];
+        
+        setFeaturedProducts({
+          new: newProducts?.map(product => ({
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            image: product.image_url || "/placeholder.svg",
+            category: "nouveauté"
+          })) || [],
+          popular: formattedPopularProducts,
+          exclusive: exclusiveProducts?.map(product => ({
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            image: product.image_url || "/placeholder.svg", 
+            category: "exclusivité"
+          })) || []
+        });
+      } catch (error) {
+        console.error("Erreur lors de la récupération des produits:", error);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    
     fetchRegisterPromotion();
+    fetchFeaturedProducts();
 
     const checkUser = async () => {
       const { data } = await supabase.auth.getSession();
@@ -103,41 +171,6 @@ const Index = () => {
     "Châteaurenard", "Eyragues", "Barbentane", "Rognonas", 
     "Graveson", "Maillane", "Noves", "Cabanes", 
     "Avignon", "Saint-Rémy de Provence", "Boulbon"
-  ];
-
-  const bestSellers = [
-    {
-      id: 1,
-      name: "Le Royal",
-      description: "60 pièces - Pour 4-5 personnes",
-      price: 75.90,
-      image: "https://images.unsplash.com/photo-1617196035154-1e7e6e28b0db?q=80&w=1000&auto=format&fit=crop",
-      category: "plateaux",
-    },
-    {
-      id: 2,
-      name: "Poké Saumon",
-      description: "Bol composé de riz, protéines, légumes et sauce",
-      price: 14.90,
-      image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
-      category: "poke",
-    },
-    {
-      id: 3,
-      name: "Crispy Roll Crevette Tempura",
-      description: "6 pièces - Crevette tempura, avocat, épicé",
-      price: 7.20,
-      image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1000&auto=format&fit=crop",
-      category: "crispy",
-    },
-    {
-      id: 4,
-      name: "Sashimi Saumon",
-      description: "5 pièces - Tranches de saumon cru",
-      price: 6.30,
-      image: "https://images.unsplash.com/photo-1583623025817-d180a2221d0a?q=80&w=1000&auto=format&fit=crop",
-      category: "sashimi",
-    },
   ];
 
   const orderOptions = [
@@ -333,49 +366,14 @@ const Index = () => {
         </section>
       )}
 
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Nos best-sellers</h2>
-            <p className="text-gray-600 max-w-xl mx-auto">
-              Découvrez les produits préférés de nos clients, préparés avec soin par nos chefs.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {bestSellers.map((item) => (
-              <motion.div
-                key={item.id}
-                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-                whileHover={{ y: -5 }}
-              >
-                <div className="h-48 overflow-hidden">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover transition-transform hover:scale-105" />
-                </div>
-                <div className="p-6">
-                  <Badge variant="outline" className="mb-2 bg-gray-50 text-gray-700 border-gray-200">
-                    {item.category}
-                  </Badge>
-                  <h3 className="font-bold text-xl mb-2">{item.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{item.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gold-600 font-bold">{item.price.toFixed(2)} €</span>
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/commander">Commander</Link>
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <Button asChild className="bg-gold-600 hover:bg-gold-700 text-white">
-              <Link to="/menu">Voir toute notre carte</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+      {/* Nouvelle section avec FeaturedProductsSection remplaçant l'ancienne section bestSellers */}
+      {!loadingProducts && (
+        <FeaturedProductsSection 
+          newProducts={featuredProducts.new}
+          popularProducts={featuredProducts.popular}
+          exclusiveProducts={featuredProducts.exclusive}
+        />
+      )}
 
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
