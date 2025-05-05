@@ -77,27 +77,27 @@ const Menu = () => {
   }
 
   return (
-    <div className="container mx-auto py-24 px-4">
+    <div className="container mx-auto py-12 md:py-24 px-2 md:px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="max-w-6xl mx-auto"
       >
-        <h1 className="text-4xl font-bold text-center mb-2">Notre Menu</h1>
-        <p className="text-gray-600 text-center mb-12">
+        <h1 className="text-3xl md:text-4xl font-bold text-center mb-2">Notre Menu</h1>
+        <p className="text-gray-600 text-center mb-8 md:mb-12">
           Découvrez nos spécialités japonaises préparées avec soin
         </p>
 
         {!isAuthenticated && (
           <motion.div 
-            className="mb-8 bg-gradient-to-r from-gold-500 to-gold-300 p-6 rounded-lg shadow-lg text-center"
+            className="mb-6 md:mb-8 bg-gradient-to-r from-gold-500 to-gold-300 p-4 md:p-6 rounded-lg shadow-lg text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
             <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
-            <h3 className="text-white text-xl font-bold mb-2">-10% sur votre première commande</h3>
+            <h3 className="text-white text-lg md:text-xl font-bold mb-2">-10% sur votre première commande</h3>
             <p className="text-white/90 mb-4">Créez un compte maintenant pour profiter de cette promotion exclusive</p>
             <Button asChild className="bg-white hover:bg-gray-100 text-gold-600">
               <Link to="/register">Créer un compte</Link>
@@ -105,17 +105,17 @@ const Menu = () => {
           </motion.div>
         )}
 
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
           <div className="md:w-1/4">
-            <div className="sticky top-24">
-              <h2 className="text-xl font-bold mb-4">Catégories</h2>
-              <ScrollArea className="h-[70vh] pr-4">
-                <ul className="space-y-2">
+            <div className="sticky top-20 md:top-24 z-10 bg-white pb-2">
+              <h2 className="text-lg md:text-xl font-bold mb-2 md:mb-4">Catégories</h2>
+              <ScrollArea className="h-[40vh] md:h-[70vh] pr-2 md:pr-4">
+                <ul className="space-y-1 md:space-y-2">
                   {categories.map((category) => (
                     <li key={category.id}>
                       <button
                         onClick={() => setActiveCategory(category.id)}
-                        className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
+                        className={`w-full text-left px-3 md:px-4 py-2 rounded-md transition-colors ${
                           activeCategory === category.id
                             ? "bg-gold-600 text-white"
                             : "hover:bg-gray-100"
