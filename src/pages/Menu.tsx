@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +13,14 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  )
+}
+
+export { Badge, badgeVariants }
 
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState("");
@@ -179,7 +186,10 @@ const Menu = () => {
                                           {item.price.toFixed(2)} €
                                         </span>
                                         {item.isBestSeller && (
-                                          <Badge className="bg-gold-600 mt-2">Populaire</Badge>
+                                          <Badge className="bg-orange-500 text-white mt-2">Exclusivité</Badge>
+                                        )}
+                                        {item.isNew && (
+                                          <Badge className="bg-purple-600 text-white mt-2 ml-2">Nouveauté</Badge>
                                         )}
                                       </div>
                                     </div>

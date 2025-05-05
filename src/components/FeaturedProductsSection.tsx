@@ -52,7 +52,7 @@ const FeaturedProductsSection = ({
           <TabsContent value="nouveautes">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {newProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} badgeVariant="new" />
               ))}
             </div>
           </TabsContent>
@@ -60,7 +60,7 @@ const FeaturedProductsSection = ({
           <TabsContent value="populaires">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {popularProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} badgeVariant="default" />
               ))}
             </div>
           </TabsContent>
@@ -68,7 +68,7 @@ const FeaturedProductsSection = ({
           <TabsContent value="exclusivites">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {exclusiveProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} badgeVariant="exclusive" />
               ))}
             </div>
           </TabsContent>
@@ -84,7 +84,7 @@ const FeaturedProductsSection = ({
   );
 };
 
-const ProductCard = ({ product }: { product: Product }) => {
+const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant: "default" | "new" | "exclusive" }) => {
   return (
     <motion.div
       className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
@@ -98,7 +98,7 @@ const ProductCard = ({ product }: { product: Product }) => {
         />
       </div>
       <div className="p-6">
-        <Badge variant="outline" className="mb-2 bg-gray-50 text-gray-700 border-gray-200">
+        <Badge variant={badgeVariant} className="mb-2">
           {product.category}
         </Badge>
         <h3 className="font-bold text-xl mb-2">{product.name}</h3>

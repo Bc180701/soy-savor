@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductsTable from "./ProductsTable";
 import CategoriesTable from "./CategoriesTable";
+import FeaturedProductsManager from "./FeaturedProductsManager";
 
 const ProductManager = () => {
   return (
@@ -13,6 +14,7 @@ const ProductManager = () => {
         <TabsList className="mb-4">
           <TabsTrigger value="products">Produits</TabsTrigger>
           <TabsTrigger value="categories">Catégories</TabsTrigger>
+          <TabsTrigger value="featured">Produits mis en avant</TabsTrigger>
         </TabsList>
         
         <TabsContent value="products">
@@ -21,6 +23,10 @@ const ProductManager = () => {
         
         <TabsContent value="categories">
           <CategoriesTable />
+        </TabsContent>
+        
+        <TabsContent value="featured">
+          <FeaturedProductsManager />
         </TabsContent>
       </Tabs>
     </div>
