@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -68,12 +67,47 @@ const Index = () => {
           .order('created_at', { ascending: false })
           .limit(3);
         
-        // Get popular products (based on order count)
-        const { data: popularProducts } = await supabase
+        // Get popular products based on order count
+        const { data: popularProductsData } = await supabase
           .from('popular_products')
-          .select('products(*)')
+          .select('*')
           .order('order_count', { ascending: false })
           .limit(4);
+        
+        // If we have popular products data, fetch the actual product details
+        let formattedPopularProducts: any[] = [];
+        if (popularProductsData && popularProductsData.length > 0) {
+          // Get the product IDs from popular_products
+          const productIds = popularProductsData.map(item => item.product_id);
+          
+          // Fetch the actual product details
+          const { data: popularProducts } = await supabase
+            .from('products')
+            .select('*')
+            .in('id', productIds);
+            
+          if (popularProducts) {
+            // Map products with their order count for sorting
+            formattedPopularProducts = popularProducts.map(product => {
+              const popularData = popularProductsData.find(p => p.product_id === product.id);
+              return {
+                id: product.id,
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                image: product.image_url || "/placeholder.svg",
+                category: "populaire",
+                orderCount: popularData ? popularData.order_count : 0
+              };
+            });
+            
+            // Sort by order count
+            formattedPopularProducts.sort((a, b) => b.orderCount - a.orderCount);
+            
+            // Limit to 4
+            formattedPopularProducts = formattedPopularProducts.slice(0, 4);
+          }
+        }
         
         // Get exclusive products (best sellers)
         const { data: exclusiveProducts } = await supabase
@@ -82,15 +116,6 @@ const Index = () => {
           .eq('is_best_seller', true)
           .limit(3);
           
-        const formattedPopularProducts = popularProducts?.map(item => ({
-          id: item.products.id,
-          name: item.products.name,
-          description: item.products.description,
-          price: item.products.price,
-          image: item.products.image_url || "/placeholder.svg",
-          category: "populaire"
-        })) || [];
-        
         setFeaturedProducts({
           new: newProducts?.map(product => ({
             id: product.id,
@@ -100,7 +125,7 @@ const Index = () => {
             image: product.image_url || "/placeholder.svg",
             category: "nouveauté"
           })) || [],
-          popular: formattedPopularProducts,
+          popular: formattedPopularProducts || [],
           exclusive: exclusiveProducts?.map(product => ({
             id: product.id,
             name: product.name,
