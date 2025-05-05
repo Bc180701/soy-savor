@@ -67,29 +67,38 @@ const Index = () => {
           .order('created_at', { ascending: false })
           .limit(3);
         
-        // Get popular products based on order count
+        // Get most ordered products from popular_products table
         const { data: popularProductsData } = await supabase
           .from('popular_products')
           .select('*')
           .order('order_count', { ascending: false })
           .limit(4);
         
-        // If we have popular products data, fetch the actual product details
-        let formattedPopularProducts: any[] = [];
+        // Fetch product details for popular products by aggregating all data from all days
+        let formattedPopularProducts = [];
+        
         if (popularProductsData && popularProductsData.length > 0) {
-          // Get the product IDs from popular_products
-          const productIds = popularProductsData.map(item => item.product_id);
+          // Get unique product IDs (a product might appear multiple times with different dates)
+          const uniqueProductIds = [...new Set(popularProductsData.map(item => item.product_id))];
           
-          // Fetch the actual product details
+          // Fetch actual product details
           const { data: popularProducts } = await supabase
             .from('products')
             .select('*')
-            .in('id', productIds);
+            .in('id', uniqueProductIds);
             
           if (popularProducts) {
-            // Map products with their order count for sorting
+            // Create a map to aggregate order counts across all dates for each product
+            const productOrderCounts = {};
+            popularProductsData.forEach(item => {
+              if (!productOrderCounts[item.product_id]) {
+                productOrderCounts[item.product_id] = 0;
+              }
+              productOrderCounts[item.product_id] += item.order_count;
+            });
+            
+            // Format popular products with their total order count
             formattedPopularProducts = popularProducts.map(product => {
-              const popularData = popularProductsData.find(p => p.product_id === product.id);
               return {
                 id: product.id,
                 name: product.name,
@@ -97,15 +106,43 @@ const Index = () => {
                 price: product.price,
                 image: product.image_url || "/placeholder.svg",
                 category: "populaire",
-                orderCount: popularData ? popularData.order_count : 0
+                orderCount: productOrderCounts[product.id] || 0
               };
             });
             
-            // Sort by order count
+            // Sort by total order count (descending)
             formattedPopularProducts.sort((a, b) => b.orderCount - a.orderCount);
             
-            // Limit to 4
+            // Limit to 4 most popular products
             formattedPopularProducts = formattedPopularProducts.slice(0, 4);
+          }
+        }
+        
+        // If we don't have enough popular products from orders, fallback to best_seller products
+        if (formattedPopularProducts.length < 4) {
+          // Get products flagged as best_sellers to fill any remaining slots
+          const slotsNeeded = 4 - formattedPopularProducts.length;
+          
+          if (slotsNeeded > 0) {
+            const { data: bestSellers } = await supabase
+              .from('products')
+              .select('*')
+              .eq('is_best_seller', true)
+              .limit(slotsNeeded);
+              
+            if (bestSellers && bestSellers.length > 0) {
+              const bestSellerFormatted = bestSellers.map(product => ({
+                id: product.id,
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                image: product.image_url || "/placeholder.svg",
+                category: "populaire",
+                orderCount: 0
+              }));
+              
+              formattedPopularProducts = [...formattedPopularProducts, ...bestSellerFormatted];
+            }
           }
         }
         

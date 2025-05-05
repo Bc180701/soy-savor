@@ -36,18 +36,43 @@ export const getOrderAnalytics = async (days = 7): Promise<OrderAnalytics[]> => 
 
 export const getPopularProducts = async (limit = 5): Promise<PopularProduct[]> => {
   try {
+    // First, get all records from popular_products
     const { data, error } = await supabase
       .from('popular_products')
-      .select('*')
-      .order('order_count', { ascending: false })
-      .limit(limit);
+      .select('*');
     
     if (error) {
       console.error("Error fetching popular products:", error);
       return [];
     }
     
-    return data || [];
+    if (!data || data.length === 0) {
+      return [];
+    }
+    
+    // Aggregate the data by product to get total counts across all dates
+    const productTotals = data.reduce((acc, item) => {
+      const existingProduct = acc.find(p => p.product_id === item.product_id);
+      
+      if (existingProduct) {
+        existingProduct.order_count += item.order_count;
+      } else {
+        acc.push({
+          product_id: item.product_id,
+          product_name: item.product_name,
+          order_count: item.order_count,
+          date: 'aggregated' // Indicate this is an aggregated result
+        });
+      }
+      
+      return acc;
+    }, [] as PopularProduct[]);
+    
+    // Sort by total order count and limit results
+    return productTotals
+      .sort((a, b) => b.order_count - a.order_count)
+      .slice(0, limit);
+    
   } catch (error) {
     console.error("Unexpected error fetching popular products:", error);
     return [];
