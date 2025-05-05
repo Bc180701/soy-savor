@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface Product {
   id: string;
@@ -85,16 +86,19 @@ const FeaturedProductsSection = ({
 };
 
 const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant: "default" | "new" | "exclusive" }) => {
+  const [showFullImage, setShowFullImage] = useState(false);
+  
   return (
     <motion.div
       className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
       whileHover={{ y: -5 }}
     >
-      <div className="h-48 overflow-hidden">
+      <div className="relative pb-[60%] w-full bg-[#f9fafb] flex items-center justify-center overflow-hidden">
         <img 
           src={product.image} 
           alt={product.name} 
-          className="w-full h-full object-cover transition-transform hover:scale-105" 
+          className="absolute inset-0 w-full h-full object-contain p-2 cursor-pointer"
+          onClick={() => setShowFullImage(true)}
         />
       </div>
       <div className="p-6">
@@ -110,6 +114,20 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
           </Button>
         </div>
       </div>
+
+      {/* Image Dialog for full-size view */}
+      <Dialog open={showFullImage} onOpenChange={setShowFullImage}>
+        <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
+          <DialogTitle className="sr-only">Image de {product.name}</DialogTitle>
+          <div className="w-full bg-[#f9fafb] rounded-lg overflow-hidden">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="w-full h-auto object-contain max-h-[80vh]"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };

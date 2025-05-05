@@ -86,16 +86,16 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row">
                     {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                      <div className="w-full md:w-1/4 overflow-hidden bg-[#f9fafb]">
-                        <div className="max-w-[120px] md:max-w-full mx-auto">
-                          <AspectRatio ratio={1/1} className="bg-[#f9fafb]">
+                      <div className="w-full md:w-1/4 bg-[#f9fafb] flex items-center justify-center">
+                        <div className="w-full max-w-[120px] md:max-w-none mx-auto py-4 px-2">
+                          <div className="aspect-square relative">
                             <img
                               src={item.imageUrl}
                               alt={item.name}
                               className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
                               onClick={() => handleImageClick(item.imageUrl, item.name)}
                             />
-                          </AspectRatio>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -172,7 +172,6 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
       {/* Image Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={handleCloseDialog}>
         <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
-          {/* Titre caché pour accessibilité */}
           <DialogTitle className="sr-only">Image de {selectedImageAlt}</DialogTitle>
           <div className="w-full bg-[#f9fafb] rounded-lg overflow-hidden">
             <img
