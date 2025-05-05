@@ -2,30 +2,22 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 import { getMenuData } from "@/services/productService";
-import { MenuCategory } from "@/types";
+import { MenuCategory, MenuItem } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import CategoryContent from "@/components/menu/CategoryContent";
 
 const Menu = () => {
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedImageAlt, setSelectedImageAlt] = useState<string>("");
-  const isMobile = useIsMobile();
   const { toast } = useToast();
   
   useEffect(() => {
@@ -66,13 +58,13 @@ const Menu = () => {
     fetchMenuData();
   }, [toast, activeCategory]);
 
-  const handleImageClick = (imageUrl: string, alt: string) => {
-    setSelectedImage(imageUrl);
-    setSelectedImageAlt(alt);
-  };
-
-  const handleCloseDialog = () => {
-    setSelectedImage(null);
+  const handleAddToCart = (item: MenuItem) => {
+    // This will be implemented later when we add cart functionality
+    console.log("Added to cart:", item);
+    toast({
+      title: "Produit ajouté",
+      description: `${item.name} a été ajouté à votre panier`,
+    });
   };
 
   if (isLoading) {
@@ -142,97 +134,17 @@ const Menu = () => {
             <AnimatePresence mode="wait">
               {categories.map((category) => (
                 activeCategory === category.id && (
-                  <motion.div 
-                    key={category.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="mb-8">
-                      <h2 className="text-2xl font-bold">{category.name}</h2>
-                      {category.description && (
-                        <p className="text-gray-600 italic mt-1">{category.description}</p>
-                      )}
-                      <Separator className="my-4" />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6">
-                      <AnimatePresence>
-                        {category.items.map((item, index) => (
-                          <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.2, delay: index * 0.05 }}
-                          >
-                            <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                              <CardContent className="p-0">
-                                <div className="flex flex-col md:flex-row">
-                                  {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                                    <div className={`w-full md:w-1/4 overflow-hidden ${isMobile ? "p-4" : ""}`}>
-                                      <div className={cn("max-w-[120px] mx-auto md:max-w-full", isMobile && "bg-[#f9fafb] rounded-lg")}>
-                                        <AspectRatio ratio={1/1} className="bg-[#f9fafb]">
-                                          <img
-                                            src={item.imageUrl}
-                                            alt={item.name}
-                                            className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                                            onClick={() => handleImageClick(item.imageUrl, item.name)}
-                                          />
-                                        </AspectRatio>
-                                      </div>
-                                    </div>
-                                  )}
-                                  <div className={`w-full ${item.imageUrl && item.imageUrl !== "/placeholder.svg" ? "md:w-3/4" : ""} p-6`}>
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div>
-                                        <h3 className="text-lg font-bold">{item.name}</h3>
-                                        {item.description && (
-                                          <p className="text-gray-600 text-sm mt-1">{item.description}</p>
-                                        )}
-                                      </div>
-                                      <div className="flex flex-col items-end">
-                                        <span className="font-semibold text-gold-600">
-                                          {item.price.toFixed(2)} €
-                                        </span>
-                                        {item.isBestSeller && (
-                                          <Badge className="bg-orange-500 text-white mt-2">Exclusivité</Badge>
-                                        )}
-                                        {item.isNew && (
-                                          <Badge className="bg-purple-600 text-white mt-2 ml-2">Nouveauté</Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
+                  <CategoryContent 
+                    key={category.id} 
+                    category={category} 
+                    onAddToCart={handleAddToCart} 
+                  />
                 )
               ))}
             </AnimatePresence>
           </div>
         </div>
       </motion.div>
-
-      {/* Image Dialog pour afficher l'image en plein écran */}
-      <Dialog open={!!selectedImage} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
-          <DialogTitle className="sr-only">Image de {selectedImageAlt}</DialogTitle>
-          <div className="w-full bg-[#f9fafb] rounded-lg overflow-hidden">
-            <img
-              src={selectedImage || ''}
-              alt={selectedImageAlt}
-              className="w-full h-auto object-contain max-h-[80vh]"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
