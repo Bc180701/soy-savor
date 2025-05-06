@@ -207,7 +207,7 @@ const Index = () => {
       id: 1,
       title: "Box du Midi à -20%",
       description: "Du mardi au vendredi, profitez de -20% sur nos box du midi !",
-      imageUrl: "/lovable-uploads/e8cc11c7-18e9-41d0-a66b-10a616c5a9f1.png",
+      imageUrl: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
       buttonText: "En profiter",
       buttonLink: "/menu",
     },
@@ -270,7 +270,6 @@ const Index = () => {
 
   return (
     <div className="pt-16">
-      {/* Hero Section */}
       <section className="relative h-[85vh] flex items-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -281,7 +280,6 @@ const Index = () => {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
         </div>
 
-        {/* Hero Content */}
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
             className="max-w-xl"
@@ -332,7 +330,6 @@ const Index = () => {
           </motion.div>
         </div>
 
-        {/* Bottom Bar */}
         <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md py-4 border-t border-white/20">
           <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 text-white">
@@ -352,7 +349,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Promotions Section - Only shown when user is not logged in */}
       {!user && (
         <section className="py-20 bg-white">
           <div className="container mx-auto px-4">
@@ -364,7 +360,6 @@ const Index = () => {
             </div>
 
             <div className="relative max-w-4xl mx-auto overflow-hidden rounded-xl shadow-lg">
-              {/* Promotions Carousel */}
               {promotions.map((promo, index) => (
                 <div
                   key={promo.id}
@@ -390,7 +385,6 @@ const Index = () => {
                 </div>
               ))}
 
-              {/* Carousel Indicators */}
               <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center space-x-2">
                 {promotions.map((_, index) => (
                   <button
@@ -405,7 +399,6 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Register Promotion */}
             {!loadingPromotion && registerPromotion && (
               <div className="mt-12 max-w-4xl mx-auto">
                 <div className="rounded-lg shadow-lg overflow-hidden bg-gold-50 border border-gold-300">
@@ -435,7 +428,7 @@ const Index = () => {
         </section>
       )}
 
-      {/* Featured Products Section */}
+      {/* Nouvelle section avec FeaturedProductsSection remplaçant l'ancienne section bestSellers */}
       {!loadingProducts && (
         <FeaturedProductsSection 
           newProducts={featuredProducts.new}
@@ -444,7 +437,6 @@ const Index = () => {
         />
       )}
 
-      {/* How to Order Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -482,7 +474,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Delivery Zones Section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
@@ -519,7 +510,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Dine-In CTA Section */}
       <section className="py-16 bg-gold-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold mb-4">Envie de déguster sur place ?</h2>
