@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash, AlertCircle } from "lucide-react";
+import { Plus, Trash, AlertCircle, Loader2 } from "lucide-react";
 import FileUpload from "@/components/ui/file-upload";
 import { useToast } from "@/components/ui/use-toast";
 
