@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, RefreshCw } from "lucide-react";
 import FileUpload from "@/components/ui/file-upload";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Promotion {
   id: number;
@@ -34,6 +35,7 @@ interface PromotionsEditorProps {
 const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
   const [promotions, setPromotions] = useState<Promotion[]>(data);
   const [uploading, setUploading] = useState<number | null>(null);
+  const { toast } = useToast();
   
   // Create a form instance for react-hook-form context
   const form = useForm();
@@ -53,13 +55,38 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     try {
       setUploading(index);
       
+      // Check if the "homepage" bucket exists, create it if it doesn't
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const homepageBucketExists = buckets?.some(bucket => bucket.name === 'homepage');
+      
+      if (!homepageBucketExists) {
+        try {
+          await supabase.storage.createBucket('homepage', { public: true });
+        } catch (error) {
+          console.error("Error creating homepage bucket:", error);
+          // Continue anyway, might be a permission issue but bucket might already exist
+        }
+      }
+      
+      // Generate unique filename
+      const fileName = `promotion-${Date.now()}-${file.name.split(' ').join('_')}`;
+      
       // Upload to Supabase Storage
-      const fileName = `promotion-${Date.now()}.${file.name.split('.').pop()}`;
-      const { error } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('homepage')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
         
-      if (error) throw error;
+      if (uploadError) {
+        toast({
+          variant: "destructive",
+          title: "Erreur de téléchargement",
+          description: uploadError.message || "Impossible de télécharger l'image"
+        });
+        throw uploadError;
+      }
       
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -68,6 +95,11 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
         
       // Update the promotion with the new URL
       handleChange(index, 'imageUrl', publicUrl);
+      
+      toast({
+        title: "Image téléchargée",
+        description: "L'image a été téléchargée avec succès"
+      });
       
       return publicUrl;
     } catch (error) {
@@ -193,12 +225,17 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
                           onChange={(value) => handleChange(index, 'imageUrl', value)}
                           onUpload={(file) => handleImageUpload(index, file)}
                           disabled={uploading === index}
-                          buttonText={uploading === index ? "Téléchargement en cours..." : "Changer l'image"}
+                          buttonText={
+                            uploading === index ? 
+                            "Téléchargement en cours..." : 
+                            "Changer l'image"
+                          }
                         />
                         
                         {uploading === index && (
                           <div className="text-center py-2">
-                            <span className="text-sm text-muted-foreground">Téléchargement en cours...</span>
+                            <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
+                            <span className="text-sm text-muted-foreground block mt-1">Téléchargement en cours...</span>
                           </div>
                         )}
                       </div>

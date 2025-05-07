@@ -23,19 +23,33 @@ const FileUpload = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = () => {
-    fileInputRef.current?.click();
+    if (!disabled && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   const handleChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const { files } = e.target;
     if (!files || files.length === 0) return;
     
-    if (onUpload) {
-      const url = await onUpload(files[0]);
-      if (url) onChange(url);
-    } else {
-      // For direct handling without upload (e.g. in case of using FileReader)
-      onChange(files[0].name);
+    try {
+      if (onUpload) {
+        // Wait for the upload to complete and get the URL
+        const url = await onUpload(files[0]);
+        if (url) {
+          onChange(url);
+        }
+      } else {
+        // For direct handling without upload (e.g. in case of using FileReader)
+        onChange(files[0].name);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    } finally {
+      // Reset the file input so the same file can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -47,6 +61,7 @@ const FileUpload = ({
         onChange={handleChange}
         accept={accept}
         className="hidden"
+        disabled={disabled}
       />
       <Button
         type="button"
