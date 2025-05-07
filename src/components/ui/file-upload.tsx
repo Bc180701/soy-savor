@@ -3,6 +3,8 @@ import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from "uuid";
 
 interface FileUploadProps {
   onChange: (value: string) => void;
@@ -38,42 +40,38 @@ const FileUpload = ({
     try {
       console.log("Téléchargement du fichier:", file.name, "type:", file.type, "taille:", file.size);
       
-      // Création du FormData pour l'upload
-      const formData = new FormData();
-      formData.append('file', file);
+      // Générer un nom unique pour le fichier
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = fileName;
       
-      console.log("Envoi de la requête d'upload...");
+      console.log("Envoi du fichier vers Supabase Storage...");
       
-      // Upload vers l'API de Lovable
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
+      // Télécharger vers le bucket "images" de Supabase (créer ce bucket s'il n'existe pas)
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+      
+      if (error) {
+        console.error("Erreur de téléchargement:", error);
+        throw new Error(`Échec du téléchargement: ${error.message}`);
+      }
+      
+      // Obtenir l'URL publique
+      const { data: publicUrlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+        
+      console.log("Image téléchargée avec succès:", publicUrlData.publicUrl);
+      
+      // Mettre à jour avec l'URL
+      onChange(publicUrlData.publicUrl);
+      
+      toast({
+        title: "Succès",
+        description: "L'image a été téléchargée avec succès",
+        variant: "success"
       });
-      
-      console.log("Statut de réponse de l'upload:", response.status, response.statusText);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Échec de l\'upload' }));
-        console.error('Données d\'erreur de l\'upload:', errorData);
-        throw new Error(`Échec de l'upload (${response.status}): ${errorData.error || ''}`);
-      }
-      
-      // Traiter la réponse
-      const data = await response.json();
-      console.log('Upload réussi, données reçues:', data);
-      
-      if (data && data.url) {
-        console.log("Mise à jour de l'URL de l'image:", data.url);
-        onChange(data.url);
-        toast({
-          title: "Succès",
-          description: "L'image a été téléchargée avec succès",
-          variant: "success"
-        });
-      } else {
-        console.error("Données de réponse incomplètes:", data);
-        throw new Error("URL non reçue dans la réponse");
-      }
     } catch (error: any) {
       console.error("Erreur d'upload:", error);
       toast({
