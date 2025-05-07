@@ -11,9 +11,66 @@ import DeliveryZonesEditor from "./homepage-editor/DeliveryZonesEditor";
 import OrderOptionsEditor from "./homepage-editor/OrderOptionsEditor";
 import { HomepageData } from "@/hooks/useHomepageData";
 
+// Default data to use as fallback
+const DEFAULT_HOMEPAGE_DATA: HomepageData = {
+  hero_section: {
+    background_image: "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png",
+    title: "L'art du sushi à <span class=\"text-gold-500\">Châteaurenard</span>",
+    subtitle: "Des produits frais, des saveurs authentiques, une expérience japonaise unique à déguster sur place ou à emporter."
+  },
+  promotions: [
+    {
+      id: 1,
+      title: "Box du Midi à -20%",
+      description: "Du mardi au vendredi, profitez de -20% sur nos box du midi !",
+      imageUrl: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
+      buttonText: "En profiter",
+      buttonLink: "/menu",
+    },
+    {
+      id: 2,
+      title: "1 Plateau Acheté = 1 Dessert Offert",
+      description: "Pour toute commande d'un plateau, recevez un dessert au choix offert !",
+      imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
+      buttonText: "Découvrir",
+      buttonLink: "/menu",
+    },
+    {
+      id: 3,
+      title: "10% sur votre première commande",
+      description: "Utilisez le code BIENVENUE pour bénéficier de 10% sur votre première commande en ligne",
+      imageUrl: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1000&auto=format&fit=crop",
+      buttonText: "Commander",
+      buttonLink: "/commander",
+    }
+  ],
+  delivery_zones: [
+    "Châteaurenard", "Eyragues", "Barbentane", "Rognonas", 
+    "Graveson", "Maillane", "Noves", "Cabanes", 
+    "Avignon", "Saint-Rémy de Provence", "Boulbon"
+  ],
+  order_options: [
+    {
+      title: "Livraison",
+      description: "Livraison à domicile dans notre zone de chalandise",
+      icon: "Truck"
+    },
+    {
+      title: "À emporter",
+      description: "Commandez et récupérez en restaurant",
+      icon: "ShoppingBag"
+    },
+    {
+      title: "Sur place",
+      description: "Profitez de votre repas dans notre restaurant",
+      icon: "Users"
+    }
+  ]
+};
+
 const HomepageEditor = () => {
   const [loading, setLoading] = useState(true);
-  const [homepageData, setHomepageData] = useState<HomepageData | null>(null);
+  const [homepageData, setHomepageData] = useState<HomepageData>(DEFAULT_HOMEPAGE_DATA);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -24,73 +81,24 @@ const HomepageEditor = () => {
     try {
       setLoading(true);
       
-      // Use a generic query instead of typed query to bypass TypeScript errors
-      // @ts-ignore - We're using a workaround until the database schema is updated
-      const { data, error } = await supabase
-        .from('homepage_sections')
-        .select('*')
-        .single();
+      // Check if homepage_sections table exists
+      const { data: tableExists } = await supabase.rpc('check_table_exists', {
+        table_name: 'homepage_sections'
+      }).single();
+      
+      if (tableExists) {
+        // Use RPC function to fetch homepage data as JSON
+        const { data, error } = await supabase.rpc('get_homepage_data').single();
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+        if (error) {
+          throw error;
+        }
+
+        // Cast the data to our expected type
+        setHomepageData(data as HomepageData || DEFAULT_HOMEPAGE_DATA);
+      } else {
+        setHomepageData(DEFAULT_HOMEPAGE_DATA);
       }
-
-      // Cast the data to our expected type
-      setHomepageData(data as unknown as HomepageData || {
-        hero_section: {
-          background_image: "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png",
-          title: "L'art du sushi à <span class=\"text-gold-500\">Châteaurenard</span>",
-          subtitle: "Des produits frais, des saveurs authentiques, une expérience japonaise unique à déguster sur place ou à emporter."
-        },
-        promotions: [
-          {
-            id: 1,
-            title: "Box du Midi à -20%",
-            description: "Du mardi au vendredi, profitez de -20% sur nos box du midi !",
-            imageUrl: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
-            buttonText: "En profiter",
-            buttonLink: "/menu",
-          },
-          {
-            id: 2,
-            title: "1 Plateau Acheté = 1 Dessert Offert",
-            description: "Pour toute commande d'un plateau, recevez un dessert au choix offert !",
-            imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
-            buttonText: "Découvrir",
-            buttonLink: "/menu",
-          },
-          {
-            id: 3,
-            title: "10% sur votre première commande",
-            description: "Utilisez le code BIENVENUE pour bénéficier de 10% sur votre première commande en ligne",
-            imageUrl: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1000&auto=format&fit=crop",
-            buttonText: "Commander",
-            buttonLink: "/commander",
-          }
-        ],
-        delivery_zones: [
-          "Châteaurenard", "Eyragues", "Barbentane", "Rognonas", 
-          "Graveson", "Maillane", "Noves", "Cabanes", 
-          "Avignon", "Saint-Rémy de Provence", "Boulbon"
-        ],
-        order_options: [
-          {
-            title: "Livraison",
-            description: "Livraison à domicile dans notre zone de chalandise",
-            icon: "Truck"
-          },
-          {
-            title: "À emporter",
-            description: "Commandez et récupérez en restaurant",
-            icon: "ShoppingBag"
-          },
-          {
-            title: "Sur place",
-            description: "Profitez de votre repas dans notre restaurant",
-            icon: "Users"
-          }
-        ]
-      });
     } catch (error) {
       console.error("Erreur lors de la récupération des données:", error);
       toast({
@@ -98,6 +106,7 @@ const HomepageEditor = () => {
         description: "Impossible de charger les données de la page d'accueil",
         variant: "destructive",
       });
+      setHomepageData(DEFAULT_HOMEPAGE_DATA);
     } finally {
       setLoading(false);
     }
@@ -110,24 +119,34 @@ const HomepageEditor = () => {
         [section]: data
       };
 
-      // Use a generic query instead of typed query to bypass TypeScript errors
-      // @ts-ignore - We're using a workaround until the database schema is updated
-      const { error } = await supabase
-        .from('homepage_sections')
-        .upsert({ 
-          id: homepageData?.id || 1,
-          ...updatedData
+      // Check if homepage_sections table exists
+      const { data: tableExists } = await supabase.rpc('check_table_exists', {
+        table_name: 'homepage_sections'
+      }).single();
+      
+      if (tableExists) {
+        // Use RPC function to update homepage data
+        const { error } = await supabase.rpc('update_homepage_data', { 
+          section_name: section,
+          section_data: JSON.stringify(data)
         });
 
-      if (error) throw error;
-
-      setHomepageData(updatedData);
-      
-      toast({
-        title: "Enregistré",
-        description: `Les modifications de la section ont été enregistrées.`,
-        variant: "success",
-      });
+        if (error) throw error;
+        
+        setHomepageData(updatedData);
+        
+        toast({
+          title: "Enregistré",
+          description: `Les modifications de la section ont été enregistrées.`,
+          variant: "success",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: "La table homepage_sections n'existe pas encore. Veuillez exécuter les migrations SQL.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
       toast({

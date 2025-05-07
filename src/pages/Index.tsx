@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import FeaturedProductsSection from "@/components/FeaturedProductsSection";
+import { useHomepageData } from "@/hooks/useHomepageData";
 
 const Index = () => {
   const [activePromotion, setActivePromotion] = useState(0);
@@ -22,8 +23,7 @@ const Index = () => {
     exclusive: []
   });
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [homepageData, setHomepageData] = useState(null);
-  const [loadingHomepage, setLoadingHomepage] = useState(true);
+  const { data: homepageData, loading: loadingHomepage } = useHomepageData();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -35,29 +35,6 @@ const Index = () => {
 
     const sections = document.querySelectorAll(".animate-on-scroll");
     sections.forEach((section) => observer.observe(section));
-
-    const fetchHomepageData = async () => {
-      try {
-        setLoadingHomepage(true);
-        
-        // Use a generic query instead of typed query to bypass TypeScript errors
-        // @ts-ignore - We're using a workaround until the database schema is updated
-        const { data, error } = await supabase
-          .from('homepage_sections')
-          .select('*')
-          .single();
-        
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found" error
-          console.error("Erreur lors de la récupération des données de la page d'accueil:", error);
-        } else if (data) {
-          setHomepageData(data);
-        }
-      } catch (error) {
-        console.error("Erreur inattendue:", error);
-      } finally {
-        setLoadingHomepage(false);
-      }
-    };
 
     const interval = setInterval(() => {
       setActivePromotion((prev) => {
@@ -209,7 +186,6 @@ const Index = () => {
       }
     };
     
-    fetchHomepageData();
     fetchRegisterPromotion();
     fetchFeaturedProducts();
 
@@ -231,7 +207,7 @@ const Index = () => {
       clearInterval(interval);
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [homepageData]);
 
   // Default data if nothing is loaded from the database
   const promotions = [
@@ -261,30 +237,6 @@ const Index = () => {
     },
   ];
 
-  const deliveryZones = homepageData?.delivery_zones || [
-    "Châteaurenard", "Eyragues", "Barbentane", "Rognonas", 
-    "Graveson", "Maillane", "Noves", "Cabanes", 
-    "Avignon", "Saint-Rémy de Provence", "Boulbon"
-  ];
-
-  const orderOptions = homepageData?.order_options || [
-    {
-      title: "Livraison",
-      description: "Livraison à domicile dans notre zone de chalandise",
-      icon: "Truck",
-    },
-    {
-      title: "À emporter",
-      description: "Commandez et récupérez en restaurant",
-      icon: "ShoppingBag",
-    },
-    {
-      title: "Sur place",
-      description: "Profitez de votre repas dans notre restaurant",
-      icon: "Users",
-    },
-  ];
-  
   // Get the icon component for an icon name
   const getIconComponent = (iconName) => {
     switch (iconName) {
@@ -317,6 +269,7 @@ const Index = () => {
 
   return (
     <div className="pt-16">
+      {/* Hero section */}
       <section className="relative h-[85vh] flex items-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -397,6 +350,7 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Special offers section (only for non-logged-in users) */}
       {!user && (
         <section className="py-20 bg-white">
           <div className="container mx-auto px-4">
@@ -476,7 +430,7 @@ const Index = () => {
         </section>
       )}
 
-      {/* Nouvelle section avec FeaturedProductsSection remplaçant l'ancienne section bestSellers */}
+      {/* Featured products section */}
       {!loadingProducts && (
         <FeaturedProductsSection 
           newProducts={featuredProducts.new}
@@ -485,6 +439,7 @@ const Index = () => {
         />
       )}
 
+      {/* Order options section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -495,7 +450,7 @@ const Index = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {orderOptions.map((option, index) => (
+            {(homepageData?.order_options || []).map((option, index) => (
               <motion.div
                 key={index}
                 className="bg-white p-8 rounded-xl shadow-md text-center"
@@ -522,6 +477,7 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Delivery zones section */}
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
@@ -540,7 +496,7 @@ const Index = () => {
               </Alert>
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {deliveryZones.map((zone, index) => (
+                {(homepageData?.delivery_zones || []).map((zone, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-gold-600" />
                     <span>{zone}</span>
@@ -558,6 +514,7 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Restaurant CTA section */}
       <section className="py-16 bg-gold-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold mb-4">Envie de déguster sur place ?</h2>
