@@ -40,6 +40,25 @@ const FileUpload = ({
     try {
       console.log("Téléchargement du fichier:", file.name, "type:", file.type, "taille:", file.size);
       
+      // Créer le bucket 'images' s'il n'existe pas déjà
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const imagesBucketExists = buckets?.some(bucket => bucket.name === 'images');
+      
+      if (!imagesBucketExists) {
+        console.log("Le bucket 'images' n'existe pas, tentative de création...");
+        const { data, error } = await supabase.storage.createBucket('images', {
+          public: true,
+          fileSizeLimit: 5242880 // 5MB
+        });
+        
+        if (error) {
+          console.error("Erreur lors de la création du bucket:", error);
+          // Continue anyway, the bucket might exist but not be accessible via listBuckets
+        } else {
+          console.log("Bucket 'images' créé avec succès!");
+        }
+      }
+      
       // Générer un nom unique pour le fichier
       const fileExt = file.name.split('.').pop();
       const fileName = `${uuidv4()}.${fileExt}`;
@@ -47,15 +66,20 @@ const FileUpload = ({
       
       console.log("Envoi du fichier vers Supabase Storage...");
       
-      // Télécharger vers le bucket "images" de Supabase (créer ce bucket s'il n'existe pas)
+      // Télécharger vers le bucket "images" de Supabase
       const { data, error } = await supabase.storage
         .from('images')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
       
       if (error) {
         console.error("Erreur de téléchargement:", error);
-        throw new Error(`Échec du téléchargement: ${error.message}`);
+        throw error;
       }
+      
+      console.log("Fichier téléversé avec succès:", data);
       
       // Obtenir l'URL publique
       const { data: publicUrlData } = supabase.storage
