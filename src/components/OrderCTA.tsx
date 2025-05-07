@@ -19,7 +19,7 @@ export const OrderCTA = () => {
             </Link>
           </Button>
           
-          <Button asChild variant="outline" className="border-white text-white hover:bg-white/20">
+          <Button asChild className="bg-white hover:bg-gray-100 text-gold-800 border-none font-semibold">
             <a href="tel:+33490000000" className="flex items-center">
               <Phone className="mr-2 h-4 w-4" /> 04 90 00 00 00
             </a>
