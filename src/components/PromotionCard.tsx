@@ -35,7 +35,7 @@ export const PromotionCard = ({ promotion }: PromotionCardProps) => {
       </div>
       <div className="p-5">
         <p className="text-gray-600 mb-4">{promotion.description}</p>
-        <Button asChild>
+        <Button asChild variant="destructive">
           <Link to={promotion.buttonLink}>{promotion.buttonText}</Link>
         </Button>
       </div>
