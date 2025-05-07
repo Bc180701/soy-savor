@@ -1,7 +1,7 @@
 
-import { ChangeEvent, useRef } from "react";
+import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 
 interface FileUploadProps {
   onChange: (value: string) => void;
@@ -21,9 +21,11 @@ const FileUpload = ({
   buttonText = "Choisir un fichier"
 }: FileUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleClick = () => {
-    if (!disabled && fileInputRef.current) {
+    if (!disabled && fileInputRef.current && !isUploading) {
       fileInputRef.current.click();
     }
   };
@@ -32,20 +34,27 @@ const FileUpload = ({
     const { files } = e.target;
     if (!files || files.length === 0) return;
     
+    setIsUploading(true);
+    setError(null);
+    
     try {
       if (onUpload) {
         // Wait for the upload to complete and get the URL
         const url = await onUpload(files[0]);
         if (url) {
           onChange(url);
+        } else {
+          setError("Échec du téléchargement de l'image");
         }
       } else {
         // For direct handling without upload (e.g. in case of using FileReader)
         onChange(files[0].name);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
+      setError(error.message || "Erreur lors du téléchargement");
     } finally {
+      setIsUploading(false);
       // Reset the file input so the same file can be selected again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -61,18 +70,30 @@ const FileUpload = ({
         onChange={handleChange}
         accept={accept}
         className="hidden"
-        disabled={disabled}
+        disabled={disabled || isUploading}
       />
       <Button
         type="button"
         variant="outline"
         onClick={handleClick}
-        disabled={disabled}
+        disabled={disabled || isUploading}
         className="w-full border-dashed"
       >
-        <Upload className="h-4 w-4 mr-2" />
-        {buttonText}
+        {isUploading ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Téléchargement...
+          </>
+        ) : (
+          <>
+            <Upload className="h-4 w-4 mr-2" />
+            {buttonText}
+          </>
+        )}
       </Button>
+      {error && (
+        <p className="text-sm text-red-500 mt-1">{error}</p>
+      )}
     </div>
   );
 };

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash, RefreshCw } from "lucide-react";
+import { Plus, Trash, RefreshCw, AlertCircle } from "lucide-react";
 import FileUpload from "@/components/ui/file-upload";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -55,23 +55,44 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     try {
       setUploading(index);
       
-      // Check if the "homepage" bucket exists, create it if it doesn't
-      const { data: buckets } = await supabase.storage.listBuckets();
+      // Vérifier si le bucket existe
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error("Erreur lors de la vérification des buckets:", bucketsError);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de vérifier les buckets de stockage"
+        });
+        throw bucketsError;
+      }
+
       const homepageBucketExists = buckets?.some(bucket => bucket.name === 'homepage');
       
+      // Si le bucket n'existe pas, on essaie de le créer
       if (!homepageBucketExists) {
         try {
-          await supabase.storage.createBucket('homepage', { public: true });
+          const { error: createError } = await supabase.storage.createBucket('homepage', { public: true });
+          if (createError) {
+            console.error("Error creating homepage bucket:", createError);
+            toast({
+              variant: "destructive",
+              title: "Erreur de configuration",
+              description: "Impossible de créer le bucket de stockage"
+            });
+          }
         } catch (error) {
           console.error("Error creating homepage bucket:", error);
-          // Continue anyway, might be a permission issue but bucket might already exist
+          // On continue quand même, le bucket pourrait déjà exister malgré l'erreur
         }
       }
       
-      // Generate unique filename
-      const fileName = `promotion-${Date.now()}-${file.name.split(' ').join('_')}`;
+      // Générer un nom de fichier unique
+      const fileExt = file.name.split('.').pop();
+      const fileName = `promotion-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       
-      // Upload to Supabase Storage
+      // Télécharger vers Supabase Storage
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('homepage')
         .upload(fileName, file, {
@@ -80,6 +101,7 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
         });
         
       if (uploadError) {
+        console.error("Erreur détaillée du téléchargement:", uploadError);
         toast({
           variant: "destructive",
           title: "Erreur de téléchargement",
@@ -88,12 +110,12 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
         throw uploadError;
       }
       
-      // Get public URL
+      // Obtenir l'URL publique
       const { data: { publicUrl } } = supabase.storage
         .from('homepage')
         .getPublicUrl(fileName);
         
-      // Update the promotion with the new URL
+      // Mettre à jour la promotion avec la nouvelle URL
       handleChange(index, 'imageUrl', publicUrl);
       
       toast({
@@ -102,8 +124,13 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
       });
       
       return publicUrl;
-    } catch (error) {
-      console.error("Error uploading image:", error);
+    } catch (error: any) {
+      console.error("Erreur lors du téléchargement de l'image:", error);
+      toast({
+        variant: "destructive",
+        title: "Échec du téléchargement",
+        description: error.message || "Une erreur est survenue lors du téléchargement de l'image"
+      });
       return null;
     } finally {
       setUploading(null);
@@ -210,12 +237,17 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
                     <FormControl>
                       <div className="space-y-2">
                         <div className="bg-gray-100 rounded-lg overflow-hidden h-40 relative">
-                          {promotion.imageUrl && (
+                          {promotion.imageUrl ? (
                             <img 
                               src={promotion.imageUrl} 
                               alt={`Promotion ${index + 1}`}
                               className="absolute inset-0 w-full h-full object-cover"
                             />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-gray-400">
+                              <AlertCircle className="h-6 w-6 mr-2" />
+                              <span>Aucune image</span>
+                            </div>
                           )}
                         </div>
                         
