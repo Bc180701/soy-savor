@@ -2,6 +2,7 @@
 import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface FileUploadProps {
   onChange: (value: string) => void;
@@ -23,6 +24,7 @@ const FileUpload = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handleClick = () => {
     if (!disabled && fileInputRef.current && !isUploading) {
@@ -38,7 +40,7 @@ const FileUpload = ({
     setError(null);
     
     try {
-      // Utiliser Lovable pour télécharger directement l'image
+      // Utilisation de l'API Lovable pour télécharger l'image
       const formData = new FormData();
       formData.append('file', files[0]);
       
@@ -48,36 +50,53 @@ const FileUpload = ({
       });
       
       if (!response.ok) {
-        throw new Error("Échec du téléchargement de l'image");
+        const errorText = await response.text();
+        console.error("Échec de l'upload:", errorText);
+        throw new Error(`Échec du téléchargement de l'image (${response.status})`);
       }
       
-      const { url } = await response.json();
+      // S'assurer que la réponse est bien du JSON valide
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("Réponse non-JSON:", await response.text());
+        throw new Error("Format de réponse invalide");
+      }
       
-      if (url) {
-        onChange(url);
-        return url;
-      } else if (onUpload) {
-        // Fallback à la méthode personnalisée si l'upload direct échoue
-        const uploadedUrl = await onUpload(files[0]);
-        if (uploadedUrl) {
-          onChange(uploadedUrl);
-        }
+      const data = await response.json();
+      
+      if (data && data.url) {
+        onChange(data.url);
+        toast({
+          title: "Image téléchargée",
+          description: "L'image a été téléchargée avec succès"
+        });
+        return data.url;
+      } else {
+        console.error("Données de réponse incomplètes:", data);
+        throw new Error("URL de l'image non reçue");
       }
     } catch (error: any) {
       console.error("Error uploading file:", error);
       setError(error.message || "Erreur lors du téléchargement");
+      toast({
+        variant: "destructive",
+        title: "Échec du téléchargement",
+        description: error.message || "Impossible de télécharger l'image"
+      });
       
-      // Si l'upload échoue et qu'on a une méthode personnalisée, essayer celle-ci
+      // Utiliser la fonction onUpload comme fallback si disponible
       if (onUpload) {
         try {
           const url = await onUpload(files[0]);
           if (url) {
             onChange(url);
+            return url;
           }
         } catch (fallbackError) {
           console.error("Fallback upload also failed:", fallbackError);
         }
       }
+      return null;
     } finally {
       setIsUploading(false);
       // Reset le champ de fichier pour permettre la sélection du même fichier
