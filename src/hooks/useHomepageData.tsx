@@ -89,32 +89,46 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
 };
 
 export const useHomepageData = () => {
-  const [data, setData] = useState<HomepageData | null>(null);
+  const [data, setData] = useState<HomepageData>(DEFAULT_HOMEPAGE_DATA);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchHomepageData = async () => {
     try {
       setLoading(true);
+      console.log("Fetching homepage data from Supabase...");
       
-      // Check if homepage_sections table exists
-      // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
-      const { data: tableExists } = await supabase.rpc('check_table_exists', {
+      // Vérifie si la table homepage_sections existe
+      // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
+      const { data: tableExists, error: tableError } = await supabase.rpc('check_table_exists', {
         table_name: 'homepage_sections'
       }).single();
       
+      if (tableError) {
+        console.error("Error checking if table exists:", tableError);
+        throw tableError;
+      }
+      
+      console.log("Table homepage_sections exists:", tableExists);
+      
       if (tableExists) {
-        // Use RPC function to fetch homepage data as JSON
-        // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
+        // Récupère les données en utilisant la fonction RPC
+        console.log("Fetching homepage data using RPC function...");
+        // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
         const { data: homepageData, error } = await supabase.rpc('get_homepage_data').single();
         
         if (error) {
+          console.error("Error fetching homepage data:", error);
           throw error;
         }
 
+        console.log("Homepage data received:", homepageData);
+
         if (homepageData) {
-          // Cast the returned JSON data to HomepageData with proper type safety
+          // Cast les données JSON renvoyées avec une vérification de type
           const typedData = homepageData as Record<string, any>;
+          
+          // Ensure we have data for each section, using defaults if not provided
           const validatedData: HomepageData = {
             hero_section: typedData.hero_section || DEFAULT_HOMEPAGE_DATA.hero_section,
             promotions: typedData.promotions || DEFAULT_HOMEPAGE_DATA.promotions,
@@ -122,20 +136,20 @@ export const useHomepageData = () => {
             order_options: typedData.order_options || DEFAULT_HOMEPAGE_DATA.order_options
           };
           
+          console.log("Setting validated homepage data:", validatedData);
           setData(validatedData);
         } else {
-          // Fallback to default data
+          console.log("No homepage data found, using default data");
           setData(DEFAULT_HOMEPAGE_DATA);
         }
       } else {
-        // Fallback to default data if table doesn't exist
+        console.log("Table doesn't exist, using default data");
         setData(DEFAULT_HOMEPAGE_DATA);
       }
     } catch (err) {
-      console.error("Error fetching homepage data:", err);
+      console.error("Error in fetchHomepageData:", err);
       setError(err instanceof Error ? err : new Error('Unknown error occurred'));
-      
-      // Still set default data if we have an error
+      // On utilise toujours les données par défaut en cas d'erreur
       setData(DEFAULT_HOMEPAGE_DATA);
     } finally {
       setLoading(false);

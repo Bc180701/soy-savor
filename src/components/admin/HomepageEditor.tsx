@@ -5,151 +5,59 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import HeroSectionEditor from "./homepage-editor/HeroSectionEditor";
 import PromotionsEditor from "./homepage-editor/PromotionsEditor";
 import DeliveryZonesEditor from "./homepage-editor/DeliveryZonesEditor";
 import OrderOptionsEditor from "./homepage-editor/OrderOptionsEditor";
-import { HomepageData } from "@/hooks/useHomepageData";
-
-// Default data to use as fallback
-const DEFAULT_HOMEPAGE_DATA: HomepageData = {
-  hero_section: {
-    background_image: "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png",
-    title: "L'art du sushi à <span class=\"text-gold-500\">Châteaurenard</span>",
-    subtitle: "Des produits frais, des saveurs authentiques, une expérience japonaise unique à déguster sur place ou à emporter."
-  },
-  promotions: [
-    {
-      id: 1,
-      title: "Box du Midi à -20%",
-      description: "Du mardi au vendredi, profitez de -20% sur nos box du midi !",
-      imageUrl: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
-      buttonText: "En profiter",
-      buttonLink: "/menu",
-    },
-    {
-      id: 2,
-      title: "1 Plateau Acheté = 1 Dessert Offert",
-      description: "Pour toute commande d'un plateau, recevez un dessert au choix offert !",
-      imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
-      buttonText: "Découvrir",
-      buttonLink: "/menu",
-    },
-    {
-      id: 3,
-      title: "10% sur votre première commande",
-      description: "Utilisez le code BIENVENUE pour bénéficier de 10% sur votre première commande en ligne",
-      imageUrl: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1000&auto=format&fit=crop",
-      buttonText: "Commander",
-      buttonLink: "/commander",
-    }
-  ],
-  delivery_zones: [
-    "Châteaurenard", "Eyragues", "Barbentane", "Rognonas", 
-    "Graveson", "Maillane", "Noves", "Cabanes", 
-    "Avignon", "Saint-Rémy de Provence", "Boulbon"
-  ],
-  order_options: [
-    {
-      title: "Livraison",
-      description: "Livraison à domicile dans notre zone de chalandise",
-      icon: "Truck"
-    },
-    {
-      title: "À emporter",
-      description: "Commandez et récupérez en restaurant",
-      icon: "ShoppingBag"
-    },
-    {
-      title: "Sur place",
-      description: "Profitez de votre repas dans notre restaurant",
-      icon: "Users"
-    }
-  ]
-};
+import { HomepageData, useHomepageData } from "@/hooks/useHomepageData";
 
 const HomepageEditor = () => {
-  const [loading, setLoading] = useState(true);
-  const [homepageData, setHomepageData] = useState<HomepageData>(DEFAULT_HOMEPAGE_DATA);
+  const { data: homepageData, loading, error, refetch } = useHomepageData();
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Redemander les données si la page d'accueil est vide mais que nous avons terminé le chargement
   useEffect(() => {
-    fetchHomepageData();
-  }, []);
-
-  const fetchHomepageData = async () => {
-    try {
-      setLoading(true);
-      
-      // Check if homepage_sections table exists
-      // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
-      const { data: tableExists } = await supabase.rpc('check_table_exists', {
-        table_name: 'homepage_sections'
-      }).single();
-      
-      if (tableExists) {
-        // Use RPC function to fetch homepage data as JSON
-        // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
-        const { data, error } = await supabase.rpc('get_homepage_data').single();
-
-        if (error) {
-          throw error;
-        }
-
-        // Cast the returned JSON data to HomepageData with proper type safety
-        if (data) {
-          const typedData = data as Record<string, any>;
-          const validatedData: HomepageData = {
-            hero_section: typedData.hero_section || DEFAULT_HOMEPAGE_DATA.hero_section,
-            promotions: typedData.promotions || DEFAULT_HOMEPAGE_DATA.promotions,
-            delivery_zones: typedData.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones,
-            order_options: typedData.order_options || DEFAULT_HOMEPAGE_DATA.order_options
-          };
-          
-          setHomepageData(validatedData);
-        } else {
-          setHomepageData(DEFAULT_HOMEPAGE_DATA);
-        }
-      } else {
-        setHomepageData(DEFAULT_HOMEPAGE_DATA);
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des données:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les données de la page d'accueil",
-        variant: "destructive",
-      });
-      setHomepageData(DEFAULT_HOMEPAGE_DATA);
-    } finally {
-      setLoading(false);
+    if (!loading && !homepageData) {
+      console.log("Homepage data is empty after loading, trying to fetch again...");
+      refetch();
     }
-  };
+  }, [loading, homepageData, refetch]);
 
   const saveHomepageData = async (section: string, data: any) => {
     try {
-      const updatedData = {
-        ...homepageData,
-        [section]: data
-      };
-
-      // Check if homepage_sections table exists
-      // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
-      const { data: tableExists } = await supabase.rpc('check_table_exists', {
+      setSaveError(null);
+      console.log(`Saving ${section} data:`, data);
+      
+      // Vérifier si la table homepage_sections existe
+      // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
+      const { data: tableExists, error: tableError } = await supabase.rpc('check_table_exists', {
         table_name: 'homepage_sections'
       }).single();
       
+      if (tableError) {
+        console.error("Error checking if table exists:", tableError);
+        throw tableError;
+      }
+      
       if (tableExists) {
-        // Use RPC function to update homepage data
-        // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
+        // Utiliser la fonction RPC pour mettre à jour les données
+        console.log("Table exists, updating using RPC function...");
+        // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
         const { error } = await supabase.rpc('update_homepage_data', { 
           section_name: section,
-          section_data: JSON.stringify(data)
+          section_data: data
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating homepage data:", error);
+          throw error;
+        }
         
-        setHomepageData(updatedData);
+        // Rafraîchir les données
+        await refetch();
         
         toast({
           title: "Enregistré",
@@ -157,17 +65,19 @@ const HomepageEditor = () => {
           variant: "success",
         });
       } else {
+        console.error("Table homepage_sections doesn't exist");
         toast({
           title: "Erreur",
           description: "La table homepage_sections n'existe pas encore. Veuillez exécuter les migrations SQL.",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error("Erreur lors de la sauvegarde:", error);
+    } catch (error: any) {
+      console.error("Error saving homepage data:", error);
+      setSaveError(error.message || "Une erreur est survenue lors de la sauvegarde");
       toast({
         title: "Erreur",
-        description: "Impossible de sauvegarder les modifications",
+        description: error.message || "Impossible de sauvegarder les modifications",
         variant: "destructive",
       });
     }
@@ -176,8 +86,31 @@ const HomepageEditor = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
+        <div className="text-center">
+          <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Chargement des données...</p>
+        </div>
       </div>
+    );
+  }
+
+  if (error && !homepageData) {
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Erreur de chargement</AlertTitle>
+        <AlertDescription>
+          {error.message}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            className="ml-2"
+          >
+            Réessayer
+          </Button>
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -189,6 +122,14 @@ const HomepageEditor = () => {
           Modifiez les différentes sections de votre page d'accueil pour personnaliser votre site.
         </p>
       </div>
+
+      {saveError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erreur de sauvegarde</AlertTitle>
+          <AlertDescription>{saveError}</AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="hero" className="w-full">
         <TabsList className="mb-4">
