@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ const DeliveryZonesEditor = ({ data, onSave }: DeliveryZonesEditorProps) => {
   const { toast } = useToast();
 
   // Reset zones when data prop changes
-  useState(() => {
+  useEffect(() => {
     setZones(data || []);
   }, [data]);
 
