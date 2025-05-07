@@ -17,6 +17,7 @@ const HomepageEditor = () => {
   const { data: homepageData, loading, error, refetch } = useHomepageData();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("hero");
   const { toast } = useToast();
 
   const saveHomepageData = async (section: string, data: any) => {
@@ -24,7 +25,7 @@ const HomepageEditor = () => {
       setSaveError(null);
       setIsSaving(true);
       
-      console.log(`Saving ${section} data:`, data);
+      console.log(`Enregistrement des données de la section ${section}:`, data);
       
       // Appel direct à la fonction RPC pour mettre à jour les données
       const { error } = await supabase.rpc('update_homepage_data', { 
@@ -33,7 +34,7 @@ const HomepageEditor = () => {
       });
 
       if (error) {
-        console.error("Error updating homepage data:", error);
+        console.error("Erreur lors de la mise à jour des données:", error);
         throw error;
       }
       
@@ -46,7 +47,7 @@ const HomepageEditor = () => {
         variant: "success",
       });
     } catch (error: any) {
-      console.error("Error saving homepage data:", error);
+      console.error("Erreur lors de l'enregistrement des données:", error);
       setSaveError(error.message || "Une erreur est survenue lors de la sauvegarde");
       toast({
         title: "Erreur",
@@ -57,6 +58,9 @@ const HomepageEditor = () => {
       setIsSaving(false);
     }
   };
+
+  // Debug - afficher les données récupérées
+  console.log("HomepageEditor - données actuelles:", homepageData);
 
   if (loading) {
     return (
@@ -106,7 +110,18 @@ const HomepageEditor = () => {
         </Alert>
       )}
 
-      <Tabs defaultValue="hero" className="w-full">
+      {isSaving && (
+        <div className="flex items-center gap-2 mb-4 p-2 bg-blue-50 text-blue-700 rounded-md">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Enregistrement en cours...</span>
+        </div>
+      )}
+
+      <Tabs 
+        value={activeSection} 
+        onValueChange={setActiveSection} 
+        className="w-full"
+      >
         <TabsList className="mb-4">
           <TabsTrigger value="hero">Section Principale</TabsTrigger>
           <TabsTrigger value="promotions">Promotions</TabsTrigger>

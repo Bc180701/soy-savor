@@ -40,6 +40,9 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   
+  // Loguer les données reçues pour le débogage
+  console.log("HeroSectionEditor - données reçues:", data);
+  
   const form = useForm<HeroSectionData>({
     resolver: zodResolver(heroSectionSchema),
     defaultValues: {
@@ -49,13 +52,26 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
     },
   });
 
-  // Ensure default values are updated when data changes
+  // Mettre à jour le formulaire quand les données changent
   useEffect(() => {
+    console.log("HeroSectionEditor - useEffect - data:", data);
+    
     if (data) {
+      // S'assurer que toutes les propriétés sont définies avant de les utiliser
+      const background_image = data.background_image || "";
+      const title = data.title || "";
+      const subtitle = data.subtitle || "";
+      
+      console.log("HeroSectionEditor - Mise à jour du formulaire avec:", {
+        background_image,
+        title,
+        subtitle
+      });
+      
       form.reset({
-        background_image: data.background_image || "",
-        title: data.title || "",
-        subtitle: data.subtitle || "",
+        background_image,
+        title,
+        subtitle,
       });
     }
   }, [data, form]);
@@ -63,7 +79,7 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
   const onSubmit = async (formData: HeroSectionData) => {
     setSaving(true);
     try {
-      console.log("Saving hero section data:", formData);
+      console.log("Enregistrement des données de la section principale:", formData);
       await onSave(formData);
       toast({
         title: "Modifications enregistrées",
@@ -71,7 +87,7 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
         variant: "success"
       });
     } catch (error: any) {
-      console.error("Error saving hero section:", error);
+      console.error("Erreur lors de l'enregistrement de la section principale:", error);
       toast({
         variant: "destructive",
         title: "Erreur d'enregistrement",
@@ -103,6 +119,16 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
                       />
                     </FormControl>
                     <FormMessage />
+                    {field.value && (
+                      <div className="mt-2">
+                        <p className="text-xs text-muted-foreground">Image actuelle :</p>
+                        <img 
+                          src={field.value} 
+                          alt="Aperçu" 
+                          className="mt-1 h-32 object-cover rounded-md border border-gray-200" 
+                        />
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />

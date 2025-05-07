@@ -93,11 +93,13 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
 function safeCast<T>(data: Json, defaultValue: T): T {
   try {
     if (data === null || data === undefined) {
+      console.log("safeCast - données nulles, utilisation des valeurs par défaut");
       return defaultValue;
     }
+    console.log("safeCast - conversion des données:", data);
     return data as unknown as T;
   } catch (e) {
-    console.error("Error casting data:", e);
+    console.error("Erreur lors de la conversion des données:", e);
     return defaultValue;
   }
 }
@@ -110,7 +112,7 @@ export const useHomepageData = () => {
   const fetchHomepageData = async () => {
     try {
       setLoading(true);
-      console.log("Fetching homepage data from Supabase...");
+      console.log("Récupération des données de la page d'accueil depuis Supabase...");
       
       // Récupération directe des données de la table homepage_sections
       const { data: sections, error: sectionsError } = await supabase
@@ -118,11 +120,11 @@ export const useHomepageData = () => {
         .select('section_name, section_data');
       
       if (sectionsError) {
-        console.error("Error fetching homepage sections:", sectionsError);
+        console.error("Erreur lors de la récupération des sections:", sectionsError);
         throw sectionsError;
       }
       
-      console.log("Homepage sections received:", sections);
+      console.log("Sections de la page d'accueil reçues:", sections);
       
       if (sections && sections.length > 0) {
         // Transformer les sections en objet HomepageData
@@ -130,12 +132,14 @@ export const useHomepageData = () => {
         
         for (const section of sections) {
           if (section.section_name === 'hero_section') {
-            homepageData.hero_section = safeCast<HeroSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.hero_section);
+            const heroData = safeCast<HeroSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.hero_section);
+            console.log("Section hero récupérée:", heroData);
+            homepageData.hero_section = heroData;
           } else if (section.section_name === 'promotions') {
             homepageData.promotions = safeCast<Promotion[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.promotions);
           } else if (section.section_name === 'delivery_zones') {
             homepageData.delivery_zones = safeCast<string[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.delivery_zones);
-            console.log("Loaded delivery zones:", homepageData.delivery_zones);
+            console.log("Zones de livraison récupérées:", homepageData.delivery_zones);
           } else if (section.section_name === 'order_options') {
             homepageData.order_options = safeCast<OrderOption[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.order_options);
           }
@@ -149,15 +153,15 @@ export const useHomepageData = () => {
           order_options: homepageData.order_options || DEFAULT_HOMEPAGE_DATA.order_options
         };
         
-        console.log("Setting validated homepage data:", validatedData);
+        console.log("Données validées pour la page d'accueil:", validatedData);
         setData(validatedData);
       } else {
-        console.log("No homepage data found, using default data");
+        console.log("Aucune donnée trouvée pour la page d'accueil, utilisation des données par défaut");
         setData(DEFAULT_HOMEPAGE_DATA);
       }
     } catch (err) {
-      console.error("Error in fetchHomepageData:", err);
-      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      console.error("Erreur dans fetchHomepageData:", err);
+      setError(err instanceof Error ? err : new Error('Erreur inconnue'));
       // On utilise toujours les données par défaut en cas d'erreur
       setData(DEFAULT_HOMEPAGE_DATA);
     } finally {

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface DeliveryZonesEditorProps {
@@ -15,10 +15,12 @@ interface DeliveryZonesEditorProps {
 const DeliveryZonesEditor = ({ data, onSave }: DeliveryZonesEditorProps) => {
   const [zones, setZones] = useState<string[]>(data || []);
   const [newZone, setNewZone] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   // Reset zones when data prop changes
   useEffect(() => {
+    console.log("DeliveryZonesEditor - Données reçues:", data);
     setZones(data || []);
   }, [data]);
 
@@ -55,23 +57,41 @@ const DeliveryZonesEditor = ({ data, onSave }: DeliveryZonesEditorProps) => {
     console.log("Zones restantes:", updatedZones);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     
-    // Vérifier si des changements ont été effectués
-    const hasChanges = JSON.stringify(zones) !== JSON.stringify(data);
-    
-    if (!hasChanges) {
+    try {
+      // Vérifier si des changements ont été effectués
+      const hasChanges = JSON.stringify(zones) !== JSON.stringify(data);
+      
+      if (!hasChanges) {
+        toast({
+          title: "Aucun changement",
+          description: "Aucune modification n'a été détectée",
+          variant: "default"
+        });
+        return;
+      }
+      
+      console.log("Sauvegarde des zones:", zones);
+      await onSave(zones);
+      
       toast({
-        title: "Aucun changement",
-        description: "Aucune modification n'a été détectée",
-        variant: "default"
+        title: "Zones de livraison enregistrées",
+        description: "Les modifications ont été sauvegardées avec succès",
+        variant: "success"
       });
-      return;
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde des zones:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'enregistrement des zones",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
     }
-    
-    console.log("Sauvegarde des zones:", zones);
-    onSave(zones);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -128,8 +148,17 @@ const DeliveryZonesEditor = ({ data, onSave }: DeliveryZonesEditorProps) => {
       </Card>
 
       <div className="pt-4">
-        <Button type="submit" className="bg-gold-600 hover:bg-gold-700 text-white">
-          Enregistrer les modifications
+        <Button 
+          type="submit" 
+          disabled={isSaving}
+          className="bg-gold-600 hover:bg-gold-700 text-white"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Enregistrement...
+            </>
+          ) : "Enregistrer les modifications"}
         </Button>
       </div>
     </form>
