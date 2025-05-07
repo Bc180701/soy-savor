@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import {
   Form,
   FormItem,
@@ -35,8 +35,7 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
   const [promotions, setPromotions] = useState<Promotion[]>(data);
   const [uploading, setUploading] = useState<number | null>(null);
   
-  // Create a form instance even though we're not using all its features
-  // This is required to provide the FormContext
+  // Create a form instance for react-hook-form context
   const form = useForm();
 
   const handleChange = (index: number, field: string, value: string) => {
@@ -104,8 +103,8 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
   };
 
   return (
-    // We're wrapping the entire component in a Form to provide context for the FormItem components
-    <Form {...form}>
+    // Use FormProvider to properly provide form context
+    <FormProvider {...form}>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-6">
           {promotions.map((promotion, index) => (
@@ -231,7 +230,7 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
           </Button>
         </div>
       </form>
-    </Form>
+    </FormProvider>
   );
 };
 
