@@ -1,7 +1,7 @@
 
 import { ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
@@ -12,6 +12,9 @@ interface FileUploadProps {
   accept?: string;
   disabled?: boolean;
   buttonText?: string;
+  showPreview?: boolean;
+  className?: string;
+  allowRemove?: boolean;
 }
 
 const FileUpload = ({ 
@@ -19,7 +22,10 @@ const FileUpload = ({
   value, 
   accept = "image/*", 
   disabled = false,
-  buttonText = "Choisir un fichier"
+  buttonText = "Choisir un fichier",
+  showPreview = true,
+  className = "",
+  allowRemove = true
 }: FileUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -29,6 +35,11 @@ const FileUpload = ({
     if (!disabled && fileInputRef.current && !isUploading) {
       fileInputRef.current.click();
     }
+  };
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange("");
   };
 
   const handleChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -113,8 +124,8 @@ const FileUpload = ({
   };
 
   return (
-    <div className="w-full space-y-2">
-      {value && (
+    <div className={`w-full space-y-2 ${className}`}>
+      {value && showPreview && (
         <div className="relative w-full h-40 rounded-md overflow-hidden border border-gray-200">
           <img
             src={value}
@@ -125,6 +136,17 @@ const FileUpload = ({
               e.currentTarget.src = "/placeholder.svg";
             }}
           />
+          {value && allowRemove && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              onClick={handleRemove}
+              className="absolute top-2 right-2 h-6 w-6 rounded-full"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       )}
       

@@ -23,6 +23,7 @@ const heroSectionSchema = z.object({
   background_image: z.string().min(1, "L'image de fond est requise"),
   title: z.string().min(1, "Le titre est requis"),
   subtitle: z.string().min(1, "Le sous-titre est requis"),
+  overlay_image: z.string().optional(),
 });
 
 type HeroSectionData = z.infer<typeof heroSectionSchema>;
@@ -32,6 +33,7 @@ interface HeroSectionEditorProps {
     background_image: string;
     title: string;
     subtitle: string;
+    overlay_image?: string;
   };
   onSave: (data: HeroSectionData) => void;
 }
@@ -49,6 +51,7 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
       background_image: data?.background_image || "",
       title: data?.title || "",
       subtitle: data?.subtitle || "",
+      overlay_image: data?.overlay_image || "",
     },
   });
 
@@ -61,17 +64,20 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
       const background_image = data.background_image || "";
       const title = data.title || "";
       const subtitle = data.subtitle || "";
+      const overlay_image = data.overlay_image || "";
       
       console.log("HeroSectionEditor - Mise à jour du formulaire avec:", {
         background_image,
         title,
-        subtitle
+        subtitle,
+        overlay_image
       });
       
       form.reset({
         background_image,
         title,
         subtitle,
+        overlay_image,
       });
     }
   }, [data, form]);
@@ -119,16 +125,26 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
                       />
                     </FormControl>
                     <FormMessage />
-                    {field.value && (
-                      <div className="mt-2">
-                        <p className="text-xs text-muted-foreground">Image actuelle :</p>
-                        <img 
-                          src={field.value} 
-                          alt="Aperçu" 
-                          className="mt-1 h-32 object-cover rounded-md border border-gray-200" 
-                        />
-                      </div>
-                    )}
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="overlay_image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image en superposition (optionnel)</FormLabel>
+                    <FormControl>
+                      <FileUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                        accept="image/*"
+                        buttonText="Ajouter une image en superposition"
+                        allowRemove={true}
+                      />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -164,6 +180,30 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
                   </FormItem>
                 )}
               />
+
+              <div className="pt-4">
+                <h3 className="text-sm font-semibold mb-2">Aperçu de la section</h3>
+                <div className="relative h-48 rounded-lg overflow-hidden border border-gray-200">
+                  {form.watch("background_image") && (
+                    <div className="absolute inset-0 w-full h-full">
+                      <img 
+                        src={form.watch("background_image")} 
+                        alt="Aperçu du fond" 
+                        className="w-full h-full object-cover"
+                      />
+                      {form.watch("overlay_image") && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <img 
+                            src={form.watch("overlay_image")} 
+                            alt="Aperçu de l'image en superposition" 
+                            className="max-h-full max-w-full object-contain p-4"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
