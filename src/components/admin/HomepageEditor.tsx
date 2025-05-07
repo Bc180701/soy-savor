@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -18,60 +18,31 @@ const HomepageEditor = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Redemander les données si la page d'accueil est vide mais que nous avons terminé le chargement
-  useEffect(() => {
-    if (!loading && !homepageData) {
-      console.log("Homepage data is empty after loading, trying to fetch again...");
-      refetch();
-    }
-  }, [loading, homepageData, refetch]);
-
   const saveHomepageData = async (section: string, data: any) => {
     try {
       setSaveError(null);
       console.log(`Saving ${section} data:`, data);
       
-      // Vérifier si la table homepage_sections existe
+      // Appel direct à la fonction RPC pour mettre à jour les données
       // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
-      const { data: tableExists, error: tableError } = await supabase.rpc('check_table_exists', {
-        table_name: 'homepage_sections'
-      }).single();
-      
-      if (tableError) {
-        console.error("Error checking if table exists:", tableError);
-        throw tableError;
-      }
-      
-      if (tableExists) {
-        // Utiliser la fonction RPC pour mettre à jour les données
-        console.log("Table exists, updating using RPC function...");
-        // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
-        const { error } = await supabase.rpc('update_homepage_data', { 
-          section_name: section,
-          section_data: data
-        });
+      const { error } = await supabase.rpc('update_homepage_data', { 
+        section_name: section,
+        section_data: data
+      });
 
-        if (error) {
-          console.error("Error updating homepage data:", error);
-          throw error;
-        }
-        
-        // Rafraîchir les données
-        await refetch();
-        
-        toast({
-          title: "Enregistré",
-          description: `Les modifications de la section ont été enregistrées.`,
-          variant: "success",
-        });
-      } else {
-        console.error("Table homepage_sections doesn't exist");
-        toast({
-          title: "Erreur",
-          description: "La table homepage_sections n'existe pas encore. Veuillez exécuter les migrations SQL.",
-          variant: "destructive",
-        });
+      if (error) {
+        console.error("Error updating homepage data:", error);
+        throw error;
       }
+      
+      // Rafraîchir les données après sauvegarde
+      await refetch();
+      
+      toast({
+        title: "Enregistré",
+        description: `Les modifications de la section ont été enregistrées.`,
+        variant: "success",
+      });
     } catch (error: any) {
       console.error("Error saving homepage data:", error);
       setSaveError(error.message || "Une erreur est survenue lors de la sauvegarde");

@@ -49,9 +49,21 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
     },
   });
 
+  // Assurez-vous que les valeurs par défaut sont mises à jour lorsque les données changent
+  React.useEffect(() => {
+    if (data) {
+      form.reset({
+        background_image: data.background_image || "",
+        title: data.title || "",
+        subtitle: data.subtitle || "",
+      });
+    }
+  }, [data, form]);
+
   const onSubmit = async (formData: HeroSectionData) => {
     setSaving(true);
     try {
+      console.log("Saving hero section data:", formData);
       await onSave(formData);
       toast({
         title: "Modifications enregistrées",

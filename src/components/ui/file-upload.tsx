@@ -47,11 +47,14 @@ const FileUpload = ({
       });
       
       if (!response.ok) {
-        throw new Error(`Échec de l'upload (${response.status})`);
+        const errorData = await response.json().catch(() => ({ error: 'Échec de l\'upload' }));
+        console.error('Upload error response:', errorData);
+        throw new Error(`Échec de l'upload (${response.status}): ${errorData.error || ''}`);
       }
       
       // Traiter la réponse
       const data = await response.json();
+      console.log('Upload response:', data);
       
       if (data && data.url) {
         onChange(data.url);
@@ -79,14 +82,21 @@ const FileUpload = ({
     }
   };
 
+  // Préparer l'URL de l'image avec fallback pour les URL relatives
+  const imageUrl = value || '';
+
   return (
     <div className="w-full space-y-2">
-      {value && (
+      {imageUrl && (
         <div className="relative w-full h-40 rounded-md overflow-hidden border border-gray-200">
           <img
-            src={value}
+            src={imageUrl}
             alt="Image téléchargée"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error("Erreur de chargement d'image:", imageUrl);
+              e.currentTarget.src = "/placeholder.svg";
+            }}
           />
         </div>
       )}

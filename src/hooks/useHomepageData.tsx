@@ -98,52 +98,46 @@ export const useHomepageData = () => {
       setLoading(true);
       console.log("Fetching homepage data from Supabase...");
       
-      // Vérifie si la table homepage_sections existe
-      // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
-      const { data: tableExists, error: tableError } = await supabase.rpc('check_table_exists', {
-        table_name: 'homepage_sections'
-      }).single();
+      // Récupération directe des données de la table homepage_sections
+      const { data: sections, error: sectionsError } = await supabase
+        .from('homepage_sections')
+        .select('*');
       
-      if (tableError) {
-        console.error("Error checking if table exists:", tableError);
-        throw tableError;
+      if (sectionsError) {
+        console.error("Error fetching homepage sections:", sectionsError);
+        throw sectionsError;
       }
       
-      console.log("Table homepage_sections exists:", tableExists);
+      console.log("Homepage sections received:", sections);
       
-      if (tableExists) {
-        // Récupère les données en utilisant la fonction RPC
-        console.log("Fetching homepage data using RPC function...");
-        // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
-        const { data: homepageData, error } = await supabase.rpc('get_homepage_data').single();
+      if (sections && sections.length > 0) {
+        // Transformer les sections en objet HomepageData
+        const homepageData: Partial<HomepageData> = {};
         
-        if (error) {
-          console.error("Error fetching homepage data:", error);
-          throw error;
+        for (const section of sections) {
+          if (section.section_name === 'hero_section') {
+            homepageData.hero_section = section.section_data as HeroSection;
+          } else if (section.section_name === 'promotions') {
+            homepageData.promotions = section.section_data as Promotion[];
+          } else if (section.section_name === 'delivery_zones') {
+            homepageData.delivery_zones = section.section_data as string[];
+          } else if (section.section_name === 'order_options') {
+            homepageData.order_options = section.section_data as OrderOption[];
+          }
         }
-
-        console.log("Homepage data received:", homepageData);
-
-        if (homepageData) {
-          // Cast les données JSON renvoyées avec une vérification de type
-          const typedData = homepageData as Record<string, any>;
-          
-          // Ensure we have data for each section, using defaults if not provided
-          const validatedData: HomepageData = {
-            hero_section: typedData.hero_section || DEFAULT_HOMEPAGE_DATA.hero_section,
-            promotions: typedData.promotions || DEFAULT_HOMEPAGE_DATA.promotions,
-            delivery_zones: typedData.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones,
-            order_options: typedData.order_options || DEFAULT_HOMEPAGE_DATA.order_options
-          };
-          
-          console.log("Setting validated homepage data:", validatedData);
-          setData(validatedData);
-        } else {
-          console.log("No homepage data found, using default data");
-          setData(DEFAULT_HOMEPAGE_DATA);
-        }
+        
+        // Fusionner avec les valeurs par défaut pour garantir les données complètes
+        const validatedData: HomepageData = {
+          hero_section: homepageData.hero_section || DEFAULT_HOMEPAGE_DATA.hero_section,
+          promotions: homepageData.promotions || DEFAULT_HOMEPAGE_DATA.promotions,
+          delivery_zones: homepageData.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones,
+          order_options: homepageData.order_options || DEFAULT_HOMEPAGE_DATA.order_options
+        };
+        
+        console.log("Setting validated homepage data:", validatedData);
+        setData(validatedData);
       } else {
-        console.log("Table doesn't exist, using default data");
+        console.log("No homepage data found, using default data");
         setData(DEFAULT_HOMEPAGE_DATA);
       }
     } catch (err) {
