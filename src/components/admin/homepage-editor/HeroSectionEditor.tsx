@@ -19,6 +19,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { setupStorage } from "@/utils/setupStorage";
 
 const heroSectionSchema = z.object({
   background_image: z.string().min(1, "L'image de fond est requise"),
@@ -55,47 +56,13 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
     try {
       setUploading(true);
       
-      // Vérifier si le bucket existe
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      // Make sure storage is set up properly
+      await setupStorage();
       
-      if (bucketsError) {
-        console.error("Erreur lors de la vérification des buckets:", bucketsError);
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de vérifier les buckets de stockage"
-        });
-        throw bucketsError;
-      }
-
-      const homepageBucketExists = buckets?.some(bucket => bucket.name === 'homepage');
+      // Generate a unique file name
+      const fileName = `hero-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${file.name.split('.').pop()}`;
       
-      // Si le bucket n'existe pas, on essaie de le créer
-      if (!homepageBucketExists) {
-        try {
-          const { error: createError } = await supabase.storage.createBucket('homepage', { public: true });
-          if (createError) {
-            console.error("Error creating homepage bucket:", createError);
-            toast({
-              variant: "destructive",
-              title: "Erreur de configuration",
-              description: "Impossible de créer le bucket de stockage"
-            });
-            throw createError;
-          }
-        } catch (error) {
-          console.error("Error creating homepage bucket:", error);
-          toast({
-            variant: "destructive",
-            title: "Erreur de configuration",
-            description: "Impossible de créer le bucket de stockage"
-          });
-          throw error;
-        }
-      }
-      
-      const fileName = `hero-${Date.now()}.${file.name.split('.').pop()}`;
-      
+      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('homepage')
         .upload(fileName, file, {
@@ -108,11 +75,13 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
         toast({
           variant: "destructive",
           title: "Erreur de téléchargement",
-          description: uploadError.message || "Impossible de télécharger l'image"
+          description: "Impossible de télécharger l'image. " + 
+            (uploadError.message || "Veuillez réessayer ultérieurement.")
         });
-        throw uploadError;
+        return null;
       }
       
+      // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('homepage')
         .getPublicUrl(fileName);

@@ -1,4 +1,5 @@
 
+// We're modifying this file to better handle bucket creation and permissions
 import { supabase } from "@/integrations/supabase/client";
 
 export const setupStorage = async () => {
