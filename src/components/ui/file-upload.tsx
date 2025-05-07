@@ -36,11 +36,13 @@ const FileUpload = ({
     setIsUploading(true);
     
     try {
-      console.log("Uploading file:", file.name);
+      console.log("Téléchargement du fichier:", file.name, "type:", file.type, "taille:", file.size);
       
       // Création du FormData pour l'upload
       const formData = new FormData();
       formData.append('file', file);
+      
+      console.log("Envoi de la requête d'upload...");
       
       // Upload vers l'API de Lovable
       const response = await fetch('/api/upload', {
@@ -48,20 +50,20 @@ const FileUpload = ({
         body: formData
       });
       
-      console.log("Upload response status:", response.status);
+      console.log("Statut de réponse de l'upload:", response.status, response.statusText);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Échec de l\'upload' }));
-        console.error('Upload error response:', errorData);
+        console.error('Données d\'erreur de l\'upload:', errorData);
         throw new Error(`Échec de l'upload (${response.status}): ${errorData.error || ''}`);
       }
       
       // Traiter la réponse
       const data = await response.json();
-      console.log('Upload successful, received data:', data);
+      console.log('Upload réussi, données reçues:', data);
       
       if (data && data.url) {
-        console.log("Setting new image URL:", data.url);
+        console.log("Mise à jour de l'URL de l'image:", data.url);
         onChange(data.url);
         toast({
           title: "Succès",
@@ -69,6 +71,7 @@ const FileUpload = ({
           variant: "success"
         });
       } else {
+        console.error("Données de réponse incomplètes:", data);
         throw new Error("URL non reçue dans la réponse");
       }
     } catch (error: any) {
