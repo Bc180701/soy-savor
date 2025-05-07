@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,8 +49,8 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
     },
   });
 
-  // Assurez-vous que les valeurs par défaut sont mises à jour lorsque les données changent
-  React.useEffect(() => {
+  // Ensure default values are updated when data changes
+  useEffect(() => {
     if (data) {
       form.reset({
         background_image: data.background_image || "",

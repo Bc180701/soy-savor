@@ -116,12 +116,16 @@ export const useHomepageData = () => {
         
         for (const section of sections) {
           if (section.section_name === 'hero_section') {
+            // Type assertion to ensure type safety
             homepageData.hero_section = section.section_data as HeroSection;
           } else if (section.section_name === 'promotions') {
+            // Type assertion to ensure type safety
             homepageData.promotions = section.section_data as Promotion[];
           } else if (section.section_name === 'delivery_zones') {
+            // Type assertion to ensure type safety
             homepageData.delivery_zones = section.section_data as string[];
           } else if (section.section_name === 'order_options') {
+            // Type assertion to ensure type safety
             homepageData.order_options = section.section_data as OrderOption[];
           }
         }
