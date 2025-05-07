@@ -9,6 +9,9 @@ interface DeliveryMapProps {
 export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
   const [activeZone, setActiveZone] = useState<string | null>(null);
 
+  // Vérifier si les zones de livraison sont disponibles et non vides
+  const hasZones = Array.isArray(deliveryZones) && deliveryZones.length > 0;
+
   return (
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
@@ -33,24 +36,30 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
             <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: 'url("https://api.mapbox.com/styles/v1/mapbox/light-v10/static/4.8535,43.8828,11,0/800x600?access_token=pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja3g1d3BjN3YwMjN5Mm9vMzlpbjVteXcyIn0.80YJbLlH2XxjUQITTCLR3g")' }}></div>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {deliveryZones.map((zone) => (
-              <div 
-                key={zone} 
-                className={`p-3 rounded-md cursor-pointer transition-colors ${
-                  activeZone === zone 
-                    ? 'bg-gold-100 text-gold-800 border border-gold-300' 
-                    : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-                onClick={() => setActiveZone(zone === activeZone ? null : zone)}
-              >
-                <div className="flex items-center justify-center">
-                  <MapPin size={14} className={activeZone === zone ? "text-gold-600 mr-1" : "text-gray-500 mr-1"} />
-                  <span className="text-sm font-medium">{zone}</span>
+          {hasZones ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {deliveryZones.map((zone, index) => (
+                <div 
+                  key={`zone-${index}-${zone}`}
+                  className={`p-3 rounded-md cursor-pointer transition-colors ${
+                    activeZone === zone 
+                      ? 'bg-gold-100 text-gold-800 border border-gold-300' 
+                      : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                  onClick={() => setActiveZone(zone === activeZone ? null : zone)}
+                >
+                  <div className="flex items-center justify-center">
+                    <MapPin size={14} className={activeZone === zone ? "text-gold-600 mr-1" : "text-gray-500 mr-1"} />
+                    <span className="text-sm font-medium">{zone}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center p-6 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">Aucune zone de livraison n'est actuellement définie.</p>
+            </div>
+          )}
         </div>
       </div>
     </section>

@@ -16,15 +16,17 @@ import { HomepageData, useHomepageData } from "@/hooks/useHomepageData";
 const HomepageEditor = () => {
   const { data: homepageData, loading, error, refetch } = useHomepageData();
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   const saveHomepageData = async (section: string, data: any) => {
     try {
       setSaveError(null);
+      setIsSaving(true);
+      
       console.log(`Saving ${section} data:`, data);
       
       // Appel direct à la fonction RPC pour mettre à jour les données
-      // @ts-ignore - Type safety sera résolu quand les types Supabase seront régénérés
       const { error } = await supabase.rpc('update_homepage_data', { 
         section_name: section,
         section_data: data
@@ -51,6 +53,8 @@ const HomepageEditor = () => {
         description: error.message || "Impossible de sauvegarder les modifications",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 

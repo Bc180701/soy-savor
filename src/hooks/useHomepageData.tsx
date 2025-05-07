@@ -89,6 +89,19 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
   ]
 };
 
+// Type-safe casting helper
+function safeCast<T>(data: Json, defaultValue: T): T {
+  try {
+    if (data === null || data === undefined) {
+      return defaultValue;
+    }
+    return data as unknown as T;
+  } catch (e) {
+    console.error("Error casting data:", e);
+    return defaultValue;
+  }
+}
+
 export const useHomepageData = () => {
   const [data, setData] = useState<HomepageData>(DEFAULT_HOMEPAGE_DATA);
   const [loading, setLoading] = useState(true);
@@ -102,7 +115,7 @@ export const useHomepageData = () => {
       // Récupération directe des données de la table homepage_sections
       const { data: sections, error: sectionsError } = await supabase
         .from('homepage_sections')
-        .select('*');
+        .select('section_name, section_data');
       
       if (sectionsError) {
         console.error("Error fetching homepage sections:", sectionsError);
@@ -117,17 +130,14 @@ export const useHomepageData = () => {
         
         for (const section of sections) {
           if (section.section_name === 'hero_section') {
-            // On force le typage ici en étant sûr que la structure est correcte
-            homepageData.hero_section = section.section_data as unknown as HeroSection;
+            homepageData.hero_section = safeCast<HeroSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.hero_section);
           } else if (section.section_name === 'promotions') {
-            // On force le typage ici en étant sûr que la structure est correcte
-            homepageData.promotions = section.section_data as unknown as Promotion[];
+            homepageData.promotions = safeCast<Promotion[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.promotions);
           } else if (section.section_name === 'delivery_zones') {
-            // On force le typage ici en étant sûr que la structure est correcte
-            homepageData.delivery_zones = section.section_data as unknown as string[];
+            homepageData.delivery_zones = safeCast<string[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.delivery_zones);
+            console.log("Loaded delivery zones:", homepageData.delivery_zones);
           } else if (section.section_name === 'order_options') {
-            // On force le typage ici en étant sûr que la structure est correcte
-            homepageData.order_options = section.section_data as unknown as OrderOption[];
+            homepageData.order_options = safeCast<OrderOption[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.order_options);
           }
         }
         

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, X } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DeliveryZonesEditorProps {
   data: string[];
@@ -12,24 +13,72 @@ interface DeliveryZonesEditorProps {
 }
 
 const DeliveryZonesEditor = ({ data, onSave }: DeliveryZonesEditorProps) => {
-  const [zones, setZones] = useState<string[]>(data);
+  const [zones, setZones] = useState<string[]>(data || []);
   const [newZone, setNewZone] = useState("");
+  const { toast } = useToast();
+
+  // Reset zones when data prop changes
+  useState(() => {
+    setZones(data || []);
+  }, [data]);
 
   const addZone = () => {
     if (newZone.trim() === "") return;
-    if (zones.includes(newZone.trim())) return;
     
-    setZones([...zones, newZone.trim()]);
+    // Vérifier si la zone existe déjà (insensible à la casse)
+    const normalizedZone = newZone.trim();
+    const exists = zones.some(zone => zone.toLowerCase() === normalizedZone.toLowerCase());
+    
+    if (exists) {
+      toast({
+        title: "Zone déjà existante",
+        description: `La zone "${normalizedZone}" existe déjà dans la liste`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const updatedZones = [...zones, normalizedZone];
+    setZones(updatedZones);
     setNewZone("");
+    
+    console.log("Zone ajoutée:", normalizedZone);
+    console.log("Zones mises à jour:", updatedZones);
   };
 
   const removeZone = (index: number) => {
-    setZones(zones.filter((_, i) => i !== index));
+    const removed = zones[index];
+    const updatedZones = zones.filter((_, i) => i !== index);
+    setZones(updatedZones);
+    
+    console.log("Zone supprimée:", removed);
+    console.log("Zones restantes:", updatedZones);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Vérifier si des changements ont été effectués
+    const hasChanges = JSON.stringify(zones) !== JSON.stringify(data);
+    
+    if (!hasChanges) {
+      toast({
+        title: "Aucun changement",
+        description: "Aucune modification n'a été détectée",
+        variant: "default"
+      });
+      return;
+    }
+    
+    console.log("Sauvegarde des zones:", zones);
     onSave(zones);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addZone();
+    }
   };
 
   return (
@@ -41,6 +90,7 @@ const DeliveryZonesEditor = ({ data, onSave }: DeliveryZonesEditorProps) => {
               <Input
                 value={newZone}
                 onChange={(e) => setNewZone(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Nouvelle zone de livraison"
                 className="flex-1"
               />
@@ -55,7 +105,7 @@ const DeliveryZonesEditor = ({ data, onSave }: DeliveryZonesEditorProps) => {
             <div className="flex flex-wrap gap-2 pt-4">
               {zones.map((zone, index) => (
                 <Badge 
-                  key={index} 
+                  key={`zone-${index}-${zone}`}
                   variant="secondary"
                   className="text-sm py-1.5 px-3"
                 >
@@ -69,6 +119,9 @@ const DeliveryZonesEditor = ({ data, onSave }: DeliveryZonesEditorProps) => {
                   </button>
                 </Badge>
               ))}
+              {zones.length === 0 && (
+                <p className="text-sm text-gray-500 italic">Aucune zone de livraison ajoutée</p>
+              )}
             </div>
           </div>
         </CardContent>
