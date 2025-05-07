@@ -37,12 +37,11 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     setPromotions(updatedPromotions);
   };
 
-  const handleImageUpload = async (index: number, files: FileList) => {
-    if (!files || files.length === 0) return;
+  const handleImageUpload = async (index: number, file: File) => {
+    if (!file) return;
     
     try {
       setUploading(index);
-      const file = files[0];
       
       // Upload to Supabase Storage
       const fileName = `promotion-${Date.now()}.${file.name.split('.').pop()}`;
@@ -85,7 +84,7 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     setPromotions(promotions.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(promotions);
   };
@@ -175,8 +174,11 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
                       
                       <FileUpload 
                         accept="image/*" 
-                        onChange={(files) => handleImageUpload(index, files)}
+                        value={promotion.imageUrl}
+                        onChange={(value) => handleChange(index, 'imageUrl', value)}
+                        onUpload={(file) => handleImageUpload(index, file)}
                         disabled={uploading === index}
+                        buttonText={uploading === index ? "Téléchargement en cours..." : "Changer l'image"}
                       />
                       
                       {uploading === index && (
