@@ -13,7 +13,7 @@ export const OrderCTA = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4">
-          <Button asChild variant="destructive" className="bg-gold-500 hover:bg-gold-600 text-black">
+          <Button asChild className="bg-white hover:bg-gray-100 text-gold-800 border-none font-semibold">
             <Link to="/commander" className="flex items-center">
               Commander en ligne <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
