@@ -7,6 +7,7 @@ export interface HeroSection {
   background_image: string;
   title: string;
   subtitle: string;
+  overlay_image?: string; // Add the overlay_image property as optional
 }
 
 export interface Promotion {
