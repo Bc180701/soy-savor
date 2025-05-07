@@ -96,8 +96,20 @@ const HomepageEditor = () => {
           throw error;
         }
 
-        // Cast the data to our expected type
-        setHomepageData(data as HomepageData || DEFAULT_HOMEPAGE_DATA);
+        // Cast the returned JSON data to HomepageData with proper type safety
+        if (data) {
+          const typedData = data as Record<string, any>;
+          const validatedData: HomepageData = {
+            hero_section: typedData.hero_section || DEFAULT_HOMEPAGE_DATA.hero_section,
+            promotions: typedData.promotions || DEFAULT_HOMEPAGE_DATA.promotions,
+            delivery_zones: typedData.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones,
+            order_options: typedData.order_options || DEFAULT_HOMEPAGE_DATA.order_options
+          };
+          
+          setHomepageData(validatedData);
+        } else {
+          setHomepageData(DEFAULT_HOMEPAGE_DATA);
+        }
       } else {
         setHomepageData(DEFAULT_HOMEPAGE_DATA);
       }

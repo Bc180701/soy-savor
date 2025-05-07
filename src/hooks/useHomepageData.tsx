@@ -113,7 +113,16 @@ export const useHomepageData = () => {
         }
 
         if (homepageData) {
-          setData(homepageData as HomepageData);
+          // Cast the returned JSON data to HomepageData with proper type safety
+          const typedData = homepageData as Record<string, any>;
+          const validatedData: HomepageData = {
+            hero_section: typedData.hero_section || DEFAULT_HOMEPAGE_DATA.hero_section,
+            promotions: typedData.promotions || DEFAULT_HOMEPAGE_DATA.promotions,
+            delivery_zones: typedData.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones,
+            order_options: typedData.order_options || DEFAULT_HOMEPAGE_DATA.order_options
+          };
+          
+          setData(validatedData);
         } else {
           // Fallback to default data
           setData(DEFAULT_HOMEPAGE_DATA);
