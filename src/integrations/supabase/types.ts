@@ -81,6 +81,27 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_sections: {
+        Row: {
+          id: number
+          section_data: Json
+          section_name: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          section_data: Json
+          section_name: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          section_data?: Json
+          section_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_analytics: {
         Row: {
           created_at: string | null
@@ -590,12 +611,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_table_exists: {
+        Args: { table_name: string }
+        Returns: boolean
+      }
+      count_table_rows: {
+        Args: { table_name: string }
+        Returns: number
+      }
+      get_homepage_data: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       has_role: {
         Args: {
           user_id: string
           role: Database["public"]["Enums"]["user_role"]
         }
         Returns: boolean
+      }
+      insert_homepage_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_homepage_data: {
+        Args: { section_name: string; section_data: Json }
+        Returns: undefined
       }
     }
     Enums: {
