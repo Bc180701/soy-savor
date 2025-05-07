@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const heroSectionSchema = z.object({
   background_image: z.string().min(1, "L'image de fond est requise"),
@@ -39,6 +40,7 @@ interface HeroSectionEditorProps {
 const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
   
   const form = useForm<HeroSectionData>({
     resolver: zodResolver(heroSectionSchema),
@@ -52,22 +54,83 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
   const handleUpload = async (file: File) => {
     try {
       setUploading(true);
+      
+      // Vérifier si le bucket existe
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error("Erreur lors de la vérification des buckets:", bucketsError);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de vérifier les buckets de stockage"
+        });
+        throw bucketsError;
+      }
+
+      const homepageBucketExists = buckets?.some(bucket => bucket.name === 'homepage');
+      
+      // Si le bucket n'existe pas, on essaie de le créer
+      if (!homepageBucketExists) {
+        try {
+          const { error: createError } = await supabase.storage.createBucket('homepage', { public: true });
+          if (createError) {
+            console.error("Error creating homepage bucket:", createError);
+            toast({
+              variant: "destructive",
+              title: "Erreur de configuration",
+              description: "Impossible de créer le bucket de stockage"
+            });
+            throw createError;
+          }
+        } catch (error) {
+          console.error("Error creating homepage bucket:", error);
+          toast({
+            variant: "destructive",
+            title: "Erreur de configuration",
+            description: "Impossible de créer le bucket de stockage"
+          });
+          throw error;
+        }
+      }
+      
       const fileName = `hero-${Date.now()}.${file.name.split('.').pop()}`;
       
       const { error: uploadError } = await supabase.storage
         .from('homepage')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
         
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Erreur détaillée de téléchargement:", uploadError);
+        toast({
+          variant: "destructive",
+          title: "Erreur de téléchargement",
+          description: uploadError.message || "Impossible de télécharger l'image"
+        });
+        throw uploadError;
+      }
       
       const { data: { publicUrl } } = supabase.storage
         .from('homepage')
         .getPublicUrl(fileName);
       
+      toast({
+        title: "Image téléchargée",
+        description: "L'image a été téléchargée avec succès"
+      });
+      
       form.setValue('background_image', publicUrl);
       return publicUrl;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
+      toast({
+        variant: "destructive",
+        title: "Échec du téléchargement",
+        description: error.message || "Une erreur est survenue lors du téléchargement de l'image"
+      });
       return null;
     } finally {
       setUploading(false);
@@ -78,8 +141,17 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
     setSaving(true);
     try {
       await onSave(formData);
-    } catch (error) {
+      toast({
+        title: "Modifications enregistrées",
+        description: "Les changements ont été sauvegardés avec succès"
+      });
+    } catch (error: any) {
       console.error("Error saving hero section:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'enregistrement",
+        description: error.message || "Impossible de sauvegarder les modifications"
+      });
     } finally {
       setSaving(false);
     }
