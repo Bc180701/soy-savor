@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { MapPin } from "lucide-react";
+import { useHomepageData } from "@/hooks/useHomepageData";
 
 interface DeliveryMapProps {
   deliveryZones: string[];
@@ -8,6 +9,10 @@ interface DeliveryMapProps {
 
 export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
   const [activeZone, setActiveZone] = useState<string | null>(null);
+  const { data: homepageData } = useHomepageData();
+  
+  // Récupérer l'image de superposition depuis les données de la page d'accueil
+  const overlayImage = homepageData?.hero_section?.overlay_image || "";
 
   // Vérifier si les zones de livraison sont disponibles et non vides
   const hasZones = Array.isArray(deliveryZones) && deliveryZones.length > 0;
@@ -28,6 +33,17 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="bg-white bg-opacity-90 p-6 rounded-lg max-w-md text-center">
                 <MapPin className="mx-auto h-10 w-10 text-gold-600 mb-2" />
+                
+                {overlayImage ? (
+                  <div className="mb-2 flex justify-center">
+                    <img 
+                      src={overlayImage} 
+                      alt="SushiEats Logo" 
+                      className="h-20 object-contain"
+                    />
+                  </div>
+                ) : null}
+                
                 <h3 className="text-xl font-bold mb-2">SushiEats Châteaurenard</h3>
                 <p className="text-gray-600 mb-2">16 cours Carnot, 13160 Châteaurenard</p>
                 <p className="text-sm text-gold-600 font-medium">Point de départ des livraisons</p>
