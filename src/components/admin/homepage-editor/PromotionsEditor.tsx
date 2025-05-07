@@ -28,11 +28,11 @@ interface Promotion {
 
 interface PromotionsEditorProps {
   data: Promotion[];
-  onSave: (data: Promotion[]) => void;
+  onSave: (data: Promotion[]) => Promise<void>;
 }
 
 const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
-  const [promotions, setPromotions] = useState<Promotion[]>(data);
+  const [promotions, setPromotions] = useState<Promotion[]>(data || []);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   
@@ -48,7 +48,10 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
   };
 
   const addPromotion = () => {
-    const newId = Math.max(0, ...promotions.map(p => p.id)) + 1;
+    const newId = promotions.length > 0 
+      ? Math.max(...promotions.map(p => p.id)) + 1 
+      : 1;
+      
     setPromotions([
       ...promotions,
       {
@@ -69,8 +72,20 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    
     try {
-      await onSave(promotions);
+      // S'assurer que les données sont correctement formatées avant de les envoyer
+      const cleanedPromotions = promotions.map(promo => ({
+        id: promo.id,
+        title: promo.title.trim(),
+        description: promo.description.trim(),
+        imageUrl: promo.imageUrl,
+        buttonText: promo.buttonText.trim(),
+        buttonLink: promo.buttonLink.trim(),
+      }));
+      
+      await onSave(cleanedPromotions);
+      
       toast({
         title: "Modifications enregistrées",
         description: "Les promotions ont été sauvegardées avec succès",
@@ -92,99 +107,115 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     <FormProvider {...form}>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-6">
-          {promotions.map((promotion, index) => (
-            <Card key={promotion.id} className="border border-gray-200">
-              <CardContent className="pt-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-medium">Promotion {index + 1}</h3>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removePromotion(index)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash className="h-4 w-4 mr-1" /> Supprimer
-                  </Button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-4">
-                    <FormItem>
-                      <FormLabel>Titre</FormLabel>
-                      <FormControl>
-                        <Input
-                          value={promotion.title}
-                          onChange={(e) => handleChange(index, 'title', e.target.value)}
-                          placeholder="Titre de la promotion"
-                        />
-                      </FormControl>
-                    </FormItem>
-
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          value={promotion.description}
-                          onChange={(e) => handleChange(index, 'description', e.target.value)}
-                          placeholder="Description de la promotion"
-                          rows={3}
-                        />
-                      </FormControl>
-                    </FormItem>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormItem>
-                        <FormLabel>Texte du bouton</FormLabel>
-                        <FormControl>
-                          <Input
-                            value={promotion.buttonText}
-                            onChange={(e) => handleChange(index, 'buttonText', e.target.value)}
-                            placeholder="Texte du bouton"
-                          />
-                        </FormControl>
-                      </FormItem>
-
-                      <FormItem>
-                        <FormLabel>Lien du bouton</FormLabel>
-                        <FormControl>
-                          <Input
-                            value={promotion.buttonLink}
-                            onChange={(e) => handleChange(index, 'buttonLink', e.target.value)}
-                            placeholder="/lien"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    </div>
+          {promotions.length === 0 ? (
+            <div className="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
+              <AlertCircle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+              <p className="font-medium">Aucune promotion disponible</p>
+              <p className="text-sm mt-1">Ajoutez une promotion pour commencer</p>
+            </div>
+          ) : (
+            promotions.map((promotion, index) => (
+              <Card key={promotion.id} className="border border-gray-200">
+                <CardContent className="pt-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-medium">Promotion {index + 1}</h3>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePromotion(index)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash className="h-4 w-4 mr-1" /> Supprimer
+                    </Button>
                   </div>
 
-                  <FormItem>
-                    <FormLabel>Image</FormLabel>
-                    <FormControl>
-                      <div className="space-y-2">
-                        {promotion.imageUrl ? null : (
-                          <div className="bg-gray-100 rounded-lg overflow-hidden h-40 relative flex items-center justify-center text-gray-400">
-                            <AlertCircle className="h-6 w-6 mr-2" />
-                            <span>Aucune image</span>
-                          </div>
-                        )}
-                        
-                        <FileUpload 
-                          accept="image/*" 
-                          value={promotion.imageUrl}
-                          onChange={(value) => handleChange(index, 'imageUrl', value)}
-                          buttonText="Choisir une image"
-                        />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <FormItem>
+                        <FormLabel>Titre</FormLabel>
+                        <FormControl>
+                          <Input
+                            value={promotion.title}
+                            onChange={(e) => handleChange(index, 'title', e.target.value)}
+                            placeholder="Titre de la promotion"
+                          />
+                        </FormControl>
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            value={promotion.description}
+                            onChange={(e) => handleChange(index, 'description', e.target.value)}
+                            placeholder="Description de la promotion"
+                            rows={3}
+                          />
+                        </FormControl>
+                      </FormItem>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormItem>
+                          <FormLabel>Texte du bouton</FormLabel>
+                          <FormControl>
+                            <Input
+                              value={promotion.buttonText}
+                              onChange={(e) => handleChange(index, 'buttonText', e.target.value)}
+                              placeholder="Texte du bouton"
+                            />
+                          </FormControl>
+                        </FormItem>
+
+                        <FormItem>
+                          <FormLabel>Lien du bouton</FormLabel>
+                          <FormControl>
+                            <Input
+                              value={promotion.buttonLink}
+                              onChange={(e) => handleChange(index, 'buttonLink', e.target.value)}
+                              placeholder="/lien"
+                            />
+                          </FormControl>
+                        </FormItem>
                       </div>
-                    </FormControl>
-                    <FormDescription>
-                      Format recommandé : 800x600px
-                    </FormDescription>
-                  </FormItem>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    </div>
+
+                    <FormItem>
+                      <FormLabel>Image</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          {promotion.imageUrl ? (
+                            <div className="bg-gray-100 rounded-lg overflow-hidden h-40 relative">
+                              <img 
+                                src={promotion.imageUrl} 
+                                alt={promotion.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="bg-gray-100 rounded-lg overflow-hidden h-40 relative flex items-center justify-center text-gray-400">
+                              <AlertCircle className="h-6 w-6 mr-2" />
+                              <span>Aucune image</span>
+                            </div>
+                          )}
+                          
+                          <FileUpload 
+                            accept="image/*" 
+                            value={promotion.imageUrl}
+                            onChange={(value) => handleChange(index, 'imageUrl', value)}
+                            buttonText="Choisir une image"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Format recommandé : 800x600px
+                      </FormDescription>
+                    </FormItem>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
 
           <Button
             type="button"
