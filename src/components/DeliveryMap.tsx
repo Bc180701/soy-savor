@@ -31,22 +31,22 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
           <div className="relative aspect-video bg-gray-200 rounded-lg overflow-hidden mb-8">
             {/* Placeholder for a real map - Implement real map integration if needed */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-white bg-opacity-90 p-6 rounded-lg max-w-md text-center">
-                <MapPin className="mx-auto h-10 w-10 text-gold-600 mb-2" />
-                
-                {overlayImage ? (
-                  <div className="mb-2 flex justify-center">
-                    <img 
-                      src={overlayImage} 
-                      alt="SushiEats Logo" 
-                      className="h-20 object-contain"
-                    />
-                  </div>
-                ) : null}
-                
-                <h3 className="text-xl font-bold mb-2">SushiEats Châteaurenard</h3>
-                <p className="text-gray-600 mb-2">16 cours Carnot, 13160 Châteaurenard</p>
-                <p className="text-sm text-gold-600 font-medium">Point de départ des livraisons</p>
+              <div 
+                className={`bg-white bg-opacity-90 p-6 rounded-lg max-w-md text-center relative ${
+                  overlayImage ? 'bg-cover bg-center' : ''
+                }`}
+                style={{
+                  backgroundImage: overlayImage ? `url('${overlayImage}')` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              >
+                <div className="relative z-10 bg-white bg-opacity-90 p-4 rounded-lg">
+                  <MapPin className="mx-auto h-10 w-10 text-gold-600 mb-2" />
+                  <h3 className="text-xl font-bold mb-2">SushiEats Châteaurenard</h3>
+                  <p className="text-gray-600 mb-2">16 cours Carnot, 13160 Châteaurenard</p>
+                  <p className="text-sm text-gold-600 font-medium">Point de départ des livraisons</p>
+                </div>
               </div>
             </div>
             <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: 'url("https://api.mapbox.com/styles/v1/mapbox/light-v10/static/4.8535,43.8828,11,0/800x600?access_token=pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJja3g1d3BjN3YwMjN5Mm9vMzlpbjVteXcyIn0.80YJbLlH2XxjUQITTCLR3g")' }}></div>
