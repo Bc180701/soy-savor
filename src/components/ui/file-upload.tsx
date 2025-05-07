@@ -36,6 +36,8 @@ const FileUpload = ({
     setIsUploading(true);
     
     try {
+      console.log("Uploading file:", file.name);
+      
       // Création du FormData pour l'upload
       const formData = new FormData();
       formData.append('file', file);
@@ -46,6 +48,8 @@ const FileUpload = ({
         body: formData
       });
       
+      console.log("Upload response status:", response.status);
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Échec de l\'upload' }));
         console.error('Upload error response:', errorData);
@@ -54,9 +58,10 @@ const FileUpload = ({
       
       // Traiter la réponse
       const data = await response.json();
-      console.log('Upload response:', data);
+      console.log('Upload successful, received data:', data);
       
       if (data && data.url) {
+        console.log("Setting new image URL:", data.url);
         onChange(data.url);
         toast({
           title: "Succès",
@@ -82,19 +87,16 @@ const FileUpload = ({
     }
   };
 
-  // Préparer l'URL de l'image avec fallback pour les URL relatives
-  const imageUrl = value || '';
-
   return (
     <div className="w-full space-y-2">
-      {imageUrl && (
+      {value && (
         <div className="relative w-full h-40 rounded-md overflow-hidden border border-gray-200">
           <img
-            src={imageUrl}
+            src={value}
             alt="Image téléchargée"
             className="w-full h-full object-cover"
             onError={(e) => {
-              console.error("Erreur de chargement d'image:", imageUrl);
+              console.error("Erreur de chargement d'image:", value);
               e.currentTarget.src = "/placeholder.svg";
             }}
           />

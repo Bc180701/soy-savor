@@ -89,19 +89,6 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
   ]
 };
 
-// Helper function to safely cast JSON data to specific types
-function safeCast<T>(data: Json | null | undefined, defaultValue: T): T {
-  if (!data) return defaultValue;
-  
-  try {
-    // Check if the data has the expected shape before casting
-    return data as unknown as T;
-  } catch (error) {
-    console.error("Error casting data:", error);
-    return defaultValue;
-  }
-}
-
 export const useHomepageData = () => {
   const [data, setData] = useState<HomepageData>(DEFAULT_HOMEPAGE_DATA);
   const [loading, setLoading] = useState(true);
@@ -130,25 +117,17 @@ export const useHomepageData = () => {
         
         for (const section of sections) {
           if (section.section_name === 'hero_section') {
-            homepageData.hero_section = safeCast<HeroSection>(
-              section.section_data, 
-              DEFAULT_HOMEPAGE_DATA.hero_section
-            );
+            // On force le typage ici en étant sûr que la structure est correcte
+            homepageData.hero_section = section.section_data as unknown as HeroSection;
           } else if (section.section_name === 'promotions') {
-            homepageData.promotions = safeCast<Promotion[]>(
-              section.section_data, 
-              DEFAULT_HOMEPAGE_DATA.promotions
-            );
+            // On force le typage ici en étant sûr que la structure est correcte
+            homepageData.promotions = section.section_data as unknown as Promotion[];
           } else if (section.section_name === 'delivery_zones') {
-            homepageData.delivery_zones = safeCast<string[]>(
-              section.section_data, 
-              DEFAULT_HOMEPAGE_DATA.delivery_zones
-            );
+            // On force le typage ici en étant sûr que la structure est correcte
+            homepageData.delivery_zones = section.section_data as unknown as string[];
           } else if (section.section_name === 'order_options') {
-            homepageData.order_options = safeCast<OrderOption[]>(
-              section.section_data, 
-              DEFAULT_HOMEPAGE_DATA.order_options
-            );
+            // On force le typage ici en étant sûr que la structure est correcte
+            homepageData.order_options = section.section_data as unknown as OrderOption[];
           }
         }
         
