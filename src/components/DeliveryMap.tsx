@@ -32,13 +32,12 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
             {/* Placeholder for a real map - Implement real map integration if needed */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div 
-                className={`bg-white bg-opacity-90 p-6 rounded-lg max-w-md text-center relative ${
-                  overlayImage ? 'bg-cover bg-center' : ''
-                }`}
+                className="relative bg-white bg-opacity-90 p-6 rounded-lg max-w-md text-center overflow-hidden"
                 style={{
                   backgroundImage: overlayImage ? `url('${overlayImage}')` : 'none',
                   backgroundSize: 'cover',
-                  backgroundPosition: 'center'
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
                 }}
               >
                 <div className="relative z-10 bg-white bg-opacity-90 p-4 rounded-lg">
