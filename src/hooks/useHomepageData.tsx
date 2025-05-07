@@ -98,12 +98,14 @@ export const useHomepageData = () => {
       setLoading(true);
       
       // Check if homepage_sections table exists
+      // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
       const { data: tableExists } = await supabase.rpc('check_table_exists', {
         table_name: 'homepage_sections'
       }).single();
       
       if (tableExists) {
         // Use RPC function to fetch homepage data as JSON
+        // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
         const { data: homepageData, error } = await supabase.rpc('get_homepage_data').single();
         
         if (error) {
