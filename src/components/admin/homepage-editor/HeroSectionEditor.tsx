@@ -37,7 +37,6 @@ interface HeroSectionEditorProps {
 }
 
 const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   
@@ -50,58 +49,14 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
     },
   });
 
-  // Cette fonction est maintenant simplifiée pour utiliser directement l'image téléchargée
-  const handleUpload = async (file: File) => {
-    try {
-      setUploading(true);
-      
-      // Créer un objet FormData pour le téléchargement
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Appeler l'API de téléchargement de Lovable
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error("Échec du téléchargement de l'image");
-      }
-      
-      const { url } = await response.json();
-      
-      if (url) {
-        form.setValue('background_image', url);
-        toast({
-          title: "Image téléchargée",
-          description: "L'image a été téléchargée avec succès"
-        });
-        return url;
-      } else {
-        throw new Error("URL de l'image non reçue");
-      }
-    } catch (error: any) {
-      console.error("Error handling image:", error);
-      toast({
-        variant: "destructive",
-        title: "Échec du téléchargement",
-        description: error.message || "Impossible de télécharger l'image"
-      });
-      
-      return null;
-    } finally {
-      setUploading(false);
-    }
-  };
-  
   const onSubmit = async (formData: HeroSectionData) => {
     setSaving(true);
     try {
       await onSave(formData);
       toast({
         title: "Modifications enregistrées",
-        description: "Les changements ont été sauvegardés avec succès"
+        description: "Les changements ont été sauvegardés avec succès",
+        variant: "success"
       });
     } catch (error: any) {
       console.error("Error saving hero section:", error);
@@ -127,28 +82,15 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Image de fond</FormLabel>
-                    <div className="space-y-4">
-                      {field.value && (
-                        <div className="relative w-full h-40 rounded-md overflow-hidden">
-                          <img
-                            src={field.value}
-                            alt="Fond de la section principale"
-                            className="object-cover w-full h-full"
-                          />
-                        </div>
-                      )}
-                      <FormControl>
-                        <FileUpload
-                          value={field.value}
-                          onChange={field.onChange}
-                          onUpload={handleUpload}
-                          disabled={uploading}
-                          accept="image/*"
-                          buttonText={uploading ? "Téléchargement..." : "Changer l'image"}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </div>
+                    <FormControl>
+                      <FileUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                        accept="image/*"
+                        buttonText="Changer l'image de fond"
+                      />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -191,7 +133,7 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
         <div className="pt-4">
           <Button 
             type="submit" 
-            disabled={saving || uploading}
+            disabled={saving}
             className="bg-gold-600 hover:bg-gold-700 text-white"
           >
             {saving ? (

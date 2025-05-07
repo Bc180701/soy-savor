@@ -6,7 +6,6 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface FileUploadProps {
   onChange: (value: string) => void;
-  onUpload?: (file: File) => Promise<string | null>;
   value?: string;
   accept?: string;
   disabled?: boolean;
@@ -15,15 +14,13 @@ interface FileUploadProps {
 
 const FileUpload = ({ 
   onChange, 
-  onUpload, 
   value, 
-  accept, 
+  accept = "image/*", 
   disabled = false,
   buttonText = "Choisir un fichier"
 }: FileUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleClick = () => {
@@ -33,73 +30,49 @@ const FileUpload = ({
   };
 
   const handleChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const { files } = e.target;
-    if (!files || files.length === 0) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
     
     setIsUploading(true);
-    setError(null);
     
     try {
-      // Utilisation de l'API Lovable pour télécharger l'image
+      // Création du FormData pour l'upload
       const formData = new FormData();
-      formData.append('file', files[0]);
+      formData.append('file', file);
       
+      // Upload vers l'API de Lovable
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Échec de l'upload:", errorText);
-        throw new Error(`Échec du téléchargement de l'image (${response.status})`);
+        throw new Error(`Échec de l'upload (${response.status})`);
       }
       
-      // S'assurer que la réponse est bien du JSON valide
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        console.error("Réponse non-JSON:", await response.text());
-        throw new Error("Format de réponse invalide");
-      }
-      
+      // Traiter la réponse
       const data = await response.json();
       
       if (data && data.url) {
         onChange(data.url);
         toast({
-          title: "Image téléchargée",
-          description: "L'image a été téléchargée avec succès"
+          title: "Succès",
+          description: "L'image a été téléchargée avec succès",
+          variant: "success"
         });
-        return data.url;
       } else {
-        console.error("Données de réponse incomplètes:", data);
-        throw new Error("URL de l'image non reçue");
+        throw new Error("URL non reçue dans la réponse");
       }
     } catch (error: any) {
-      console.error("Error uploading file:", error);
-      setError(error.message || "Erreur lors du téléchargement");
+      console.error("Erreur d'upload:", error);
       toast({
-        variant: "destructive",
         title: "Échec du téléchargement",
-        description: error.message || "Impossible de télécharger l'image"
+        description: error.message || "Une erreur est survenue",
+        variant: "destructive"
       });
-      
-      // Utiliser la fonction onUpload comme fallback si disponible
-      if (onUpload) {
-        try {
-          const url = await onUpload(files[0]);
-          if (url) {
-            onChange(url);
-            return url;
-          }
-        } catch (fallbackError) {
-          console.error("Fallback upload also failed:", fallbackError);
-        }
-      }
-      return null;
     } finally {
       setIsUploading(false);
-      // Reset le champ de fichier pour permettre la sélection du même fichier
+      // Réinitialiser l'input pour permettre de sélectionner à nouveau le même fichier
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -107,7 +80,17 @@ const FileUpload = ({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2">
+      {value && (
+        <div className="relative w-full h-40 rounded-md overflow-hidden border border-gray-200">
+          <img
+            src={value}
+            alt="Image téléchargée"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      
       <input
         type="file"
         ref={fileInputRef}
@@ -116,6 +99,7 @@ const FileUpload = ({
         className="hidden"
         disabled={disabled || isUploading}
       />
+      
       <Button
         type="button"
         variant="outline"
@@ -135,9 +119,6 @@ const FileUpload = ({
           </>
         )}
       </Button>
-      {error && (
-        <p className="text-sm text-red-500 mt-1">{error}</p>
-      )}
     </div>
   );
 };

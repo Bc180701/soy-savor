@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash, RefreshCw, AlertCircle } from "lucide-react";
+import { Plus, Trash, AlertCircle } from "lucide-react";
 import FileUpload from "@/components/ui/file-upload";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -33,10 +33,9 @@ interface PromotionsEditorProps {
 
 const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
   const [promotions, setPromotions] = useState<Promotion[]>(data);
-  const [uploading, setUploading] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   
-  // Create a form instance for react-hook-form context
   const form = useForm();
 
   const handleChange = (index: number, field: string, value: string) => {
@@ -46,53 +45,6 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
       [field]: value,
     };
     setPromotions(updatedPromotions);
-  };
-
-  const handleImageUpload = async (index: number, file: File): Promise<string | null> => {
-    if (!file) return null;
-    
-    try {
-      setUploading(index);
-      
-      // Utiliser directement l'API de téléchargement de Lovable
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error("Échec du téléchargement de l'image");
-      }
-      
-      const { url } = await response.json();
-      
-      if (url) {
-        // Mettre à jour la promotion avec l'URL de l'image téléchargée
-        handleChange(index, 'imageUrl', url);
-        
-        toast({
-          title: "Image téléchargée",
-          description: "L'image a été téléchargée avec succès"
-        });
-        
-        return url;
-      } else {
-        throw new Error("URL de l'image non reçue");
-      }
-    } catch (error: any) {
-      console.error("Erreur lors du téléchargement de l'image:", error);
-      toast({
-        variant: "destructive",
-        title: "Échec du téléchargement",
-        description: "Une erreur est survenue lors du téléchargement de l'image"
-      });
-      return null;
-    } finally {
-      setUploading(null);
-    }
   };
 
   const addPromotion = () => {
@@ -114,13 +66,29 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     setPromotions(promotions.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(promotions);
+    setSaving(true);
+    try {
+      await onSave(promotions);
+      toast({
+        title: "Modifications enregistrées",
+        description: "Les promotions ont été sauvegardées avec succès",
+        variant: "success"
+      });
+    } catch (error: any) {
+      console.error("Erreur lors de la sauvegarde des promotions:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'enregistrement",
+        description: error.message || "Impossible de sauvegarder les promotions"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    // Use FormProvider to properly provide form context
     <FormProvider {...form}>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-6">
@@ -194,40 +162,19 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
                     <FormLabel>Image</FormLabel>
                     <FormControl>
                       <div className="space-y-2">
-                        <div className="bg-gray-100 rounded-lg overflow-hidden h-40 relative">
-                          {promotion.imageUrl ? (
-                            <img 
-                              src={promotion.imageUrl} 
-                              alt={`Promotion ${index + 1}`}
-                              className="absolute inset-0 w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-full text-gray-400">
-                              <AlertCircle className="h-6 w-6 mr-2" />
-                              <span>Aucune image</span>
-                            </div>
-                          )}
-                        </div>
+                        {promotion.imageUrl ? null : (
+                          <div className="bg-gray-100 rounded-lg overflow-hidden h-40 relative flex items-center justify-center text-gray-400">
+                            <AlertCircle className="h-6 w-6 mr-2" />
+                            <span>Aucune image</span>
+                          </div>
+                        )}
                         
                         <FileUpload 
                           accept="image/*" 
                           value={promotion.imageUrl}
                           onChange={(value) => handleChange(index, 'imageUrl', value)}
-                          onUpload={(file) => handleImageUpload(index, file)}
-                          disabled={uploading === index}
-                          buttonText={
-                            uploading === index ? 
-                            "Téléchargement en cours..." : 
-                            "Changer l'image"
-                          }
+                          buttonText="Choisir une image"
                         />
-                        
-                        {uploading === index && (
-                          <div className="text-center py-2">
-                            <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
-                            <span className="text-sm text-muted-foreground block mt-1">Téléchargement en cours...</span>
-                          </div>
-                        )}
                       </div>
                     </FormControl>
                     <FormDescription>
@@ -252,8 +199,17 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
         <Separator className="my-6" />
 
         <div>
-          <Button type="submit" className="bg-gold-600 hover:bg-gold-700 text-white">
-            Enregistrer les modifications
+          <Button 
+            type="submit" 
+            className="bg-gold-600 hover:bg-gold-700 text-white"
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Enregistrement...
+              </>
+            ) : "Enregistrer les modifications"}
           </Button>
         </div>
       </form>
