@@ -37,8 +37,8 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     setPromotions(updatedPromotions);
   };
 
-  const handleImageUpload = async (index: number, file: File) => {
-    if (!file) return;
+  const handleImageUpload = async (index: number, file: File): Promise<string | null> => {
+    if (!file) return null;
     
     try {
       setUploading(index);
@@ -56,10 +56,13 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
         .from('homepage')
         .getPublicUrl(fileName);
         
+      // Update the promotion with the new URL
       handleChange(index, 'imageUrl', publicUrl);
       
+      return publicUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
+      return null;
     } finally {
       setUploading(null);
     }
