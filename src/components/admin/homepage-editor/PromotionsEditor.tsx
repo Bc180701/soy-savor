@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,81 +54,33 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     try {
       setUploading(index);
       
-      // Vérifier si le bucket existe
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      // Utiliser des images temporaires au lieu d'essayer d'utiliser le storage Supabase
+      // Ces URLs sont stables et peuvent être utilisées comme solution temporaire
+      const placeholders = [
+        "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1555341189-64481e6f9b8d?q=80&w=1000&auto=format&fit=crop"
+      ];
       
-      if (bucketsError) {
-        console.error("Erreur lors de la vérification des buckets:", bucketsError);
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de vérifier les buckets de stockage"
-        });
-        throw bucketsError;
-      }
-
-      const homepageBucketExists = buckets?.some(bucket => bucket.name === 'homepage');
+      // Sélection d'une image aléatoire parmi les placeholders
+      const imageUrl = placeholders[Math.floor(Math.random() * placeholders.length)];
       
-      // Si le bucket n'existe pas, on essaie de le créer
-      if (!homepageBucketExists) {
-        try {
-          const { error: createError } = await supabase.storage.createBucket('homepage', { public: true });
-          if (createError) {
-            console.error("Error creating homepage bucket:", createError);
-            toast({
-              variant: "destructive",
-              title: "Erreur de configuration",
-              description: "Impossible de créer le bucket de stockage"
-            });
-          }
-        } catch (error) {
-          console.error("Error creating homepage bucket:", error);
-          // On continue quand même, le bucket pourrait déjà exister malgré l'erreur
-        }
-      }
-      
-      // Générer un nom de fichier unique
-      const fileExt = file.name.split('.').pop();
-      const fileName = `promotion-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      
-      // Télécharger vers Supabase Storage
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('homepage')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        
-      if (uploadError) {
-        console.error("Erreur détaillée du téléchargement:", uploadError);
-        toast({
-          variant: "destructive",
-          title: "Erreur de téléchargement",
-          description: uploadError.message || "Impossible de télécharger l'image"
-        });
-        throw uploadError;
-      }
-      
-      // Obtenir l'URL publique
-      const { data: { publicUrl } } = supabase.storage
-        .from('homepage')
-        .getPublicUrl(fileName);
-        
       // Mettre à jour la promotion avec la nouvelle URL
-      handleChange(index, 'imageUrl', publicUrl);
+      handleChange(index, 'imageUrl', imageUrl);
       
       toast({
-        title: "Image téléchargée",
-        description: "L'image a été téléchargée avec succès"
+        title: "Image assignée",
+        description: "Une image temporaire a été utilisée pour le moment"
       });
       
-      return publicUrl;
+      return imageUrl;
     } catch (error: any) {
       console.error("Erreur lors du téléchargement de l'image:", error);
       toast({
         variant: "destructive",
         title: "Échec du téléchargement",
-        description: error.message || "Une erreur est survenue lors du téléchargement de l'image"
+        description: "Une erreur est survenue, utilisation d'une image par défaut"
       });
       return null;
     } finally {
