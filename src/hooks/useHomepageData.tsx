@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 export interface HeroSection {
   background_image: string;
@@ -88,6 +89,19 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
   ]
 };
 
+// Helper function to safely cast JSON data to specific types
+function safeCast<T>(data: Json | null | undefined, defaultValue: T): T {
+  if (!data) return defaultValue;
+  
+  try {
+    // Check if the data has the expected shape before casting
+    return data as unknown as T;
+  } catch (error) {
+    console.error("Error casting data:", error);
+    return defaultValue;
+  }
+}
+
 export const useHomepageData = () => {
   const [data, setData] = useState<HomepageData>(DEFAULT_HOMEPAGE_DATA);
   const [loading, setLoading] = useState(true);
@@ -116,17 +130,25 @@ export const useHomepageData = () => {
         
         for (const section of sections) {
           if (section.section_name === 'hero_section') {
-            // Type assertion to ensure type safety
-            homepageData.hero_section = section.section_data as HeroSection;
+            homepageData.hero_section = safeCast<HeroSection>(
+              section.section_data, 
+              DEFAULT_HOMEPAGE_DATA.hero_section
+            );
           } else if (section.section_name === 'promotions') {
-            // Type assertion to ensure type safety
-            homepageData.promotions = section.section_data as Promotion[];
+            homepageData.promotions = safeCast<Promotion[]>(
+              section.section_data, 
+              DEFAULT_HOMEPAGE_DATA.promotions
+            );
           } else if (section.section_name === 'delivery_zones') {
-            // Type assertion to ensure type safety
-            homepageData.delivery_zones = section.section_data as string[];
+            homepageData.delivery_zones = safeCast<string[]>(
+              section.section_data, 
+              DEFAULT_HOMEPAGE_DATA.delivery_zones
+            );
           } else if (section.section_name === 'order_options') {
-            // Type assertion to ensure type safety
-            homepageData.order_options = section.section_data as OrderOption[];
+            homepageData.order_options = safeCast<OrderOption[]>(
+              section.section_data, 
+              DEFAULT_HOMEPAGE_DATA.order_options
+            );
           }
         }
         
