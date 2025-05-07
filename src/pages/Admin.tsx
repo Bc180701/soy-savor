@@ -1,37 +1,44 @@
 
 import { useEffect, useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
-import OrderList from "@/components/OrderList";
-import DashboardStats from "@/components/admin/DashboardStats";
-import OrdersChart from "@/components/admin/OrdersChart";
-import StatusDistribution from "@/components/admin/StatusDistribution";
-import PopularProductsChart from "@/components/admin/PopularProductsChart";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  LayoutGrid, 
+  ShoppingBag, 
+  FileText, 
+  Tag, 
+  Settings, 
+  Users,
+  LayoutTemplate
+} from "lucide-react";
+import DashboardStats from "@/components/admin/DashboardStats";
+import OrderList from "@/components/OrderList";
 import ProductManager from "@/components/admin/ProductManager";
+import CategoriesTable from "@/components/admin/CategoriesTable";
+import FeaturedProductsManager from "@/components/admin/FeaturedProductsManager";
 import AdminManager from "@/components/admin/AdminManager";
+import HomepageEditor from "@/components/admin/HomepageEditor";
 
 const Admin = () => {
+  const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  
+  const navigate = useNavigate();
+
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
+        setLoading(true);
+        
+        // Vérifier si l'utilisateur est connecté
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          setIsAdmin(false);
-          setIsLoading(false);
-          toast({
-            title: "Accès non autorisé",
-            description: "Vous devez être connecté pour accéder à cette page.",
-            variant: "destructive",
-          });
+          navigate("/login", { replace: true });
           return;
         }
         
+        // Vérifier si l'utilisateur a le rôle d'administrateur
         const { data, error } = await supabase.rpc(
           'has_role',
           { user_id: session.user.id, role: 'administrateur' }
@@ -39,89 +46,97 @@ const Admin = () => {
         
         if (error) throw error;
         
-        setIsAdmin(!!data);
-        
         if (!data) {
-          toast({
-            title: "Accès non autorisé",
-            description: "Vous n'avez pas les droits d'administrateur pour accéder à cette page.",
-            variant: "destructive",
-          });
+          navigate("/", { replace: true });
+          return;
         }
+        
+        setIsAdmin(true);
       } catch (error) {
         console.error("Erreur lors de la vérification du statut admin:", error);
-        setIsAdmin(false);
-        toast({
-          title: "Erreur",
-          description: "Impossible de vérifier vos droits d'accès.",
-          variant: "destructive",
-        });
+        navigate("/", { replace: true });
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-
+    
     checkAdminStatus();
-  }, [toast]);
+  }, [navigate]);
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="container mx-auto py-24 px-4 flex justify-center items-center min-h-screen">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="container mx-auto py-24 px-4 flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Accès Restreint</h1>
-          <p className="text-muted-foreground">
-            Vous n'avez pas les droits nécessaires pour accéder à cette page.
-          </p>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-24 px-4">
-      <h1 className="text-3xl font-bold mb-8">Administration</h1>
-      
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
-          <TabsTrigger value="orders">Commandes</TabsTrigger>
-          <TabsTrigger value="products">Produits</TabsTrigger>
-          <TabsTrigger value="administrators">Administrateurs</TabsTrigger>
-        </TabsList>
+    <div className="pt-[72px] pb-16 min-h-screen">
+      <div className="container mx-auto px-4">
+        <h1 className="text-3xl font-bold mb-8">Administration</h1>
         
-        <TabsContent value="dashboard">
-          <div className="space-y-6">
+        <Tabs defaultValue="dashboard">
+          <TabsList className="mb-6 grid grid-cols-3 md:grid-cols-7 w-full">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden md:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden md:inline">Commandes</span>
+            </TabsTrigger>
+            <TabsTrigger value="products" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              <span className="hidden md:inline">Produits</span>
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              <span className="hidden md:inline">Catégories</span>
+            </TabsTrigger>
+            <TabsTrigger value="featured" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span className="hidden md:inline">Mise en avant</span>
+            </TabsTrigger>
+            <TabsTrigger value="homepage" className="flex items-center gap-2">
+              <LayoutTemplate className="h-4 w-4" />
+              <span className="hidden md:inline">Page d'accueil</span>
+            </TabsTrigger>
+            <TabsTrigger value="admins" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden md:inline">Administrateurs</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard">
             <DashboardStats />
-            
-            <OrdersChart />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <StatusDistribution />
-              <PopularProductsChart />
-            </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="orders">
-          <OrderList />
-        </TabsContent>
-
-        <TabsContent value="products">
-          <ProductManager />
-        </TabsContent>
-
-        <TabsContent value="administrators">
-          <AdminManager />
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+          
+          <TabsContent value="orders">
+            <OrderList />
+          </TabsContent>
+          
+          <TabsContent value="products">
+            <ProductManager />
+          </TabsContent>
+          
+          <TabsContent value="categories">
+            <CategoriesTable />
+          </TabsContent>
+          
+          <TabsContent value="featured">
+            <FeaturedProductsManager />
+          </TabsContent>
+          
+          <TabsContent value="homepage">
+            <HomepageEditor />
+          </TabsContent>
+          
+          <TabsContent value="admins">
+            <AdminManager />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

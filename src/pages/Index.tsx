@@ -21,6 +21,8 @@ const Index = () => {
     exclusive: []
   });
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [homepageData, setHomepageData] = useState(null);
+  const [loadingHomepage, setLoadingHomepage] = useState(true);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -33,8 +35,32 @@ const Index = () => {
     const sections = document.querySelectorAll(".animate-on-scroll");
     sections.forEach((section) => observer.observe(section));
 
+    const fetchHomepageData = async () => {
+      try {
+        setLoadingHomepage(true);
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('*')
+          .single();
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found" error
+          console.error("Erreur lors de la récupération des données de la page d'accueil:", error);
+        } else if (data) {
+          setHomepageData(data);
+        }
+      } catch (error) {
+        console.error("Erreur inattendue:", error);
+      } finally {
+        setLoadingHomepage(false);
+      }
+    };
+
     const interval = setInterval(() => {
-      setActivePromotion((prev) => (prev + 1) % promotions.length);
+      setActivePromotion((prev) => {
+        // If we have homepage data, use its promotions length, otherwise use default promotions
+        const promotionsLength = homepageData?.promotions?.length || promotions.length;
+        return (prev + 1) % promotionsLength;
+      });
     }, 5000);
 
     const fetchRegisterPromotion = async () => {
@@ -179,6 +205,7 @@ const Index = () => {
       }
     };
     
+    fetchHomepageData();
     fetchRegisterPromotion();
     fetchFeaturedProducts();
 
@@ -202,6 +229,7 @@ const Index = () => {
     };
   }, []);
 
+  // Default data if nothing is loaded from the database
   const promotions = [
     {
       id: 1,
@@ -229,29 +257,41 @@ const Index = () => {
     },
   ];
 
-  const deliveryZones = [
+  const deliveryZones = homepageData?.delivery_zones || [
     "Châteaurenard", "Eyragues", "Barbentane", "Rognonas", 
     "Graveson", "Maillane", "Noves", "Cabanes", 
     "Avignon", "Saint-Rémy de Provence", "Boulbon"
   ];
 
-  const orderOptions = [
+  const orderOptions = homepageData?.order_options || [
     {
       title: "Livraison",
       description: "Livraison à domicile dans notre zone de chalandise",
-      icon: <Truck className="w-8 h-8 text-gold-600" />,
+      icon: "Truck",
     },
     {
       title: "À emporter",
       description: "Commandez et récupérez en restaurant",
-      icon: <ShoppingBag className="w-8 h-8 text-gold-600" />,
+      icon: "ShoppingBag",
     },
     {
       title: "Sur place",
       description: "Profitez de votre repas dans notre restaurant",
-      icon: <Users className="w-8 h-8 text-gold-600" />,
+      icon: "Users",
     },
   ];
+  
+  // Get the icon component for an icon name
+  const getIconComponent = (iconName) => {
+    switch (iconName) {
+      case "Truck": return <Truck className="w-8 h-8 text-gold-600" />;
+      case "ShoppingBag": return <ShoppingBag className="w-8 h-8 text-gold-600" />;
+      case "Users": return <Users className="w-8 h-8 text-gold-600" />;
+      case "MapPin": return <MapPin className="w-8 h-8 text-gold-600" />;
+      case "Clock": return <Clock className="w-8 h-8 text-gold-600" />;
+      default: return <Truck className="w-8 h-8 text-gold-600" />;
+    }
+  };
 
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
@@ -268,13 +308,16 @@ const Index = () => {
     },
   };
 
+  // Get the active promotions from either custom data or default
+  const activePromotions = homepageData?.promotions || promotions;
+
   return (
     <div className="pt-16">
       <section className="relative h-[85vh] flex items-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: "url('/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png')",
+            backgroundImage: `url('${homepageData?.hero_section?.background_image || "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png"}')`,
           }}
         >
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
@@ -301,9 +344,10 @@ const Index = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.7 }}
-            >
-              L'art du sushi à <span className="text-gold-500">Châteaurenard</span>
-            </motion.h1>
+              dangerouslySetInnerHTML={{
+                __html: homepageData?.hero_section?.title || "L'art du sushi à <span class=\"text-gold-500\">Châteaurenard</span>"
+              }}
+            />
 
             <motion.p
               className="text-white/90 text-lg mb-8"
@@ -311,7 +355,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.8 }}
             >
-              Des produits frais, des saveurs authentiques, une expérience japonaise unique à déguster sur place ou à emporter.
+              {homepageData?.hero_section?.subtitle || "Des produits frais, des saveurs authentiques, une expérience japonaise unique à déguster sur place ou à emporter."}
             </motion.p>
 
             <motion.div
@@ -360,7 +404,7 @@ const Index = () => {
             </div>
 
             <div className="relative max-w-4xl mx-auto overflow-hidden rounded-xl shadow-lg">
-              {promotions.map((promo, index) => (
+              {activePromotions.map((promo, index) => (
                 <div
                   key={promo.id}
                   className={`absolute inset-0 transition-opacity duration-500 ${
@@ -386,7 +430,7 @@ const Index = () => {
               ))}
 
               <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center space-x-2">
-                {promotions.map((_, index) => (
+                {activePromotions.map((_, index) => (
                   <button
                     key={index}
                     className={`w-2 h-2 rounded-full transition-colors ${
@@ -458,7 +502,7 @@ const Index = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <div className="bg-gold-50 w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center">
-                  {option.icon}
+                  {getIconComponent(option.icon)}
                 </div>
                 <h3 className="font-bold text-xl mb-2">{option.title}</h3>
                 <p className="text-gray-600">{option.description}</p>
