@@ -17,9 +17,7 @@ import {
   FormMessage 
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { setupStorage } from "@/utils/setupStorage";
 
 const heroSectionSchema = z.object({
   background_image: z.string().min(1, "L'image de fond est requise"),
@@ -52,42 +50,46 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
     },
   });
 
+  // Cette fonction est maintenant simplifiée pour utiliser directement l'image téléchargée
   const handleUpload = async (file: File) => {
     try {
       setUploading(true);
       
-      // Make sure storage is set up properly
-      await setupStorage();
+      // Créer un objet FormData pour le téléchargement
+      const formData = new FormData();
+      formData.append('file', file);
       
-      // Utiliser un lien vers une image publique ou uploadée via lovable
-      // au lieu d'essayer d'utiliser le bucket Supabase
-      const timestamp = Date.now();
-      const fileName = `hero-${timestamp}.jpg`;
-      
-      // Si nous ne pouvons pas télécharger vers Supabase Storage, utiliser une URL d'image externe
-      // ou demander à l'utilisateur de télécharger l'image via l'interface Lovable
-      
-      const publicUrl = `https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop&t=${timestamp}`;
-      
-      toast({
-        title: "Image assignée",
-        description: "Une image temporaire a été utilisée pour le moment"
+      // Appeler l'API de téléchargement de Lovable
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
       });
       
-      form.setValue('background_image', publicUrl);
-      return publicUrl;
+      if (!response.ok) {
+        throw new Error("Échec du téléchargement de l'image");
+      }
+      
+      const { url } = await response.json();
+      
+      if (url) {
+        form.setValue('background_image', url);
+        toast({
+          title: "Image téléchargée",
+          description: "L'image a été téléchargée avec succès"
+        });
+        return url;
+      } else {
+        throw new Error("URL de l'image non reçue");
+      }
     } catch (error: any) {
       console.error("Error handling image:", error);
       toast({
         variant: "destructive",
         title: "Échec du téléchargement",
-        description: "Une erreur est survenue, utilisation d'une image par défaut"
+        description: error.message || "Impossible de télécharger l'image"
       });
       
-      // Utiliser une image de secours si tout échoue
-      const fallbackUrl = "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png";
-      form.setValue('background_image', fallbackUrl);
-      return fallbackUrl;
+      return null;
     } finally {
       setUploading(false);
     }

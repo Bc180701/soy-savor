@@ -38,24 +38,49 @@ const FileUpload = ({
     setError(null);
     
     try {
-      if (onUpload) {
-        // Wait for the upload to complete and get the URL
-        const url = await onUpload(files[0]);
-        if (url) {
-          onChange(url);
-        } else {
-          setError("Échec du téléchargement de l'image");
+      // Utiliser Lovable pour télécharger directement l'image
+      const formData = new FormData();
+      formData.append('file', files[0]);
+      
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error("Échec du téléchargement de l'image");
+      }
+      
+      const { url } = await response.json();
+      
+      if (url) {
+        onChange(url);
+        return url;
+      } else if (onUpload) {
+        // Fallback à la méthode personnalisée si l'upload direct échoue
+        const uploadedUrl = await onUpload(files[0]);
+        if (uploadedUrl) {
+          onChange(uploadedUrl);
         }
-      } else {
-        // For direct handling without upload (e.g. in case of using FileReader)
-        onChange(files[0].name);
       }
     } catch (error: any) {
       console.error("Error uploading file:", error);
       setError(error.message || "Erreur lors du téléchargement");
+      
+      // Si l'upload échoue et qu'on a une méthode personnalisée, essayer celle-ci
+      if (onUpload) {
+        try {
+          const url = await onUpload(files[0]);
+          if (url) {
+            onChange(url);
+          }
+        } catch (fallbackError) {
+          console.error("Fallback upload also failed:", fallbackError);
+        }
+      }
     } finally {
       setIsUploading(false);
-      // Reset the file input so the same file can be selected again if needed
+      // Reset le champ de fichier pour permettre la sélection du même fichier
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

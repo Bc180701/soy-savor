@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Trash, RefreshCw, AlertCircle } from "lucide-react";
 import FileUpload from "@/components/ui/file-upload";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 interface Promotion {
@@ -54,33 +54,40 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
     try {
       setUploading(index);
       
-      // Utiliser des images temporaires au lieu d'essayer d'utiliser le storage Supabase
-      // Ces URLs sont stables et peuvent être utilisées comme solution temporaire
-      const placeholders = [
-        "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1555341189-64481e6f9b8d?q=80&w=1000&auto=format&fit=crop"
-      ];
+      // Utiliser directement l'API de téléchargement de Lovable
+      const formData = new FormData();
+      formData.append('file', file);
       
-      // Sélection d'une image aléatoire parmi les placeholders
-      const imageUrl = placeholders[Math.floor(Math.random() * placeholders.length)];
-      
-      // Mettre à jour la promotion avec la nouvelle URL
-      handleChange(index, 'imageUrl', imageUrl);
-      
-      toast({
-        title: "Image assignée",
-        description: "Une image temporaire a été utilisée pour le moment"
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
       });
       
-      return imageUrl;
+      if (!response.ok) {
+        throw new Error("Échec du téléchargement de l'image");
+      }
+      
+      const { url } = await response.json();
+      
+      if (url) {
+        // Mettre à jour la promotion avec l'URL de l'image téléchargée
+        handleChange(index, 'imageUrl', url);
+        
+        toast({
+          title: "Image téléchargée",
+          description: "L'image a été téléchargée avec succès"
+        });
+        
+        return url;
+      } else {
+        throw new Error("URL de l'image non reçue");
+      }
     } catch (error: any) {
       console.error("Erreur lors du téléchargement de l'image:", error);
       toast({
         variant: "destructive",
         title: "Échec du téléchargement",
-        description: "Une erreur est survenue, utilisation d'une image par défaut"
+        description: "Une erreur est survenue lors du téléchargement de l'image"
       });
       return null;
     } finally {
@@ -96,7 +103,7 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
         id: newId,
         title: "Nouvelle promotion",
         description: "Description de la promotion",
-        imageUrl: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
+        imageUrl: "",
         buttonText: "En profiter",
         buttonLink: "/menu",
       },
