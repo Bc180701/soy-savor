@@ -89,13 +89,25 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
   ]
 };
 
-// Type-safe casting helper
+// Type-safe casting helper with improved JSON parsing
 function safeCast<T>(data: Json, defaultValue: T): T {
   try {
     if (data === null || data === undefined) {
       console.log("safeCast - données nulles, utilisation des valeurs par défaut");
       return defaultValue;
     }
+    
+    // Si la donnée est une chaîne qui ressemble à du JSON, essayer de la parser
+    if (typeof data === 'string' && (data.startsWith('{') || data.startsWith('['))) {
+      try {
+        console.log("safeCast - conversion de la chaîne JSON:", data);
+        return JSON.parse(data) as T;
+      } catch (e) {
+        console.error("Erreur lors du parsing de la chaîne JSON:", e);
+        return defaultValue;
+      }
+    }
+    
     console.log("safeCast - conversion des données:", data);
     return data as unknown as T;
   } catch (e) {
@@ -132,8 +144,22 @@ export const useHomepageData = () => {
         
         for (const section of sections) {
           if (section.section_name === 'hero_section') {
-            const heroData = safeCast<HeroSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.hero_section);
-            console.log("Section hero récupérée:", heroData);
+            // Gérer le cas spécifique où section_data est une chaîne JSON
+            let heroData: HeroSection;
+            
+            if (typeof section.section_data === 'string') {
+              try {
+                heroData = JSON.parse(section.section_data);
+                console.log("Section hero (parsée depuis une chaîne):", heroData);
+              } catch (e) {
+                console.error("Erreur lors du parsing de hero_section:", e);
+                heroData = DEFAULT_HOMEPAGE_DATA.hero_section;
+              }
+            } else {
+              heroData = safeCast<HeroSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.hero_section);
+              console.log("Section hero récupérée:", heroData);
+            }
+            
             homepageData.hero_section = heroData;
           } else if (section.section_name === 'promotions') {
             homepageData.promotions = safeCast<Promotion[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.promotions);
