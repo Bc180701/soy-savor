@@ -8,15 +8,18 @@ export const setupStorage = async () => {
     // Setup the initial homepage data if it doesn't exist
     try {
       // Use a raw query to check if homepage_sections table exists
-      // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
-      const { data: tableExists } = await supabase.rpc('check_table_exists', {
+      const { data: tableExists, error: tableCheckError } = await supabase.rpc('check_table_exists', {
         table_name: 'homepage_sections'
       }).single();
       
+      if (tableCheckError) {
+        console.error('Error checking if table exists:', tableCheckError);
+        return;
+      }
+      
       if (tableExists) {
         // Check if there's any data in the homepage_sections table
-        // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
-        const { count, error: countError } = await supabase.rpc('count_table_rows', {
+        const { data: countData, error: countError } = await supabase.rpc('count_table_rows', {
           table_name: 'homepage_sections'
         }).single();
         
@@ -25,12 +28,19 @@ export const setupStorage = async () => {
           return;
         }
         
+        const count = countData;
         if (count === 0) {
           console.log('No homepage data found, creating initial data using RPC function');
           
-          // @ts-ignore - Type safety will be resolved when Supabase types are regenerated
-          await supabase.rpc('insert_homepage_data');
-          console.log('Initial homepage data created successfully');
+          const { error: insertError } = await supabase.rpc('insert_homepage_data');
+          
+          if (insertError) {
+            console.error('Error inserting homepage data:', insertError);
+          } else {
+            console.log('Initial homepage data created successfully');
+          }
+        } else {
+          console.log(`Found ${count} existing homepage sections, skipping initialization`);
         }
       } else {
         console.log('Homepage sections table does not exist yet');
