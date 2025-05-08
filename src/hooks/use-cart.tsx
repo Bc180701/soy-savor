@@ -1,7 +1,7 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, MenuItem } from '@/types';
+import { supabase } from "@/integrations/supabase/client";
 
 interface CartStore {
   items: CartItem[];
@@ -12,6 +12,7 @@ interface CartStore {
   updateQuantity: (id: string, quantity: number) => void;
   updateInstructions: (id: string, instructions: string) => void;
   clearCart: () => void;
+  initiateSumUpPayment: (orderId: string, customerEmail: string) => Promise<{ success: boolean; redirectUrl?: string; error?: string }>;
   total: number;
   itemCount: number;
 }
@@ -154,6 +155,48 @@ export const useCart = create<CartStore>()(
       
       clearCart: () => {
         set({ items: [], total: 0, itemCount: 0 });
+      },
+      
+      initiateSumUpPayment: async (orderId, customerEmail) => {
+        try {
+          const { items, total } = get();
+          const returnUrl = window.location.origin;
+          
+          const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
+            body: {
+              orderData: {
+                orderId,
+                items,
+                total,
+                customerEmail,
+                returnUrl
+              }
+            }
+          });
+          
+          if (error) {
+            console.error('Error initiating SumUp payment:', error);
+            return { 
+              success: false, 
+              error: error.message || 'Échec de l\'initialisation du paiement' 
+            };
+          }
+          
+          if (!data.success || !data.redirectUrl) {
+            return { 
+              success: false, 
+              error: data.error || 'Échec de l\'initialisation du paiement SumUp' 
+            };
+          }
+          
+          return { success: true, redirectUrl: data.redirectUrl };
+        } catch (err) {
+          console.error('Error in initiateSumUpPayment:', err);
+          return { 
+            success: false, 
+            error: err instanceof Error ? err.message : 'Une erreur est survenue' 
+          };
+        }
       },
     }),
     {

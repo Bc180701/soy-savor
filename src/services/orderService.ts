@@ -1,4 +1,3 @@
-
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -52,7 +51,7 @@ export const createOrder = async (
         order_type: orderInput.orderType,
         status: "pending",
         payment_method: orderInput.paymentMethod,
-        payment_status: "pending",
+        payment_status: "pending", // Maintenant, le paiement sera pending jusqu'au retour de SumUp
         delivery_instructions: orderInput.deliveryInstructions,
         scheduled_for: orderInput.scheduledFor.toISOString(), // Convert Date to string
         customer_notes: orderInput.customerNotes,
@@ -322,6 +321,31 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
     return { 
       success: false, 
       error: error instanceof Error ? error.message : "Une erreur inattendue s'est produite lors de la mise à jour du statut de la commande." 
+    };
+  }
+};
+
+export const updateOrderPaymentStatus = async (
+  orderId: string, 
+  paymentStatus: "pending" | "paid" | "failed"
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .update({ payment_status: paymentStatus })
+      .eq("id", orderId);
+    
+    if (error) {
+      console.error("Erreur lors de la mise à jour du statut de paiement:", error);
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du statut de paiement:", error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : "Une erreur inattendue s'est produite" 
     };
   }
 };

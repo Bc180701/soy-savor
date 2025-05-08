@@ -97,6 +97,8 @@ const Panier = () => {
     checkPromotionEligibility();
   }, [cart.total, orderType]);
 
+  const [isRedirectingToSumUp, setIsRedirectingToSumUp] = useState(false);
+
   const handleIncrement = (id: string) => {
     cart.incrementQuantity(id);
   };
@@ -187,27 +189,44 @@ const Panier = () => {
     });
     
     if (result.success) {
-      // Enregistrer les informations de commande dans le stockage local
-      const order = {
-        items: cart.items,
-        total: cart.total + deliveryFee + (cart.total * 0.1),
-        date: new Date().toISOString()
-      };
+      try {
+        // Initier le paiement SumUp
+        setIsRedirectingToSumUp(true);
+        const paymentResult = await cart.initiateSumUpPayment(
+          result.order.id,
+          deliveryAddress?.email || session.user.email
+        );
+        
+        if (!paymentResult.success) {
+          throw new Error(paymentResult.error || "Échec de l'initialisation du paiement");
+        }
+        
+        // Enregistrer les informations de commande dans le stockage local
+        const order = {
+          items: cart.items,
+          total: cart.total + deliveryFee + (cart.total * 0.1),
+          date: new Date().toISOString()
+        };
+        
+        orderStore.createOrder(order);
+        
+        // Rediriger vers la page de paiement SumUp
+        window.location.href = paymentResult.redirectUrl;
+        return; // Arrêter l'exécution ici car nous redirigerons
       
-      orderStore.createOrder(order);
-      
-      // Vider le panier
-      cart.clearCart();
-      
-      setIsProcessing(false);
-      
-      toast({
-        title: "Commande validée !",
-        description: "Votre commande a été enregistrée avec succès",
-      });
-      
-      // Rediriger vers la page de compte
-      navigate("/compte");
+      } catch (error) {
+        console.error("Erreur lors de l'initialisation du paiement:", error);
+        
+        toast({
+          variant: "destructive",
+          title: "Erreur de paiement",
+          description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'initialisation du paiement",
+        });
+        
+        setIsProcessing(false);
+        setIsRedirectingToSumUp(false);
+        return;
+      }
     } else {
       setIsProcessing(false);
       
@@ -489,6 +508,7 @@ const Panier = () => {
                     variant="outline"
                     onClick={goToPreviousStep}
                     className="flex items-center gap-2"
+                    disabled={isProcessing || isRedirectingToSumUp}
                   >
                     <ArrowLeft className="h-4 w-4" /> Retour
                   </Button>
@@ -497,9 +517,13 @@ const Panier = () => {
                     <Button 
                       className="bg-gold-600 hover:bg-gold-700"
                       onClick={handleCheckout}
-                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct)}
+                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct) || isRedirectingToSumUp}
                     >
-                      {isProcessing ? "Traitement en cours..." : "Payer maintenant"}
+                      {isProcessing ? 
+                        "Traitement en cours..." : 
+                        isRedirectingToSumUp ? 
+                        "Redirection vers SumUp..." : 
+                        "Payer maintenant"}
                       {isPromotionApplicable && !selectedFreeProduct && (
                         <span className="sr-only">Veuillez choisir votre produit offert</span>
                       )}
