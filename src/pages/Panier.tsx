@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 // Enum for checkout steps
 enum CheckoutStep {
@@ -139,6 +140,16 @@ const Panier = () => {
   };
 
   const handleCheckout = async () => {
+    // Vérifier si la promotion est applicable et qu'un produit gratuit est sélectionné
+    if (isPromotionApplicable && !selectedFreeProduct) {
+      toast({
+        variant: "destructive",
+        title: "Produit offert non sélectionné",
+        description: "Veuillez sélectionner votre produit gratuit pour bénéficier de l'offre.",
+      });
+      return;
+    }
+    
     setIsProcessing(true);
     
     // Vérifier l'authentification
@@ -287,10 +298,6 @@ const Panier = () => {
     if (currentStep === CheckoutStep.TIME_SLOT) {
       return !deliveryTime;
     }
-    // Si la promotion est applicable mais qu'aucun produit n'est sélectionné
-    if (currentStep === CheckoutStep.PAYMENT && isPromotionApplicable && !selectedFreeProduct) {
-      return true;
-    }
     return false;
   };
 
@@ -351,6 +358,11 @@ const Panier = () => {
                                 <p className="text-gold-600 font-semibold mt-1">
                                   {item.menuItem.price.toFixed(2)} €
                                 </p>
+                                {item.specialInstructions && (
+                                  <p className="text-sm text-gray-500 mt-1 italic">
+                                    {item.specialInstructions}
+                                  </p>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button
@@ -453,6 +465,15 @@ const Panier = () => {
                             </div>
                           ))}
                         </RadioGroup>
+                        
+                        {isPromotionApplicable && !selectedFreeProduct && (
+                          <Alert variant="destructive" className="mt-3">
+                            <AlertTitle>Produit gratuit non sélectionné</AlertTitle>
+                            <AlertDescription>
+                              Veuillez sélectionner votre produit gratuit avant de valider votre commande
+                            </AlertDescription>
+                          </Alert>
+                        )}
                       </div>
                     )}
                     
@@ -481,7 +502,7 @@ const Panier = () => {
                           deliveryTime === "Offerts" ? 
                             "Livraison prévue à " : 
                             `Livraison prévue à ${deliveryTime}` : 
-                          "Retrait prévu à " + deliveryTime}
+                          `Retrait prévu à ${deliveryTime}`}
                       </p>
                     </div>
                     
@@ -524,9 +545,6 @@ const Panier = () => {
                         isRedirectingToSumUp ? 
                         "Redirection vers SumUp..." : 
                         "Payer maintenant"}
-                      {isPromotionApplicable && !selectedFreeProduct && (
-                        <span className="sr-only">Veuillez choisir votre produit offert</span>
-                      )}
                     </Button>
                   ) : (
                     <Button
@@ -569,7 +587,11 @@ const Panier = () => {
                     {isPromotionApplicable && (
                       <div className="flex justify-between text-amber-700 font-medium">
                         <span>Promotion</span>
-                        <span>1 produit offert</span>
+                        <span>
+                          {selectedFreeProduct ? 
+                            `1 ${freeProducts.find(p => p.id === selectedFreeProduct)?.name} offert` : 
+                            "Sélectionnez votre produit offert"}
+                        </span>
                       </div>
                     )}
                     
