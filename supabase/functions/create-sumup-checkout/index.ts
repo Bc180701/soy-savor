@@ -8,6 +8,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 const SUMUP_API_KEY = Deno.env.get("SUMUP_API_KEY") || "";
 
 serve(async (req) => {
+  console.log("Fonction create-sumup-checkout appelée");
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -22,10 +24,21 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Clé API SumUp disponible:", !!SUMUP_API_KEY);
+    
+    if (!SUMUP_API_KEY) {
+      console.error("La clé API SumUp n'est pas définie");
+      return new Response(
+        JSON.stringify({ error: "Clé API SumUp non configurée" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Parse the request body
     const { orderData } = await req.json();
     
     if (!orderData || !orderData.total || !orderData.orderId || !orderData.customerEmail) {
+      console.error("Données de commande manquantes:", orderData);
       return new Response(
         JSON.stringify({ error: "Missing required order data" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -53,11 +66,12 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
 
+    // Utiliser l'authentification avec Bearer token pour l'API SumUp
     const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUMUP_API_KEY}`
+        "Authorization": `Bearer ${SUMUP_API_KEY}` // Assurez-vous que c'est le bon format d'authentification
       },
       body: JSON.stringify(checkoutRequest)
     });
@@ -66,11 +80,15 @@ serve(async (req) => {
     
     if (!response.ok) {
       console.error("SumUp API error:", data);
+      console.error("SumUp API status:", response.status, response.statusText);
+      
       return new Response(
         JSON.stringify({ error: "Failed to create SumUp checkout", details: data }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("SumUp checkout created successfully:", data);
 
     // Return the checkout URL to redirect the user
     return new Response(

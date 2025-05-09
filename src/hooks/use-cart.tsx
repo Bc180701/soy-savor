@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, MenuItem } from '@/types';
@@ -162,6 +163,8 @@ export const useCart = create<CartStore>()(
           const { items, total } = get();
           const returnUrl = window.location.origin;
           
+          console.log("Initiating SumUp payment:", { orderId, customerEmail, total, returnUrl });
+          
           const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
             body: {
               orderData: {
@@ -174,6 +177,8 @@ export const useCart = create<CartStore>()(
             }
           });
           
+          console.log("SumUp payment response:", data, error);
+          
           if (error) {
             console.error('Error initiating SumUp payment:', error);
             return { 
@@ -183,11 +188,14 @@ export const useCart = create<CartStore>()(
           }
           
           if (!data.success || !data.redirectUrl) {
+            console.error('SumUp payment initialization failed:', data);
             return { 
               success: false, 
               error: data.error || 'Échec de l\'initialisation du paiement SumUp' 
             };
           }
+          
+          console.log("SumUp redirect URL:", data.redirectUrl);
           
           return { success: true, redirectUrl: data.redirectUrl };
         } catch (err) {
