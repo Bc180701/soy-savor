@@ -7,6 +7,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 const SUMUP_API_KEY = Deno.env.get("SUMUP_API_KEY") || "";
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
+const SUMUP_CLIENT_ID = "cc_classic_UelwBCnPHLGxjz8w5l4YyCriGYy9P";
+const SUMUP_CLIENT_SECRET = "cc_sk_classic_kNIDUAjlYVYmMRsd72FN1jgp0jsdZCi4mvAudnsLcTN8DR6thy";
 
 serve(async (req) => {
   console.log("Fonction create-sumup-checkout appelée");
@@ -25,13 +27,14 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Clé API SumUp disponible:", !!SUMUP_API_KEY);
-    console.log("Longueur de la clé API SumUp:", SUMUP_API_KEY.length);
+    console.log("Utilisation des identifiants OAuth2:");
+    console.log("Client ID disponible:", !!SUMUP_CLIENT_ID);
+    console.log("Client Secret disponible:", !!SUMUP_CLIENT_SECRET);
     
-    if (!SUMUP_API_KEY) {
-      console.error("La clé API SumUp n'est pas définie");
+    if (!SUMUP_CLIENT_ID || !SUMUP_CLIENT_SECRET) {
+      console.error("Les identifiants OAuth2 SumUp ne sont pas définis");
       return new Response(
-        JSON.stringify({ error: "Clé API SumUp non configurée" }),
+        JSON.stringify({ error: "Identifiants OAuth2 SumUp non configurés" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -54,7 +57,7 @@ serve(async (req) => {
       price: item.menuItem.price,
     }));
 
-    // Create checkout session with SumUp API
+    // Create checkout session with SumUp API using OAuth2 credentials
     // SumUp API Documentation: https://developer.sumup.com/docs/api/create-checkout/
     const checkoutRequest = {
       checkout_reference: orderData.orderId,
@@ -70,12 +73,13 @@ serve(async (req) => {
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
     console.log("Using SumUp API URL:", SUMUP_API_URL);
 
-    // Call SumUp API with proper error handling
+    // Call SumUp API using OAuth2 Basic auth with client id and secret
+    const credentials = btoa(`${SUMUP_CLIENT_ID}:${SUMUP_CLIENT_SECRET}`);
     const response = await fetch(SUMUP_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUMUP_API_KEY}`,
+        "Authorization": `Basic ${credentials}`,
         "Accept": "application/json"
       },
       body: JSON.stringify(checkoutRequest)
@@ -105,11 +109,11 @@ serve(async (req) => {
       let errorMessage = "Failed to create SumUp checkout";
       
       if (response.status === 401) {
-        errorMessage = "Erreur d'authentification avec SumUp. Veuillez vérifier votre clé API.";
+        errorMessage = "Erreur d'authentification avec SumUp. Veuillez vérifier vos identifiants OAuth2.";
       } else if (response.status === 400) {
         errorMessage = "Données de commande invalides. Veuillez vérifier les détails.";
       } else if (response.status === 403) {
-        errorMessage = "La clé API n'a pas les permissions nécessaires.";
+        errorMessage = "Les identifiants OAuth2 n'ont pas les permissions nécessaires.";
       } else {
         errorMessage = "Erreur inattendue lors de la communication avec SumUp.";
       }

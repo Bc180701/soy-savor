@@ -3,3 +3,4 @@ project_id = "tdykegnmomyyucbhslok"
 
 [functions.create-sumup-checkout]
 verify_jwt = false
+

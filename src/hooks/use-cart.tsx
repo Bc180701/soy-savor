@@ -165,7 +165,7 @@ export const useCart = create<CartStore>()(
           // Use the application's origin URL for the return URL
           const returnUrl = window.location.origin;
           
-          console.log("Initiating SumUp payment:", { orderId, customerEmail, total, returnUrl });
+          console.log("Initiating SumUp payment with OAuth2:", { orderId, customerEmail, total, returnUrl });
           
           // Call the Edge Function with proper error handling
           const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
@@ -226,6 +226,12 @@ export const useCart = create<CartStore>()(
           }
           
           console.log("SumUp redirect URL:", data.redirectUrl);
+          
+          toast({
+            variant: "success",
+            title: "Paiement initialisé",
+            description: "Vous allez être redirigé vers la page de paiement."
+          });
           
           // Don't clear cart yet - we'll do that after successful payment confirmation
       
