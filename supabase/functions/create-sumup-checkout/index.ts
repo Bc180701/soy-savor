@@ -50,11 +50,12 @@ serve(async (req) => {
       );
     }
 
-    // Format order items for SumUp checkout
+    // Format order items for SumUp checkout - Added reference field (required by SumUp)
     const items = orderData.items.map(item => ({
       name: item.menuItem.name,
       quantity: item.quantity,
       price: item.menuItem.price,
+      reference: item.menuItem.id // Ajout du champ reference requis par SumUp
     }));
 
     // Create checkout session with SumUp API
