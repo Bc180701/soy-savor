@@ -27,7 +27,7 @@ serve(async (req) => {
 
   try {
     console.log("Utilisation des identifiants OAuth2:");
-    console.log("Client ID:", SUMUP_CLIENT_ID.substring(0, 5) + "...");
+    console.log("Client ID:", SUMUP_CLIENT_ID);
     console.log("Client Secret: [HIDDEN]");
     
     if (!SUMUP_CLIENT_ID || !SUMUP_CLIENT_SECRET) {
@@ -76,6 +76,8 @@ serve(async (req) => {
     
     // Call SumUp API using OAuth2 Basic auth with client id and secret
     console.log("Making API call to SumUp with Basic Auth...");
+    console.log("Authorization header:", `Basic ${credentials.substring(0, 10)}...`);
+    
     const response = await fetch(SUMUP_API_URL, {
       method: "POST",
       headers: {
@@ -88,6 +90,7 @@ serve(async (req) => {
 
     // Log the full response for debugging
     console.log("SumUp API response status:", response.status, response.statusText);
+    console.log("SumUp API response headers:", JSON.stringify([...response.headers.entries()]));
     
     // Parse response body
     let responseText = await response.text();
@@ -103,7 +106,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Format de réponse invalide de SumUp", 
-          details: responseText 
+          details: responseText,
+          displayMessage: "Erreur lors du traitement de la réponse de SumUp. Veuillez réessayer." 
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -122,6 +126,9 @@ serve(async (req) => {
       } else if (response.status === 400) {
         errorMessage = "Données de commande invalides";
         displayMessage = "Données de commande incorrectes. Veuillez vérifier vos informations.";
+      } else if (data && data.error_message) {
+        errorMessage = data.error_message;
+        displayMessage = "Erreur SumUp: " + data.error_message;
       } else if (data && data.message) {
         errorMessage = data.message;
         displayMessage = "Erreur SumUp: " + data.message;
@@ -143,13 +150,15 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "La réponse de SumUp est invalide ou incomplète", 
-          details: data 
+          details: data,
+          displayMessage: "La réponse du service de paiement est incomplète. Veuillez réessayer."
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log("SumUp checkout created successfully:", data);
+    console.log("Payment link:", data.payment_link);
 
     // Return the checkout information
     return new Response(
