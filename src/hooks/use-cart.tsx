@@ -163,23 +163,9 @@ export const useCart = create<CartStore>()(
           const { items, total } = get();
           
           // Use the application's origin URL for the return URL
-          // This ensures it works in both development and production
           const returnUrl = window.location.origin;
           
           console.log("Initiating SumUp payment:", { orderId, customerEmail, total, returnUrl });
-          
-          // Add more detailed logging for debugging
-          console.log("Payment request details:", {
-            orderId,
-            customerEmail,
-            total,
-            returnUrl,
-            items: items.map(i => ({
-              name: i.menuItem.name,
-              quantity: i.quantity,
-              price: i.menuItem.price
-            }))
-          });
           
           // Call the Edge Function with proper error handling
           const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
@@ -197,9 +183,7 @@ export const useCart = create<CartStore>()(
           console.log("SumUp payment response:", data, error);
           
           if (error) {
-            console.error('Error initiating SumUp payment:', error);
-            
-            // Display toast with error message
+            console.error('Error from Edge Function:', error);
             toast({
               variant: "destructive",
               title: "Erreur de paiement",
@@ -214,13 +198,25 @@ export const useCart = create<CartStore>()(
           
           if (!data || !data.success || !data.redirectUrl) {
             console.error('SumUp payment initialization failed:', data);
-            const errorMessage = data?.error || 'Échec de l\'initialisation du paiement SumUp';
             
-            // Display toast with detailed error message
+            // Handle detailed error response
+            const errorMessage = data?.error || 'Erreur de communication avec SumUp';
+            const statusCode = data?.statusCode;
+            
+            let description = "Impossible de contacter le service de paiement. Veuillez réessayer.";
+            
+            if (statusCode === 401) {
+              description = "Problème d'authentification avec le service de paiement.";
+            } else if (statusCode === 400) {
+              description = "Les données de la commande sont incorrectes.";
+            } else if (data?.error) {
+              description = data.error;
+            }
+            
             toast({
               variant: "destructive",
               title: "Erreur de paiement",
-              description: errorMessage
+              description: description
             });
             
             return { 
@@ -231,10 +227,8 @@ export const useCart = create<CartStore>()(
           
           console.log("SumUp redirect URL:", data.redirectUrl);
           
-          // Clear cart on successful payment initiation
-          // Commented out as we should only clear the cart after successful payment
-          // set({ items: [], total: 0, itemCount: 0 });
-          
+          // Don't clear cart yet - we'll do that after successful payment confirmation
+      
           return { 
             success: true, 
             redirectUrl: data.redirectUrl 
@@ -242,7 +236,6 @@ export const useCart = create<CartStore>()(
         } catch (err) {
           console.error('Error in initiateSumUpPayment:', err);
           
-          // Display toast with error message
           toast({
             variant: "destructive",
             title: "Erreur de paiement",
