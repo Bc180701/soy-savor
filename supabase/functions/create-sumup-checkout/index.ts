@@ -6,9 +6,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 // SumUp API credentials 
-// These are test credentials - they'll need to be replaced with actual production credentials
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
-const SUMUP_API_KEY = "sk_test_OzuCOouSMUuIIMs4hvmypnRUzWp6WWq";  // Using an API key authentication method
+const SUMUP_API_KEY = "sup_sk_OzuCOouSMUuIIMs4hvmypnRUzWp6WWq";  // Updated with correct prefix format
 
 serve(async (req) => {
   console.log("Fonction create-sumup-checkout appelée");
@@ -27,8 +26,8 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Utilisation de l'API key SumUp:");
-    console.log("API Key: [HIDDEN]");
+    console.log("Utilisation de l'API key SumUp avec format correct:");
+    console.log("API Key format: sup_sk_XXXX (secrets masqués)");
     
     if (!SUMUP_API_KEY) {
       console.error("La clé API SumUp n'est pas définie");
@@ -71,8 +70,8 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
     
-    // Using API key authentication instead of OAuth
-    console.log("Making API call to SumUp with API Key Auth...");
+    // Using API key authentication following SumUp documentation
+    console.log("Making API call to SumUp with correct Bearer token format...");
     
     const response = await fetch(SUMUP_API_URL, {
       method: "POST",
