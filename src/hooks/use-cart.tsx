@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, MenuItem } from '@/types';
@@ -161,6 +160,9 @@ export const useCart = create<CartStore>()(
       initiateSumUpPayment: async (orderId, customerEmail) => {
         try {
           const { items, total } = get();
+          
+          // Use the application's origin URL for the return URL
+          // This ensures it works in both development and production
           const returnUrl = window.location.origin;
           
           console.log("Initiating SumUp payment:", { orderId, customerEmail, total, returnUrl });
@@ -187,17 +189,21 @@ export const useCart = create<CartStore>()(
             };
           }
           
-          if (!data.success || !data.redirectUrl) {
+          if (!data || !data.success || !data.redirectUrl) {
             console.error('SumUp payment initialization failed:', data);
+            const errorMessage = data?.error || 'Échec de l\'initialisation du paiement SumUp';
             return { 
               success: false, 
-              error: data.error || 'Échec de l\'initialisation du paiement SumUp' 
+              error: errorMessage
             };
           }
           
           console.log("SumUp redirect URL:", data.redirectUrl);
           
-          return { success: true, redirectUrl: data.redirectUrl };
+          return { 
+            success: true, 
+            redirectUrl: data.redirectUrl 
+          };
         } catch (err) {
           console.error('Error in initiateSumUpPayment:', err);
           return { 

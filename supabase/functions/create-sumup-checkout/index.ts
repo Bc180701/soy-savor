@@ -53,12 +53,13 @@ serve(async (req) => {
     }));
 
     // Create checkout session with SumUp API
+    // Following SumUp API documentation: https://developer.sumup.com/api/checkouts/create
     const checkoutRequest = {
       checkout_reference: orderData.orderId,
       amount: orderData.total,
       currency: "EUR",
       description: `SushiEats Commande #${orderData.orderId.slice(0, 8)}`,
-      pay_to_email: "clweb@hotmail.com", // Using your provided SumUp account email
+      pay_to_email: "clweb@hotmail.com", // Using the provided SumUp account email
       return_url: `${orderData.returnUrl}/compte?order=${orderData.orderId}`,
       customer_email: orderData.customerEmail,
       items: items
@@ -66,7 +67,7 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
 
-    // Using Bearer token authentication for the SumUp API
+    // Using Bearer token authentication for the SumUp API as per documentation
     const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
@@ -82,15 +83,20 @@ serve(async (req) => {
       console.error("SumUp API error:", data);
       console.error("SumUp API status:", response.status, response.statusText);
       
+      let errorMessage = "Failed to create SumUp checkout";
+      if (response.status === 401) {
+        errorMessage = "SumUp API authentication failed. Please verify your API key is valid.";
+      }
+      
       return new Response(
-        JSON.stringify({ error: "Failed to create SumUp checkout", details: data }),
+        JSON.stringify({ error: errorMessage, details: data }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log("SumUp checkout created successfully:", data);
 
-    // Return the checkout URL to redirect the user
+    // According to SumUp documentation, we need to return the checkout_reference and payment_link
     return new Response(
       JSON.stringify({ 
         success: true, 
