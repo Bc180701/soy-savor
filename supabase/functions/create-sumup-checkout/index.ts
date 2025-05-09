@@ -7,8 +7,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 // SumUp API credentials 
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
-const SUMUP_API_KEY = "sup_sk_OzuCOouSMUuIIMs4hvmypnRUzWp6WWq";  // Secret key for Bearer authentication
-const SUMUP_PUBLIC_KEY = "sup_pk_upzdkuSb6dGrODGaYF0ln85MMOZBQd3UV"; // Public key for checkout identification
+const SUMUP_API_KEY = "sup_sk_3R7zCVSBpVBgUr9VffVJq84TuzdMQdTSW";  // Secret key pour Bearer authentication
+const SUMUP_PUBLIC_KEY = "sup_pk_upzdkuSb6dGrODGaYF0ln85MMOZBQd3UV"; // Public key pour identification du checkout
 
 serve(async (req) => {
   console.log("Fonction create-sumup-checkout appelée");
@@ -79,7 +79,7 @@ serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUMUP_API_KEY}`, // Correct format: Bearer sup_sk_XXX
+        "Authorization": `Bearer ${SUMUP_API_KEY}`, // Format correct: Bearer sup_sk_XXX
         "Accept": "application/json"
       },
       body: JSON.stringify(checkoutRequest)
