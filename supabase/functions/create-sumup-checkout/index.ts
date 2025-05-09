@@ -7,7 +7,8 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 // SumUp API credentials 
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
-const SUMUP_API_KEY = "sup_sk_OzuCOouSMUuIIMs4hvmypnRUzWp6WWq";  // API key with correct sup_sk_ prefix
+const SUMUP_API_KEY = "sup_sk_OzuCOouSMUuIIMs4hvmypnRUzWp6WWq";  // Secret key for Bearer authentication
+const SUMUP_PUBLIC_KEY = "sup_pk_upzdkuSb6dGrODGaYF0ln85MMOZBQd3UV"; // Public key for checkout identification
 
 serve(async (req) => {
   console.log("Fonction create-sumup-checkout appelée");
@@ -28,6 +29,7 @@ serve(async (req) => {
   try {
     console.log("Utilisation de l'API key SumUp avec format Bearer token:");
     console.log("API Key format: Bearer sup_sk_XXXX (secrets masqués)");
+    console.log("Public Key format: sup_pk_XXXX (pour identification)");
     
     if (!SUMUP_API_KEY) {
       console.error("La clé API SumUp n'est pas définie");
