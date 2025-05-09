@@ -25,6 +25,7 @@ serve(async (req) => {
 
   try {
     console.log("Clé API SumUp disponible:", !!SUMUP_API_KEY);
+    console.log("Longueur de la clé API SumUp:", SUMUP_API_KEY.length);
     
     if (!SUMUP_API_KEY) {
       console.error("La clé API SumUp n'est pas définie");
@@ -67,25 +68,36 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
 
-    // Using Bearer token authentication for the SumUp API as per documentation
+    // According to SumUp documentation, we need to use the appropriate API endpoint with proper authentication
+    // Reference: https://developer.sumup.com/api/checkouts/create
     const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUMUP_API_KEY}`
+        "Authorization": `Bearer ${SUMUP_API_KEY}`,
+        // Adding additional headers that might be required by SumUp
+        "Accept": "application/json"
       },
       body: JSON.stringify(checkoutRequest)
     });
 
+    // Log the full response for debugging
+    console.log("SumUp API response status:", response.status, response.statusText);
+    console.log("SumUp API response headers:", JSON.stringify([...response.headers]));
+    
     const data = await response.json();
+    console.log("SumUp API response body:", JSON.stringify(data));
     
     if (!response.ok) {
       console.error("SumUp API error:", data);
-      console.error("SumUp API status:", response.status, response.statusText);
       
       let errorMessage = "Failed to create SumUp checkout";
       if (response.status === 401) {
-        errorMessage = "SumUp API authentication failed. Please verify your API key is valid.";
+        errorMessage = "SumUp API authentication failed. Please verify your API key is valid and has the correct permissions.";
+      } else if (response.status === 400) {
+        errorMessage = "Invalid request data. Please verify your checkout details.";
+      } else if (response.status === 403) {
+        errorMessage = "API key doesn't have permission to create checkouts.";
       }
       
       return new Response(

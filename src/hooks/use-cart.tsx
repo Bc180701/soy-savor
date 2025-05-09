@@ -167,6 +167,19 @@ export const useCart = create<CartStore>()(
           
           console.log("Initiating SumUp payment:", { orderId, customerEmail, total, returnUrl });
           
+          // Add more detailed logging for debugging
+          console.log("Payment request details:", {
+            orderId,
+            customerEmail,
+            total,
+            returnUrl,
+            items: items.map(i => ({
+              name: i.menuItem.name,
+              quantity: i.quantity,
+              price: i.menuItem.price
+            }))
+          });
+          
           const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
             body: {
               orderData: {
