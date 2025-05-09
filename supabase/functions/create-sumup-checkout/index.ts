@@ -7,7 +7,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 // SumUp API credentials 
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
-const SUMUP_API_KEY = "sup_sk_OzuCOouSMUuIIMs4hvmypnRUzWp6WWq";  // Updated with correct prefix format
+const SUMUP_API_KEY = "sup_sk_OzuCOouSMUuIIMs4hvmypnRUzWp6WWq";  // API key with correct sup_sk_ prefix
 
 serve(async (req) => {
   console.log("Fonction create-sumup-checkout appelée");
@@ -26,8 +26,8 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Utilisation de l'API key SumUp avec format correct:");
-    console.log("API Key format: sup_sk_XXXX (secrets masqués)");
+    console.log("Utilisation de l'API key SumUp avec format Bearer token:");
+    console.log("API Key format: Bearer sup_sk_XXXX (secrets masqués)");
     
     if (!SUMUP_API_KEY) {
       console.error("La clé API SumUp n'est pas définie");
@@ -70,14 +70,14 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
     
-    // Using API key authentication following SumUp documentation
-    console.log("Making API call to SumUp with correct Bearer token format...");
+    // Using API key authentication with correct Bearer token format as per SumUp docs
+    console.log("Making API call to SumUp with Bearer token...");
     
     const response = await fetch(SUMUP_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUMUP_API_KEY}`,
+        "Authorization": `Bearer ${SUMUP_API_KEY}`, // Correct format: Bearer sup_sk_XXX
         "Accept": "application/json"
       },
       body: JSON.stringify(checkoutRequest)
