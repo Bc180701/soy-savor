@@ -199,24 +199,13 @@ export const useCart = create<CartStore>()(
           if (!data || !data.success || !data.redirectUrl) {
             console.error('SumUp payment initialization failed:', data);
             
-            // Handle detailed error response
-            const errorMessage = data?.error || 'Erreur de communication avec SumUp';
-            const statusCode = data?.statusCode;
-            
-            let description = "Impossible de contacter le service de paiement. Veuillez réessayer.";
-            
-            if (statusCode === 401) {
-              description = "Problème d'authentification avec le service de paiement.";
-            } else if (statusCode === 400) {
-              description = "Les données de la commande sont incorrectes.";
-            } else if (data?.error) {
-              description = data.error;
-            }
+            // Use the more user-friendly display message if available
+            const errorMessage = data?.displayMessage || data?.error || 'Erreur de communication avec SumUp';
             
             toast({
               variant: "destructive",
               title: "Erreur de paiement",
-              description: description
+              description: errorMessage
             });
             
             return { 

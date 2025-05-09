@@ -5,7 +5,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-const SUMUP_API_KEY = Deno.env.get("SUMUP_API_KEY") || "";
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
 const SUMUP_CLIENT_ID = "cc_classic_UelwBCnPHLGxjz8w5l4YyCriGYy9P";
 const SUMUP_CLIENT_SECRET = "cc_sk_classic_kNIDUAjlYVYmMRsd72FN1jgp0jsdZCi4mvAudnsLcTN8DR6thy";
@@ -28,8 +27,8 @@ serve(async (req) => {
 
   try {
     console.log("Utilisation des identifiants OAuth2:");
-    console.log("Client ID disponible:", !!SUMUP_CLIENT_ID);
-    console.log("Client Secret disponible:", !!SUMUP_CLIENT_SECRET);
+    console.log("Client ID:", SUMUP_CLIENT_ID.substring(0, 5) + "...");
+    console.log("Client Secret: [HIDDEN]");
     
     if (!SUMUP_CLIENT_ID || !SUMUP_CLIENT_SECRET) {
       console.error("Les identifiants OAuth2 SumUp ne sont pas définis");
@@ -71,10 +70,12 @@ serve(async (req) => {
     };
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
-    console.log("Using SumUp API URL:", SUMUP_API_URL);
-
-    // Call SumUp API using OAuth2 Basic auth with client id and secret
+    
+    // Prepare Basic Auth credentials for OAuth2
     const credentials = btoa(`${SUMUP_CLIENT_ID}:${SUMUP_CLIENT_SECRET}`);
+    
+    // Call SumUp API using OAuth2 Basic auth with client id and secret
+    console.log("Making API call to SumUp with Basic Auth...");
     const response = await fetch(SUMUP_API_URL, {
       method: "POST",
       headers: {
@@ -87,40 +88,49 @@ serve(async (req) => {
 
     // Log the full response for debugging
     console.log("SumUp API response status:", response.status, response.statusText);
-    console.log("SumUp API response headers:", JSON.stringify([...response.headers]));
     
     // Parse response body
-    let data;
-    const responseText = await response.text();
+    let responseText = await response.text();
     console.log("SumUp API raw response body:", responseText);
     
+    let data;
     try {
       data = JSON.parse(responseText);
-      console.log("SumUp API parsed response body:", JSON.stringify(data));
+      console.log("SumUp API parsed response:", JSON.stringify(data));
     } catch (parseError) {
       console.error("Failed to parse SumUp API response:", parseError);
-      data = { error: "Invalid response format" };
+      
+      return new Response(
+        JSON.stringify({ 
+          error: "Format de réponse invalide de SumUp", 
+          details: responseText 
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
     if (!response.ok) {
       console.error("SumUp API error status:", response.status);
       console.error("SumUp API error response:", data);
       
-      let errorMessage = "Failed to create SumUp checkout";
+      let errorMessage = "Erreur lors de la création du paiement SumUp";
+      let displayMessage = "Erreur de communication avec le service de paiement.";
       
       if (response.status === 401) {
-        errorMessage = "Erreur d'authentification avec SumUp. Veuillez vérifier vos identifiants OAuth2.";
+        errorMessage = "Erreur d'authentification avec SumUp";
+        displayMessage = "Problème d'authentification avec le service de paiement. Veuillez contacter le support.";
       } else if (response.status === 400) {
-        errorMessage = "Données de commande invalides. Veuillez vérifier les détails.";
-      } else if (response.status === 403) {
-        errorMessage = "Les identifiants OAuth2 n'ont pas les permissions nécessaires.";
-      } else {
-        errorMessage = "Erreur inattendue lors de la communication avec SumUp.";
+        errorMessage = "Données de commande invalides";
+        displayMessage = "Données de commande incorrectes. Veuillez vérifier vos informations.";
+      } else if (data && data.message) {
+        errorMessage = data.message;
+        displayMessage = "Erreur SumUp: " + data.message;
       }
       
       return new Response(
         JSON.stringify({ 
-          error: errorMessage, 
+          error: errorMessage,
+          displayMessage: displayMessage,
           details: data,
           statusCode: response.status
         }),
@@ -157,7 +167,8 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: "Erreur interne du serveur", 
+        error: "Erreur lors du traitement de la demande", 
+        displayMessage: "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
         details: error.message,
         stack: error.stack
       }),

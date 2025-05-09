@@ -19,7 +19,13 @@ export function Toaster() {
           <Toast 
             key={id} 
             {...props}
-            className={variant === "success" ? "bg-green-50 border-green-200 text-green-900" : ""}
+            className={
+              variant === "success" 
+                ? "bg-green-50 border-green-200 text-green-900" 
+                : variant === "destructive"
+                ? "bg-red-50 border-red-200 text-red-900"
+                : ""
+            }
           >
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
