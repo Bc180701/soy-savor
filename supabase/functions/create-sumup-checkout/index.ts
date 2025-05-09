@@ -58,7 +58,7 @@ serve(async (req) => {
       amount: orderData.total,
       currency: "EUR",
       description: `SushiEats Commande #${orderData.orderId.slice(0, 8)}`,
-      pay_to_email: "contact@sushieats.fr", // Remplacez par votre email SumUp
+      pay_to_email: "clweb@hotmail.com", // Using your provided SumUp account email
       return_url: `${orderData.returnUrl}/compte?order=${orderData.orderId}`,
       customer_email: orderData.customerEmail,
       items: items
@@ -66,12 +66,12 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
 
-    // Utiliser l'authentification avec Bearer token pour l'API SumUp
+    // Using Bearer token authentication for the SumUp API
     const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUMUP_API_KEY}` // Assurez-vous que c'est le bon format d'authentification
+        "Authorization": `Bearer ${SUMUP_API_KEY}`
       },
       body: JSON.stringify(checkoutRequest)
     });
