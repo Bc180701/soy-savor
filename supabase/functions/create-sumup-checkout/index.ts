@@ -54,12 +54,13 @@ serve(async (req) => {
     }));
 
     // Create checkout session with SumUp API
-    // Following SumUp API documentation: https://developer.sumup.com/api/checkouts/create
+    // Documentation reference: https://developer.sumup.com/docs/api/create-checkout/
     const checkoutRequest = {
       checkout_reference: orderData.orderId,
       amount: orderData.total,
       currency: "EUR",
       description: `SushiEats Commande #${orderData.orderId.slice(0, 8)}`,
+      merchant_code: "XXXX", // This should be configured in the environment variables or otherwise obtained
       pay_to_email: "clweb@hotmail.com", // Using the provided SumUp account email
       return_url: `${orderData.returnUrl}/compte?order=${orderData.orderId}`,
       customer_email: orderData.customerEmail,
@@ -68,14 +69,12 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
 
-    // According to SumUp documentation, we need to use the appropriate API endpoint with proper authentication
-    // Reference: https://developer.sumup.com/api/checkouts/create
+    // Use the correct API endpoint and authentication method based on SumUp documentation
     const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${SUMUP_API_KEY}`,
-        // Adding additional headers that might be required by SumUp
         "Accept": "application/json"
       },
       body: JSON.stringify(checkoutRequest)
@@ -100,20 +99,30 @@ serve(async (req) => {
         errorMessage = "API key doesn't have permission to create checkouts.";
       }
       
+      // Return detailed error information to help with debugging
       return new Response(
-        JSON.stringify({ error: errorMessage, details: data }),
+        JSON.stringify({ 
+          error: errorMessage, 
+          details: data,
+          request: {
+            ...checkoutRequest,
+            // Remove sensitive information
+            pay_to_email: "[REDACTED]",
+            customer_email: "[REDACTED]"
+          }
+        }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log("SumUp checkout created successfully:", data);
 
-    // According to SumUp documentation, we need to return the checkout_reference and payment_link
+    // According to SumUp documentation, return the checkout ID and payment link
     return new Response(
       JSON.stringify({ 
         success: true, 
         checkoutId: data.id,
-        checkoutUrl: data.checkout_reference,
+        checkoutReference: data.checkout_reference,
         redirectUrl: data.payment_link
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

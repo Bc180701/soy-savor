@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, MenuItem } from '@/types';
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface CartStore {
   items: CartItem[];
@@ -180,6 +181,7 @@ export const useCart = create<CartStore>()(
             }))
           });
           
+          // Call the Edge Function with proper error handling
           const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
             body: {
               orderData: {
@@ -196,6 +198,14 @@ export const useCart = create<CartStore>()(
           
           if (error) {
             console.error('Error initiating SumUp payment:', error);
+            
+            // Display toast with error message
+            toast({
+              variant: "destructive",
+              title: "Erreur de paiement",
+              description: "Impossible de contacter le service de paiement. Veuillez réessayer."
+            });
+            
             return { 
               success: false, 
               error: error.message || 'Échec de l\'initialisation du paiement' 
@@ -205,6 +215,14 @@ export const useCart = create<CartStore>()(
           if (!data || !data.success || !data.redirectUrl) {
             console.error('SumUp payment initialization failed:', data);
             const errorMessage = data?.error || 'Échec de l\'initialisation du paiement SumUp';
+            
+            // Display toast with detailed error message
+            toast({
+              variant: "destructive",
+              title: "Erreur de paiement",
+              description: errorMessage
+            });
+            
             return { 
               success: false, 
               error: errorMessage
@@ -213,12 +231,24 @@ export const useCart = create<CartStore>()(
           
           console.log("SumUp redirect URL:", data.redirectUrl);
           
+          // Clear cart on successful payment initiation
+          // Commented out as we should only clear the cart after successful payment
+          // set({ items: [], total: 0, itemCount: 0 });
+          
           return { 
             success: true, 
             redirectUrl: data.redirectUrl 
           };
         } catch (err) {
           console.error('Error in initiateSumUpPayment:', err);
+          
+          // Display toast with error message
+          toast({
+            variant: "destructive",
+            title: "Erreur de paiement",
+            description: "Une erreur inattendue s'est produite. Veuillez réessayer."
+          });
+          
           return { 
             success: false, 
             error: err instanceof Error ? err.message : 'Une erreur est survenue' 
