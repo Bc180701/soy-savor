@@ -5,9 +5,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
+// SumUp API credentials 
+// These are test credentials - they'll need to be replaced with actual production credentials
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
-const SUMUP_CLIENT_ID = "cc_classic_UelwBCnPHLGxjz8w5l4YyCriGYy9P";
-const SUMUP_CLIENT_SECRET = "cc_sk_classic_kNIDUAjlYVYmMRsd72FN1jgp0jsdZCi4mvAudnsLcTN8DR6thy";
+const SUMUP_API_KEY = "sk_test_OzuCOouSMUuIIMs4hvmypnRUzWp6WWq";  // Using an API key authentication method
 
 serve(async (req) => {
   console.log("Fonction create-sumup-checkout appelée");
@@ -26,14 +27,13 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Utilisation des identifiants OAuth2:");
-    console.log("Client ID: cc_classic_UelwBCnPHLGxjz8w5l4YyCriGYy9P");
-    console.log("Client Secret: [HIDDEN]");
+    console.log("Utilisation de l'API key SumUp:");
+    console.log("API Key: [HIDDEN]");
     
-    if (!SUMUP_CLIENT_ID || !SUMUP_CLIENT_SECRET) {
-      console.error("Les identifiants OAuth2 SumUp ne sont pas définis");
+    if (!SUMUP_API_KEY) {
+      console.error("La clé API SumUp n'est pas définie");
       return new Response(
-        JSON.stringify({ error: "Identifiants OAuth2 SumUp non configurés" }),
+        JSON.stringify({ error: "Clé API SumUp non configurée" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -71,18 +71,14 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
     
-    // SumUp API uses OAuth2 Client Credentials with Basic Auth
-    // Format is "Basic base64(client_id:client_secret)"
-    const credentials = btoa(`${SUMUP_CLIENT_ID}:${SUMUP_CLIENT_SECRET}`);
-    
-    console.log("Making API call to SumUp with Basic Auth...");
-    console.log("Authorization header: Basic [HIDDEN]");
+    // Using API key authentication instead of OAuth
+    console.log("Making API call to SumUp with API Key Auth...");
     
     const response = await fetch(SUMUP_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Basic ${credentials}`,
+        "Authorization": `Bearer ${SUMUP_API_KEY}`,
         "Accept": "application/json"
       },
       body: JSON.stringify(checkoutRequest)
