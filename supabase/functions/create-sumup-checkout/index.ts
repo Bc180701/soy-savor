@@ -27,7 +27,7 @@ serve(async (req) => {
 
   try {
     console.log("Utilisation des identifiants OAuth2:");
-    console.log("Client ID:", SUMUP_CLIENT_ID);
+    console.log("Client ID: cc_classic_UelwBCnPHLGxjz8w5l4YyCriGYy9P");
     console.log("Client Secret: [HIDDEN]");
     
     if (!SUMUP_CLIENT_ID || !SUMUP_CLIENT_SECRET) {
@@ -56,7 +56,7 @@ serve(async (req) => {
       price: item.menuItem.price,
     }));
 
-    // Create checkout session with SumUp API using OAuth2 credentials
+    // Create checkout session with SumUp API
     // SumUp API Documentation: https://developer.sumup.com/docs/api/create-checkout/
     const checkoutRequest = {
       checkout_reference: orderData.orderId,
@@ -71,12 +71,12 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
     
-    // Prepare Basic Auth credentials for OAuth2
+    // SumUp API uses OAuth2 Client Credentials with Basic Auth
+    // Format is "Basic base64(client_id:client_secret)"
     const credentials = btoa(`${SUMUP_CLIENT_ID}:${SUMUP_CLIENT_SECRET}`);
     
-    // Call SumUp API using OAuth2 Basic auth with client id and secret
     console.log("Making API call to SumUp with Basic Auth...");
-    console.log("Authorization header:", `Basic ${credentials.substring(0, 10)}...`);
+    console.log("Authorization header: Basic [HIDDEN]");
     
     const response = await fetch(SUMUP_API_URL, {
       method: "POST",
@@ -120,6 +120,7 @@ serve(async (req) => {
       let errorMessage = "Erreur lors de la création du paiement SumUp";
       let displayMessage = "Erreur de communication avec le service de paiement.";
       
+      // Handle specific error cases
       if (response.status === 401) {
         errorMessage = "Erreur d'authentification avec SumUp";
         displayMessage = "Problème d'authentification avec le service de paiement. Veuillez contacter le support.";
@@ -160,7 +161,7 @@ serve(async (req) => {
     console.log("SumUp checkout created successfully:", data);
     console.log("Payment link:", data.payment_link);
 
-    // Return the checkout information
+    // Return the checkout information with success flag
     return new Response(
       JSON.stringify({ 
         success: true, 
