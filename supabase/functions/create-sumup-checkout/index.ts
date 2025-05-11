@@ -9,7 +9,6 @@ import { corsHeaders } from "../_shared/cors.ts";
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
 const SUMUP_API_KEY = "sup_sk_3R7zCVSBpVBgUr9VffVJq84TuzdMQdTSW";  // Secret key pour Bearer authentication
 const SUMUP_PUBLIC_KEY = "sup_pk_upzdkuSb6dGrODGaYF0ln85MMOZBQd3UV"; // Public key pour identification du checkout
-const SUMUP_MERCHANT_CODE = "MCK76924"; // Code marchand SumUp
 
 serve(async (req) => {
   console.log("Fonction create-sumup-checkout appelée");
@@ -31,7 +30,6 @@ serve(async (req) => {
     console.log("Utilisation de l'API key SumUp avec format Bearer token:");
     console.log("API Key format: Bearer sup_sk_XXXX (secrets masqués)");
     console.log("Public Key format: sup_pk_XXXX (pour identification)");
-    console.log("Merchant Code: " + SUMUP_MERCHANT_CODE);
     
     if (!SUMUP_API_KEY) {
       console.error("La clé API SumUp n'est pas définie");
@@ -52,16 +50,11 @@ serve(async (req) => {
       );
     }
 
-    // Format order items for SumUp checkout - Adding proper unit_amount as required
+    // Format order items for SumUp checkout
     const items = orderData.items.map(item => ({
       name: item.menuItem.name,
       quantity: item.quantity,
       price: item.menuItem.price,
-      reference: item.menuItem.id,
-      unit_amount: {
-        amount: (item.menuItem.price * 100).toFixed(0),  // Convert to cents and ensure it's an integer
-        currency: "EUR"
-      }
     }));
 
     // Create checkout session with SumUp API
@@ -72,7 +65,6 @@ serve(async (req) => {
       currency: "EUR",
       description: `SushiEats Commande #${orderData.orderId.slice(0, 8)}`,
       pay_to_email: "clweb@hotmail.com",
-      merchant_code: SUMUP_MERCHANT_CODE, // Ajout du code marchand
       return_url: `${orderData.returnUrl}/compte?order=${orderData.orderId}`,
       customer_email: orderData.customerEmail,
       items: items
