@@ -25,10 +25,14 @@ serve(async (req) => {
   }
 
   try {
-    if (!STRIPE_SECRET_KEY) {
-      console.error("La clé d'API Stripe n'est pas définie");
+    // Verify that we have a Stripe secret key
+    if (!STRIPE_SECRET_KEY || STRIPE_SECRET_KEY.startsWith('pk_')) {
+      console.error("La clé d'API Stripe n'est pas définie ou est une clé publique");
       return new Response(
-        JSON.stringify({ error: "Clé d'API Stripe non configurée" }),
+        JSON.stringify({ 
+          error: "Configuration Stripe incorrecte",
+          details: "La clé d'API Stripe est manquante ou est une clé publique. Veuillez configurer une clé secrète."
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
