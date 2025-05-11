@@ -16,8 +16,8 @@ import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import * as dateFns from "date-fns";
-import { fr } from "date-fns/locale";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale/fr";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import PaymentMethodDisplay from "@/components/checkout/PaymentMethodDisplay";
@@ -99,7 +99,7 @@ const Panier = () => {
     checkPromotionEligibility();
   }, [cart.total, orderType]);
 
-  const [isRedirectingToSumUp, setIsRedirectingToSumUp] = useState(false);
+  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
 
   const handleIncrement = (id: string) => {
     cart.incrementQuantity(id);
@@ -202,9 +202,9 @@ const Panier = () => {
     
     if (result.success) {
       try {
-        // Initier le paiement SumUp
-        setIsRedirectingToSumUp(true);
-        const paymentResult = await cart.initiateSumUpPayment(
+        // Initier le paiement Stripe
+        setIsRedirectingToPayment(true);
+        const paymentResult = await cart.initializeStripePayment(
           result.order.id,
           deliveryAddress?.email || session.user.email
         );
@@ -222,7 +222,7 @@ const Panier = () => {
         
         orderStore.createOrder(order);
         
-        // Rediriger vers la page de paiement SumUp
+        // Rediriger vers la page de paiement Stripe
         window.location.href = paymentResult.redirectUrl;
         return; // Arrêter l'exécution ici car nous redirigerons
       
@@ -236,7 +236,7 @@ const Panier = () => {
         });
         
         setIsProcessing(false);
-        setIsRedirectingToSumUp(false);
+        setIsRedirectingToPayment(false);
         return;
       }
     } else {
@@ -303,7 +303,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = dateFns.format(new Date(), "EEEE", { locale: fr });
+  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
 
   const renderPaymentSection = () => {
     return (
@@ -530,7 +530,7 @@ const Panier = () => {
                     variant="outline"
                     onClick={goToPreviousStep}
                     className="flex items-center gap-2"
-                    disabled={isProcessing || isRedirectingToSumUp}
+                    disabled={isProcessing || isRedirectingToPayment}
                   >
                     <ArrowLeft className="h-4 w-4" /> Retour
                   </Button>
@@ -539,12 +539,12 @@ const Panier = () => {
                     <Button 
                       className="bg-gold-600 hover:bg-gold-700"
                       onClick={handleCheckout}
-                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct) || isRedirectingToSumUp}
+                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct) || isRedirectingToPayment}
                     >
                       {isProcessing ? 
                         "Traitement en cours..." : 
-                        isRedirectingToSumUp ? 
-                        "Redirection vers SumUp..." : 
+                        isRedirectingToPayment ? 
+                        "Redirection vers Stripe..." : 
                         "Payer maintenant"}
                     </Button>
                   ) : (

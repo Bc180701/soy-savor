@@ -1,21 +1,27 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem, MenuItem } from '@/types';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { MenuItem, CartItem } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CartStore {
   items: CartItem[];
-  addItem: (menuItem: MenuItem, quantity: number, specialInstructions?: string) => void;
+  total: number;
+  add: (item: CartItem) => void;
+  update: (id: string, item: CartItem) => void;
   removeItem: (id: string) => void;
   incrementQuantity: (id: string) => void;
   decrementQuantity: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  updateInstructions: (id: string, instructions: string) => void;
   clearCart: () => void;
-  initiateSumUpPayment: (orderId: string, customerEmail: string) => Promise<{ success: boolean; redirectUrl?: string; error?: string }>;
-  total: number;
-  itemCount: number;
+  calculateTotal: () => number;
+  initializeCart: () => void;
+  initializeFromLocalStorage: () => void;
+  initializeStripePayment: (orderId: string, customerEmail: string) => Promise<{
+    success: boolean;
+    redirectUrl?: string;
+    checkoutId?: string;
+    error?: string;
+  }>;
 }
 
 export const useCart = create<CartStore>()(
@@ -23,226 +29,153 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       total: 0,
-      itemCount: 0,
-      
-      addItem: (menuItem, quantity, specialInstructions) => {
-        set((state) => {
-          const existingItemIndex = state.items.findIndex(
-            (item) => item.menuItem.id === menuItem.id
-          );
 
-          let updatedItems;
-          
-          if (existingItemIndex !== -1) {
-            // L'item existe déjà, on met à jour la quantité
-            updatedItems = [...state.items];
-            updatedItems[existingItemIndex].quantity += quantity;
-            
-            if (specialInstructions) {
-              updatedItems[existingItemIndex].specialInstructions = specialInstructions;
-            }
-          } else {
-            // Nouvel item
-            updatedItems = [
-              ...state.items,
-              { menuItem, quantity, specialInstructions },
-            ];
-          }
-          
-          const total = updatedItems.reduce(
-            (sum, item) => sum + item.menuItem.price * item.quantity,
-            0
-          );
-          
-          const itemCount = updatedItems.reduce(
-            (count, item) => count + item.quantity, 
-            0
-          );
-          
-          return { items: updatedItems, total, itemCount };
+      // Add an item to the cart
+      add: (item) => {
+        const { items } = get();
+        const existingItemIndex = items.findIndex(
+          (cartItem) => cartItem.menuItem.id === item.menuItem.id
+        );
+
+        if (existingItemIndex > -1) {
+          // If item already exists, update quantity
+          const newItems = [...items];
+          newItems[existingItemIndex].quantity += item.quantity;
+          set({ 
+            items: newItems,
+            total: get().calculateTotal(),
+          });
+        } else {
+          // Add new item
+          set({ 
+            items: [...items, item],
+            total: get().calculateTotal() + item.menuItem.price * item.quantity,
+          });
+        }
+      },
+
+      // Update an item in the cart
+      update: (id, updatedItem) => {
+        const { items } = get();
+        const newItems = items.map(item => 
+          item.menuItem.id === id ? updatedItem : item
+        );
+        
+        set({ 
+          items: newItems,
+          total: get().calculateTotal(),
         });
       },
-      
+
+      // Remove an item from the cart
       removeItem: (id) => {
-        set((state) => {
-          const updatedItems = state.items.filter((item) => item.menuItem.id !== id);
-          
-          const total = updatedItems.reduce(
-            (sum, item) => sum + item.menuItem.price * item.quantity,
-            0
-          );
-          
-          const itemCount = updatedItems.reduce(
-            (count, item) => count + item.quantity, 
-            0
-          );
-          
-          return { items: updatedItems, total, itemCount };
+        const { items } = get();
+        set({ 
+          items: items.filter((item) => item.menuItem.id !== id),
+          total: get().calculateTotal(),
         });
       },
-      
+
+      // Increment the quantity of an item
       incrementQuantity: (id) => {
-        set((state) => {
-          const updatedItems = state.items.map((item) =>
-            item.menuItem.id === id 
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          );
-          
-          const total = updatedItems.reduce(
-            (sum, item) => sum + item.menuItem.price * item.quantity,
-            0
-          );
-          
-          const itemCount = updatedItems.reduce(
-            (count, item) => count + item.quantity, 
-            0
-          );
-          
-          return { items: updatedItems, total, itemCount };
+        const { items } = get();
+        const newItems = items.map((item) => {
+          if (item.menuItem.id === id) {
+            return { ...item, quantity: item.quantity + 1 };
+          }
+          return item;
+        });
+
+        set({ 
+          items: newItems,
+          total: get().calculateTotal(),
         });
       },
-      
+
+      // Decrement the quantity of an item
       decrementQuantity: (id) => {
-        set((state) => {
-          const updatedItems = state.items.map((item) =>
-            item.menuItem.id === id && item.quantity > 1
-              ? { ...item, quantity: item.quantity - 1 }
-              : item
-          );
-          
-          const total = updatedItems.reduce(
-            (sum, item) => sum + item.menuItem.price * item.quantity,
-            0
-          );
-          
-          const itemCount = updatedItems.reduce(
-            (count, item) => count + item.quantity, 
-            0
-          );
-          
-          return { items: updatedItems, total, itemCount };
+        const { items } = get();
+        const newItems = items.map((item) => {
+          if (item.menuItem.id === id && item.quantity > 1) {
+            return { ...item, quantity: item.quantity - 1 };
+          }
+          return item;
+        });
+
+        set({ 
+          items: newItems,
+          total: get().calculateTotal(),
         });
       },
-      
-      updateQuantity: (id, quantity) => {
-        set((state) => {
-          const updatedItems = state.items.map((item) =>
-            item.menuItem.id === id ? { ...item, quantity } : item
-          );
-          
-          const total = updatedItems.reduce(
-            (sum, item) => sum + item.menuItem.price * item.quantity,
-            0
-          );
-          
-          const itemCount = updatedItems.reduce(
-            (count, item) => count + item.quantity, 
-            0
-          );
-          
-          return { items: updatedItems, total, itemCount };
-        });
-      },
-      
-      updateInstructions: (id, instructions) => {
-        set((state) => {
-          const updatedItems = state.items.map((item) =>
-            item.menuItem.id === id ? { ...item, specialInstructions: instructions } : item
-          );
-          return { items: updatedItems };
-        });
-      },
-      
+
+      // Clear the entire cart
       clearCart: () => {
-        set({ items: [], total: 0, itemCount: 0 });
+        set({ items: [], total: 0 });
       },
-      
-      initiateSumUpPayment: async (orderId, customerEmail) => {
+
+      // Calculate the total price of the cart
+      calculateTotal: () => {
+        const { items } = get();
+        return items.reduce(
+          (total, item) => total + item.menuItem.price * item.quantity,
+          0
+        );
+      },
+
+      // Initialize the cart
+      initializeCart: () => {
+        const total = get().calculateTotal();
+        set({ total });
+      },
+
+      // Initialize cart from local storage
+      initializeFromLocalStorage: () => {
+        // If hydration fails, we need to recalculate the total
+        const total = get().calculateTotal();
+        set({ total });
+      },
+
+      // Initiate Stripe payment
+      initializeStripePayment: async (orderId, customerEmail) => {
         try {
           const { items, total } = get();
           
-          // Use the application's origin URL for the return URL
-          const returnUrl = window.location.origin;
-          
-          console.log("Initiating SumUp payment with OAuth2:", { orderId, customerEmail, total, returnUrl });
-          
-          // Call the Edge Function with proper error handling
-          const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
+          // Get origin for return URL
+          const origin = window.location.origin;
+
+          const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
             body: {
               orderData: {
-                orderId,
                 items,
                 total,
+                orderId,
                 customerEmail,
-                returnUrl
+                returnUrl: origin,
               }
             }
           });
-          
-          console.log("SumUp payment response:", data, error);
-          
-          if (error) {
-            console.error('Error from Edge Function:', error);
-            toast({
-              variant: "destructive",
-              title: "Erreur de paiement",
-              description: "Impossible de contacter le service de paiement. Veuillez réessayer."
-            });
-            
+
+          if (error || !data.success) {
+            console.error("Erreur lors de l'initialisation du paiement Stripe:", error || data.error);
             return { 
               success: false, 
-              error: error.message || 'Échec de l\'initialisation du paiement' 
+              error: error?.message || data?.error || "Erreur lors de l'initialisation du paiement"
             };
           }
-          
-          if (!data || !data.success || !data.redirectUrl) {
-            console.error('SumUp payment initialization failed:', data);
-            
-            // Use the more user-friendly display message if available
-            const errorMessage = data?.displayMessage || data?.error || 'Erreur de communication avec SumUp';
-            
-            toast({
-              variant: "destructive",
-              title: "Erreur de paiement",
-              description: errorMessage
-            });
-            
-            return { 
-              success: false, 
-              error: errorMessage
-            };
-          }
-          
-          console.log("SumUp redirect URL:", data.redirectUrl);
-          
-          toast({
-            variant: "success",
-            title: "Paiement initialisé",
-            description: "Vous allez être redirigé vers la page de paiement."
-          });
-          
-          // Don't clear cart yet - we'll do that after successful payment confirmation
-      
-          return { 
-            success: true, 
-            redirectUrl: data.redirectUrl 
+
+          return {
+            success: true,
+            redirectUrl: data.redirectUrl,
+            checkoutId: data.checkoutId,
           };
-        } catch (err) {
-          console.error('Error in initiateSumUpPayment:', err);
-          
-          toast({
-            variant: "destructive",
-            title: "Erreur de paiement",
-            description: "Une erreur inattendue s'est produite. Veuillez réessayer."
-          });
-          
+        } catch (error) {
+          console.error("Exception lors de l'initialisation du paiement Stripe:", error);
           return { 
             success: false, 
-            error: err instanceof Error ? err.message : 'Une erreur est survenue' 
+            error: error instanceof Error ? error.message : "Erreur inconnue"
           };
         }
-      },
+      }
     }),
     {
       name: 'sushieats-cart',
