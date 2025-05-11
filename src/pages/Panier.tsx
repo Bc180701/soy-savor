@@ -17,7 +17,7 @@ import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import SumUpCardWidget from "@/components/checkout/SumUpCardWidget";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import * as dateFns from "date-fns";
 import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -342,7 +342,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
+  const formattedCurrentDay = dateFns.format(new Date(), "EEEE", { locale: fr });
 
   return (
     <div className="container mx-auto py-24 px-4">
