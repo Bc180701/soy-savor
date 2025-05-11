@@ -1,15 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import addMinutes from "date-fns/addMinutes";
-import set from "date-fns/set";
-import isAfter from "date-fns/isAfter";
-import isBefore from "date-fns/isBefore";
-import format from "date-fns/format";
-import fr from "date-fns/locale/fr";
+import { addMinutes } from "date-fns";
+import { set } from "date-fns";
+import { isAfter } from "date-fns";
+import { isBefore } from "date-fns";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface TimeSlot {
   id: string;
