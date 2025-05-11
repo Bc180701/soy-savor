@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -18,8 +17,8 @@ import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import SumUpCardWidget from "@/components/checkout/SumUpCardWidget";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { format } from "date-fns/esm";
+import { fr } from "date-fns/locale/fr";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -397,7 +396,7 @@ const Panier = () => {
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-lg font-medium">{item.menuItem.name}</h3>
                                 <p className="text-gold-600 font-semibold mt-1">
-                                  {item.menuItem.price.toFixed(2)} €
+                                  {item.menuItem.price.toFixed(2)} ��
                                 </p>
                                 {item.specialInstructions && (
                                   <p className="text-sm text-gray-500 mt-1 italic">
