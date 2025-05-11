@@ -5,11 +5,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-// SumUp API credentials 
 const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
-const SUMUP_API_KEY = "sup_sk_3R7zCVSBpVBgUr9VffVJq84TuzdMQdTSW";  // Secret key pour Bearer authentication
-const SUMUP_PUBLIC_KEY = "sup_pk_upzdkuSb6dGrODGaYF0ln85MMOZBQd3UV"; // Public key pour identification du checkout
-const SUMUP_MERCHANT_CODE = "MCK76924"; // Code marchand SumUp
+const SUMUP_CLIENT_ID = "cc_classic_UelwBCnPHLGxjz8w5l4YyCriGYy9P";
+const SUMUP_CLIENT_SECRET = "cc_sk_classic_kNIDUAjlYVYmMRsd72FN1jgp0jsdZCi4mvAudnsLcTN8DR6thy";
 
 serve(async (req) => {
   console.log("Fonction create-sumup-checkout appelée");
@@ -28,15 +26,14 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Utilisation de l'API key SumUp avec format Bearer token:");
-    console.log("API Key format: Bearer sup_sk_XXXX (secrets masqués)");
-    console.log("Public Key format: sup_pk_XXXX (pour identification)");
-    console.log("Merchant Code: " + SUMUP_MERCHANT_CODE);
+    console.log("Utilisation des identifiants OAuth2:");
+    console.log("Client ID:", SUMUP_CLIENT_ID);
+    console.log("Client Secret: [HIDDEN]");
     
-    if (!SUMUP_API_KEY) {
-      console.error("La clé API SumUp n'est pas définie");
+    if (!SUMUP_CLIENT_ID || !SUMUP_CLIENT_SECRET) {
+      console.error("Les identifiants OAuth2 SumUp ne sont pas définis");
       return new Response(
-        JSON.stringify({ error: "Clé API SumUp non configurée" }),
+        JSON.stringify({ error: "Identifiants OAuth2 SumUp non configurés" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -57,11 +54,9 @@ serve(async (req) => {
       name: item.menuItem.name,
       quantity: item.quantity,
       price: item.menuItem.price,
-      unit_amount: item.menuItem.price * 100, // SumUp requires amount in cents
-      reference: item.menuItem.id,
     }));
 
-    // Create checkout session with SumUp API
+    // Create checkout session with SumUp API using OAuth2 credentials
     // SumUp API Documentation: https://developer.sumup.com/docs/api/create-checkout/
     const checkoutRequest = {
       checkout_reference: orderData.orderId,
@@ -69,7 +64,6 @@ serve(async (req) => {
       currency: "EUR",
       description: `SushiEats Commande #${orderData.orderId.slice(0, 8)}`,
       pay_to_email: "clweb@hotmail.com",
-      merchant_code: SUMUP_MERCHANT_CODE, // Ajout du code marchand
       return_url: `${orderData.returnUrl}/compte?order=${orderData.orderId}`,
       customer_email: orderData.customerEmail,
       items: items
@@ -77,14 +71,18 @@ serve(async (req) => {
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
     
-    // Using API key authentication with correct Bearer token format as per SumUp docs
-    console.log("Making API call to SumUp with Bearer token...");
+    // Prepare Basic Auth credentials for OAuth2
+    const credentials = btoa(`${SUMUP_CLIENT_ID}:${SUMUP_CLIENT_SECRET}`);
+    
+    // Call SumUp API using OAuth2 Basic auth with client id and secret
+    console.log("Making API call to SumUp with Basic Auth...");
+    console.log("Authorization header:", `Basic ${credentials.substring(0, 10)}...`);
     
     const response = await fetch(SUMUP_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUMUP_API_KEY}`, // Format correct: Bearer sup_sk_XXX
+        "Authorization": `Basic ${credentials}`,
         "Accept": "application/json"
       },
       body: JSON.stringify(checkoutRequest)
@@ -122,7 +120,6 @@ serve(async (req) => {
       let errorMessage = "Erreur lors de la création du paiement SumUp";
       let displayMessage = "Erreur de communication avec le service de paiement.";
       
-      // Handle specific error cases
       if (response.status === 401) {
         errorMessage = "Erreur d'authentification avec SumUp";
         displayMessage = "Problème d'authentification avec le service de paiement. Veuillez contacter le support.";
@@ -163,7 +160,7 @@ serve(async (req) => {
     console.log("SumUp checkout created successfully:", data);
     console.log("Payment link:", data.payment_link);
 
-    // Return the checkout information with success flag
+    // Return the checkout information
     return new Response(
       JSON.stringify({ 
         success: true, 

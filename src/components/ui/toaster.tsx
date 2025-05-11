@@ -23,7 +23,7 @@ export function Toaster() {
               variant === "success" 
                 ? "bg-green-50 border-green-200 text-green-900" 
                 : variant === "destructive"
-                ? "bg-red-50 border-red-200 text-red-900 border-2"
+                ? "bg-red-50 border-red-200 text-red-900"
                 : ""
             }
           >
