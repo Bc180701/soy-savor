@@ -16,8 +16,8 @@ import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
-import fr from "date-fns/locale/fr";
+import { format } from "date-fns/esm";
+import { fr } from "date-fns/locale/fr";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import PaymentMethodDisplay from "@/components/checkout/PaymentMethodDisplay";

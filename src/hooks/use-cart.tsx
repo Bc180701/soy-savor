@@ -7,9 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 interface CartStore {
   items: CartItem[];
   total: number;
-  itemCount: number; // Added this property to fix the error
+  itemCount: number;
   add: (item: CartItem) => void;
-  addItem: (menuItem: MenuItem, quantity: number) => void; // Added this method
+  addItem: (menuItem: MenuItem, quantity: number) => void;
   update: (id: string, item: CartItem) => void;
   removeItem: (id: string) => void;
   incrementQuantity: (id: string) => void;
@@ -31,7 +31,7 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       total: 0,
-      itemCount: 0, // Initialize the itemCount property
+      itemCount: 0,
 
       // Add an item to the cart
       add: (item) => {
@@ -195,6 +195,8 @@ export const useCart = create<CartStore>()(
                 orderId,
                 customerEmail,
                 returnUrl: origin,
+                deliveryFee: 0, // Set appropriate delivery fee if needed
+                orderType: 'pickup' // Set appropriate order type
               }
             }
           });
