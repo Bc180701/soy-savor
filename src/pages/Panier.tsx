@@ -17,8 +17,8 @@ import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import SumUpCardWidget from "@/components/checkout/SumUpCardWidget";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import { format } from "date-fns/format";
+import { fr } from "date-fns/locale/fr";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
