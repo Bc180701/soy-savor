@@ -7,180 +7,132 @@ import { supabase } from "@/integrations/supabase/client";
 import * as dateFns from "date-fns";
 import { fr } from "date-fns/locale";
 
-interface TimeSlot {
-  id: string;
-  time: string;
-  available: boolean;
-  dateTime: Date;
-}
-
 interface TimeSlotSelectorProps {
-  onSelect: (timeSlot: string) => void;
+  onSelect: (time: string) => void;
   orderType: "delivery" | "pickup";
 }
 
 const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTimeSlots = async () => {
-      setLoading(true);
-      
-      try {
-        const { data, error } = await supabase
-          .from('time_slots')
-          .select('*')
-          .eq('available', true)
-          .order('time', { ascending: true });
-        
-        if (error) {
-          console.error("Error fetching time slots:", error);
-          return;
-        }
-        
-        // Générer des créneaux à partir de l'heure actuelle
-        const now = new Date();
-        const currentHour = now.getHours();
-        const currentMinute = now.getMinutes();
-        
-        // Déterminer le délai de préparation en minutes
-        const preparationDelay = orderType === "delivery" ? 45 : 30; // 45 min pour livraison, 30 min pour retrait
-        
-        // Heure minimale de retrait/livraison
-        const minPickupTime = dateFns.addMinutes(now, preparationDelay);
-        
-        // Arrondir à la prochaine demi-heure
-        const roundedMinutes = currentMinute < 30 ? 30 : 0;
-        const roundedHour = currentMinute < 30 ? currentHour : currentHour + 1;
-        
-        // Créer un tableau pour stocker les créneaux
-        const slotsToGenerate = [];
-        
-        // Heure d'ouverture et de fermeture du restaurant (pour aujourd'hui)
-        const openingHour = 11; // 11h00
-        const closingHour = 22; // 22h00
-        
-        // Plage horaire indisponible (14h00 - 18h00)
-        const unavailableStartHour = 14;
-        const unavailableEndHour = 18;
-        
-        // Déterminer l'heure de départ pour les créneaux
-        let startHour = roundedHour;
-        let startMinute = roundedMinutes;
-        
-        // Si l'heure minimale de retrait/livraison est après l'heure arrondie, utiliser l'heure minimale
-        const roundedDateTime = dateFns.set(now, { hours: roundedHour, minutes: roundedMinutes, seconds: 0, milliseconds: 0 });
-        if (dateFns.isAfter(minPickupTime, roundedDateTime)) {
-          startHour = minPickupTime.getHours();
-          startMinute = Math.ceil(minPickupTime.getMinutes() / 30) * 30;
-          if (startMinute === 60) {
-            startHour += 1;
-            startMinute = 0;
-          }
-        }
-        
-        // Si l'heure de départ est avant l'heure d'ouverture, utiliser l'heure d'ouverture
-        if (startHour < openingHour) {
-          startHour = openingHour;
-          startMinute = 0;
-        }
-        
-        // Si l'heure de départ est après l'heure de fermeture, pas de créneaux disponibles
-        if (startHour >= closingHour) {
-          setTimeSlots([]);
-          setLoading(false);
-          return;
-        }
-        
-        // Générer les créneaux par intervalles de 30 minutes
-        for (let h = startHour; h < closingHour; h++) {
-          // Vérifier si l'heure actuelle est dans la plage horaire indisponible (14h-18h)
-          if (h >= unavailableStartHour && h < unavailableEndHour) {
-            continue; // Sauter cette heure
-          }
-          
-          // Pour la première heure, commencer à partir de la minute calculée
-          const minutesToInclude = h === startHour ? [startMinute] : [0, 30];
-          
-          for (const m of minutesToInclude) {
-            if (h === startHour && m < startMinute) continue;
-            
-            const slotTime = new Date();
-            slotTime.setHours(h, m, 0, 0);
-            
-            // Vérifier si le créneau est dans le futur et avant la fermeture
-            if (dateFns.isAfter(slotTime, now) && dateFns.isBefore(slotTime, dateFns.set(now, { hours: closingHour, minutes: 0 }))) {
-              const formattedTime = dateFns.format(slotTime, 'HH:mm');
-              const readableTime = dateFns.format(slotTime, 'HH:mm', { locale: fr });
-              
-              slotsToGenerate.push({
-                id: `slot-${h}-${m}`,
-                time: readableTime,
-                available: true,
-                dateTime: slotTime
-              });
-            }
-          }
-        }
-        
-        setTimeSlots(slotsToGenerate);
-      } catch (error) {
-        console.error("Error in time slot fetch:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchTimeSlots();
+    generateAvailableTimeSlots();
   }, [orderType]);
 
-  const handleTimeSelect = (timeId: string) => {
-    setSelectedSlot(timeId);
-    const slot = timeSlots.find(s => s.id === timeId);
-    if (slot) {
-      onSelect(slot.time);
+  const handleTimeSelect = (value: string) => {
+    setSelectedTime(value);
+    onSelect(value);
+  };
+
+  const generateAvailableTimeSlots = async () => {
+    setIsLoading(true);
+    try {
+      const now = new Date();
+      let startTime: Date;
+      let endTime: Date;
+      const timeSlots: string[] = [];
+      const intervalMinutes = 15;
+
+      // Définir les heures d'ouverture
+      const openingHour = 11; // 11h00
+      const closingHour = 22; // 22h00 (10PM)
+      
+      // Si l'heure actuelle + 30 minutes (délai minimum) est avant l'heure d'ouverture, commencer à l'heure d'ouverture
+      const minimumPreparationTime = orderType === "pickup" ? 30 : 45; // 30 min pour emporter, 45 min pour livraison
+      
+      // Calculer l'heure de début
+      const earliestPossibleTime = dateFns.addMinutes(now, minimumPreparationTime);
+      
+      // Vérifier si nous sommes avant l'heure d'ouverture
+      const todayOpeningTime = dateFns.set(new Date(), { hours: openingHour, minutes: 0, seconds: 0 });
+      if (dateFns.isAfter(todayOpeningTime, earliestPossibleTime)) {
+        startTime = todayOpeningTime;
+      } else {
+        // Arrondir à l'intervalle de 15 minutes suivant
+        const minutes = Math.ceil(earliestPossibleTime.getMinutes() / intervalMinutes) * intervalMinutes;
+        startTime = dateFns.set(new Date(earliestPossibleTime), {
+          minutes: minutes,
+          seconds: 0,
+          milliseconds: 0
+        });
+      }
+      
+      // L'heure de fermeture pour aujourd'hui
+      endTime = dateFns.set(new Date(), { hours: closingHour, minutes: 0, seconds: 0 });
+      
+      // Récupérer les créneaux déjà réservés pour aujourd'hui
+      const { data: reservedSlots } = await supabase
+        .from('orders')
+        .select('scheduled_for')
+        .gte('scheduled_for', new Date().toISOString())
+        .lt('scheduled_for', new Date(new Date().setHours(23, 59, 59, 999)).toISOString());
+        
+      // Créer un objet pour compter les réservations par créneau
+      const slotsCount: Record<string, number> = {};
+      reservedSlots?.forEach(order => {
+        const time = new Date(order.scheduled_for).toTimeString().substring(0, 5);
+        slotsCount[time] = (slotsCount[time] || 0) + 1;
+      });
+      
+      // Maximum 4 commandes par créneau de 15 minutes
+      const maxOrdersPerSlot = 4;
+      
+      // Générer les créneaux disponibles
+      let currentTime = new Date(startTime);
+      while (dateFns.isAfter(endTime, currentTime) || dateFns.isBefore(endTime, dateFns.set(currentTime, {hours: 0, minutes: 0}))) {
+        const timeString = dateFns.format(currentTime, 'HH:mm');
+        const nextTimeString = dateFns.format(dateFns.addMinutes(currentTime, intervalMinutes), 'HH:mm');
+        
+        // Vérifier si le créneau n'est pas complet
+        if ((slotsCount[timeString] || 0) < maxOrdersPerSlot) {
+          timeSlots.push(timeString);
+        }
+        
+        currentTime = dateFns.addMinutes(currentTime, intervalMinutes);
+      }
+      
+      setAvailableTimeSlots(timeSlots);
+    } catch (error) {
+      console.error("Erreur lors de la génération des créneaux horaires", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">
-        {orderType === "delivery" ? "Heure de livraison souhaitée" : "Heure de retrait souhaitée"}
-      </h3>
-      
-      {loading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      ) : (
-        <RadioGroup
-          value={selectedSlot}
-          onValueChange={handleTimeSelect}
-          className="grid grid-cols-2 sm:grid-cols-3 gap-3"
-        >
-          {timeSlots.map((slot) => (
-            <div 
-              key={slot.id} 
-              className="border rounded-md p-3 hover:bg-gray-50 flex items-center space-x-2"
-            >
-              <RadioGroupItem value={slot.id} id={slot.id} />
-              <Label htmlFor={slot.id}>{slot.time}</Label>
-            </div>
-          ))}
-        </RadioGroup>
-      )}
-      
-      {timeSlots.length === 0 && !loading && (
-        <div className="text-center py-4 text-gray-500">
-          {orderType === "delivery" 
-            ? "Aucun créneau de livraison disponible pour aujourd'hui" 
-            : "Aucun créneau de retrait disponible pour aujourd'hui"}
-        </div>
-      )}
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold mb-4">
+          Choisissez un horaire {orderType === "delivery" ? "de livraison" : "de retrait"}
+        </h2>
+        
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : availableTimeSlots.length > 0 ? (
+          <RadioGroup value={selectedTime} onValueChange={handleTimeSelect} className="space-y-2">
+            {availableTimeSlots.map((time) => (
+              <div key={time} className="flex items-center space-x-2">
+                <RadioGroupItem value={time} id={`time-${time}`} />
+                <Label htmlFor={`time-${time}`} className="cursor-pointer">
+                  {time}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        ) : (
+          <div className="text-center py-6 text-gray-500">
+            Aucun créneau disponible pour aujourd'hui.
+            <br />
+            Veuillez réessayer demain.
+          </div>
+        )}
+      </div>
     </div>
   );
 };
