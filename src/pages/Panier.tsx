@@ -16,8 +16,8 @@ import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import * as dateFns from "date-fns";
+import * as dateFnsFr from "date-fns/locale/fr";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
@@ -302,7 +302,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
+  const formattedCurrentDay = dateFns.format(new Date(), "EEEE", { locale: dateFnsFr.fr });
 
   return (
     <div className="container mx-auto py-24 px-4">
