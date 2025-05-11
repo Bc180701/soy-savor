@@ -4,7 +4,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addMinutes, isAfter, isBefore, set } from "date-fns";
+import { addMinutes, format, isAfter, isBefore, set } from "date-fns";
 import { fr } from "date-fns/locale";
 
 interface TimeSlot {
