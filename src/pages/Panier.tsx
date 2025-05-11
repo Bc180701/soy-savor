@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,8 @@ import { useNavigate } from "react-router-dom";
 import { createOrder } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import * as dateFns from "date-fns";
+import * as dateFnsLocale from "date-fns/locale";
 
 import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/DeliveryAddressForm";
