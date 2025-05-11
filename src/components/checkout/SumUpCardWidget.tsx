@@ -64,7 +64,9 @@ const SumUpCardWidget = ({ checkoutId, onSuccess, onError }: SumUpCardWidgetProp
           }
         },
         showSubmitButton: true,
-        locale: "fr-FR"
+        locale: "fr-FR",
+        // Identifiant merchant (optionnel si déjà configuré côté serveur)
+        merchantCode: "MCK76924"
       });
     } catch (error) {
       console.error("Erreur lors de l'initialisation du widget SumUp:", error);
@@ -80,7 +82,7 @@ const SumUpCardWidget = ({ checkoutId, onSuccess, onError }: SumUpCardWidgetProp
 
   return (
     <div className="space-y-6">
-      <div ref={cardContainerRef} className="border rounded-lg p-4 bg-white shadow-sm"></div>
+      <div ref={cardContainerRef} className="border rounded-lg p-4 bg-white shadow-sm min-h-[200px]"></div>
       
       <button 
         onClick={handleSubmit}
