@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, MenuItem } from '@/types';
@@ -14,13 +13,7 @@ interface CartStore {
   updateQuantity: (id: string, quantity: number) => void;
   updateInstructions: (id: string, instructions: string) => void;
   clearCart: () => void;
-  initiateSumUpPayment: (orderId: string, customerEmail: string) => Promise<{ 
-    success: boolean; 
-    redirectUrl?: string;
-    checkoutId?: string;
-    publicKey?: string;
-    error?: string 
-  }>;
+  initiateSumUpPayment: (orderId: string, customerEmail: string) => Promise<{ success: boolean; redirectUrl?: string; error?: string }>;
   total: number;
   itemCount: number;
 }
@@ -221,22 +214,19 @@ export const useCart = create<CartStore>()(
             };
           }
           
-          console.log("SumUp checkout ID:", data.checkoutId);
           console.log("SumUp redirect URL:", data.redirectUrl);
           
           toast({
             variant: "success",
             title: "Paiement initialisé",
-            description: "Votre paiement est en cours d'initialisation."
+            description: "Vous allez être redirigé vers la page de paiement."
           });
           
           // Don't clear cart yet - we'll do that after successful payment confirmation
       
           return { 
             success: true, 
-            redirectUrl: data.redirectUrl,
-            checkoutId: data.checkoutId,
-            publicKey: data.publicKey
+            redirectUrl: data.redirectUrl 
           };
         } catch (err) {
           console.error('Error in initiateSumUpPayment:', err);
