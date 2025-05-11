@@ -7,13 +7,14 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft, CreditCard } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useOrder } from "@/hooks/use-order";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { createOrder } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/DeliveryAddressForm";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
+import SumUpCardWidget from "@/components/checkout/SumUpCardWidget";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
@@ -28,6 +29,7 @@ enum CheckoutStep {
   DELIVERY_ADDRESS = 'delivery-address',
   TIME_SLOT = 'time-slot',
   PAYMENT = 'payment',
+  EMBEDDED_PAYMENT = 'embedded-payment',
 }
 
 // Type pour les produits offerts
@@ -56,6 +58,11 @@ const Panier = () => {
   const [isPromotionApplicable, setIsPromotionApplicable] = useState(false);
   const [selectedFreeProduct, setSelectedFreeProduct] = useState<string | null>(null);
   
+  // États pour le paiement SumUp
+  const [sumupCheckoutId, setSumupCheckoutId] = useState<string | null>(null);
+  const [sumupPublicKey, setSumupPublicKey] = useState<string | null>(null);
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+
   // Liste des produits offerts
   const freeProducts: FreeProduct[] = [
     { id: "salade-chou", name: "Salade de chou", icon: <Salad className="h-5 w-5 text-green-600" /> },
@@ -139,6 +146,41 @@ const Panier = () => {
     });
   };
 
+  const handlePaymentSuccess = () => {
+    toast({
+      title: "Paiement réussi",
+      description: "Votre commande a été validée avec succès !",
+      variant: "success"
+    });
+    
+    // Enregistrer les informations de commande dans le stockage local
+    const order = {
+      items: cart.items,
+      total: cart.total + deliveryFee + (cart.total * 0.1),
+      date: new Date().toISOString()
+    };
+    
+    orderStore.createOrder(order);
+    
+    // Vider le panier
+    cart.clearCart();
+    
+    // Rediriger vers la page de confirmation
+    navigate(`/compte?order=${createdOrderId}`);
+  };
+  
+  const handlePaymentError = (error: any) => {
+    console.error("Erreur de paiement SumUp:", error);
+    
+    toast({
+      title: "Erreur de paiement",
+      description: "Une erreur s'est produite lors du paiement. Veuillez réessayer.",
+      variant: "destructive"
+    });
+    
+    setIsProcessing(false);
+  };
+
   const handleCheckout = async () => {
     // Vérifier si la promotion est applicable et qu'un produit gratuit est sélectionné
     if (isPromotionApplicable && !selectedFreeProduct) {
@@ -200,11 +242,13 @@ const Panier = () => {
     });
     
     if (result.success) {
+      setCreatedOrderId(result.order?.id || null);
+      
       try {
         // Initier le paiement SumUp
         setIsRedirectingToSumUp(true);
         const paymentResult = await cart.initiateSumUpPayment(
-          result.order.id,
+          result.order!.id,
           deliveryAddress?.email || session.user.email
         );
         
@@ -212,18 +256,14 @@ const Panier = () => {
           throw new Error(paymentResult.error || "Échec de l'initialisation du paiement");
         }
         
-        // Enregistrer les informations de commande dans le stockage local
-        const order = {
-          items: cart.items,
-          total: cart.total + deliveryFee + (cart.total * 0.1),
-          date: new Date().toISOString()
-        };
+        // Stocker l'ID de checkout SumUp pour le widget intégré
+        setSumupCheckoutId(paymentResult.checkoutId || null);
+        setSumupPublicKey(paymentResult.publicKey || null);
         
-        orderStore.createOrder(order);
-        
-        // Rediriger vers la page de paiement SumUp
-        window.location.href = paymentResult.redirectUrl;
-        return; // Arrêter l'exécution ici car nous redirigerons
+        // Passage à l'étape de paiement intégré
+        setCurrentStep(CheckoutStep.EMBEDDED_PAYMENT);
+        setIsRedirectingToSumUp(false);
+        setIsProcessing(false);
       
       } catch (error) {
         console.error("Erreur lors de l'initialisation du paiement:", error);
@@ -522,7 +562,7 @@ const Panier = () => {
                 </div>
               )}
               
-              {currentStep !== CheckoutStep.CART && (
+              {currentStep !== CheckoutStep.CART && currentStep !== CheckoutStep.EMBEDDED_PAYMENT && (
                 <div className="flex justify-between mt-6">
                   <Button
                     type="button"
@@ -543,8 +583,8 @@ const Panier = () => {
                       {isProcessing ? 
                         "Traitement en cours..." : 
                         isRedirectingToSumUp ? 
-                        "Redirection vers SumUp..." : 
-                        "Payer maintenant"}
+                        "Préparation du paiement..." : 
+                        "Continuer au paiement"}
                     </Button>
                   ) : (
                     <Button
@@ -555,6 +595,19 @@ const Panier = () => {
                       Continuer <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   )}
+                </div>
+              )}
+              
+              {currentStep === CheckoutStep.EMBEDDED_PAYMENT && (
+                <div className="flex justify-between mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCurrentStep(CheckoutStep.PAYMENT)}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Retour au récapitulatif
+                  </Button>
                 </div>
               )}
             </div>

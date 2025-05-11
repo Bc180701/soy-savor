@@ -50,25 +50,29 @@ serve(async (req) => {
       );
     }
 
-    // Format order items for SumUp checkout - Added reference field (required by SumUp)
+    // Format order items for SumUp checkout using the correct format with unit_amount
+    // SumUp API v0.1 requires unit_amount in cents (integer)
     const items = orderData.items.map(item => ({
       name: item.menuItem.name,
       quantity: item.quantity,
-      price: item.menuItem.price,
-      reference: item.menuItem.id // Ajout du champ reference requis par SumUp
+      unit_amount: Math.round(item.menuItem.price * 100), // Conversion en centimes (entier)
+      reference: item.menuItem.id
     }));
+
+    console.log("Items formatés pour SumUp:", JSON.stringify(items));
 
     // Create checkout session with SumUp API
     // SumUp API Documentation: https://developer.sumup.com/docs/api/create-checkout/
     const checkoutRequest = {
       checkout_reference: orderData.orderId,
-      amount: parseFloat(orderData.total.toFixed(2)), // Ensure amount is properly formatted
+      amount: parseFloat(orderData.total.toFixed(2)), // Total amount (redundant with items but required)
       currency: "EUR",
       description: `SushiEats Commande #${orderData.orderId.slice(0, 8)}`,
       pay_to_email: "clweb@hotmail.com",
       return_url: `${orderData.returnUrl}/compte?order=${orderData.orderId}`,
       customer_email: orderData.customerEmail,
-      items: items
+      items: items,
+      merchant_code: SUMUP_PUBLIC_KEY // Ajout de la clé publique pour l'identification
     };
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
@@ -159,13 +163,14 @@ serve(async (req) => {
     console.log("SumUp checkout created successfully:", data);
     console.log("Payment link:", data.payment_link);
 
-    // Return the checkout information with success flag
+    // Return the checkout information with success flag and include checkout_id for widget
     return new Response(
       JSON.stringify({ 
         success: true, 
         checkoutId: data.id,
         checkoutReference: data.checkout_reference || orderData.orderId,
-        redirectUrl: data.payment_link
+        redirectUrl: data.payment_link,
+        publicKey: SUMUP_PUBLIC_KEY
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
