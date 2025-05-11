@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft, CreditCard } from "lucide-react";
+import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useOrder } from "@/hooks/use-order";
 import { useToast } from "@/components/ui/use-toast";
@@ -20,6 +20,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import PaymentMethodDisplay from "@/components/checkout/PaymentMethodDisplay";
 
 // Enum for checkout steps
 enum CheckoutStep {
@@ -304,6 +305,16 @@ const Panier = () => {
   // Formatage de la date du jour
   const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
 
+  const renderPaymentSection = () => {
+    return (
+      <div>
+        <h4 className="text-lg font-medium">Paiement</h4>
+        <PaymentMethodDisplay />
+        <p className="mt-2 text-sm text-gray-600">Paiement sécurisé en ligne uniquement</p>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto py-24 px-4">
       <motion.div
@@ -506,18 +517,8 @@ const Panier = () => {
                       </p>
                     </div>
                     
-                    <div>
-                      <h4 className="text-lg font-medium">Paiement</h4>
-                      <div className="mt-2 flex items-center bg-gray-50 p-3 rounded-md border">
-                        <CreditCard className="mr-2 text-gold-600" />
-                        <p>Carte bancaire</p>
-                        <div className="ml-auto flex space-x-2">
-                          <img src="/visa.svg" alt="Visa" className="h-6" />
-                          <img src="/mastercard.svg" alt="Mastercard" className="h-6" />
-                        </div>
-                      </div>
-                      <p className="mt-2 text-sm text-gray-600">Paiement sécurisé en ligne uniquement</p>
-                    </div>
+                    {/* Updated Payment section with our new component */}
+                    {renderPaymentSection()}
                   </div>
                 </div>
               )}
