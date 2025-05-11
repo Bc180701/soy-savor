@@ -4,8 +4,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { addMinutes as addMins, format as formatDate, set as setDate, isAfter as isDateAfter, isBefore as isDateBefore } from "date-fns";
-import { fr as frLocale } from "date-fns/locale";
+import { addMinutes, format, set, isAfter, isBefore } from "date-fns";
+import fr from "date-fns/locale/fr";
 
 interface TimeSlot {
   id: string;
@@ -49,7 +49,7 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
         const preparationDelay = orderType === "delivery" ? 45 : 30; // 45 min pour livraison, 30 min pour retrait
         
         // Heure minimale de retrait/livraison
-        const minPickupTime = addMins(now, preparationDelay);
+        const minPickupTime = addMinutes(now, preparationDelay);
         
         // Arrondir à la prochaine demi-heure
         const roundedMinutes = currentMinute < 30 ? 30 : 0;
@@ -71,8 +71,8 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
         let startMinute = roundedMinutes;
         
         // Si l'heure minimale de retrait/livraison est après l'heure arrondie, utiliser l'heure minimale
-        const roundedDateTime = setDate(now, { hours: roundedHour, minutes: roundedMinutes, seconds: 0, milliseconds: 0 });
-        if (isDateAfter(minPickupTime, roundedDateTime)) {
+        const roundedDateTime = set(now, { hours: roundedHour, minutes: roundedMinutes, seconds: 0, milliseconds: 0 });
+        if (isAfter(minPickupTime, roundedDateTime)) {
           startHour = minPickupTime.getHours();
           startMinute = Math.ceil(minPickupTime.getMinutes() / 30) * 30;
           if (startMinute === 60) {
@@ -111,9 +111,9 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
             slotTime.setHours(h, m, 0, 0);
             
             // Vérifier si le créneau est dans le futur et avant la fermeture
-            if (isDateAfter(slotTime, now) && isDateBefore(slotTime, setDate(now, { hours: closingHour, minutes: 0 }))) {
-              const formattedTime = formatDate(slotTime, 'HH:mm');
-              const readableTime = formatDate(slotTime, 'HH:mm', { locale: frLocale });
+            if (isAfter(slotTime, now) && isBefore(slotTime, set(now, { hours: closingHour, minutes: 0 }))) {
+              const formattedTime = format(slotTime, 'HH:mm');
+              const readableTime = format(slotTime, 'HH:mm', { locale: fr });
               
               slotsToGenerate.push({
                 id: `slot-${h}-${m}`,
