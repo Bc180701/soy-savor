@@ -5,8 +5,8 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale/fr";
+import * as dateFns from "date-fns";
+import * as dateFnsLocales from "date-fns/locale";
 import { FreeProduct } from "@/components/checkout/FreeProductSelector";
 
 interface CartSummaryProps {
@@ -38,7 +38,7 @@ const CartSummary = ({
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
+  const formattedCurrentDay = dateFns.format(new Date(), "EEEE", { locale: dateFnsLocales.fr });
 
   return (
     <div>
