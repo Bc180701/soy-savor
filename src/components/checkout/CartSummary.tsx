@@ -1,12 +1,11 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import format from "date-fns/format";
-import { fr } from "date-fns/locale/fr";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { FreeProduct } from "@/components/checkout/FreeProductSelector";
 
 interface CartSummaryProps {
@@ -115,4 +114,3 @@ const CartSummary = ({
 };
 
 export default CartSummary;
-

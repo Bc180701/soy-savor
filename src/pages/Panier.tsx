@@ -10,7 +10,7 @@ import { createOrder } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale/fr";
+import { fr } from "date-fns/locale";
 
 import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/DeliveryAddressForm";
