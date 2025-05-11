@@ -7,7 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 interface CartStore {
   items: CartItem[];
   total: number;
+  itemCount: number; // Added this property to fix the error
   add: (item: CartItem) => void;
+  addItem: (menuItem: MenuItem, quantity: number) => void; // Added this method
   update: (id: string, item: CartItem) => void;
   removeItem: (id: string) => void;
   incrementQuantity: (id: string) => void;
@@ -29,6 +31,7 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       total: 0,
+      itemCount: 0, // Initialize the itemCount property
 
       // Add an item to the cart
       add: (item) => {
@@ -44,12 +47,46 @@ export const useCart = create<CartStore>()(
           set({ 
             items: newItems,
             total: get().calculateTotal(),
+            itemCount: get().items.reduce((total, item) => total + item.quantity, 0)
           });
         } else {
           // Add new item
           set({ 
             items: [...items, item],
             total: get().calculateTotal() + item.menuItem.price * item.quantity,
+            itemCount: get().items.length + 1
+          });
+        }
+      },
+      
+      // Add a menu item to the cart
+      addItem: (menuItem, quantity) => {
+        const { items } = get();
+        const cartItem: CartItem = {
+          menuItem,
+          quantity,
+          specialInstructions: ''
+        };
+        
+        const existingItemIndex = items.findIndex(
+          (item) => item.menuItem.id === menuItem.id
+        );
+
+        if (existingItemIndex > -1) {
+          // If item already exists, update quantity
+          const newItems = [...items];
+          newItems[existingItemIndex].quantity += quantity;
+          set({ 
+            items: newItems,
+            total: get().calculateTotal(),
+            itemCount: get().items.reduce((total, item) => total + item.quantity, 0)
+          });
+        } else {
+          // Add new item
+          set({ 
+            items: [...items, cartItem],
+            total: get().calculateTotal() + menuItem.price * quantity,
+            itemCount: get().items.reduce((total, item) => total + item.quantity, 0) + quantity
           });
         }
       },
@@ -64,15 +101,18 @@ export const useCart = create<CartStore>()(
         set({ 
           items: newItems,
           total: get().calculateTotal(),
+          itemCount: newItems.reduce((total, item) => total + item.quantity, 0)
         });
       },
 
       // Remove an item from the cart
       removeItem: (id) => {
         const { items } = get();
+        const newItems = items.filter((item) => item.menuItem.id !== id);
         set({ 
-          items: items.filter((item) => item.menuItem.id !== id),
+          items: newItems,
           total: get().calculateTotal(),
+          itemCount: newItems.reduce((total, item) => total + item.quantity, 0)
         });
       },
 
@@ -89,6 +129,7 @@ export const useCart = create<CartStore>()(
         set({ 
           items: newItems,
           total: get().calculateTotal(),
+          itemCount: newItems.reduce((total, item) => total + item.quantity, 0)
         });
       },
 
@@ -105,12 +146,13 @@ export const useCart = create<CartStore>()(
         set({ 
           items: newItems,
           total: get().calculateTotal(),
+          itemCount: newItems.reduce((total, item) => total + item.quantity, 0)
         });
       },
 
       // Clear the entire cart
       clearCart: () => {
-        set({ items: [], total: 0 });
+        set({ items: [], total: 0, itemCount: 0 });
       },
 
       // Calculate the total price of the cart
@@ -125,14 +167,16 @@ export const useCart = create<CartStore>()(
       // Initialize the cart
       initializeCart: () => {
         const total = get().calculateTotal();
-        set({ total });
+        const itemCount = get().items.reduce((count, item) => count + item.quantity, 0);
+        set({ total, itemCount });
       },
 
       // Initialize cart from local storage
       initializeFromLocalStorage: () => {
         // If hydration fails, we need to recalculate the total
         const total = get().calculateTotal();
-        set({ total });
+        const itemCount = get().items.reduce((count, item) => count + item.quantity, 0);
+        set({ total, itemCount });
       },
 
       // Initiate Stripe payment

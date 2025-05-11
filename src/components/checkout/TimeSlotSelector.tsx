@@ -4,7 +4,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { addMinutes, format, isAfter, isBefore, set } from "date-fns";
+import * as dateFns from "date-fns";
 import { fr } from "date-fns/locale";
 
 interface TimeSlotSelectorProps {
@@ -43,16 +43,16 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
       const minimumPreparationTime = orderType === "pickup" ? 30 : 45; // 30 min pour emporter, 45 min pour livraison
       
       // Calculer l'heure de début
-      const earliestPossibleTime = addMinutes(now, minimumPreparationTime);
+      const earliestPossibleTime = dateFns.addMinutes(now, minimumPreparationTime);
       
       // Vérifier si nous sommes avant l'heure d'ouverture
-      const todayOpeningTime = set(new Date(), { hours: openingHour, minutes: 0, seconds: 0 });
-      if (isAfter(todayOpeningTime, earliestPossibleTime)) {
+      const todayOpeningTime = dateFns.set(new Date(), { hours: openingHour, minutes: 0, seconds: 0 });
+      if (dateFns.isAfter(todayOpeningTime, earliestPossibleTime)) {
         startTime = todayOpeningTime;
       } else {
         // Arrondir à l'intervalle de 15 minutes suivant
         const minutes = Math.ceil(earliestPossibleTime.getMinutes() / intervalMinutes) * intervalMinutes;
-        startTime = set(new Date(earliestPossibleTime), {
+        startTime = dateFns.set(new Date(earliestPossibleTime), {
           minutes: minutes,
           seconds: 0,
           milliseconds: 0
@@ -60,7 +60,7 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
       }
       
       // L'heure de fermeture pour aujourd'hui
-      endTime = set(new Date(), { hours: closingHour, minutes: 0, seconds: 0 });
+      endTime = dateFns.set(new Date(), { hours: closingHour, minutes: 0, seconds: 0 });
       
       // Récupérer les créneaux déjà réservés pour aujourd'hui
       const { data: reservedSlots } = await supabase
@@ -81,16 +81,16 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
       
       // Générer les créneaux disponibles
       let currentTime = new Date(startTime);
-      while (isAfter(endTime, currentTime) || isBefore(endTime, set(currentTime, {hours: 0, minutes: 0}))) {
-        const timeString = format(currentTime, 'HH:mm');
-        const nextTimeString = format(addMinutes(currentTime, intervalMinutes), 'HH:mm');
+      while (dateFns.isAfter(endTime, currentTime) || dateFns.isBefore(endTime, dateFns.set(currentTime, {hours: 0, minutes: 0}))) {
+        const timeString = dateFns.format(currentTime, 'HH:mm');
+        const nextTimeString = dateFns.format(dateFns.addMinutes(currentTime, intervalMinutes), 'HH:mm');
         
         // Vérifier si le créneau n'est pas complet
         if ((slotsCount[timeString] || 0) < maxOrdersPerSlot) {
           timeSlots.push(timeString);
         }
         
-        currentTime = addMinutes(currentTime, intervalMinutes);
+        currentTime = dateFns.addMinutes(currentTime, intervalMinutes);
       }
       
       setAvailableTimeSlots(timeSlots);
