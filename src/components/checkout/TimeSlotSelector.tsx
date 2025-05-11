@@ -4,8 +4,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { addMinutes, set, isAfter, isBefore, format } from "date-fns/esm";
-import { fr } from "date-fns/locale/fr";
+import { addMinutes, set, isAfter, isBefore, format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface TimeSlotSelectorProps {
   onSelect: (time: string) => void;
