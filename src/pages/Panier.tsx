@@ -17,7 +17,7 @@ import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale/fr";
+import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserContactInfo } from "@/services/profileService";
@@ -277,7 +277,7 @@ const Panier = () => {
       );
     }
 
-    return items.map((item: CartItem) => (
+    return items.map((item) => (
       <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex items-center border-b py-4">
         {item.menuItem.imageUrl && (
           <img
