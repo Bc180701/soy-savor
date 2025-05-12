@@ -1,97 +1,88 @@
 
-import { useState, useEffect } from "react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Truck, InfoIcon } from "lucide-react";
-import { calculateDeliveryFee, getDeliveryLocations, checkPostalCodeDelivery } from "@/services/deliveryService";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ShoppingBag, Truck } from "lucide-react";
 
 interface DeliveryMethodProps {
-  subtotal: number;
-  onMethodChange: (method: "delivery" | "pickup", fee: number) => void;
+  defaultValue?: "delivery" | "pickup";
+  onChange: (value: "delivery" | "pickup") => void;
 }
 
-const DeliveryMethod = ({ subtotal, onMethodChange }: DeliveryMethodProps) => {
-  const [method, setMethod] = useState<"delivery" | "pickup">("pickup");
-  const [deliveryFee, setDeliveryFee] = useState(0);
-  const [locations, setLocations] = useState<{city: string, postalCode: string}[]>([]);
-
-  useEffect(() => {
-    const fetchLocations = async () => {
-      const locationsData = await getDeliveryLocations();
-      setLocations(locationsData);
-    };
-    
-    fetchLocations();
-  }, []);
-
-  useEffect(() => {
-    // Calculate delivery fee based on subtotal
-    const fee = method === "delivery" ? calculateDeliveryFee(subtotal) : 0;
-    setDeliveryFee(fee);
-    onMethodChange(method, fee);
-  }, [method, subtotal, onMethodChange]);
+const DeliveryMethod = ({ defaultValue = "delivery", onChange }: DeliveryMethodProps) => {
+  const handleSelect = (method: "delivery" | "pickup") => {
+    onChange(method);
+  };
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Mode de réception</h3>
-      
-      <RadioGroup
-        value={method}
-        onValueChange={(value: "delivery" | "pickup") => setMethod(value)}
-        className="space-y-3"
-      >
-        <div className="flex items-start space-x-2 p-3 border rounded-md hover:bg-gray-50">
-          <RadioGroupItem value="pickup" id="pickup" className="mt-1" />
-          <div className="flex-1">
-            <Label htmlFor="pickup" className="font-medium">Retrait en magasin</Label>
-            <p className="text-sm text-gray-500 mt-1">
-              Venez retirer votre commande directement à notre restaurant
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start space-x-2 p-3 border rounded-md hover:bg-gray-50">
-          <RadioGroupItem value="delivery" id="delivery" className="mt-1" />
-          <div className="flex-1">
-            <div className="flex items-center">
-              <Label htmlFor="delivery" className="font-medium">Livraison à domicile</Label>
-              <Truck className="h-4 w-4 ml-2 text-akane-600" />
+      <h3 className="text-lg font-medium">Mode de livraison</h3>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Card
+          className={`flex-1 p-4 cursor-pointer border-2 transition-all ${
+            defaultValue === "delivery"
+              ? "border-gold-500 bg-gold-50"
+              : "border-gray-200 hover:border-gray-300"
+          }`}
+          onClick={() => handleSelect("delivery")}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-2 rounded-full ${
+                defaultValue === "delivery"
+                  ? "bg-gold-100"
+                  : "bg-gray-100"
+              }`}
+            >
+              <Truck
+                className={`h-5 w-5 ${
+                  defaultValue === "delivery"
+                    ? "text-gold-500"
+                    : "text-gray-500"
+                }`}
+              />
             </div>
-            <p className="text-sm text-gray-500 mt-1">
-              Nous livrons votre commande à votre adresse
-            </p>
-            {method === "delivery" && (
-              <div className="mt-2 text-akane-600 font-medium">
-                Frais de livraison: {deliveryFee.toFixed(2)} €
-                {subtotal >= 30 && (
-                  <span className="block text-green-600 text-sm">Livraison gratuite pour les commandes de plus de 30€ !</span>
-                )}
-              </div>
-            )}
+            <div>
+              <h4 className="font-medium">Livraison à domicile</h4>
+              <p className="text-sm text-gray-500">
+                Livraison en 30-45 minutes environ
+              </p>
+            </div>
           </div>
-        </div>
-      </RadioGroup>
+        </Card>
 
-      {method === "delivery" && (
-        <Alert className="bg-blue-50">
-          <InfoIcon className="h-4 w-4 text-blue-500" />
-          <AlertDescription>
-            {locations.length > 0 ? (
-              <>
-                <p className="font-medium mb-2">Zones de livraison disponibles :</p>
-                <ul className="mt-1 text-sm list-disc list-inside grid grid-cols-1 md:grid-cols-2 gap-1">
-                  {locations.map((loc, index) => (
-                    <li key={index}>{loc.city} ({loc.postalCode})</li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p>Chargement des zones de livraison...</p>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
+        <Card
+          className={`flex-1 p-4 cursor-pointer border-2 transition-all ${
+            defaultValue === "pickup"
+              ? "border-gold-500 bg-gold-50"
+              : "border-gray-200 hover:border-gray-300"
+          }`}
+          onClick={() => handleSelect("pickup")}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-2 rounded-full ${
+                defaultValue === "pickup"
+                  ? "bg-gold-100"
+                  : "bg-gray-100"
+              }`}
+            >
+              <ShoppingBag
+                className={`h-5 w-5 ${
+                  defaultValue === "pickup"
+                    ? "text-gold-500"
+                    : "text-gray-500"
+                }`}
+              />
+            </div>
+            <div>
+              <h4 className="font-medium">À emporter</h4>
+              <p className="text-sm text-gray-500">
+                Prêt en 15-20 minutes environ
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };

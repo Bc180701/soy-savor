@@ -68,7 +68,13 @@ serve(async (req) => {
     // Initialiser Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    // Client pour authentification utilisateur (si disponible)
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    
+    // Client avec rôle de service pour les opérations de base de données (bypass RLS)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Authentification de l'utilisateur (optionnelle)
     let userId: string | undefined;
@@ -157,7 +163,7 @@ serve(async (req) => {
       success_url: orderData.successUrl,
       cancel_url: orderData.cancelUrl,
       metadata: {
-        user_id: userId,
+        user_id: userId || 'guest',
         order_type: orderData.orderType,
         scheduled_for: orderData.scheduledFor,
         customer_notes: orderData.customerNotes || '',
@@ -167,10 +173,10 @@ serve(async (req) => {
     });
 
     // Créer la commande avec un statut de paiement "pending"
-    const { data: orderRecord, error: orderError } = await supabase
+    const { data: orderRecord, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
-        user_id: userId,
+        user_id: userId, // null si invité
         subtotal: orderData.subtotal,
         tax: orderData.tax,
         delivery_fee: orderData.deliveryFee,
@@ -187,7 +193,8 @@ serve(async (req) => {
         delivery_city: orderData.deliveryCity,
         delivery_postal_code: orderData.deliveryPostalCode,
         customer_notes: orderData.customerNotes,
-        stripe_session_id: session.id
+        stripe_session_id: session.id,
+        is_guest_order: userId ? false : true // Marquer comme commande invité si aucun userId
       })
       .select('id')
       .single();
@@ -197,7 +204,7 @@ serve(async (req) => {
     } else {
       // Ajouter les articles de la commande
       for (const item of orderData.items) {
-        await supabase
+        await supabaseAdmin
           .from('order_items')
           .insert({
             order_id: orderRecord.id,
@@ -208,9 +215,6 @@ serve(async (req) => {
           });
       }
     }
-
-    // Mettre en place un webhook pour mettre à jour le statut de la commande après paiement réussi
-    // Note: Dans une implémentation complète, vous devriez configurer un webhook Stripe pour recevoir les événements de paiement
     
     // Renvoyer l'URL de la session
     return new Response(

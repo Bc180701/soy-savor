@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatEuro } from "@/utils/formatters";
 
 interface OrdersAccountingViewProps {
   orders: Order[];
@@ -56,6 +57,13 @@ const OrdersAccountingView = ({
     }
   };
 
+  const getClientTypeLabel = (order: Order) => {
+    if (!order.userId) {
+      return "Invité";
+    }
+    return "Client";
+  };
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Vue Comptable ({orders.length})</h2>
@@ -72,6 +80,7 @@ const OrdersAccountingView = ({
                 <TableHead className="p-2 text-left border">ID</TableHead>
                 <TableHead className="p-2 text-left border">Date</TableHead>
                 <TableHead className="p-2 text-left border">Type</TableHead>
+                <TableHead className="p-2 text-left border">Client</TableHead>
                 <TableHead className="p-2 text-left border">Total</TableHead>
                 <TableHead className="p-2 text-left border">Statut</TableHead>
                 <TableHead className="p-2 text-left border">Actions</TableHead>
@@ -86,7 +95,8 @@ const OrdersAccountingView = ({
                     {order.orderType === 'delivery' ? 'Livraison' : 
                      order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}
                   </TableCell>
-                  <TableCell className="p-2 border">{order.total.toFixed(2)} €</TableCell>
+                  <TableCell className="p-2 border">{getClientTypeLabel(order)}</TableCell>
+                  <TableCell className="p-2 border">{formatEuro(order.total)}</TableCell>
                   <TableCell className="p-2 border">{getStatusBadge(order.status)}</TableCell>
                   <TableCell className="p-2 border flex gap-2">
                     <Button 

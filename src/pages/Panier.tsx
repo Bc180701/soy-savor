@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { formatEuro } from "@/utils/setupStorage";
+import { formatEuro } from "@/utils/formatters"; // Changement de l'import
 import { useToast } from "@/hooks/use-toast";
 import { CartItem } from "@/types";
 import { createOrder } from "@/services/orderService";
@@ -17,7 +17,8 @@ import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns/format";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -44,7 +45,7 @@ interface DeliveryInfo {
 }
 
 const Panier = () => {
-  const { items, subtotal, removeItem, updateQuantity, clearCart } = useCart();
+  const { items, total, removeItem, updateQuantity, clearCart } = useCart();
   const { toast } = useToast();
   const TAX_RATE = 0.1; // 10% TVA
   const DELIVERY_FEE = 3.5; // 3.50€ frais de livraison
@@ -60,9 +61,10 @@ const Panier = () => {
     allergies: []
   });
   
+  const subtotal = total; // Utiliser total de useCart
   const tax = subtotal * TAX_RATE;
   const deliveryFee = deliveryInfo.orderType === "delivery" ? DELIVERY_FEE : 0;
-  const total = subtotal + tax + deliveryFee;
+  const orderTotal = subtotal + tax + deliveryFee;
   
   // État pour gérer les allergies sélectionnées
   const allergyOptions = [
@@ -171,7 +173,7 @@ const Panier = () => {
           subtotal,
           tax,
           deliveryFee,
-          total,
+          total: orderTotal,
           orderType: deliveryInfo.orderType,
           clientName: deliveryInfo.name,
           clientEmail: deliveryInfo.email,
@@ -321,8 +323,8 @@ const Panier = () => {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6 space-y-6">
         {/* Mode de livraison */}
         <DeliveryMethod
-          selectedMode={deliveryInfo.orderType}
-          onSelect={handleOrderTypeChange}
+          defaultValue={deliveryInfo.orderType}
+          onChange={handleOrderTypeChange}
         />
         
         {/* Informations personnelles */}
@@ -367,20 +369,50 @@ const Panier = () => {
         
         {/* Adresse de livraison */}
         {deliveryInfo.orderType === "delivery" && (
-          <DeliveryAddressForm
-            street={deliveryInfo.street || ""}
-            city={deliveryInfo.city || ""}
-            postalCode={deliveryInfo.postalCode || ""}
-            onStreetChange={(street) => setDeliveryInfo(prev => ({ ...prev, street }))}
-            onCityChange={(city) => setDeliveryInfo(prev => ({ ...prev, city }))}
-            onPostalCodeChange={(postalCode) => setDeliveryInfo(prev => ({ ...prev, postalCode }))}
-          />
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Adresse de livraison</h3>
+            
+            <div>
+              <Label htmlFor="street">Adresse *</Label>
+              <Input
+                id="street"
+                value={deliveryInfo.street || ""}
+                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, street: e.target.value }))}
+                placeholder="123 rue de Paris"
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="city">Ville *</Label>
+                <Input
+                  id="city"
+                  value={deliveryInfo.city || ""}
+                  onChange={(e) => setDeliveryInfo(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Paris"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="postalCode">Code postal *</Label>
+                <Input
+                  id="postalCode"
+                  value={deliveryInfo.postalCode || ""}
+                  onChange={(e) => setDeliveryInfo(prev => ({ ...prev, postalCode: e.target.value }))}
+                  placeholder="75000"
+                  required
+                />
+              </div>
+            </div>
+          </div>
         )}
         
         {/* Heure de livraison/retrait */}
         <TimeSlotSelector 
           orderType={deliveryInfo.orderType}
           onSelect={handleTimeSelect}
+          selectedTime={deliveryInfo.pickupTime}
         />
         
         {/* Instructions de livraison */}
@@ -545,7 +577,7 @@ const Panier = () => {
           )}
           <div className="flex justify-between font-bold text-lg mt-4">
             <span>Total</span>
-            <span>{formatEuro(total)}</span>
+            <span>{formatEuro(orderTotal)}</span>
           </div>
         </div>
       </div>
@@ -559,6 +591,9 @@ const Panier = () => {
             <Label htmlFor="card">Carte Bancaire</Label>
           </div>
         </RadioGroup>
+        <p className="mt-4 text-sm text-gray-500">
+          Vous pouvez commander en tant qu'invité sans avoir à créer de compte.
+        </p>
       </div>
       
       {/* Navigation */}
@@ -602,7 +637,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = format(new Date(), "EEEE");
+  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
 
   return (
     <div className="container mx-auto py-24 px-4">
