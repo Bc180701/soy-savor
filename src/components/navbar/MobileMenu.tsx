@@ -50,15 +50,6 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMen
     onClose();
   };
   
-  const handleLogoutClick = async () => {
-    try {
-      await handleLogout();
-      onClose();
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion (menu mobile):", error);
-    }
-  };
-  
   return (
     <AnimatePresence>
       <motion.div
@@ -105,7 +96,10 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMen
                 )}
                 <Button
                   className="text-xl py-3 justify-start border-b border-gray-100 text-gray-800 hover:text-gold-500 bg-transparent"
-                  onClick={handleLogoutClick}
+                  onClick={() => {
+                    handleLogout();
+                    onClose();
+                  }}
                 >
                   Se déconnecter
                 </Button>

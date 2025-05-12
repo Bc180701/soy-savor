@@ -5,7 +5,6 @@ import { ShoppingCart, User, LogOut, Shield } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
 
 interface UserActionsProps {
   user: any;
@@ -15,7 +14,6 @@ interface UserActionsProps {
 const UserActions = ({ user, handleLogout }: UserActionsProps) => {
   const cart = useCart();
   const [isAdmin, setIsAdmin] = useState(false);
-  const { toast } = useToast();
   
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -40,19 +38,6 @@ const UserActions = ({ user, handleLogout }: UserActionsProps) => {
     
     checkAdminStatus();
   }, [user]);
-  
-  const handleLogoutClick = async () => {
-    try {
-      await handleLogout();
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion (UserActions):", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la déconnexion",
-      });
-    }
-  };
   
   return (
     <div className="hidden md:flex items-center space-x-4">
@@ -82,7 +67,7 @@ const UserActions = ({ user, handleLogout }: UserActionsProps) => {
             variant="ghost"
             size="icon"
             className="text-gray-800 hover:text-gold-500 hover:bg-gray-100"
-            onClick={handleLogoutClick}
+            onClick={handleLogout}
           >
             <LogOut size={20} />
           </Button>

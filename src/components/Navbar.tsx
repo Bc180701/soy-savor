@@ -55,34 +55,20 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error("Erreur de déconnexion:", error);
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Une erreur est survenue lors de la déconnexion",
-        });
-      } else {
-        toast({
-          title: "Déconnexion réussie",
-          description: "Vous avez été déconnecté avec succès",
-        });
-        
-        // Ajout d'un court délai pour permettre à l'état de se mettre à jour
-        setTimeout(() => {
-          navigate("/");
-        }, 100);
-      }
-    } catch (error) {
-      console.error("Exception lors de la déconnexion:", error);
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Une erreur inattendue est survenue lors de la déconnexion",
+        description: "Une erreur est survenue lors de la déconnexion",
       });
+    } else {
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès",
+      });
+      navigate("/");
     }
   };
 

@@ -1,477 +1,730 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useCart } from '@/hooks/useCart';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { Separator } from "@/components/ui/separator"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
-import { ArrowLeft, ArrowRight, CheckCircle2, MapPin, Plus, Minus, Trash2 } from 'lucide-react';
-import { TimeSlotSelector } from '@/components/checkout/TimeSlotSelector';
-import { OrderSummary } from '@/components/checkout/OrderSummary';
-import { DeliveryAddressForm } from '@/components/checkout/DeliveryAddressForm';
-import { PaymentForm } from '@/components/checkout/PaymentForm';
-import { useUser } from '@/hooks/useUser';
-import { supabase } from '@/integrations/supabase/client';
-import { Icons } from "@/components/icons"
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useCart } from "@/hooks/use-cart";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { formatEuro } from "@/utils/formatters";
+import { useToast } from "@/hooks/use-toast";
+import { CartItem } from "@/types";
+import { createOrder } from "@/services/orderService";
+import { X, Trash, ArrowRight, Loader2 } from "lucide-react";
+import DeliveryAddressForm from "@/components/checkout/DeliveryAddressForm";
+import DeliveryMethod from "@/components/checkout/DeliveryMethod";
+import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { getUserContactInfo } from "@/services/profileService";
 
-interface CartItem {
-  id: string;
+// Enum pour les étapes du checkout
+enum CheckoutStep {
+  Cart,
+  DeliveryDetails,
+  Payment
+}
+
+// Interface pour les informations de livraison
+interface DeliveryInfo {
+  orderType: "delivery" | "pickup";
   name: string;
-  price: number;
-  imageUrl: string;
-  quantity: number;
+  email: string;
+  phone: string;
+  street?: string;
+  city?: string;
+  postalCode?: string;
+  pickupTime?: string;
+  deliveryInstructions?: string;
+  notes?: string;
+  allergies: string[];
 }
 
 const Panier = () => {
-  const cart = useCart();
-  const navigate = useNavigate();
+  const { items, total, removeItem, updateQuantity, clearCart } = useCart();
   const { toast } = useToast();
-  const { user, isLoading: userLoading } = useUser();
-  const [step, setStep] = useState(1);
-  const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup' | 'dinein'>('delivery');
-  const [deliveryTime, setDeliveryTime] = useState<string | null>(null);
-  const [address, setAddress] = useState<{ street: string; city: string; postalCode: string; } | null>(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAddressFormVisible, setIsAddressFormVisible] = useState(false);
-  const [newAddress, setNewAddress] = useState({
-    street: '',
-    city: '',
-    postalCode: '',
+  const TAX_RATE = 0.1; // 10% TVA
+  const DELIVERY_FEE = 3.5; // 3.50€ frais de livraison
+
+  const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
+  const [loading, setLoading] = useState(false);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
+    orderType: "delivery",
+    name: "",
+    email: "",
+    phone: "",
+    allergies: []
   });
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
+  
+  // Check if user is logged in
   useEffect(() => {
-    if (paymentSuccess && orderId) {
-      toast({
-        title: "Paiement réussi!",
-        description: "Votre commande a été validée avec succès.",
-      });
-      cart.clearCart();
-      navigate(`/order-confirmation/${orderId}`);
-    }
-  }, [paymentSuccess, orderId, navigate, cart, toast]);
+    const checkLoginStatus = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsLoggedIn(!!data.session);
+      
+      // If user is logged in, prefetch their contact information
+      if (data.session) {
+        fetchUserContactInfo();
+      }
+    };
+    
+    checkLoginStatus();
+  }, []);
   
-  const handleAddressSubmit = (data: { street: string; city: string; postalCode: string; }) => {
-    setAddress(data);
-    setIsAddressFormVisible(false);
+  // Fetch user contact information if logged in
+  const fetchUserContactInfo = async () => {
+    setLoadingUserProfile(true);
+    try {
+      const contactInfo = await getUserContactInfo();
+      if (contactInfo.name || contactInfo.email || contactInfo.phone) {
+        setDeliveryInfo(prev => ({
+          ...prev,
+          name: contactInfo.name || prev.name,
+          email: contactInfo.email || prev.email,
+          phone: contactInfo.phone || prev.phone
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    } finally {
+      setLoadingUserProfile(false);
+    }
   };
   
-  const handleCreateOrder = async () => {
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Vous devez être connecté",
-        description: "Veuillez vous connecter pour passer commande.",
-      });
-      navigate('/login');
-      return;
+  const subtotal = total; // Utiliser total de useCart
+  const tax = subtotal * TAX_RATE;
+  const deliveryFee = deliveryInfo.orderType === "delivery" ? DELIVERY_FEE : 0;
+  const orderTotal = subtotal + tax + deliveryFee;
+  
+  // État pour gérer les allergies sélectionnées
+  const allergyOptions = [
+    { id: "gluten", name: "Gluten", icon: <Salad className="h-4 w-4" /> },
+    { id: "crustaces", name: "Crustacés", icon: <Fish className="h-4 w-4" /> },
+    { id: "eggs", name: "Œufs", icon: <Banana className="h-4 w-4" /> },
+    { id: "fish", name: "Poisson", icon: <Fish className="h-4 w-4" /> },
+    { id: "peanuts", name: "Arachides", icon: <Leaf className="h-4 w-4" /> },
+    { id: "soy", name: "Soja", icon: <Soup className="h-4 w-4" /> },
+    { id: "nuts", name: "Fruits à coque", icon: <Apple className="h-4 w-4" /> },
+    { id: "sesame", name: "Sésame", icon: <Leaf className="h-4 w-4" /> },
+  ];
+  
+  // Fonction pour basculer une allergie
+  const toggleAllergy = (allergyId: string) => {
+    setAllergies((prevAllergies) =>
+      prevAllergies.includes(allergyId)
+        ? prevAllergies.filter((id) => id !== allergyId)
+        : [...prevAllergies, allergyId]
+    );
+    
+    setDeliveryInfo((prev) => ({
+      ...prev,
+      allergies: allergies.includes(allergyId)
+        ? prev.allergies.filter((id) => id !== allergyId)
+        : [...prev.allergies, allergyId]
+    }));
+  };
+
+  const handleNextStep = () => {
+    if (currentStep === CheckoutStep.Cart) {
+      if (items.length === 0) {
+        toast({
+          title: "Panier vide",
+          description: "Veuillez ajouter des articles à votre panier.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setCurrentStep(CheckoutStep.DeliveryDetails);
+    } else if (currentStep === CheckoutStep.DeliveryDetails) {
+      if (!validateDeliveryInfo()) {
+        return;
+      }
+      setCurrentStep(CheckoutStep.Payment);
     }
-    
-    if (!deliveryTime) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Veuillez sélectionner une heure de livraison.",
-      });
-      return;
+  };
+
+  const handlePreviousStep = () => {
+    if (currentStep === CheckoutStep.DeliveryDetails) {
+      setCurrentStep(CheckoutStep.Cart);
+    } else if (currentStep === CheckoutStep.Payment) {
+      setCurrentStep(CheckoutStep.DeliveryDetails);
     }
-    
-    if (deliveryMethod === 'delivery' && !address) {
+  };
+
+  const validateDeliveryInfo = () => {
+    if (!deliveryInfo.name || !deliveryInfo.email || !deliveryInfo.phone) {
       toast({
+        title: "Informations manquantes",
+        description: "Veuillez remplir tous les champs obligatoires.",
         variant: "destructive",
-        title: "Erreur",
-        description: "Veuillez entrer votre adresse de livraison.",
       });
-      return;
+      return false;
     }
-    
-    setIsCreatingOrder(true);
-    
+
+    if (deliveryInfo.orderType === "delivery" && (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode)) {
+      toast({
+        title: "Adresse de livraison incomplète",
+        description: "Veuillez remplir tous les champs de l'adresse de livraison.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!deliveryInfo.pickupTime) {
+      toast({
+        title: "Horaire manquant",
+        description: `Veuillez sélectionner un horaire de ${deliveryInfo.orderType === "delivery" ? "livraison" : "retrait"}.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleStripeCheckout = async () => {
     try {
-      // Créer une nouvelle adresse si elle est fournie
-      let delivery_address_id = null;
-      if (newAddress.street && newAddress.city && newAddress.postalCode) {
-        const { data: newAddressData, error: newAddressError } = await supabase
-          .from('user_addresses')
-          .insert([{
-            user_id: user.id,
-            street: newAddress.street,
-            city: newAddress.city,
-            postal_code: newAddress.postalCode,
-          }])
-          .select()
-          .single();
-        
-        if (newAddressError) {
-          throw new Error(`Erreur lors de la création de l'adresse: ${newAddressError.message}`);
-        }
-        delivery_address_id = newAddressData.id;
-      } else if (address) {
-        // Si l'adresse existe déjà, on ne la recrée pas
-        const { data: existingAddress, error: existingAddressError } = await supabase
-          .from('user_addresses')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('street', address.street)
-          .eq('city', address.city)
-          .eq('postal_code', address.postalCode)
-          .single();
-        
-        if (existingAddressError && existingAddressError.code !== 'PGRST116') {
-          throw new Error(`Erreur lors de la récupération de l'adresse existante: ${existingAddressError.message}`);
-        }
-        
-        if (existingAddress) {
-          delivery_address_id = existingAddress.id;
-        } else {
-          // Si l'adresse n'existe pas, on la crée
-          const { data: newAddressData, error: newAddressError } = await supabase
-            .from('user_addresses')
-            .insert([{
-              user_id: user.id,
-              street: address.street,
-              city: address.city,
-              postal_code: address.postalCode,
-            }])
-            .select()
-            .single();
-          
-          if (newAddressError) {
-            throw new Error(`Erreur lors de la création de l'adresse: ${newAddressError.message}`);
-          }
-          delivery_address_id = newAddressData.id;
-        }
+      setLoading(true);
+      
+      if (!validateDeliveryInfo()) {
+        setLoading(false);
+        return;
       }
+
+      // Préparation des données pour la fonction edge
+      const scheduledForDate = new Date();
+      const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
+      scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       
-      // Créer la commande
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .insert([{
-          user_id: user.id,
-          total_amount: cart.total,
-          delivery_method: deliveryMethod,
-          delivery_time: deliveryTime,
-          delivery_address_id: delivery_address_id,
-          status: 'pending',
-        }])
-        .select()
-        .single();
-      
-      if (orderError) {
-        throw new Error(`Erreur lors de la création de la commande: ${orderError.message}`);
-      }
-      
-      const orderId = orderData.id;
-      setOrderId(orderId);
-      
-      // Créer les items de la commande
-      const cartItems = cart.items;
-      for (const item of cartItems) {
-        const { error: orderItemError } = await supabase
-          .from('order_items')
-          .insert([{
-            order_id: orderId,
-            product_id: item.id,
-            quantity: item.quantity,
-            price: item.price,
-          }]);
-        
-        if (orderItemError) {
-          throw new Error(`Erreur lors de la création de l'item de la commande: ${orderItemError.message}`);
-        }
-      }
-      
-      toast({
-        title: "Commande créée!",
-        description: "Votre commande a été créée avec succès. Veuillez procéder au paiement.",
+      // Appel à la fonction edge pour créer la session de paiement
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          items,
+          subtotal,
+          tax,
+          deliveryFee,
+          total: orderTotal,
+          orderType: deliveryInfo.orderType,
+          clientName: deliveryInfo.name,
+          clientEmail: deliveryInfo.email,
+          clientPhone: deliveryInfo.phone,
+          deliveryStreet: deliveryInfo.street,
+          deliveryCity: deliveryInfo.city,
+          deliveryPostalCode: deliveryInfo.postalCode,
+          customerNotes: deliveryInfo.notes,
+          scheduledFor: scheduledForDate.toISOString(),
+          successUrl: `${window.location.origin}/commande-confirmee`,
+          cancelUrl: `${window.location.origin}/panier`,
+        },
       });
+
+      if (error) {
+        console.error("Erreur lors de la création de la session Stripe:", error);
+        toast({
+          title: "Erreur de paiement",
+          description: "Une erreur est survenue lors de l'initialisation du paiement.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Rediriger vers la page de paiement Stripe
+      window.location.href = data.url;
       
-      setStep(4);
-    } catch (error: any) {
-      console.error("Erreur lors de la création de la commande:", error);
+    } catch (error) {
+      console.error("Erreur:", error);
       toast({
-        variant: "destructive",
         title: "Erreur",
-        description: error.message || "Une erreur est survenue lors de la création de la commande.",
+        description: "Une erreur est survenue lors du paiement.",
+        variant: "destructive",
       });
     } finally {
-      setIsCreatingOrder(false);
+      setLoading(false);
     }
   };
-  
-  // Fix the methods for cartItems
-  const increaseQuantity = (item: CartItem) => {
-    cart.increaseQuantity(item.id);
+
+  const handleOrderTypeChange = (type: "delivery" | "pickup") => {
+    setDeliveryInfo((prev) => ({
+      ...prev,
+      orderType: type,
+    }));
   };
-  
-  const decreaseQuantity = (item: CartItem) => {
-    cart.decreaseQuantity(item.id);
+
+  const handleTimeSelect = (time: string) => {
+    setDeliveryInfo((prev) => ({
+      ...prev,
+      pickupTime: time,
+    }));
   };
-  
-  const removeItem = (item: CartItem) => {
-    cart.removeFromCart(item.id);
-  };
-  
-  if (cart.items.length === 0) {
-    return (
-      <div className="container mx-auto py-24 px-4">
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Votre panier est vide</CardTitle>
-            <CardDescription className="text-center">
-              Ajoutez des articles pour passer commande
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center space-y-4">
-            <p className="text-center text-gray-600">
-              Votre panier est actuellement vide. Parcourez notre menu et ajoutez les articles que vous souhaitez commander.
-            </p>
-            <Button asChild>
-              <Link to="/" className="text-white">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour au menu
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+
+  const renderCartItems = () => {
+    if (items.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-lg text-gray-600">Votre panier est vide.</p>
+          <Link to="/menu" className="mt-4 inline-block text-gold-500 hover:text-gold-600">
+            Parcourir le menu
+          </Link>
+        </div>
+      );
+    }
+
+    return items.map((item) => (
+      <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex items-center border-b py-4">
+        {item.menuItem.imageUrl && (
+          <img
+            src={item.menuItem.imageUrl}
+            alt={item.menuItem.name}
+            className="w-16 h-16 object-cover rounded mr-4"
+          />
+        )}
+        <div className="flex-1">
+          <h3 className="font-medium">{item.menuItem.name}</h3>
+          {item.specialInstructions && (
+            <p className="text-sm text-gray-500">{item.specialInstructions}</p>
+          )}
+          <div className="flex items-center mt-2">
+            <button
+              className="w-6 h-6 flex items-center justify-center border rounded-full"
+              onClick={() => updateQuantity(item, Math.max(1, item.quantity - 1))}
+            >
+              -
+            </button>
+            <span className="mx-2">{item.quantity}</span>
+            <button
+              className="w-6 h-6 flex items-center justify-center border rounded-full"
+              onClick={() => updateQuantity(item, item.quantity + 1)}
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="font-medium">{formatEuro(item.menuItem.price * item.quantity)}</p>
+          <button
+            className="text-red-500 hover:text-red-700 text-sm mt-1"
+            onClick={() => removeItem(item)}
+          >
+            <Trash className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-    );
-  }
-  
+    ));
+  };
+
+  const renderCartStep = () => (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Votre Panier</h2>
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="mb-6">
+          {renderCartItems()}
+        </div>
+        
+        <div className="border-t pt-4">
+          <div className="flex justify-between mb-2">
+            <span>Sous-total</span>
+            <span>{formatEuro(subtotal)}</span>
+          </div>
+          <div className="flex justify-between mb-2">
+            <span>TVA (10%)</span>
+            <span>{formatEuro(tax)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-lg mt-4">
+            <span>Total</span>
+            <span>{formatEuro(subtotal + tax)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-between">
+        <Link to="/menu" className="text-gray-500 hover:text-gray-700 flex items-center">
+          <X className="mr-2 h-4 w-4" /> Continuer les achats
+        </Link>
+        <Button onClick={handleNextStep} disabled={items.length === 0} className="bg-gold-500 hover:bg-gold-600 text-black">
+          Commander <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderDeliveryStep = () => (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Informations de livraison</h2>
+      
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6 space-y-6">
+        {/* Mode de livraison */}
+        <DeliveryMethod
+          defaultValue={deliveryInfo.orderType}
+          onChange={handleOrderTypeChange}
+        />
+        
+        {/* Informations personnelles */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Vos coordonnées</h3>
+          
+          {isLoggedIn && (
+            <div className="bg-gold-50 border border-gold-200 p-3 rounded-md mb-4">
+              <p className="text-sm">
+                Vous êtes connecté. Vos informations de profil ont été automatiquement remplies.
+              </p>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Nom complet *</Label>
+              <Input
+                id="name"
+                value={deliveryInfo.name}
+                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Votre nom et prénom"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Téléphone *</Label>
+              <Input
+                id="phone"
+                value={deliveryInfo.phone}
+                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Votre numéro de téléphone"
+                required
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={deliveryInfo.email}
+              onChange={(e) => setDeliveryInfo(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="Votre adresse email"
+              required
+            />
+          </div>
+        </div>
+        
+        {/* Adresse de livraison */}
+        {deliveryInfo.orderType === "delivery" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Adresse de livraison</h3>
+            
+            <div>
+              <Label htmlFor="street">Adresse *</Label>
+              <Input
+                id="street"
+                value={deliveryInfo.street || ""}
+                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, street: e.target.value }))}
+                placeholder="123 rue de Paris"
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="city">Ville *</Label>
+                <Input
+                  id="city"
+                  value={deliveryInfo.city || ""}
+                  onChange={(e) => setDeliveryInfo(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Paris"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="postalCode">Code postal *</Label>
+                <Input
+                  id="postalCode"
+                  value={deliveryInfo.postalCode || ""}
+                  onChange={(e) => setDeliveryInfo(prev => ({ ...prev, postalCode: e.target.value }))}
+                  placeholder="75000"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Heure de livraison/retrait */}
+        <TimeSlotSelector 
+          orderType={deliveryInfo.orderType}
+          onSelect={handleTimeSelect}
+          selectedTime={deliveryInfo.pickupTime}
+        />
+        
+        {/* Instructions de livraison */}
+        {deliveryInfo.orderType === "delivery" && (
+          <div>
+            <Label htmlFor="deliveryInstructions">Instructions de livraison (facultatif)</Label>
+            <Textarea
+              id="deliveryInstructions"
+              value={deliveryInfo.deliveryInstructions || ""}
+              onChange={(e) => setDeliveryInfo(prev => ({ ...prev, deliveryInstructions: e.target.value }))}
+              placeholder="Instructions spécifiques pour la livraison..."
+              rows={3}
+            />
+          </div>
+        )}
+        
+        {/* Notes complémentaires */}
+        <div>
+          <Label htmlFor="notes">Notes supplémentaires (facultatif)</Label>
+          <Textarea
+            id="notes"
+            value={deliveryInfo.notes || ""}
+            onChange={(e) => setDeliveryInfo(prev => ({ ...prev, notes: e.target.value }))}
+            placeholder="Autres informations à nous communiquer..."
+            rows={3}
+          />
+        </div>
+        
+        {/* Allergies */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-medium">Allergies</h3>
+          <p className="text-sm text-gray-500">Veuillez sélectionner vos allergies éventuelles.</p>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+            {allergyOptions.map((allergy) => (
+              <div
+                key={allergy.id}
+                className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                  allergies.includes(allergy.id)
+                    ? "border-gold-500 bg-gold-50"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
+                onClick={() => toggleAllergy(allergy.id)}
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="text-gray-500">{allergy.icon}</div>
+                  <span className="text-sm">{allergy.name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button
+          variant="ghost"
+          onClick={handlePreviousStep}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          Retour au panier
+        </Button>
+        <Button
+          onClick={handleNextStep}
+          className="bg-gold-500 hover:bg-gold-600 text-black"
+        >
+          Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderPaymentStep = () => (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Récapitulatif de commande</h2>
+      
+      {/* Récapitulatif */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {/* Récapitulatif des articles */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Articles</h3>
+          {items.map((item) => (
+            <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex justify-between py-2 border-b">
+              <div>
+                <span className="font-medium">{item.quantity}x</span> {item.menuItem.name}
+                {item.specialInstructions && (
+                  <p className="text-sm text-gray-500">{item.specialInstructions}</p>
+                )}
+              </div>
+              <span>{formatEuro(item.menuItem.price * item.quantity)}</span>
+            </div>
+          ))}
+        </div>
+        
+        {/* Informations de livraison */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Livraison</h3>
+          <p className="mb-1">
+            <span className="font-medium">Méthode :</span>{" "}
+            {deliveryInfo.orderType === "delivery" ? "Livraison à domicile" : "Retrait en magasin"}
+          </p>
+          {deliveryInfo.orderType === "delivery" && (
+            <p className="mb-1">
+              <span className="font-medium">Adresse :</span>{" "}
+              {deliveryInfo.street}, {deliveryInfo.postalCode} {deliveryInfo.city}
+            </p>
+          )}
+          <p>
+            <span className="font-medium">Horaire :</span>{" "}
+            {deliveryInfo.pickupTime} aujourd'hui
+          </p>
+        </div>
+        
+        {/* Informations de contact */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Contact</h3>
+          <p className="mb-1">
+            <span className="font-medium">Nom :</span> {deliveryInfo.name}
+          </p>
+          <p className="mb-1">
+            <span className="font-medium">Téléphone :</span> {deliveryInfo.phone}
+          </p>
+          <p>
+            <span className="font-medium">Email :</span> {deliveryInfo.email}
+          </p>
+        </div>
+        
+        {/* Notes et allergies */}
+        {(deliveryInfo.notes || allergies.length > 0) && (
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-3">Informations complémentaires</h3>
+            {deliveryInfo.notes && (
+              <p className="mb-1">
+                <span className="font-medium">Notes :</span> {deliveryInfo.notes}
+              </p>
+            )}
+            {allergies.length > 0 && (
+              <p>
+                <span className="font-medium">Allergies :</span>{" "}
+                {allergies.map((id) => allergyOptions.find((a) => a.id === id)?.name).join(", ")}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {/* Récapitulatif des coûts */}
+        <div className="border-t pt-4 mt-6">
+          <div className="flex justify-between mb-2">
+            <span>Sous-total</span>
+            <span>{formatEuro(subtotal)}</span>
+          </div>
+          <div className="flex justify-between mb-2">
+            <span>TVA (10%)</span>
+            <span>{formatEuro(tax)}</span>
+          </div>
+          {deliveryInfo.orderType === "delivery" && (
+            <div className="flex justify-between mb-2">
+              <span>Frais de livraison</span>
+              <span>{formatEuro(deliveryFee)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold text-lg mt-4">
+            <span>Total</span>
+            <span>{formatEuro(orderTotal)}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Options de paiement */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 className="text-lg font-medium mb-4">Méthode de paiement</h3>
+        <RadioGroup defaultValue="card" className="space-y-3">
+          <div className="flex items-center space-x-3 border p-3 rounded-md">
+            <RadioGroupItem value="card" id="card" />
+            <Label htmlFor="card">Carte Bancaire</Label>
+          </div>
+        </RadioGroup>
+        <p className="mt-4 text-sm text-gray-500">
+          Vous pouvez commander en tant qu'invité sans avoir à créer de compte.
+        </p>
+      </div>
+      
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button
+          variant="ghost"
+          onClick={handlePreviousStep}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          Modifier les informations
+        </Button>
+        <Button
+          onClick={handleStripeCheckout}
+          disabled={loading}
+          className="bg-gold-500 hover:bg-gold-600 text-black"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Traitement en cours...
+            </>
+          ) : (
+            <>Procéder au paiement</>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Fonction qui retourne le bon composant basé sur l'étape actuelle
+  const renderStep = () => {
+    switch (currentStep) {
+      case CheckoutStep.Cart:
+        return renderCartStep();
+      case CheckoutStep.DeliveryDetails:
+        return renderDeliveryStep();
+      case CheckoutStep.Payment:
+        return renderPaymentStep();
+      default:
+        return null;
+    }
+  };
+
+  // Formatage de la date du jour
+  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
+
   return (
     <div className="container mx-auto py-24 px-4">
-      <Card>
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Votre panier</CardTitle>
-          <CardDescription className="text-center">
-            Vérifiez votre commande avant de passer à la caisse
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {step === 1 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Articles dans votre panier</h2>
-              <ul>
-                {cart.items.map((item) => (
-                  <li key={item.id} className="flex items-center justify-between py-3 border-b">
-                    <div className="flex items-center">
-                      <div className="w-20 h-20 mr-4">
-                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover rounded-md" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">{item.name}</p>
-                        <p className="text-gray-600">{item.price} €</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => decreaseQuantity(item)}>
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <span>{item.quantity}</span>
-                      <Button variant="ghost" size="icon" onClick={() => increaseQuantity(item)}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button variant="destructive" size="icon" onClick={() => removeItem(item)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 flex justify-between items-center">
-                <span className="text-lg font-semibold">Total: {cart.total} €</span>
-                <Button onClick={() => setStep(2)}>
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                  Suivant
-                </Button>
+      <div className="max-w-4xl mx-auto">
+        {/* Étapes du checkout */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className={`flex items-center ${currentStep >= CheckoutStep.Cart ? "text-gold-500" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= CheckoutStep.Cart ? "border-gold-500" : "border-gray-300"}`}>
+                1
               </div>
+              <span className="ml-2 font-medium">Panier</span>
             </div>
-          )}
-          
-          {step === 2 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Méthode de commande</h2>
-              <div className="flex space-x-4 mb-4">
-                <Button
-                  variant={deliveryMethod === 'delivery' ? 'default' : 'outline'}
-                  onClick={() => setDeliveryMethod('delivery')}
-                >
-                  Livraison
-                </Button>
-                <Button
-                  variant={deliveryMethod === 'pickup' ? 'default' : 'outline'}
-                  onClick={() => setDeliveryMethod('pickup')}
-                >
-                  À emporter
-                </Button>
-                <Button
-                  variant={deliveryMethod === 'dinein' ? 'default' : 'outline'}
-                  onClick={() => setDeliveryMethod('dinein')}
-                >
-                  Sur place
-                </Button>
+            <div className={`w-12 h-1 mx-2 ${currentStep >= CheckoutStep.DeliveryDetails ? "bg-gold-500" : "bg-gray-300"}`}></div>
+            <div className={`flex items-center ${currentStep >= CheckoutStep.DeliveryDetails ? "text-gold-500" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= CheckoutStep.DeliveryDetails ? "border-gold-500" : "border-gray-300"}`}>
+                2
               </div>
-              
-              {deliveryMethod === 'delivery' && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium">Adresse de livraison</h3>
-                    <Button variant="outline" size="sm" onClick={() => setIsAddressFormVisible(true)}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Ajouter une nouvelle adresse
-                    </Button>
-                  </div>
-                  
-                  {isAddressFormVisible ? (
-                    <DeliveryAddressForm onSubmit={handleAddressSubmit} />
-                  ) : address ? (
-                    <div className="border rounded-md p-4 bg-white">
-                      <p className="font-medium">Adresse sélectionnée:</p>
-                      <p>{address.street}</p>
-                      <p>{address.city}, {address.postalCode}</p>
-                    </div>
-                  ) : (
-                    <div className="border rounded-md p-4 bg-white">
-                      <p className="text-gray-500">Aucune adresse sélectionnée.</p>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="street">Rue</Label>
-                    <Input
-                      id="street"
-                      type="text"
-                      placeholder="Votre rue"
-                      value={newAddress.street}
-                      onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city">Ville</Label>
-                    <Input
-                      id="city"
-                      type="text"
-                      placeholder="Votre ville"
-                      value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="postalCode">Code postal</Label>
-                    <Input
-                      id="postalCode"
-                      type="text"
-                      placeholder="Votre code postal"
-                      value={newAddress.postalCode}
-                      onChange={(e) => setNewAddress({ ...newAddress, postalCode: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              <div className="mt-4 flex justify-between">
-                <Button variant="outline" onClick={() => setStep(1)}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Retour
-                </Button>
-                <Button onClick={() => setStep(3)}>
-                  Suivant
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
+              <span className="ml-2 font-medium">Livraison</span>
             </div>
-          )}
-          
-          {step === 3 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Choisissez votre heure de livraison</h2>
-              <TimeSlotSelector
-                selectedTime={deliveryTime}
-                setSelectedTime={setDeliveryTime}
-                deliveryMethod={deliveryMethod}
-              />
-              
-              <div className="mt-4 flex justify-between">
-                <Button variant="outline" onClick={() => setStep(2)}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Retour
-                </Button>
-                <Button onClick={handleCreateOrder} disabled={isCreatingOrder}>
-                  {isCreatingOrder ? (
-                    <>
-                      <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                      Création de la commande...
-                    </>
-                  ) : (
-                    <>
-                      Suivant
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
+            <div className={`w-12 h-1 mx-2 ${currentStep >= CheckoutStep.Payment ? "bg-gold-500" : "bg-gray-300"}`}></div>
+            <div className={`flex items-center ${currentStep >= CheckoutStep.Payment ? "text-gold-500" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= CheckoutStep.Payment ? "border-gold-500" : "border-gray-300"}`}>
+                3
               </div>
+              <span className="ml-2 font-medium">Paiement</span>
             </div>
-          )}
-          
-          {step === 4 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Paiement</h2>
-              <OrderSummary
-                cartItems={cart.items}
-                total={cart.total}
-                deliveryMethod={deliveryMethod}
-                address={address}
-              />
-              
-              {deliveryMethod === 'delivery' && address && (
-                <div className="mt-2">
-                  <span className="font-semibold">Adresse de livraison :</span>
-                  <div>{address.street}</div>
-                  <div>{address.city}, {address.postalCode}</div>
-                </div>
-              )}
-              
-              {deliveryTime && (
-                <div className="mt-2">
-                  <span className="font-semibold">Heure :</span>{" "}
-                  {format(new Date(`2000-01-01T${deliveryTime}`), "HH'h'mm", { locale: fr })}
-                </div>
-              )}
-              
-              <PaymentForm
-                amount={cart.total}
-                onSuccess={() => setPaymentSuccess(true)}
-                orderId={orderId}
-                setIsSubmitting={setIsSubmitting}
-              />
-              
-              <div className="mt-4 flex justify-between">
-                <Button variant="outline" onClick={() => setStep(3)}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Retour
-                </Button>
-                <Button disabled={true}>
-                  Payer
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+        
+        {/* Contenu de l'étape actuelle */}
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          {renderStep()}
+        </motion.div>
+      </div>
     </div>
   );
 };

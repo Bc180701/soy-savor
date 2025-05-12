@@ -1,7 +1,4 @@
 
-import * as dateFns from 'date-fns';
-import { fr } from 'date-fns/locale';
-
 /**
  * Formate un nombre en devise Euro
  */
@@ -16,19 +13,32 @@ export const formatEuro = (value: number): string => {
  * Formate une date selon le format français
  */
 export const formatDate = (date: Date): string => {
-  return dateFns.format(date, "dd MMMM yyyy à HH'h'mm", { locale: fr });
+  return new Intl.DateTimeFormat('fr-FR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
 };
 
 /**
  * Formate une heure selon le format français
  */
 export const formatTime = (date: Date): string => {
-  return dateFns.format(date, "HH'h'mm", { locale: fr });
+  return new Intl.DateTimeFormat('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
 };
 
 /**
  * Formate une date courte selon le format français
  */
 export const formatShortDate = (date: Date): string => {
-  return dateFns.format(date, "dd/MM/yyyy", { locale: fr });
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric'
+  }).format(date);
 };
