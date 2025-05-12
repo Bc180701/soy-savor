@@ -5,13 +5,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-const SUMUP_API_URL = "https://api.sumup.com/v0.1/checkouts";
-const SUMUP_CLIENT_ID = "cc_classic_UelwBCnPHLGxjz8w5l4YyCriGYy9P";
-const SUMUP_CLIENT_SECRET = "cc_sk_classic_kNIDUAjlYVYmMRsd72FN1jgp0jsdZCi4mvAudnsLcTN8DR6thy";
+const SUMUP_API_KEY = Deno.env.get("SUMUP_API_KEY") || "";
 
 serve(async (req) => {
-  console.log("Fonction create-sumup-checkout appelée");
-  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,23 +22,10 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Utilisation des identifiants OAuth2:");
-    console.log("Client ID:", SUMUP_CLIENT_ID);
-    console.log("Client Secret: [HIDDEN]");
-    
-    if (!SUMUP_CLIENT_ID || !SUMUP_CLIENT_SECRET) {
-      console.error("Les identifiants OAuth2 SumUp ne sont pas définis");
-      return new Response(
-        JSON.stringify({ error: "Identifiants OAuth2 SumUp non configurés" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Parse the request body
     const { orderData } = await req.json();
     
     if (!orderData || !orderData.total || !orderData.orderId || !orderData.customerEmail) {
-      console.error("Données de commande manquantes:", orderData);
       return new Response(
         JSON.stringify({ error: "Missing required order data" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -56,116 +39,45 @@ serve(async (req) => {
       price: item.menuItem.price,
     }));
 
-    // Create checkout session with SumUp API using OAuth2 credentials
-    // SumUp API Documentation: https://developer.sumup.com/docs/api/create-checkout/
+    // Create checkout session with SumUp API
     const checkoutRequest = {
       checkout_reference: orderData.orderId,
-      amount: parseFloat(orderData.total.toFixed(2)), // Ensure amount is properly formatted
+      amount: orderData.total,
       currency: "EUR",
       description: `SushiEats Commande #${orderData.orderId.slice(0, 8)}`,
-      pay_to_email: "clweb@hotmail.com",
+      pay_to_email: "contact@sushieats.fr", // Remplacez par votre email SumUp
       return_url: `${orderData.returnUrl}/compte?order=${orderData.orderId}`,
       customer_email: orderData.customerEmail,
       items: items
     };
 
     console.log("Sending checkout request to SumUp:", JSON.stringify(checkoutRequest));
-    
-    // Prepare Basic Auth credentials for OAuth2
-    const credentials = btoa(`${SUMUP_CLIENT_ID}:${SUMUP_CLIENT_SECRET}`);
-    
-    // Call SumUp API using OAuth2 Basic auth with client id and secret
-    console.log("Making API call to SumUp with Basic Auth...");
-    console.log("Authorization header:", `Basic ${credentials.substring(0, 10)}...`);
-    
-    const response = await fetch(SUMUP_API_URL, {
+
+    const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Basic ${credentials}`,
-        "Accept": "application/json"
+        "Authorization": `Bearer ${SUMUP_API_KEY}`
       },
       body: JSON.stringify(checkoutRequest)
     });
 
-    // Log the full response for debugging
-    console.log("SumUp API response status:", response.status, response.statusText);
-    console.log("SumUp API response headers:", JSON.stringify([...response.headers.entries()]));
-    
-    // Parse response body
-    let responseText = await response.text();
-    console.log("SumUp API raw response body:", responseText);
-    
-    let data;
-    try {
-      data = JSON.parse(responseText);
-      console.log("SumUp API parsed response:", JSON.stringify(data));
-    } catch (parseError) {
-      console.error("Failed to parse SumUp API response:", parseError);
-      
-      return new Response(
-        JSON.stringify({ 
-          error: "Format de réponse invalide de SumUp", 
-          details: responseText,
-          displayMessage: "Erreur lors du traitement de la réponse de SumUp. Veuillez réessayer." 
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const data = await response.json();
     
     if (!response.ok) {
-      console.error("SumUp API error status:", response.status);
-      console.error("SumUp API error response:", data);
-      
-      let errorMessage = "Erreur lors de la création du paiement SumUp";
-      let displayMessage = "Erreur de communication avec le service de paiement.";
-      
-      if (response.status === 401) {
-        errorMessage = "Erreur d'authentification avec SumUp";
-        displayMessage = "Problème d'authentification avec le service de paiement. Veuillez contacter le support.";
-      } else if (response.status === 400) {
-        errorMessage = "Données de commande invalides";
-        displayMessage = "Données de commande incorrectes. Veuillez vérifier vos informations.";
-      } else if (data && data.error_message) {
-        errorMessage = data.error_message;
-        displayMessage = "Erreur SumUp: " + data.error_message;
-      } else if (data && data.message) {
-        errorMessage = data.message;
-        displayMessage = "Erreur SumUp: " + data.message;
-      }
-      
+      console.error("SumUp API error:", data);
       return new Response(
-        JSON.stringify({ 
-          error: errorMessage,
-          displayMessage: displayMessage,
-          details: data,
-          statusCode: response.status
-        }),
+        JSON.stringify({ error: "Failed to create SumUp checkout", details: data }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!data || !data.id || !data.payment_link) {
-      console.error("SumUp checkout response is missing required fields:", data);
-      return new Response(
-        JSON.stringify({ 
-          error: "La réponse de SumUp est invalide ou incomplète", 
-          details: data,
-          displayMessage: "La réponse du service de paiement est incomplète. Veuillez réessayer."
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("SumUp checkout created successfully:", data);
-    console.log("Payment link:", data.payment_link);
-
-    // Return the checkout information
+    // Return the checkout URL to redirect the user
     return new Response(
       JSON.stringify({ 
         success: true, 
         checkoutId: data.id,
-        checkoutReference: data.checkout_reference || orderData.orderId,
+        checkoutUrl: data.checkout_reference,
         redirectUrl: data.payment_link
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -175,12 +87,7 @@ serve(async (req) => {
     console.error("Error creating SumUp checkout:", error);
     
     return new Response(
-      JSON.stringify({ 
-        error: "Erreur lors du traitement de la demande", 
-        displayMessage: "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
-        details: error.message,
-        stack: error.stack
-      }),
+      JSON.stringify({ error: "Internal server error", details: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

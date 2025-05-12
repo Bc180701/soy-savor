@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft } from "lucide-react";
+import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft, CreditCard } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { useOrder } from "@/hooks/use-order";
 import { useToast } from "@/components/ui/use-toast";
@@ -17,9 +17,9 @@ import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import PaymentMethodDisplay from "@/components/checkout/PaymentMethodDisplay";
 
 // Enum for checkout steps
 enum CheckoutStep {
@@ -98,7 +98,7 @@ const Panier = () => {
     checkPromotionEligibility();
   }, [cart.total, orderType]);
 
-  const [isRedirectingToPayment, setIsRedirectingToPayment] = useState(false);
+  const [isRedirectingToSumUp, setIsRedirectingToSumUp] = useState(false);
 
   const handleIncrement = (id: string) => {
     cart.incrementQuantity(id);
@@ -201,9 +201,9 @@ const Panier = () => {
     
     if (result.success) {
       try {
-        // Initier le paiement Stripe
-        setIsRedirectingToPayment(true);
-        const paymentResult = await cart.initializeStripePayment(
+        // Initier le paiement SumUp
+        setIsRedirectingToSumUp(true);
+        const paymentResult = await cart.initiateSumUpPayment(
           result.order.id,
           deliveryAddress?.email || session.user.email
         );
@@ -221,7 +221,7 @@ const Panier = () => {
         
         orderStore.createOrder(order);
         
-        // Rediriger vers la page de paiement Stripe
+        // Rediriger vers la page de paiement SumUp
         window.location.href = paymentResult.redirectUrl;
         return; // Arrêter l'exécution ici car nous redirigerons
       
@@ -235,7 +235,7 @@ const Panier = () => {
         });
         
         setIsProcessing(false);
-        setIsRedirectingToPayment(false);
+        setIsRedirectingToSumUp(false);
         return;
       }
     } else {
@@ -302,17 +302,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = format(new Date(), "EEEE");
-
-  const renderPaymentSection = () => {
-    return (
-      <div>
-        <h4 className="text-lg font-medium">Paiement</h4>
-        <PaymentMethodDisplay />
-        <p className="mt-2 text-sm text-gray-600">Paiement sécurisé en ligne uniquement</p>
-      </div>
-    );
-  };
+  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
 
   return (
     <div className="container mx-auto py-24 px-4">
@@ -516,8 +506,18 @@ const Panier = () => {
                       </p>
                     </div>
                     
-                    {/* Updated Payment section with our new component */}
-                    {renderPaymentSection()}
+                    <div>
+                      <h4 className="text-lg font-medium">Paiement</h4>
+                      <div className="mt-2 flex items-center bg-gray-50 p-3 rounded-md border">
+                        <CreditCard className="mr-2 text-gold-600" />
+                        <p>Carte bancaire</p>
+                        <div className="ml-auto flex space-x-2">
+                          <img src="/visa.svg" alt="Visa" className="h-6" />
+                          <img src="/mastercard.svg" alt="Mastercard" className="h-6" />
+                        </div>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-600">Paiement sécurisé en ligne uniquement</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -529,7 +529,7 @@ const Panier = () => {
                     variant="outline"
                     onClick={goToPreviousStep}
                     className="flex items-center gap-2"
-                    disabled={isProcessing || isRedirectingToPayment}
+                    disabled={isProcessing || isRedirectingToSumUp}
                   >
                     <ArrowLeft className="h-4 w-4" /> Retour
                   </Button>
@@ -538,12 +538,12 @@ const Panier = () => {
                     <Button 
                       className="bg-gold-600 hover:bg-gold-700"
                       onClick={handleCheckout}
-                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct) || isRedirectingToPayment}
+                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct) || isRedirectingToSumUp}
                     >
                       {isProcessing ? 
                         "Traitement en cours..." : 
-                        isRedirectingToPayment ? 
-                        "Redirection vers Stripe..." : 
+                        isRedirectingToSumUp ? 
+                        "Redirection vers SumUp..." : 
                         "Payer maintenant"}
                     </Button>
                   ) : (

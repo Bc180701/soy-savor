@@ -1,29 +1,20 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { MenuItem, CartItem } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { CartItem, MenuItem } from '@/types';
+import { supabase } from "@/integrations/supabase/client";
 
 interface CartStore {
   items: CartItem[];
-  total: number;
-  itemCount: number;
-  add: (item: CartItem) => void;
-  addItem: (menuItem: MenuItem, quantity: number) => void;
-  update: (id: string, item: CartItem) => void;
+  addItem: (menuItem: MenuItem, quantity: number, specialInstructions?: string) => void;
   removeItem: (id: string) => void;
   incrementQuantity: (id: string) => void;
   decrementQuantity: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
+  updateInstructions: (id: string, instructions: string) => void;
   clearCart: () => void;
-  calculateTotal: () => number;
-  initializeCart: () => void;
-  initializeFromLocalStorage: () => void;
-  initializeStripePayment: (orderId: string, customerEmail: string) => Promise<{
-    success: boolean;
-    redirectUrl?: string;
-    checkoutId?: string;
-    error?: string;
-  }>;
+  initiateSumUpPayment: (orderId: string, customerEmail: string) => Promise<{ success: boolean; redirectUrl?: string; error?: string }>;
+  total: number;
+  itemCount: number;
 }
 
 export const useCart = create<CartStore>()(
@@ -32,196 +23,181 @@ export const useCart = create<CartStore>()(
       items: [],
       total: 0,
       itemCount: 0,
+      
+      addItem: (menuItem, quantity, specialInstructions) => {
+        set((state) => {
+          const existingItemIndex = state.items.findIndex(
+            (item) => item.menuItem.id === menuItem.id
+          );
 
-      // Add an item to the cart
-      add: (item) => {
-        const { items } = get();
-        const existingItemIndex = items.findIndex(
-          (cartItem) => cartItem.menuItem.id === item.menuItem.id
-        );
-
-        if (existingItemIndex > -1) {
-          // If item already exists, update quantity
-          const newItems = [...items];
-          newItems[existingItemIndex].quantity += item.quantity;
-          set({ 
-            items: newItems,
-            total: get().calculateTotal(),
-            itemCount: get().items.reduce((total, item) => total + item.quantity, 0)
-          });
-        } else {
-          // Add new item
-          set({ 
-            items: [...items, item],
-            total: get().calculateTotal() + item.menuItem.price * item.quantity,
-            itemCount: get().items.length + 1
-          });
-        }
+          let updatedItems;
+          
+          if (existingItemIndex !== -1) {
+            // L'item existe déjà, on met à jour la quantité
+            updatedItems = [...state.items];
+            updatedItems[existingItemIndex].quantity += quantity;
+            
+            if (specialInstructions) {
+              updatedItems[existingItemIndex].specialInstructions = specialInstructions;
+            }
+          } else {
+            // Nouvel item
+            updatedItems = [
+              ...state.items,
+              { menuItem, quantity, specialInstructions },
+            ];
+          }
+          
+          const total = updatedItems.reduce(
+            (sum, item) => sum + item.menuItem.price * item.quantity,
+            0
+          );
+          
+          const itemCount = updatedItems.reduce(
+            (count, item) => count + item.quantity, 
+            0
+          );
+          
+          return { items: updatedItems, total, itemCount };
+        });
       },
       
-      // Add a menu item to the cart
-      addItem: (menuItem, quantity) => {
-        const { items } = get();
-        const cartItem: CartItem = {
-          menuItem,
-          quantity,
-          specialInstructions: ''
-        };
-        
-        const existingItemIndex = items.findIndex(
-          (item) => item.menuItem.id === menuItem.id
-        );
-
-        if (existingItemIndex > -1) {
-          // If item already exists, update quantity
-          const newItems = [...items];
-          newItems[existingItemIndex].quantity += quantity;
-          set({ 
-            items: newItems,
-            total: get().calculateTotal(),
-            itemCount: get().items.reduce((total, item) => total + item.quantity, 0)
-          });
-        } else {
-          // Add new item
-          set({ 
-            items: [...items, cartItem],
-            total: get().calculateTotal() + menuItem.price * quantity,
-            itemCount: get().items.reduce((total, item) => total + item.quantity, 0) + quantity
-          });
-        }
-      },
-
-      // Update an item in the cart
-      update: (id, updatedItem) => {
-        const { items } = get();
-        const newItems = items.map(item => 
-          item.menuItem.id === id ? updatedItem : item
-        );
-        
-        set({ 
-          items: newItems,
-          total: get().calculateTotal(),
-          itemCount: newItems.reduce((total, item) => total + item.quantity, 0)
-        });
-      },
-
-      // Remove an item from the cart
       removeItem: (id) => {
-        const { items } = get();
-        const newItems = items.filter((item) => item.menuItem.id !== id);
-        set({ 
-          items: newItems,
-          total: get().calculateTotal(),
-          itemCount: newItems.reduce((total, item) => total + item.quantity, 0)
+        set((state) => {
+          const updatedItems = state.items.filter((item) => item.menuItem.id !== id);
+          
+          const total = updatedItems.reduce(
+            (sum, item) => sum + item.menuItem.price * item.quantity,
+            0
+          );
+          
+          const itemCount = updatedItems.reduce(
+            (count, item) => count + item.quantity, 
+            0
+          );
+          
+          return { items: updatedItems, total, itemCount };
         });
       },
-
-      // Increment the quantity of an item
+      
       incrementQuantity: (id) => {
-        const { items } = get();
-        const newItems = items.map((item) => {
-          if (item.menuItem.id === id) {
-            return { ...item, quantity: item.quantity + 1 };
-          }
-          return item;
-        });
-
-        set({ 
-          items: newItems,
-          total: get().calculateTotal(),
-          itemCount: newItems.reduce((total, item) => total + item.quantity, 0)
+        set((state) => {
+          const updatedItems = state.items.map((item) =>
+            item.menuItem.id === id 
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          );
+          
+          const total = updatedItems.reduce(
+            (sum, item) => sum + item.menuItem.price * item.quantity,
+            0
+          );
+          
+          const itemCount = updatedItems.reduce(
+            (count, item) => count + item.quantity, 
+            0
+          );
+          
+          return { items: updatedItems, total, itemCount };
         });
       },
-
-      // Decrement the quantity of an item
+      
       decrementQuantity: (id) => {
-        const { items } = get();
-        const newItems = items.map((item) => {
-          if (item.menuItem.id === id && item.quantity > 1) {
-            return { ...item, quantity: item.quantity - 1 };
-          }
-          return item;
-        });
-
-        set({ 
-          items: newItems,
-          total: get().calculateTotal(),
-          itemCount: newItems.reduce((total, item) => total + item.quantity, 0)
+        set((state) => {
+          const updatedItems = state.items.map((item) =>
+            item.menuItem.id === id && item.quantity > 1
+              ? { ...item, quantity: item.quantity - 1 }
+              : item
+          );
+          
+          const total = updatedItems.reduce(
+            (sum, item) => sum + item.menuItem.price * item.quantity,
+            0
+          );
+          
+          const itemCount = updatedItems.reduce(
+            (count, item) => count + item.quantity, 
+            0
+          );
+          
+          return { items: updatedItems, total, itemCount };
         });
       },
-
-      // Clear the entire cart
+      
+      updateQuantity: (id, quantity) => {
+        set((state) => {
+          const updatedItems = state.items.map((item) =>
+            item.menuItem.id === id ? { ...item, quantity } : item
+          );
+          
+          const total = updatedItems.reduce(
+            (sum, item) => sum + item.menuItem.price * item.quantity,
+            0
+          );
+          
+          const itemCount = updatedItems.reduce(
+            (count, item) => count + item.quantity, 
+            0
+          );
+          
+          return { items: updatedItems, total, itemCount };
+        });
+      },
+      
+      updateInstructions: (id, instructions) => {
+        set((state) => {
+          const updatedItems = state.items.map((item) =>
+            item.menuItem.id === id ? { ...item, specialInstructions: instructions } : item
+          );
+          return { items: updatedItems };
+        });
+      },
+      
       clearCart: () => {
         set({ items: [], total: 0, itemCount: 0 });
       },
-
-      // Calculate the total price of the cart
-      calculateTotal: () => {
-        const { items } = get();
-        return items.reduce(
-          (total, item) => total + item.menuItem.price * item.quantity,
-          0
-        );
-      },
-
-      // Initialize the cart
-      initializeCart: () => {
-        const total = get().calculateTotal();
-        const itemCount = get().items.reduce((count, item) => count + item.quantity, 0);
-        set({ total, itemCount });
-      },
-
-      // Initialize cart from local storage
-      initializeFromLocalStorage: () => {
-        // If hydration fails, we need to recalculate the total
-        const total = get().calculateTotal();
-        const itemCount = get().items.reduce((count, item) => count + item.quantity, 0);
-        set({ total, itemCount });
-      },
-
-      // Initiate Stripe payment
-      initializeStripePayment: async (orderId, customerEmail) => {
+      
+      initiateSumUpPayment: async (orderId, customerEmail) => {
         try {
           const { items, total } = get();
+          const returnUrl = window.location.origin;
           
-          // Get origin for return URL
-          const origin = window.location.origin;
-
-          const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+          const { data, error } = await supabase.functions.invoke('create-sumup-checkout', {
             body: {
               orderData: {
+                orderId,
                 items,
                 total,
-                orderId,
                 customerEmail,
-                returnUrl: origin,
-                deliveryFee: 0, // Set appropriate delivery fee if needed
-                orderType: 'pickup' // Set appropriate order type
+                returnUrl
               }
             }
           });
-
-          if (error || !data.success) {
-            console.error("Erreur lors de l'initialisation du paiement Stripe:", error || data.error);
+          
+          if (error) {
+            console.error('Error initiating SumUp payment:', error);
             return { 
               success: false, 
-              error: error?.message || data?.error || "Erreur lors de l'initialisation du paiement"
+              error: error.message || 'Échec de l\'initialisation du paiement' 
             };
           }
-
-          return {
-            success: true,
-            redirectUrl: data.redirectUrl,
-            checkoutId: data.checkoutId,
-          };
-        } catch (error) {
-          console.error("Exception lors de l'initialisation du paiement Stripe:", error);
+          
+          if (!data.success || !data.redirectUrl) {
+            return { 
+              success: false, 
+              error: data.error || 'Échec de l\'initialisation du paiement SumUp' 
+            };
+          }
+          
+          return { success: true, redirectUrl: data.redirectUrl };
+        } catch (err) {
+          console.error('Error in initiateSumUpPayment:', err);
           return { 
             success: false, 
-            error: error instanceof Error ? error.message : "Erreur inconnue"
+            error: err instanceof Error ? err.message : 'Une erreur est survenue' 
           };
         }
-      }
+      },
     }),
     {
       name: 'sushieats-cart',
