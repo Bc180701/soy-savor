@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -16,7 +15,7 @@ import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import * as dateFns from "date-fns";
+import { format } from "date-fns";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 
 // Enum for checkout steps
@@ -270,7 +269,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = dateFns.format(new Date(), "EEEE");
+  const formattedCurrentDay = format(new Date(), "EEEE");
 
   return (
     <div className="container mx-auto py-24 px-4">
