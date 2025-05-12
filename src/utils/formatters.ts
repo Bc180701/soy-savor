@@ -42,3 +42,12 @@ export const formatShortDate = (date: Date): string => {
     year: 'numeric'
   }).format(date);
 };
+
+/**
+ * Formate une date avec les options date-fns
+ */
+export const formatWithDateFns = (date: Date, formatStr: string, locale: any): string => {
+  // Cette fonction est un wrapper pour éviter les problèmes d'import avec date-fns
+  const { format } = require('date-fns');
+  return format(date, formatStr, { locale });
+};

@@ -34,9 +34,11 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const { toast } = useToast();
   const [isValidating, setIsValidating] = useState(false);
   const [useProfileAddress, setUseProfileAddress] = useState(false);
+  const [useProfileContact, setUseProfileContact] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
+  const [hasAddress, setHasAddress] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -90,8 +92,12 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           return;
         }
         
-        if (profileData && addressData) {
+        if (profileData) {
           setHasProfile(true);
+        }
+
+        if (addressData) {
+          setHasAddress(true);
         }
       } catch (error) {
         console.error("Erreur lors de la vérification du profil:", error);
@@ -103,7 +109,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     checkUserProfile();
   }, []);
 
-  const loadUserProfile = async () => {
+  const loadUserContact = async () => {
     if (!isLoggedIn) return;
     
     setIsLoadingProfile(true);
@@ -131,6 +137,40 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
+      if (profileData) {
+        // Récupérer l'email depuis la session
+        const userEmail = session.user.email || "";
+        
+        // Construire le nom complet
+        const fullName = `${profileData.first_name || ""} ${profileData.last_name || ""}`.trim();
+        
+        form.setValue("name", fullName);
+        form.setValue("phone", profileData.phone || "");
+        form.setValue("email", userEmail);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des données:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la récupération de vos informations.",
+      });
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  const loadUserAddress = async () => {
+    if (!isLoggedIn) return;
+    
+    setIsLoadingProfile(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        return;
+      }
+      
       // Récupérer l'adresse par défaut
       const { data: addressData, error: addressError } = await supabase
         .from("user_addresses")
@@ -149,18 +189,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      if (profileData) {
-        // Récupérer l'email depuis la session
-        const userEmail = session.user.email || "";
-        
-        // Construire le nom complet
-        const fullName = `${profileData.first_name || ""} ${profileData.last_name || ""}`.trim();
-        
-        form.setValue("name", fullName);
-        form.setValue("phone", profileData.phone || "");
-        form.setValue("email", userEmail);
-      }
-      
       if (addressData) {
         form.setValue("street", addressData.street);
         form.setValue("city", addressData.city);
@@ -168,21 +196,40 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         if (addressData.additional_info) {
           form.setValue("instructions", addressData.additional_info);
         }
+        
+        toast({
+          title: "Adresse récupérée",
+          description: "Votre adresse enregistrée a été appliquée au formulaire.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Adresse introuvable",
+          description: "Vous n'avez pas d'adresse enregistrée dans votre profil.",
+        });
       }
-      
-      toast({
-        title: "Informations récupérées",
-        description: "Vos informations de profil ont été appliquées au formulaire.",
-      });
     } catch (error) {
       console.error("Erreur lors du chargement des données:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Une erreur est survenue lors de la récupération de vos informations.",
+        description: "Une erreur est survenue lors de la récupération de votre adresse.",
       });
     } finally {
       setIsLoadingProfile(false);
+    }
+  };
+
+  const handleProfileContactToggle = async (checked: boolean) => {
+    setUseProfileContact(checked);
+    
+    if (checked) {
+      await loadUserContact();
+    } else {
+      // Réinitialiser le formulaire pour les champs de contact uniquement
+      form.setValue("name", "");
+      form.setValue("phone", "");
+      form.setValue("email", "");
     }
   };
 
@@ -190,10 +237,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     setUseProfileAddress(checked);
     
     if (checked) {
-      await loadUserProfile();
+      await loadUserAddress();
     } else {
-      // Réinitialiser le formulaire
-      form.reset();
+      // Réinitialiser le formulaire pour les champs d'adresse uniquement
+      form.setValue("street", "");
+      form.setValue("city", "");
+      form.setValue("postalCode", "");
+      form.setValue("instructions", "");
     }
   };
 
@@ -237,20 +287,38 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       </div>
 
       {isLoggedIn && (
-        <div className="flex items-center space-x-2 py-2">
-          <Checkbox 
-            id="useProfile" 
-            checked={useProfileAddress}
-            onCheckedChange={handleProfileAddressToggle}
-            disabled={isLoadingProfile || !hasProfile}
-          />
-          <label
-            htmlFor="useProfile"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            {hasProfile ? "Utiliser les informations de mon profil" : "Complétez votre profil pour l'utiliser lors de vos commandes"}
-          </label>
-          {isLoadingProfile && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox 
+              id="useProfileContact" 
+              checked={useProfileContact}
+              onCheckedChange={handleProfileContactToggle}
+              disabled={isLoadingProfile || !hasProfile}
+            />
+            <label
+              htmlFor="useProfileContact"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              {hasProfile ? "Utiliser les informations de contact de mon profil" : "Complétez votre profil pour l'utiliser lors de vos commandes"}
+            </label>
+            {isLoadingProfile && useProfileContact && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+          </div>
+          
+          <div className="flex items-center space-x-2 py-2">
+            <Checkbox 
+              id="useProfileAddress" 
+              checked={useProfileAddress}
+              onCheckedChange={handleProfileAddressToggle}
+              disabled={isLoadingProfile || !hasAddress}
+            />
+            <label
+              htmlFor="useProfileAddress"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              {hasAddress ? "Utiliser l'adresse de livraison de mon profil" : "Ajoutez une adresse à votre profil pour l'utiliser lors de vos commandes"}
+            </label>
+            {isLoadingProfile && useProfileAddress && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+          </div>
         </div>
       )}
 
