@@ -4,7 +4,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { format, add, set, isAfter, isBefore } from "date-fns";
+import { addMinutes, setHours, setMinutes, setSeconds, setMilliseconds, isAfter, isBefore, format } from "date-fns";
 
 interface TimeSlot {
   id: string;
@@ -48,7 +48,7 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
         const preparationDelay = orderType === "delivery" ? 45 : 30; // 45 min pour livraison, 30 min pour retrait
         
         // Heure minimale de retrait/livraison
-        const minPickupTime = add(now, { minutes: preparationDelay });
+        const minPickupTime = addMinutes(now, preparationDelay);
         
         // Arrondir à la prochaine demi-heure
         const roundedMinutes = currentMinute < 30 ? 30 : 0;
@@ -70,7 +70,17 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
         let startMinute = roundedMinutes;
         
         // Si l'heure minimale de retrait/livraison est après l'heure arrondie, utiliser l'heure minimale
-        const roundedDateTime = set(now, { hours: roundedHour, minutes: roundedMinutes, seconds: 0, milliseconds: 0 });
+        const roundedDateTime = setHours(
+          setMinutes(
+            setSeconds(
+              setMilliseconds(new Date(), 0),
+              0
+            ),
+            roundedMinutes
+          ),
+          roundedHour
+        );
+        
         if (isAfter(minPickupTime, roundedDateTime)) {
           startHour = minPickupTime.getHours();
           startMinute = Math.ceil(minPickupTime.getMinutes() / 30) * 30;
@@ -110,7 +120,18 @@ const TimeSlotSelector = ({ onSelect, orderType }: TimeSlotSelectorProps) => {
             slotTime.setHours(h, m, 0, 0);
             
             // Vérifier si le créneau est dans le futur et avant la fermeture
-            if (isAfter(slotTime, now) && isBefore(slotTime, set(now, { hours: closingHour, minutes: 0 }))) {
+            const closingTime = setHours(
+              setMinutes(
+                setSeconds(
+                  setMilliseconds(new Date(), 0),
+                  0
+                ),
+                0
+              ),
+              closingHour
+            );
+            
+            if (isAfter(slotTime, now) && isBefore(slotTime, closingTime)) {
               const formattedTime = format(slotTime, 'HH:mm');
               
               slotsToGenerate.push({

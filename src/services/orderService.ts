@@ -141,6 +141,7 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
       .from("orders")
       .select("*")
       .eq("user_id", session.user.id)
+      .eq("payment_status", "paid") // Uniquement les commandes payées
       .order("created_at", { ascending: false });
 
     if (ordersError) {
@@ -222,6 +223,7 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
         delivery_city,
         delivery_postal_code
       `)
+      .eq("payment_status", "paid") // Uniquement les commandes payées
       .order('created_at', { ascending: false });
       
     if (response.error) {

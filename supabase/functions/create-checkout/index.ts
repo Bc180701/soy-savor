@@ -70,55 +70,49 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Authentification de l'utilisateur
+    // Authentification de l'utilisateur (optionnelle)
+    let userId: string | undefined;
+    
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Vous devez être connecté pour passer commande.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: userData } = await supabase.auth.getUser(token);
+        userId = userData.user?.id;
+      } catch (authError) {
+        console.log("Utilisateur non authentifié, commande en tant qu'invité");
+      }
     }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !userData.user) {
-      return new Response(
-        JSON.stringify({ error: 'Erreur d\'authentification.' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userId = userData.user.id;
-    const userEmail = userData.user.email;
     
-    // Récupérer le client Stripe ou en créer un nouveau
-    let customerId: string;
-    const { data: customers } = await stripe.customers.list({
-      email: userEmail,
-      limit: 1,
-    });
+    // Créer ou récupérer le client Stripe
+    let customerId: string | undefined;
     
-    if (customers && customers.length > 0) {
-      customerId = customers[0].id;
-    } else {
-      // Créer un nouveau client
-      const newCustomer = await stripe.customers.create({
-        email: userEmail,
-        name: orderData.clientName,
-        phone: orderData.clientPhone,
+    if (orderData.clientEmail) {
+      const { data: customers } = await stripe.customers.list({
+        email: orderData.clientEmail,
+        limit: 1,
       });
-      customerId = newCustomer.id;
+      
+      if (customers && customers.length > 0) {
+        customerId = customers[0].id;
+      } else {
+        // Créer un nouveau client
+        const newCustomer = await stripe.customers.create({
+          email: orderData.clientEmail,
+          name: orderData.clientName,
+          phone: orderData.clientPhone,
+        });
+        customerId = newCustomer.id;
+      }
     }
 
-    // Créer les line items pour Stripe Checkout
+    // Créer les éléments de ligne pour Stripe Checkout
     const lineItems = orderData.items.map(item => ({
       price_data: {
         currency: 'eur',
         product_data: {
           name: item.menuItem.name,
           description: item.specialInstructions,
-          images: item.menuItem.imageUrl ? [item.menuItem.imageUrl] : undefined,
         },
         unit_amount: Math.round(item.menuItem.price * 100), // Montant en centimes
       },
@@ -156,6 +150,7 @@ serve(async (req) => {
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
+      customer_email: !customerId ? orderData.clientEmail : undefined,
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
@@ -171,6 +166,52 @@ serve(async (req) => {
       },
     });
 
+    // Créer la commande avec un statut de paiement "pending"
+    const { data: orderRecord, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id: userId,
+        subtotal: orderData.subtotal,
+        tax: orderData.tax,
+        delivery_fee: orderData.deliveryFee,
+        total: orderData.total,
+        order_type: orderData.orderType,
+        status: 'pending',
+        payment_method: 'credit-card',
+        payment_status: 'pending',
+        scheduled_for: orderData.scheduledFor,
+        client_name: orderData.clientName,
+        client_email: orderData.clientEmail,
+        client_phone: orderData.clientPhone,
+        delivery_street: orderData.deliveryStreet,
+        delivery_city: orderData.deliveryCity,
+        delivery_postal_code: orderData.deliveryPostalCode,
+        customer_notes: orderData.customerNotes,
+        stripe_session_id: session.id
+      })
+      .select('id')
+      .single();
+
+    if (orderError) {
+      console.error("Erreur lors de la création de la commande:", orderError);
+    } else {
+      // Ajouter les articles de la commande
+      for (const item of orderData.items) {
+        await supabase
+          .from('order_items')
+          .insert({
+            order_id: orderRecord.id,
+            product_id: item.menuItem.id,
+            quantity: item.quantity,
+            price: item.menuItem.price,
+            special_instructions: item.specialInstructions
+          });
+      }
+    }
+
+    // Mettre en place un webhook pour mettre à jour le statut de la commande après paiement réussi
+    // Note: Dans une implémentation complète, vous devriez configurer un webhook Stripe pour recevoir les événements de paiement
+    
     // Renvoyer l'URL de la session
     return new Response(
       JSON.stringify({ url: session.url }),

@@ -1,271 +1,604 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Plus, Minus, Trash2, ShoppingBag, ArrowRight, ArrowLeft, CreditCard } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
-import { useOrder } from "@/hooks/use-order";
-import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { formatEuro } from "@/utils/setupStorage";
+import { useToast } from "@/hooks/use-toast";
+import { CartItem } from "@/types";
+import { createOrder } from "@/services/orderService";
+import { X, Trash, ArrowRight, Loader2 } from "lucide-react";
+import DeliveryAddressForm from "@/components/checkout/DeliveryAddressForm";
 import DeliveryMethod from "@/components/checkout/DeliveryMethod";
-import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/DeliveryAddressForm";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { format } from "date-fns/format";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-// Enum for checkout steps
+// Enum pour les étapes du checkout
 enum CheckoutStep {
-  CART = 'cart',
-  DELIVERY_METHOD = 'delivery-method',
-  DELIVERY_ADDRESS = 'delivery-address',
-  TIME_SLOT = 'time-slot',
-  PAYMENT = 'payment',
+  Cart,
+  DeliveryDetails,
+  Payment
 }
 
-// Type pour les produits offerts
-interface FreeProduct {
-  id: string;
+// Interface pour les informations de livraison
+interface DeliveryInfo {
+  orderType: "delivery" | "pickup";
   name: string;
-  icon: React.ReactNode;
+  email: string;
+  phone: string;
+  street?: string;
+  city?: string;
+  postalCode?: string;
+  pickupTime?: string;
+  deliveryInstructions?: string;
+  notes?: string;
+  allergies: string[];
 }
 
 const Panier = () => {
+  const { items, subtotal, removeItem, updateQuantity, clearCart } = useCart();
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const cart = useCart();
-  const orderStore = useOrder();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.CART);
+  const TAX_RATE = 0.1; // 10% TVA
+  const DELIVERY_FEE = 3.5; // 3.50€ frais de livraison
+
+  const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
+  const [loading, setLoading] = useState(false);
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
+    orderType: "delivery",
+    name: "",
+    email: "",
+    phone: "",
+    allergies: []
+  });
   
-  // Order details
-  const [orderType, setOrderType] = useState<"delivery" | "pickup">("pickup");
-  const [deliveryFee, setDeliveryFee] = useState(0);
-  const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddressData | null>(null);
-  const [deliveryTime, setDeliveryTime] = useState<string>("");
+  const tax = subtotal * TAX_RATE;
+  const deliveryFee = deliveryInfo.orderType === "delivery" ? DELIVERY_FEE : 0;
+  const total = subtotal + tax + deliveryFee;
   
-  // États pour la promotion
-  const [isPromotionApplicable, setIsPromotionApplicable] = useState(false);
-  const [selectedFreeProduct, setSelectedFreeProduct] = useState<string | null>(null);
-  const [isStripeLoading, setIsStripeLoading] = useState(false);
-  
-  // Liste des produits offerts
-  const freeProducts: FreeProduct[] = [
-    { id: "salade-chou", name: "Salade de chou", icon: <Salad className="h-5 w-5 text-green-600" /> },
-    { id: "salade-wakame", name: "Salade wakame", icon: <Leaf className="h-5 w-5 text-green-700" /> },
-    { id: "soupe-miso", name: "Soupe miso", icon: <Soup className="h-5 w-5 text-amber-600" /> },
-    { id: "nigiri-saumon", name: "Nigiri saumon (2 pièces)", icon: <Fish className="h-5 w-5 text-blue-500" /> },
-    { id: "perle-ananas", name: "Perle du Japon Ananas", icon: <Apple className="h-5 w-5 text-yellow-500" /> },
-    { id: "perle-banane", name: "Perle du Japon Banane", icon: <Banana className="h-5 w-5 text-yellow-400" /> },
+  // État pour gérer les allergies sélectionnées
+  const allergyOptions = [
+    { id: "gluten", name: "Gluten", icon: <Salad className="h-4 w-4" /> },
+    { id: "crustaces", name: "Crustacés", icon: <Fish className="h-4 w-4" /> },
+    { id: "eggs", name: "Œufs", icon: <Banana className="h-4 w-4" /> },
+    { id: "fish", name: "Poisson", icon: <Fish className="h-4 w-4" /> },
+    { id: "peanuts", name: "Arachides", icon: <Leaf className="h-4 w-4" /> },
+    { id: "soy", name: "Soja", icon: <Soup className="h-4 w-4" /> },
+    { id: "nuts", name: "Fruits à coque", icon: <Apple className="h-4 w-4" /> },
+    { id: "sesame", name: "Sésame", icon: <Leaf className="h-4 w-4" /> },
   ];
-
-  // Vérifier si l'utilisateur est connecté
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
-    };
-    checkAuth();
-  }, []);
   
-  // Vérifier l'éligibilité à la promotion
-  useEffect(() => {
-    const checkPromotionEligibility = () => {
-      // Vérifier si c'est un mardi, mercredi ou jeudi
-      const now = new Date();
-      const dayOfWeek = now.getDay(); // 0 = dim, 1 = lun, 2 = mar, 3 = mer, 4 = jeu
-      const isEligibleDay = dayOfWeek >= 2 && dayOfWeek <= 4;
-      
-      // Vérifier si le montant est suffisant (≥ 70€) et si c'est à emporter
-      const isEligibleAmount = cart.total >= 70;
-      const isEligibleOrderType = orderType === "pickup";
-      
-      setIsPromotionApplicable(isEligibleDay && isEligibleAmount && isEligibleOrderType);
-      
-      // Réinitialiser le produit gratuit si la promotion n'est plus applicable
-      if (!isEligibleDay || !isEligibleAmount || !isEligibleOrderType) {
-        setSelectedFreeProduct(null);
-      }
-    };
+  // Fonction pour basculer une allergie
+  const toggleAllergy = (allergyId: string) => {
+    setAllergies((prevAllergies) =>
+      prevAllergies.includes(allergyId)
+        ? prevAllergies.filter((id) => id !== allergyId)
+        : [...prevAllergies, allergyId]
+    );
     
-    checkPromotionEligibility();
-  }, [cart.total, orderType]);
-
-  const handleIncrement = (id: string) => {
-    cart.incrementQuantity(id);
+    setDeliveryInfo((prev) => ({
+      ...prev,
+      allergies: allergies.includes(allergyId)
+        ? prev.allergies.filter((id) => id !== allergyId)
+        : [...prev.allergies, allergyId]
+    }));
   };
 
-  const handleDecrement = (id: string) => {
-    cart.decrementQuantity(id);
+  const handleNextStep = () => {
+    if (currentStep === CheckoutStep.Cart) {
+      if (items.length === 0) {
+        toast({
+          title: "Panier vide",
+          description: "Veuillez ajouter des articles à votre panier.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setCurrentStep(CheckoutStep.DeliveryDetails);
+    } else if (currentStep === CheckoutStep.DeliveryDetails) {
+      if (!validateDeliveryInfo()) {
+        return;
+      }
+      setCurrentStep(CheckoutStep.Payment);
+    }
   };
 
-  const handleRemove = (id: string) => {
-    cart.removeItem(id);
-    toast({
-      title: "Article supprimé",
-      description: "L'article a été retiré de votre panier",
-    });
+  const handlePreviousStep = () => {
+    if (currentStep === CheckoutStep.DeliveryDetails) {
+      setCurrentStep(CheckoutStep.Cart);
+    } else if (currentStep === CheckoutStep.Payment) {
+      setCurrentStep(CheckoutStep.DeliveryDetails);
+    }
   };
 
-  const handleDeliveryMethodChange = (method: "delivery" | "pickup", fee: number) => {
-    setOrderType(method);
-    setDeliveryFee(fee);
+  const validateDeliveryInfo = () => {
+    if (!deliveryInfo.name || !deliveryInfo.email || !deliveryInfo.phone) {
+      toast({
+        title: "Informations manquantes",
+        description: "Veuillez remplir tous les champs obligatoires.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (deliveryInfo.orderType === "delivery" && (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode)) {
+      toast({
+        title: "Adresse de livraison incomplète",
+        description: "Veuillez remplir tous les champs de l'adresse de livraison.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!deliveryInfo.pickupTime) {
+      toast({
+        title: "Horaire manquant",
+        description: `Veuillez sélectionner un horaire de ${deliveryInfo.orderType === "delivery" ? "livraison" : "retrait"}.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
   };
 
-  const handleAddressSubmit = (data: DeliveryAddressData) => {
-    setDeliveryAddress(data);
-    setCurrentStep(CheckoutStep.TIME_SLOT);
-  };
-
-  const handleTimeSlotSelect = (time: string) => {
-    setDeliveryTime(time);
-    setCurrentStep(CheckoutStep.PAYMENT);
-  };
-  
-  const handleFreeProductSelect = (productId: string) => {
-    setSelectedFreeProduct(productId);
-    toast({
-      title: "Produit offert sélectionné",
-      description: `Votre ${freeProducts.find(p => p.id === productId)?.name} gratuit sera ajouté à votre commande.`,
-    });
-  };
-
-  // Nouvelle fonction pour gérer le paiement Stripe
   const handleStripeCheckout = async () => {
     try {
-      setIsStripeLoading(true);
-
-      // Récupérer le token de session
-      const { data: { session } } = await supabase.auth.getSession();
+      setLoading(true);
       
-      if (!session) {
-        toast({
-          variant: "destructive",
-          title: "Erreur d'authentification",
-          description: "Vous devez être connecté pour passer une commande",
-        });
-        navigate("/login", { state: { returnUrl: "/panier" } });
+      if (!validateDeliveryInfo()) {
+        setLoading(false);
         return;
       }
 
-      // Calculate scheduled time
-      const orderDate = new Date();
-      const [hours, minutes] = deliveryTime.split(':').map(Number);
-      orderDate.setHours(hours, minutes, 0, 0);
+      // Préparation des données pour la fonction edge
+      const scheduledForDate = new Date();
+      const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
+      scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       
-      // Ajouter une note concernant le produit gratuit si la promotion est applicable
-      let customerNotes = "";
-      if (isPromotionApplicable && selectedFreeProduct) {
-        const freeProductName = freeProducts.find(p => p.id === selectedFreeProduct)?.name || "";
-        customerNotes = `Produit offert sélectionné: ${freeProductName}`;
-      }
-
-      // Créer l'objet de commande à envoyer à la fonction edge
-      const orderData = {
-        items: cart.items,
-        subtotal: cart.total,
-        tax: cart.total * 0.1, // 10% de TVA
-        deliveryFee: deliveryFee,
-        total: cart.total + deliveryFee + (cart.total * 0.1),
-        orderType: orderType,
-        scheduledFor: orderDate.toISOString(),
-        clientName: deliveryAddress?.name,
-        clientPhone: deliveryAddress?.phone,
-        clientEmail: deliveryAddress?.email,
-        deliveryStreet: deliveryAddress?.street,
-        deliveryCity: deliveryAddress?.city,
-        deliveryPostalCode: deliveryAddress?.postalCode,
-        customerNotes: customerNotes || undefined,
-        successUrl: `${window.location.origin}/compte`,
-        cancelUrl: `${window.location.origin}/panier`
-      };
-
-      // Appeler la fonction edge
+      // Appel à la fonction edge pour créer la session de paiement
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: orderData
+        body: {
+          items,
+          subtotal,
+          tax,
+          deliveryFee,
+          total,
+          orderType: deliveryInfo.orderType,
+          clientName: deliveryInfo.name,
+          clientEmail: deliveryInfo.email,
+          clientPhone: deliveryInfo.phone,
+          deliveryStreet: deliveryInfo.street,
+          deliveryCity: deliveryInfo.city,
+          deliveryPostalCode: deliveryInfo.postalCode,
+          customerNotes: deliveryInfo.notes,
+          scheduledFor: scheduledForDate.toISOString(),
+          successUrl: `${window.location.origin}/commande-confirmee`,
+          cancelUrl: `${window.location.origin}/panier`,
+        },
       });
 
       if (error) {
-        throw new Error(error.message);
+        console.error("Erreur lors de la création de la session Stripe:", error);
+        toast({
+          title: "Erreur de paiement",
+          description: "Une erreur est survenue lors de l'initialisation du paiement.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      if (data && data.url) {
-        // Rediriger vers l'URL de checkout Stripe
-        window.location.href = data.url;
-      } else {
-        throw new Error("Aucune URL de checkout n'a été retournée");
-      }
+      // Rediriger vers la page de paiement Stripe
+      window.location.href = data.url;
+      
     } catch (error) {
-      console.error("Erreur lors de la création du checkout Stripe:", error);
+      console.error("Erreur:", error);
       toast({
-        variant: "destructive",
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Une erreur est survenue lors du paiement",
+        description: "Une erreur est survenue lors du paiement.",
+        variant: "destructive",
       });
     } finally {
-      setIsStripeLoading(false);
+      setLoading(false);
     }
   };
 
-  const calculateTotal = () => {
-    const subtotal = cart.total;
-    const tax = subtotal * 0.1; // 10% TVA
-    return subtotal + tax + deliveryFee;
+  const handleOrderTypeChange = (type: "delivery" | "pickup") => {
+    setDeliveryInfo((prev) => ({
+      ...prev,
+      orderType: type,
+    }));
   };
 
-  const goToNextStep = () => {
-    if (currentStep === CheckoutStep.CART) {
-      setCurrentStep(CheckoutStep.DELIVERY_METHOD);
-    } else if (currentStep === CheckoutStep.DELIVERY_METHOD) {
-      if (orderType === "delivery") {
-        setCurrentStep(CheckoutStep.DELIVERY_ADDRESS);
-      } else {
-        setCurrentStep(CheckoutStep.TIME_SLOT);
-      }
-    } else if (currentStep === CheckoutStep.TIME_SLOT) {
-      setCurrentStep(CheckoutStep.PAYMENT);
-    }
+  const handleTimeSelect = (time: string) => {
+    setDeliveryInfo((prev) => ({
+      ...prev,
+      pickupTime: time,
+    }));
   };
 
-  const goToPreviousStep = () => {
-    if (currentStep === CheckoutStep.DELIVERY_METHOD) {
-      setCurrentStep(CheckoutStep.CART);
-    } else if (currentStep === CheckoutStep.DELIVERY_ADDRESS) {
-      setCurrentStep(CheckoutStep.DELIVERY_METHOD);
-    } else if (currentStep === CheckoutStep.TIME_SLOT) {
-      if (orderType === "delivery") {
-        setCurrentStep(CheckoutStep.DELIVERY_ADDRESS);
-      } else {
-        setCurrentStep(CheckoutStep.DELIVERY_METHOD);
-      }
-    } else if (currentStep === CheckoutStep.PAYMENT) {
-      setCurrentStep(CheckoutStep.TIME_SLOT);
+  const renderCartItems = () => {
+    if (items.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-lg text-gray-600">Votre panier est vide.</p>
+          <Link to="/menu" className="mt-4 inline-block text-gold-500 hover:text-gold-600">
+            Parcourir le menu
+          </Link>
+        </div>
+      );
     }
+
+    return items.map((item: CartItem) => (
+      <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex items-center border-b py-4">
+        {item.menuItem.imageUrl && (
+          <img
+            src={item.menuItem.imageUrl}
+            alt={item.menuItem.name}
+            className="w-16 h-16 object-cover rounded mr-4"
+          />
+        )}
+        <div className="flex-1">
+          <h3 className="font-medium">{item.menuItem.name}</h3>
+          {item.specialInstructions && (
+            <p className="text-sm text-gray-500">{item.specialInstructions}</p>
+          )}
+          <div className="flex items-center mt-2">
+            <button
+              className="w-6 h-6 flex items-center justify-center border rounded-full"
+              onClick={() => updateQuantity(item, Math.max(1, item.quantity - 1))}
+            >
+              -
+            </button>
+            <span className="mx-2">{item.quantity}</span>
+            <button
+              className="w-6 h-6 flex items-center justify-center border rounded-full"
+              onClick={() => updateQuantity(item, item.quantity + 1)}
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="font-medium">{formatEuro(item.menuItem.price * item.quantity)}</p>
+          <button
+            className="text-red-500 hover:text-red-700 text-sm mt-1"
+            onClick={() => removeItem(item)}
+          >
+            <Trash className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    ));
   };
 
-  useEffect(() => {
-    if (orderType === "pickup") {
-      setDeliveryAddress(null);
-    }
-  }, [orderType]);
+  const renderCartStep = () => (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Votre Panier</h2>
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="mb-6">
+          {renderCartItems()}
+        </div>
+        
+        <div className="border-t pt-4">
+          <div className="flex justify-between mb-2">
+            <span>Sous-total</span>
+            <span>{formatEuro(subtotal)}</span>
+          </div>
+          <div className="flex justify-between mb-2">
+            <span>TVA (10%)</span>
+            <span>{formatEuro(tax)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-lg mt-4">
+            <span>Total</span>
+            <span>{formatEuro(subtotal + tax)}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-between">
+        <Link to="/menu" className="text-gray-500 hover:text-gray-700 flex items-center">
+          <X className="mr-2 h-4 w-4" /> Continuer les achats
+        </Link>
+        <Button onClick={handleNextStep} disabled={items.length === 0} className="bg-gold-500 hover:bg-gold-600 text-black">
+          Commander <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
 
-  const isNextButtonDisabled = () => {
-    if (currentStep === CheckoutStep.CART) {
-      return cart.items.length === 0;
+  const renderDeliveryStep = () => (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Informations de livraison</h2>
+      
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6 space-y-6">
+        {/* Mode de livraison */}
+        <DeliveryMethod
+          selectedMode={deliveryInfo.orderType}
+          onSelect={handleOrderTypeChange}
+        />
+        
+        {/* Informations personnelles */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Vos coordonnées</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Nom complet *</Label>
+              <Input
+                id="name"
+                value={deliveryInfo.name}
+                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Votre nom et prénom"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Téléphone *</Label>
+              <Input
+                id="phone"
+                value={deliveryInfo.phone}
+                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Votre numéro de téléphone"
+                required
+              />
+            </div>
+          </div>
+          
+          <div>
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={deliveryInfo.email}
+              onChange={(e) => setDeliveryInfo(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="Votre adresse email"
+              required
+            />
+          </div>
+        </div>
+        
+        {/* Adresse de livraison */}
+        {deliveryInfo.orderType === "delivery" && (
+          <DeliveryAddressForm
+            street={deliveryInfo.street || ""}
+            city={deliveryInfo.city || ""}
+            postalCode={deliveryInfo.postalCode || ""}
+            onStreetChange={(street) => setDeliveryInfo(prev => ({ ...prev, street }))}
+            onCityChange={(city) => setDeliveryInfo(prev => ({ ...prev, city }))}
+            onPostalCodeChange={(postalCode) => setDeliveryInfo(prev => ({ ...prev, postalCode }))}
+          />
+        )}
+        
+        {/* Heure de livraison/retrait */}
+        <TimeSlotSelector 
+          orderType={deliveryInfo.orderType}
+          onSelect={handleTimeSelect}
+        />
+        
+        {/* Instructions de livraison */}
+        {deliveryInfo.orderType === "delivery" && (
+          <div>
+            <Label htmlFor="deliveryInstructions">Instructions de livraison (facultatif)</Label>
+            <Textarea
+              id="deliveryInstructions"
+              value={deliveryInfo.deliveryInstructions || ""}
+              onChange={(e) => setDeliveryInfo(prev => ({ ...prev, deliveryInstructions: e.target.value }))}
+              placeholder="Instructions spécifiques pour la livraison..."
+              rows={3}
+            />
+          </div>
+        )}
+        
+        {/* Notes complémentaires */}
+        <div>
+          <Label htmlFor="notes">Notes supplémentaires (facultatif)</Label>
+          <Textarea
+            id="notes"
+            value={deliveryInfo.notes || ""}
+            onChange={(e) => setDeliveryInfo(prev => ({ ...prev, notes: e.target.value }))}
+            placeholder="Autres informations à nous communiquer..."
+            rows={3}
+          />
+        </div>
+        
+        {/* Allergies */}
+        <div className="space-y-2">
+          <h3 className="text-lg font-medium">Allergies</h3>
+          <p className="text-sm text-gray-500">Veuillez sélectionner vos allergies éventuelles.</p>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+            {allergyOptions.map((allergy) => (
+              <div
+                key={allergy.id}
+                className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                  allergies.includes(allergy.id)
+                    ? "border-gold-500 bg-gold-50"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
+                onClick={() => toggleAllergy(allergy.id)}
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="text-gray-500">{allergy.icon}</div>
+                  <span className="text-sm">{allergy.name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button
+          variant="ghost"
+          onClick={handlePreviousStep}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          Retour au panier
+        </Button>
+        <Button
+          onClick={handleNextStep}
+          className="bg-gold-500 hover:bg-gold-600 text-black"
+        >
+          Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderPaymentStep = () => (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Récapitulatif de commande</h2>
+      
+      {/* Récapitulatif */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {/* Récapitulatif des articles */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Articles</h3>
+          {items.map((item) => (
+            <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex justify-between py-2 border-b">
+              <div>
+                <span className="font-medium">{item.quantity}x</span> {item.menuItem.name}
+                {item.specialInstructions && (
+                  <p className="text-sm text-gray-500">{item.specialInstructions}</p>
+                )}
+              </div>
+              <span>{formatEuro(item.menuItem.price * item.quantity)}</span>
+            </div>
+          ))}
+        </div>
+        
+        {/* Informations de livraison */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Livraison</h3>
+          <p className="mb-1">
+            <span className="font-medium">Méthode :</span>{" "}
+            {deliveryInfo.orderType === "delivery" ? "Livraison à domicile" : "Retrait en magasin"}
+          </p>
+          {deliveryInfo.orderType === "delivery" && (
+            <p className="mb-1">
+              <span className="font-medium">Adresse :</span>{" "}
+              {deliveryInfo.street}, {deliveryInfo.postalCode} {deliveryInfo.city}
+            </p>
+          )}
+          <p>
+            <span className="font-medium">Horaire :</span>{" "}
+            {deliveryInfo.pickupTime} aujourd'hui
+          </p>
+        </div>
+        
+        {/* Informations de contact */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Contact</h3>
+          <p className="mb-1">
+            <span className="font-medium">Nom :</span> {deliveryInfo.name}
+          </p>
+          <p className="mb-1">
+            <span className="font-medium">Téléphone :</span> {deliveryInfo.phone}
+          </p>
+          <p>
+            <span className="font-medium">Email :</span> {deliveryInfo.email}
+          </p>
+        </div>
+        
+        {/* Notes et allergies */}
+        {(deliveryInfo.notes || allergies.length > 0) && (
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-3">Informations complémentaires</h3>
+            {deliveryInfo.notes && (
+              <p className="mb-1">
+                <span className="font-medium">Notes :</span> {deliveryInfo.notes}
+              </p>
+            )}
+            {allergies.length > 0 && (
+              <p>
+                <span className="font-medium">Allergies :</span>{" "}
+                {allergies.map((id) => allergyOptions.find((a) => a.id === id)?.name).join(", ")}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {/* Récapitulatif des coûts */}
+        <div className="border-t pt-4 mt-6">
+          <div className="flex justify-between mb-2">
+            <span>Sous-total</span>
+            <span>{formatEuro(subtotal)}</span>
+          </div>
+          <div className="flex justify-between mb-2">
+            <span>TVA (10%)</span>
+            <span>{formatEuro(tax)}</span>
+          </div>
+          {deliveryInfo.orderType === "delivery" && (
+            <div className="flex justify-between mb-2">
+              <span>Frais de livraison</span>
+              <span>{formatEuro(deliveryFee)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold text-lg mt-4">
+            <span>Total</span>
+            <span>{formatEuro(total)}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Options de paiement */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 className="text-lg font-medium mb-4">Méthode de paiement</h3>
+        <RadioGroup defaultValue="card" className="space-y-3">
+          <div className="flex items-center space-x-3 border p-3 rounded-md">
+            <RadioGroupItem value="card" id="card" />
+            <Label htmlFor="card">Carte Bancaire</Label>
+          </div>
+        </RadioGroup>
+      </div>
+      
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button
+          variant="ghost"
+          onClick={handlePreviousStep}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          Modifier les informations
+        </Button>
+        <Button
+          onClick={handleStripeCheckout}
+          disabled={loading}
+          className="bg-gold-500 hover:bg-gold-600 text-black"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Traitement en cours...
+            </>
+          ) : (
+            <>Procéder au paiement</>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Fonction qui retourne le bon composant basé sur l'étape actuelle
+  const renderStep = () => {
+    switch (currentStep) {
+      case CheckoutStep.Cart:
+        return renderCartStep();
+      case CheckoutStep.DeliveryDetails:
+        return renderDeliveryStep();
+      case CheckoutStep.Payment:
+        return renderPaymentStep();
+      default:
+        return null;
     }
-    if (currentStep === CheckoutStep.TIME_SLOT) {
-      return !deliveryTime;
-    }
-    // Si la promotion est applicable mais qu'aucun produit n'est sélectionné
-    if (currentStep === CheckoutStep.PAYMENT && isPromotionApplicable && !selectedFreeProduct) {
-      return true;
-    }
-    return false;
   };
 
   // Formatage de la date du jour
@@ -273,312 +606,44 @@ const Panier = () => {
 
   return (
     <div className="container mx-auto py-24 px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-4xl mx-auto"
-      >
-        <h1 className="text-4xl font-bold text-center mb-2">Votre Panier</h1>
-        <p className="text-gray-600 text-center mb-12">
-          Vérifiez vos articles et procédez au paiement
-        </p>
-
-        {cart.items.length === 0 && currentStep === CheckoutStep.CART ? (
-          <Card className="text-center py-16">
-            <CardContent>
-              <div className="flex flex-col items-center gap-4">
-                <ShoppingBag className="h-12 w-12 text-gray-300" />
-                <h2 className="text-2xl font-semibold">Votre panier est vide</h2>
-                <p className="text-gray-600 mb-6">
-                  Vous n'avez pas encore ajouté d'articles à votre panier
-                </p>
-                <Button asChild className="bg-gold-600 hover:bg-gold-700">
-                  <Link to="/commander">
-                    Découvrir notre menu
-                  </Link>
-                </Button>
+      <div className="max-w-4xl mx-auto">
+        {/* Étapes du checkout */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className={`flex items-center ${currentStep >= CheckoutStep.Cart ? "text-gold-500" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= CheckoutStep.Cart ? "border-gold-500" : "border-gray-300"}`}>
+                1
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
-              {currentStep === CheckoutStep.CART && (
-                <>
-                  <h2 className="text-xl font-semibold mb-4">Articles ({cart.items.length})</h2>
-                  <Card>
-                    <CardContent className="p-0">
-                      <ul className="divide-y divide-gray-100">
-                        {cart.items.map((item) => (
-                          <li key={item.menuItem.id} className="py-6 px-6">
-                            <div className="flex items-center gap-4">
-                              <div className="w-20 h-20 flex-shrink-0 rounded-md overflow-hidden">
-                                <img
-                                  src={item.menuItem.imageUrl || '/placeholder.svg'}
-                                  alt={item.menuItem.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-lg font-medium">{item.menuItem.name}</h3>
-                                <p className="text-gold-600 font-semibold mt-1">
-                                  {item.menuItem.price.toFixed(2)} €
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleDecrement(item.menuItem.id)}
-                                  disabled={item.quantity <= 1}
-                                >
-                                  <Minus className="h-4 w-4" />
-                                </Button>
-                                <span className="w-8 text-center">{item.quantity}</span>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleIncrement(item.menuItem.id)}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-gray-500 hover:text-red-500"
-                                onClick={() => handleRemove(item.menuItem.id)}
-                              >
-                                <Trash2 className="h-5 w-5" />
-                              </Button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-              
-              {currentStep === CheckoutStep.DELIVERY_METHOD && (
-                <DeliveryMethod 
-                  subtotal={cart.total}
-                  onMethodChange={handleDeliveryMethodChange}
-                />
-              )}
-              
-              {currentStep === CheckoutStep.DELIVERY_ADDRESS && (
-                <DeliveryAddressForm
-                  onComplete={handleAddressSubmit}
-                  onCancel={() => setCurrentStep(CheckoutStep.DELIVERY_METHOD)}
-                />
-              )}
-              
-              {currentStep === CheckoutStep.TIME_SLOT && (
-                <TimeSlotSelector
-                  onSelect={handleTimeSlotSelect}
-                  orderType={orderType}
-                />
-              )}
-              
-              {currentStep === CheckoutStep.PAYMENT && (
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold">Récapitulatif de la commande</h3>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-lg font-medium">Articles</h4>
-                      <ul className="mt-2 space-y-2">
-                        {cart.items.map((item) => (
-                          <li key={item.menuItem.id} className="flex justify-between">
-                            <span>{item.quantity} x {item.menuItem.name}</span>
-                            <span>{(item.menuItem.price * item.quantity).toFixed(2)} €</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    {/* Affichage de la promotion si applicable */}
-                    {isPromotionApplicable && (
-                      <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                        <h4 className="font-semibold text-amber-800">Promotion spéciale</h4>
-                        <p className="text-sm text-amber-700 mt-1">
-                          Valable uniquement à emporter les mardis, mercredis et jeudis soirs.
-                        </p>
-                        <p className="text-sm font-medium text-amber-700 mt-1">
-                          Dès 70€ d'achat → Un produit offert au choix :
-                        </p>
-                        
-                        <RadioGroup 
-                          value={selectedFreeProduct || ""}
-                          onValueChange={handleFreeProductSelect}
-                          className="mt-3 space-y-2"
-                        >
-                          {freeProducts.map((product) => (
-                            <div key={product.id} className="flex items-center space-x-2">
-                              <RadioGroupItem value={product.id} id={product.id} />
-                              <Label htmlFor={product.id} className="flex items-center cursor-pointer">
-                                {product.icon}
-                                <span className="ml-2">{product.name}</span>
-                              </Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <h4 className="text-lg font-medium">Mode de réception</h4>
-                      <p className="mt-1">{orderType === "delivery" ? "Livraison à domicile" : "Retrait en magasin"}</p>
-                      {orderType === "delivery" && deliveryAddress && (
-                        <div className="mt-2">
-                          <p className="font-medium">Adresse de livraison:</p>
-                          <p>{deliveryAddress.name}</p>
-                          <p>{deliveryAddress.street}</p>
-                          <p>{deliveryAddress.postalCode} {deliveryAddress.city}</p>
-                          <p>Tél: {deliveryAddress.phone}</p>
-                          <p>Email: {deliveryAddress.email}</p>
-                          {deliveryAddress.instructions && (
-                            <p className="mt-1 text-sm italic">Instructions: {deliveryAddress.instructions}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-lg font-medium">Horaire</h4>
-                      <p className="mt-1">
-                        {orderType === "delivery" ? 
-                          deliveryTime === "Offerts" ? 
-                            "Livraison prévue à " : 
-                            `Livraison prévue à ${deliveryTime}` : 
-                          "Retrait prévu à " + deliveryTime}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-lg font-medium">Paiement</h4>
-                      <div className="mt-2 flex items-center bg-gray-50 p-3 rounded-md border">
-                        <CreditCard className="mr-2 text-gold-600" />
-                        <p>Carte bancaire</p>
-                        <div className="ml-auto flex space-x-2">
-                          <img src="/visa.svg" alt="Visa" className="h-6" />
-                          <img src="/mastercard.svg" alt="Mastercard" className="h-6" />
-                        </div>
-                      </div>
-                      <p className="mt-2 text-sm text-gray-600">Paiement sécurisé en ligne avec Stripe</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {currentStep !== CheckoutStep.CART && (
-                <div className="flex justify-between mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={goToPreviousStep}
-                    className="flex items-center gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" /> Retour
-                  </Button>
-                  
-                  {currentStep === CheckoutStep.PAYMENT ? (
-                    <Button 
-                      className="bg-gold-600 hover:bg-gold-700"
-                      onClick={handleStripeCheckout}
-                      disabled={isStripeLoading || (isPromotionApplicable && !selectedFreeProduct)}
-                    >
-                      {isStripeLoading ? "Traitement en cours..." : "Payer maintenant"}
-                      {isPromotionApplicable && !selectedFreeProduct && (
-                        <span className="sr-only">Veuillez choisir votre produit offert</span>
-                      )}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={goToNextStep}
-                      disabled={isNextButtonDisabled()}
-                      className="bg-gold-600 hover:bg-gold-700"
-                    >
-                      Continuer <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  )}
-                </div>
-              )}
+              <span className="ml-2 font-medium">Panier</span>
             </div>
-
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Récapitulatif</h2>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span>Sous-total</span>
-                      <span>{cart.total.toFixed(2)} €</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>TVA (10%)</span>
-                      <span>{(cart.total * 0.1).toFixed(2)} €</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Frais de livraison</span>
-                      <span>
-                        {orderType === "delivery" ? 
-                          deliveryFee === 0 ? 
-                            "Offerts" : 
-                            `${deliveryFee.toFixed(2)} €` : 
-                          "—"}
-                      </span>
-                    </div>
-                    
-                    {/* Afficher si la promotion est applicable */}
-                    {isPromotionApplicable && (
-                      <div className="flex justify-between text-amber-700 font-medium">
-                        <span>Promotion</span>
-                        <span>1 produit offert</span>
-                      </div>
-                    )}
-                    
-                    <Separator />
-                    <div className="flex justify-between font-semibold text-lg">
-                      <span>Total</span>
-                      <span>{calculateTotal().toFixed(2)} €</span>
-                    </div>
-                  </div>
-                </CardContent>
-                {currentStep === CheckoutStep.CART && (
-                  <CardFooter>
-                    <Button 
-                      className="w-full bg-gold-600 hover:bg-gold-700"
-                      onClick={goToNextStep}
-                      disabled={cart.items.length === 0}
-                    >
-                      Passer commande
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                )}
-              </Card>
-              
-              {/* Bannière d'information sur la promotion */}
-              {orderType === "pickup" && cart.total >= 50 && cart.total < 70 && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-800 font-medium">
-                    {formattedCurrentDay === "Tuesday" || formattedCurrentDay === "Wednesday" || formattedCurrentDay === "Thursday" ? (
-                      <>Plus que <strong>{(70 - cart.total).toFixed(2)}€</strong> pour bénéficier d'un produit offert!</>
-                    ) : (
-                      <>Cette commande sera éligible à un produit offert les mardis, mercredis et jeudis si elle atteint 70€</>
-                    )}
-                  </p>
-                </div>
-              )}
+            <div className={`w-12 h-1 mx-2 ${currentStep >= CheckoutStep.DeliveryDetails ? "bg-gold-500" : "bg-gray-300"}`}></div>
+            <div className={`flex items-center ${currentStep >= CheckoutStep.DeliveryDetails ? "text-gold-500" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= CheckoutStep.DeliveryDetails ? "border-gold-500" : "border-gray-300"}`}>
+                2
+              </div>
+              <span className="ml-2 font-medium">Livraison</span>
+            </div>
+            <div className={`w-12 h-1 mx-2 ${currentStep >= CheckoutStep.Payment ? "bg-gold-500" : "bg-gray-300"}`}></div>
+            <div className={`flex items-center ${currentStep >= CheckoutStep.Payment ? "text-gold-500" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= CheckoutStep.Payment ? "border-gold-500" : "border-gray-300"}`}>
+                3
+              </div>
+              <span className="ml-2 font-medium">Paiement</span>
             </div>
           </div>
-        )}
-      </motion.div>
+        </div>
+        
+        {/* Contenu de l'étape actuelle */}
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+        >
+          {renderStep()}
+        </motion.div>
+      </div>
     </div>
   );
 };

@@ -74,7 +74,6 @@ const OrdersAccountingView = ({
                 <TableHead className="p-2 text-left border">Type</TableHead>
                 <TableHead className="p-2 text-left border">Total</TableHead>
                 <TableHead className="p-2 text-left border">Statut</TableHead>
-                <TableHead className="p-2 text-left border">Paiement</TableHead>
                 <TableHead className="p-2 text-left border">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -89,15 +88,6 @@ const OrdersAccountingView = ({
                   </TableCell>
                   <TableCell className="p-2 border">{order.total.toFixed(2)} €</TableCell>
                   <TableCell className="p-2 border">{getStatusBadge(order.status)}</TableCell>
-                  <TableCell className="p-2 border">
-                    {order.paymentStatus === 'paid' ? (
-                      <Badge className="bg-green-500">Payé</Badge>
-                    ) : order.paymentStatus === 'pending' ? (
-                      <Badge className="bg-yellow-500">En attente</Badge>
-                    ) : (
-                      <Badge variant="destructive">Échoué</Badge>
-                    )}
-                  </TableCell>
                   <TableCell className="p-2 border flex gap-2">
                     <Button 
                       variant="outline" 
