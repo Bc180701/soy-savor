@@ -27,6 +27,8 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [promotion, setPromotion] = useState<Promotion | null>(null);
   const [loadingPromotion, setLoadingPromotion] = useState(true);
   
@@ -53,6 +55,25 @@ const Register = () => {
     
     fetchPromotion();
   }, []);
+
+  const sendWelcomeEmail = async (email: string, firstName: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: { email, firstName }
+      });
+
+      if (error) {
+        console.error("Erreur lors de l'envoi de l'email de bienvenue:", error);
+        return false;
+      }
+      
+      console.log("Email de bienvenue envoyé:", data);
+      return true;
+    } catch (error) {
+      console.error("Erreur lors de l'appel à l'API d'email:", error);
+      return false;
+    }
+  };
   
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +111,12 @@ const Register = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          }
+        }
       });
       
       if (error) {
@@ -99,6 +126,9 @@ const Register = () => {
           description: error.message,
         });
       } else {
+        // Envoyer l'email de bienvenue avec le code promo
+        await sendWelcomeEmail(email, firstName);
+        
         // Ne montrons pas le code ici, pour éviter la triche
         let successMessage = "Vérifiez votre email pour confirmer votre compte et profitez de 10% de réduction sur votre prochaine commande!";
         
@@ -156,6 +186,28 @@ const Register = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">Prénom</Label>
+                  <Input
+                    id="firstName"
+                    type="text"
+                    placeholder="Votre prénom"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Nom</Label>
+                  <Input
+                    id="lastName"
+                    type="text"
+                    placeholder="Votre nom"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
