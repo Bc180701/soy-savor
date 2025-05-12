@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+const BREVO_API_KEY = "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";
 const PROMOTION_CODE = "BIENVENUE10";
 
 // CORS headers for allowing requests from your frontend
@@ -18,6 +18,7 @@ serve(async (req) => {
   }
 
   try {
+    // Pas besoin de vérifier l'authentification car l'API est publique pour l'inscription
     const { email, firstName = "" } = await req.json();
 
     if (!email) {
@@ -39,7 +40,7 @@ serve(async (req) => {
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "api-key": "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",
+        "api-key": BREVO_API_KEY,
       },
       body: JSON.stringify({
         sender: {

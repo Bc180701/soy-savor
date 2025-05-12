@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { format, addMinutes, isAfter, isBefore } from "date-fns";
+import * as dateFns from "date-fns";
 import { fr } from "date-fns/locale";
 import { CheckCircle2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ const TimeSlotSelector = ({ selectedTime, setSelectedTime, deliveryMethod }: Tim
       
       // Add preparation time based on delivery method
       const preparationTime = deliveryMethod === 'delivery' ? 45 : 30;
-      startTime = addMinutes(startTime, preparationTime);
+      startTime = dateFns.addMinutes(startTime, preparationTime);
       
       // Restaurant opens at 11:00 and closes at 22:00 (10:00 PM)
       const openingTime = new Date(
@@ -55,20 +55,20 @@ const TimeSlotSelector = ({ selectedTime, setSelectedTime, deliveryMethod }: Tim
       );
       
       // If current time + preparation is before opening time, start from opening time
-      if (isAfter(openingTime, startTime)) {
+      if (dateFns.isAfter(openingTime, startTime)) {
         startTime = openingTime;
       }
       
-      const formattedDate = format(now, "EEEE d MMMM", { locale: fr });
-      const formattedTime = format(now, "HH:mm");
+      const formattedDate = dateFns.format(now, "EEEE d MMMM", { locale: fr });
+      const formattedTime = dateFns.format(now, "HH:mm");
       
       setCurrentDate(now);
       
       // Generate slots every 15 minutes until closing time
       let currentSlot = startTime;
-      while (isAfter(closingTime, currentSlot) || isBefore(closingTime, addMinutes(currentSlot, 15))) {
-        slots.push(format(currentSlot, "HH:mm"));
-        currentSlot = addMinutes(currentSlot, 15);
+      while (dateFns.isAfter(closingTime, currentSlot) || dateFns.isBefore(closingTime, dateFns.addMinutes(currentSlot, 15))) {
+        slots.push(dateFns.format(currentSlot, "HH:mm"));
+        currentSlot = dateFns.addMinutes(currentSlot, 15);
       }
       
       return slots;
@@ -88,10 +88,10 @@ const TimeSlotSelector = ({ selectedTime, setSelectedTime, deliveryMethod }: Tim
     
     // Check if the time slot is available (not in the past)
     const now = new Date();
-    const isAvailable = isAfter(date, now) && isBefore(date, new Date(now.getFullYear(), now.getMonth(), now.getDate(), 22, 0));
+    const isAvailable = dateFns.isAfter(date, now) && dateFns.isBefore(date, new Date(now.getFullYear(), now.getMonth(), now.getDate(), 22, 0));
     
     // Format the time to display
-    const formattedTime = format(date, "HH'h'mm", { locale: fr });
+    const formattedTime = dateFns.format(date, "HH'h'mm", { locale: fr });
     
     return {
       display: formattedTime,
@@ -117,7 +117,7 @@ const TimeSlotSelector = ({ selectedTime, setSelectedTime, deliveryMethod }: Tim
       
       <div className="border rounded-md p-4 bg-white">
         <p className="font-medium mb-3 text-gray-700">
-          {format(currentDate, "EEEE d MMMM", { locale: fr })}
+          {dateFns.format(currentDate, "EEEE d MMMM", { locale: fr })}
         </p>
         
         <div className="grid grid-cols-3 gap-2">
