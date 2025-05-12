@@ -19,7 +19,6 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 // Enum for checkout steps
 enum CheckoutStep {
@@ -98,8 +97,6 @@ const Panier = () => {
     checkPromotionEligibility();
   }, [cart.total, orderType]);
 
-  const [isRedirectingToSumUp, setIsRedirectingToSumUp] = useState(false);
-
   const handleIncrement = (id: string) => {
     cart.incrementQuantity(id);
   };
@@ -140,16 +137,6 @@ const Panier = () => {
   };
 
   const handleCheckout = async () => {
-    // Vérifier si la promotion est applicable et qu'un produit gratuit est sélectionné
-    if (isPromotionApplicable && !selectedFreeProduct) {
-      toast({
-        variant: "destructive",
-        title: "Produit offert non sélectionné",
-        description: "Veuillez sélectionner votre produit gratuit pour bénéficier de l'offre.",
-      });
-      return;
-    }
-    
     setIsProcessing(true);
     
     // Vérifier l'authentification
@@ -200,44 +187,27 @@ const Panier = () => {
     });
     
     if (result.success) {
-      try {
-        // Initier le paiement SumUp
-        setIsRedirectingToSumUp(true);
-        const paymentResult = await cart.initiateSumUpPayment(
-          result.order.id,
-          deliveryAddress?.email || session.user.email
-        );
-        
-        if (!paymentResult.success) {
-          throw new Error(paymentResult.error || "Échec de l'initialisation du paiement");
-        }
-        
-        // Enregistrer les informations de commande dans le stockage local
-        const order = {
-          items: cart.items,
-          total: cart.total + deliveryFee + (cart.total * 0.1),
-          date: new Date().toISOString()
-        };
-        
-        orderStore.createOrder(order);
-        
-        // Rediriger vers la page de paiement SumUp
-        window.location.href = paymentResult.redirectUrl;
-        return; // Arrêter l'exécution ici car nous redirigerons
+      // Enregistrer les informations de commande dans le stockage local
+      const order = {
+        items: cart.items,
+        total: cart.total + deliveryFee + (cart.total * 0.1),
+        date: new Date().toISOString()
+      };
       
-      } catch (error) {
-        console.error("Erreur lors de l'initialisation du paiement:", error);
-        
-        toast({
-          variant: "destructive",
-          title: "Erreur de paiement",
-          description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'initialisation du paiement",
-        });
-        
-        setIsProcessing(false);
-        setIsRedirectingToSumUp(false);
-        return;
-      }
+      orderStore.createOrder(order);
+      
+      // Vider le panier
+      cart.clearCart();
+      
+      setIsProcessing(false);
+      
+      toast({
+        title: "Commande validée !",
+        description: "Votre commande a été enregistrée avec succès",
+      });
+      
+      // Rediriger vers la page de compte
+      navigate("/compte");
     } else {
       setIsProcessing(false);
       
@@ -297,6 +267,10 @@ const Panier = () => {
     }
     if (currentStep === CheckoutStep.TIME_SLOT) {
       return !deliveryTime;
+    }
+    // Si la promotion est applicable mais qu'aucun produit n'est sélectionné
+    if (currentStep === CheckoutStep.PAYMENT && isPromotionApplicable && !selectedFreeProduct) {
+      return true;
     }
     return false;
   };
@@ -358,11 +332,6 @@ const Panier = () => {
                                 <p className="text-gold-600 font-semibold mt-1">
                                   {item.menuItem.price.toFixed(2)} €
                                 </p>
-                                {item.specialInstructions && (
-                                  <p className="text-sm text-gray-500 mt-1 italic">
-                                    {item.specialInstructions}
-                                  </p>
-                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button
@@ -465,15 +434,6 @@ const Panier = () => {
                             </div>
                           ))}
                         </RadioGroup>
-                        
-                        {isPromotionApplicable && !selectedFreeProduct && (
-                          <Alert variant="destructive" className="mt-3">
-                            <AlertTitle>Produit gratuit non sélectionné</AlertTitle>
-                            <AlertDescription>
-                              Veuillez sélectionner votre produit gratuit avant de valider votre commande
-                            </AlertDescription>
-                          </Alert>
-                        )}
                       </div>
                     )}
                     
@@ -502,7 +462,7 @@ const Panier = () => {
                           deliveryTime === "Offerts" ? 
                             "Livraison prévue à " : 
                             `Livraison prévue à ${deliveryTime}` : 
-                          `Retrait prévu à ${deliveryTime}`}
+                          "Retrait prévu à " + deliveryTime}
                       </p>
                     </div>
                     
@@ -529,7 +489,6 @@ const Panier = () => {
                     variant="outline"
                     onClick={goToPreviousStep}
                     className="flex items-center gap-2"
-                    disabled={isProcessing || isRedirectingToSumUp}
                   >
                     <ArrowLeft className="h-4 w-4" /> Retour
                   </Button>
@@ -538,13 +497,12 @@ const Panier = () => {
                     <Button 
                       className="bg-gold-600 hover:bg-gold-700"
                       onClick={handleCheckout}
-                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct) || isRedirectingToSumUp}
+                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct)}
                     >
-                      {isProcessing ? 
-                        "Traitement en cours..." : 
-                        isRedirectingToSumUp ? 
-                        "Redirection vers SumUp..." : 
-                        "Payer maintenant"}
+                      {isProcessing ? "Traitement en cours..." : "Payer maintenant"}
+                      {isPromotionApplicable && !selectedFreeProduct && (
+                        <span className="sr-only">Veuillez choisir votre produit offert</span>
+                      )}
                     </Button>
                   ) : (
                     <Button
@@ -587,11 +545,7 @@ const Panier = () => {
                     {isPromotionApplicable && (
                       <div className="flex justify-between text-amber-700 font-medium">
                         <span>Promotion</span>
-                        <span>
-                          {selectedFreeProduct ? 
-                            `1 ${freeProducts.find(p => p.id === selectedFreeProduct)?.name} offert` : 
-                            "Sélectionnez votre produit offert"}
-                        </span>
+                        <span>1 produit offert</span>
                       </div>
                     )}
                     
