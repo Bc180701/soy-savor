@@ -1,0 +1,189 @@
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import Stripe from 'https://esm.sh/stripe@14.20.0';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface CartItem {
+  menuItem: {
+    id: string;
+    name: string;
+    price: number;
+    category: string;
+    imageUrl?: string;
+  };
+  quantity: number;
+  specialInstructions?: string;
+}
+
+interface OrderData {
+  items: CartItem[];
+  subtotal: number;
+  tax: number;
+  deliveryFee: number;
+  total: number;
+  orderType: "delivery" | "pickup";
+  clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  deliveryStreet?: string;
+  deliveryCity?: string;
+  deliveryPostalCode?: string;
+  customerNotes?: string;
+  scheduledFor: string;
+  successUrl: string;
+  cancelUrl: string;
+}
+
+serve(async (req) => {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
+  }
+
+  try {
+    // Vérifier la clé Stripe
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) {
+      return new Response(
+        JSON.stringify({ error: 'La clé API Stripe n\'est pas configurée.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Récupérer les données de la commande depuis le corps de la requête
+    const orderData: OrderData = await req.json();
+    
+    // Initialiser Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Authentification de l'utilisateur
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Vous devez être connecté pour passer commande.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+
+    if (userError || !userData.user) {
+      return new Response(
+        JSON.stringify({ error: 'Erreur d\'authentification.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = userData.user.id;
+    const userEmail = userData.user.email;
+    
+    // Récupérer le client Stripe ou en créer un nouveau
+    let customerId: string;
+    const { data: customers } = await stripe.customers.list({
+      email: userEmail,
+      limit: 1,
+    });
+    
+    if (customers && customers.length > 0) {
+      customerId = customers[0].id;
+    } else {
+      // Créer un nouveau client
+      const newCustomer = await stripe.customers.create({
+        email: userEmail,
+        name: orderData.clientName,
+        phone: orderData.clientPhone,
+      });
+      customerId = newCustomer.id;
+    }
+
+    // Créer les line items pour Stripe Checkout
+    const lineItems = orderData.items.map(item => ({
+      price_data: {
+        currency: 'eur',
+        product_data: {
+          name: item.menuItem.name,
+          description: item.specialInstructions,
+          images: item.menuItem.imageUrl ? [item.menuItem.imageUrl] : undefined,
+        },
+        unit_amount: Math.round(item.menuItem.price * 100), // Montant en centimes
+      },
+      quantity: item.quantity,
+    }));
+
+    // Ajouter les frais de livraison si nécessaires
+    if (orderData.deliveryFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: 'Frais de livraison',
+          },
+          unit_amount: Math.round(orderData.deliveryFee * 100), // Montant en centimes
+        },
+        quantity: 1,
+      });
+    }
+    
+    // Ajouter la TVA
+    if (orderData.tax > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: 'TVA (10%)',
+          },
+          unit_amount: Math.round(orderData.tax * 100), // Montant en centimes
+        },
+        quantity: 1,
+      });
+    }
+
+    // Créer la session Stripe Checkout
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      mode: 'payment',
+      success_url: orderData.successUrl,
+      cancel_url: orderData.cancelUrl,
+      metadata: {
+        user_id: userId,
+        order_type: orderData.orderType,
+        scheduled_for: orderData.scheduledFor,
+        customer_notes: orderData.customerNotes || '',
+        delivery_address: orderData.orderType === 'delivery' ? 
+          `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
+      },
+    });
+
+    // Renvoyer l'URL de la session
+    return new Response(
+      JSON.stringify({ url: session.url }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (err) {
+    // Gérer les erreurs
+    console.error('Erreur lors de la création de la session Stripe:', err);
+    
+    return new Response(
+      JSON.stringify({ error: err instanceof Error ? err.message : 'Une erreur inconnue est survenue' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

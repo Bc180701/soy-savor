@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -9,15 +10,13 @@ import { useCart } from "@/hooks/use-cart";
 import { useOrder } from "@/hooks/use-order";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { createOrder } from "@/services/orderService";
 import { supabase } from "@/integrations/supabase/client";
 import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/DeliveryAddressForm";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import * as dateFns from "date-fns";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 
 // Enum for checkout steps
@@ -54,6 +53,7 @@ const Panier = () => {
   // États pour la promotion
   const [isPromotionApplicable, setIsPromotionApplicable] = useState(false);
   const [selectedFreeProduct, setSelectedFreeProduct] = useState<string | null>(null);
+  const [isStripeLoading, setIsStripeLoading] = useState(false);
   
   // Liste des produits offerts
   const freeProducts: FreeProduct[] = [
@@ -136,86 +136,80 @@ const Panier = () => {
     });
   };
 
-  const handleCheckout = async () => {
-    setIsProcessing(true);
-    
-    // Vérifier l'authentification
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      setIsProcessing(false);
-      toast({
-        variant: "destructive",
-        title: "Erreur d'authentification",
-        description: "Vous devez être connecté pour passer une commande",
-      });
-      // Rediriger vers la page de connexion
-      navigate("/login", { state: { returnUrl: "/panier" } });
-      return;
-    }
-    
-    // Calculate scheduled time
-    const orderDate = new Date();
-    const [hours, minutes] = deliveryTime.split(':').map(Number);
-    orderDate.setHours(hours, minutes, 0, 0);
-    
-    // Ajouter une note concernant le produit gratuit si la promotion est applicable
-    let customerNotes = "";
-    if (isPromotionApplicable && selectedFreeProduct) {
-      const freeProductName = freeProducts.find(p => p.id === selectedFreeProduct)?.name || "";
-      customerNotes = `Produit offert sélectionné: ${freeProductName}`;
-    }
-    
-    // Créer la commande dans la base de données
-    const result = await createOrder({
-      items: cart.items,
-      subtotal: cart.total,
-      tax: cart.total * 0.1, // 10% de TVA
-      deliveryFee: deliveryFee,
-      total: cart.total + deliveryFee + (cart.total * 0.1),
-      orderType: orderType,
-      paymentMethod: "credit-card", // Toujours par carte bancaire
-      deliveryInstructions: deliveryAddress?.instructions || undefined,
-      scheduledFor: orderDate,
-      clientName: deliveryAddress?.name,
-      clientPhone: deliveryAddress?.phone,
-      clientEmail: deliveryAddress?.email,
-      deliveryStreet: deliveryAddress?.street,
-      deliveryCity: deliveryAddress?.city,
-      deliveryPostalCode: deliveryAddress?.postalCode,
-      customerNotes: customerNotes || undefined
-    });
-    
-    if (result.success) {
-      // Enregistrer les informations de commande dans le stockage local
-      const order = {
+  // Nouvelle fonction pour gérer le paiement Stripe
+  const handleStripeCheckout = async () => {
+    try {
+      setIsStripeLoading(true);
+
+      // Récupérer le token de session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          variant: "destructive",
+          title: "Erreur d'authentification",
+          description: "Vous devez être connecté pour passer une commande",
+        });
+        navigate("/login", { state: { returnUrl: "/panier" } });
+        return;
+      }
+
+      // Calculate scheduled time
+      const orderDate = new Date();
+      const [hours, minutes] = deliveryTime.split(':').map(Number);
+      orderDate.setHours(hours, minutes, 0, 0);
+      
+      // Ajouter une note concernant le produit gratuit si la promotion est applicable
+      let customerNotes = "";
+      if (isPromotionApplicable && selectedFreeProduct) {
+        const freeProductName = freeProducts.find(p => p.id === selectedFreeProduct)?.name || "";
+        customerNotes = `Produit offert sélectionné: ${freeProductName}`;
+      }
+
+      // Créer l'objet de commande à envoyer à la fonction edge
+      const orderData = {
         items: cart.items,
+        subtotal: cart.total,
+        tax: cart.total * 0.1, // 10% de TVA
+        deliveryFee: deliveryFee,
         total: cart.total + deliveryFee + (cart.total * 0.1),
-        date: new Date().toISOString()
+        orderType: orderType,
+        scheduledFor: orderDate.toISOString(),
+        clientName: deliveryAddress?.name,
+        clientPhone: deliveryAddress?.phone,
+        clientEmail: deliveryAddress?.email,
+        deliveryStreet: deliveryAddress?.street,
+        deliveryCity: deliveryAddress?.city,
+        deliveryPostalCode: deliveryAddress?.postalCode,
+        customerNotes: customerNotes || undefined,
+        successUrl: `${window.location.origin}/compte`,
+        cancelUrl: `${window.location.origin}/panier`
       };
-      
-      orderStore.createOrder(order);
-      
-      // Vider le panier
-      cart.clearCart();
-      
-      setIsProcessing(false);
-      
-      toast({
-        title: "Commande validée !",
-        description: "Votre commande a été enregistrée avec succès",
+
+      // Appeler la fonction edge
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: orderData
       });
-      
-      // Rediriger vers la page de compte
-      navigate("/compte");
-    } else {
-      setIsProcessing(false);
-      
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data && data.url) {
+        // Rediriger vers l'URL de checkout Stripe
+        window.location.href = data.url;
+      } else {
+        throw new Error("Aucune URL de checkout n'a été retournée");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création du checkout Stripe:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: result.error || "Une erreur est survenue lors du traitement de votre commande",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors du paiement",
       });
+    } finally {
+      setIsStripeLoading(false);
     }
   };
 
@@ -276,7 +270,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
+  const formattedCurrentDay = dateFns.format(new Date(), "EEEE");
 
   return (
     <div className="container mx-auto py-24 px-4">
@@ -476,7 +470,7 @@ const Panier = () => {
                           <img src="/mastercard.svg" alt="Mastercard" className="h-6" />
                         </div>
                       </div>
-                      <p className="mt-2 text-sm text-gray-600">Paiement sécurisé en ligne uniquement</p>
+                      <p className="mt-2 text-sm text-gray-600">Paiement sécurisé en ligne avec Stripe</p>
                     </div>
                   </div>
                 </div>
@@ -496,10 +490,10 @@ const Panier = () => {
                   {currentStep === CheckoutStep.PAYMENT ? (
                     <Button 
                       className="bg-gold-600 hover:bg-gold-700"
-                      onClick={handleCheckout}
-                      disabled={isProcessing || (isPromotionApplicable && !selectedFreeProduct)}
+                      onClick={handleStripeCheckout}
+                      disabled={isStripeLoading || (isPromotionApplicable && !selectedFreeProduct)}
                     >
-                      {isProcessing ? "Traitement en cours..." : "Payer maintenant"}
+                      {isStripeLoading ? "Traitement en cours..." : "Payer maintenant"}
                       {isPromotionApplicable && !selectedFreeProduct && (
                         <span className="sr-only">Veuillez choisir votre produit offert</span>
                       )}
@@ -574,7 +568,7 @@ const Panier = () => {
               {orderType === "pickup" && cart.total >= 50 && cart.total < 70 && (
                 <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-800 font-medium">
-                    {formattedCurrentDay === "mardi" || formattedCurrentDay === "mercredi" || formattedCurrentDay === "jeudi" ? (
+                    {formattedCurrentDay === "Tuesday" || formattedCurrentDay === "Wednesday" || formattedCurrentDay === "Thursday" ? (
                       <>Plus que <strong>{(70 - cart.total).toFixed(2)}€</strong> pour bénéficier d'un produit offert!</>
                     ) : (
                       <>Cette commande sera éligible à un produit offert les mardis, mercredis et jeudis si elle atteint 70€</>
