@@ -30,13 +30,16 @@ serve(async (req) => {
       );
     }
 
+    console.log("Sending welcome email to:", email, "with firstName:", firstName);
+    console.log("Using BREVO_API_KEY:", BREVO_API_KEY ? "Key is set" : "Key is missing");
+
     // Send email using Brevo API
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "api-key": BREVO_API_KEY || "",
+        "api-key": "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",
       },
       body: JSON.stringify({
         sender: {

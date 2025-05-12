@@ -1,146 +1,147 @@
 
-import { useState, useEffect } from "react";
-import * as dateFns from "date-fns";
+import { useState, useEffect } from 'react';
+import { format, addMinutes, isAfter, isBefore } from "date-fns";
 import { fr } from "date-fns/locale";
+import { CheckCircle2, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-interface TimeOption {
-  label: string;
-  value: string;
-  disabled: boolean;
-}
+type TimeSlotSelectorProps = {
+  selectedTime: string | null;
+  setSelectedTime: (time: string) => void;
+  deliveryMethod: 'delivery' | 'pickup' | 'dinein';
+};
 
-interface TimeSlotSelectorProps {
-  orderType: "delivery" | "pickup";
-  onSelect: (time: string) => void;
-  selectedTime?: string;
-}
-
-const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelectorProps) => {
-  const [timeSlots, setTimeSlots] = useState<TimeOption[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(selectedTime || null);
-
+const TimeSlotSelector = ({ selectedTime, setSelectedTime, deliveryMethod }: TimeSlotSelectorProps) => {
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  
+  // Generate time slots for today
   useEffect(() => {
-    generateTimeSlots();
-  }, [orderType]);
-
-  const generateTimeSlots = () => {
-    const now = new Date();
-    const slots: TimeOption[] = [];
-    
-    // Heure de début (11h30 pour livraison, 11h pour emporter)
-    const startHour = orderType === "delivery" ? 11 : 11;
-    const startMinute = orderType === "delivery" ? 30 : 0;
-    
-    // Heure de fin (22h30 pour livraison, 22h pour emporter)
-    const endHour = orderType === "delivery" ? 22 : 22;
-    const endMinute = orderType === "delivery" ? 30 : 0;
-
-    // Intervalle en minutes (30 minutes pour livraison, 15 minutes pour emporter)
-    const interval = orderType === "delivery" ? 30 : 15;
-
-    // Ajout du délai minimum (30 min pour livraison, 20 min pour emporter)
-    const minDelay = orderType === "delivery" ? 30 : 20;
-    const minTime = dateFns.addMinutes(now, minDelay);
-
-    // Générer les tranches horaires
-    const startDate = new Date();
-    startDate.setHours(startHour);
-    startDate.setMinutes(startMinute);
-    startDate.setSeconds(0);
-    startDate.setMilliseconds(0);
-
-    const endDate = new Date();
-    endDate.setHours(endHour);
-    endDate.setMinutes(endMinute);
-    endDate.setSeconds(0);
-    endDate.setMilliseconds(0);
-
-    let currentTime = startDate;
-    while (currentTime <= endDate) {
-      const isDisabled = dateFns.isAfter(minTime, currentTime);
+    const generateTimeSlots = () => {
+      const now = new Date();
+      const slots: string[] = [];
       
-      slots.push({
-        label: dateFns.format(currentTime, "HH'h'mm", { locale: fr }),
-        value: dateFns.format(currentTime, "HH:mm"),
-        disabled: isDisabled,
-      });
-
-      currentTime = dateFns.addMinutes(currentTime, interval);
-    }
-
-    setTimeSlots(slots);
-
-    // Sélection automatique du premier créneau disponible si aucun n'est sélectionné
-    if (!selectedTime) {
-      const firstAvailable = slots.find((slot) => !slot.disabled);
-      if (firstAvailable) {
-        setSelectedSlot(firstAvailable.value);
-        onSelect(firstAvailable.value);
+      // Start time is either current time + 30 min for delivery or current time + 15 min for pickup
+      let startMinutes = now.getMinutes();
+      let roundedStartMinutes = Math.ceil(startMinutes / 15) * 15;
+      
+      let startTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        roundedStartMinutes
+      );
+      
+      // Add preparation time based on delivery method
+      const preparationTime = deliveryMethod === 'delivery' ? 45 : 30;
+      startTime = addMinutes(startTime, preparationTime);
+      
+      // Restaurant opens at 11:00 and closes at 22:00 (10:00 PM)
+      const openingTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        11,
+        0
+      );
+      
+      const closingTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        22,
+        0
+      );
+      
+      // If current time + preparation is before opening time, start from opening time
+      if (isAfter(openingTime, startTime)) {
+        startTime = openingTime;
       }
-    }
-  };
-
-  const handleTimeSelect = (time: string) => {
-    setSelectedSlot(time);
-    onSelect(time);
-  };
-
-  // Vérifier si le créneau est disponible aujourd'hui
-  const isAvailableToday = () => {
+      
+      const formattedDate = format(now, "EEEE d MMMM", { locale: fr });
+      const formattedTime = format(now, "HH:mm");
+      
+      setCurrentDate(now);
+      
+      // Generate slots every 15 minutes until closing time
+      let currentSlot = startTime;
+      while (isAfter(closingTime, currentSlot) || isBefore(closingTime, addMinutes(currentSlot, 15))) {
+        slots.push(format(currentSlot, "HH:mm"));
+        currentSlot = addMinutes(currentSlot, 15);
+      }
+      
+      return slots;
+    };
+    
+    setTimeSlots(generateTimeSlots());
+  }, [deliveryMethod]);
+  
+  const getTimeDisplay = (timeSlot: string) => {
+    // Get hours and minutes from the time slot string (format: "HH:mm")
+    const [hours, minutes] = timeSlot.split(':').map(Number);
+    
+    // Create a new date object with today's date and the time slot
+    const date = new Date();
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    
+    // Check if the time slot is available (not in the past)
     const now = new Date();
+    const isAvailable = isAfter(date, now) && isBefore(date, new Date(now.getFullYear(), now.getMonth(), now.getDate(), 22, 0));
     
-    // Si avant l'heure d'ouverture ou après l'heure de fermeture
-    const openTime = new Date();
-    openTime.setHours(orderType === "delivery" ? 11 : 11);
-    openTime.setMinutes(orderType === "delivery" ? 0 : 0);
-    openTime.setSeconds(0);
-    openTime.setMilliseconds(0);
+    // Format the time to display
+    const formattedTime = format(date, "HH'h'mm", { locale: fr });
     
-    const closeTime = new Date();
-    closeTime.setHours(orderType === "delivery" ? 22 : 22);
-    closeTime.setMinutes(0);
-    closeTime.setSeconds(0);
-    closeTime.setMilliseconds(0);
-    
-    // Si l'heure actuelle est dans la plage d'ouverture
-    return dateFns.isAfter(now, openTime) && dateFns.isBefore(now, closeTime);
+    return {
+      display: formattedTime,
+      isAvailable
+    };
   };
   
-  const formattedDate = dateFns.format(new Date(), "EEEE d MMMM", { locale: fr });
-
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">Horaire de {orderType === "delivery" ? "livraison" : "retrait"}</h3>
-      <p className="text-sm text-gray-500">
-        Choisissez l'heure à laquelle vous souhaitez {orderType === "delivery" ? "être livré" : "récupérer votre commande"} pour {formattedDate}
-      </p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {timeSlots.map((slot) => (
-          <button
-            key={slot.value}
-            className={`p-2 border rounded-md text-center transition ${
-              selectedSlot === slot.value
-                ? "bg-gold-500 border-gold-600 text-black"
-                : slot.disabled
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white hover:bg-gold-50"
-            }`}
-            onClick={() => !slot.disabled && handleTimeSelect(slot.value)}
-            disabled={slot.disabled}
-          >
-            {slot.label}
-          </button>
-        ))}
-      </div>
-
-      {timeSlots.length === 0 && (
-        <div className="text-center py-6">
-          <p className="text-gray-500">
-            Aucun créneau disponible pour aujourd'hui.
-          </p>
+    <div className="w-full">
+      <div className="mb-4">
+        <div className="flex items-center mb-2">
+          <Clock size={18} className="mr-2 text-gold-500" />
+          <h3 className="text-lg font-medium">Heure de {deliveryMethod === 'delivery' ? 'livraison' : deliveryMethod === 'pickup' ? 'retrait' : 'réservation'}</h3>
         </div>
-      )}
+        <p className="text-sm text-gray-500">
+          {deliveryMethod === 'delivery' 
+            ? 'Choisissez l\'heure à laquelle vous souhaitez être livré'
+            : deliveryMethod === 'pickup'
+              ? 'Choisissez l\'heure à laquelle vous passerez chercher votre commande'
+              : 'Choisissez l\'heure à laquelle vous souhaitez manger sur place'}
+        </p>
+      </div>
+      
+      <div className="border rounded-md p-4 bg-white">
+        <p className="font-medium mb-3 text-gray-700">
+          {format(currentDate, "EEEE d MMMM", { locale: fr })}
+        </p>
+        
+        <div className="grid grid-cols-3 gap-2">
+          {timeSlots.map((timeSlot) => {
+            const { display, isAvailable } = getTimeDisplay(timeSlot);
+            return (
+              <Button
+                key={timeSlot}
+                variant={selectedTime === timeSlot ? "default" : "outline"}
+                className={`flex items-center justify-center h-10 ${
+                  selectedTime === timeSlot ? 'bg-gold-500 hover:bg-gold-600 text-black border-gold-500' : 'border'
+                } ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={() => setSelectedTime(timeSlot)}
+                disabled={!isAvailable}
+              >
+                {display}
+                {selectedTime === timeSlot && (
+                  <CheckCircle2 size={16} className="ml-1" />
+                )}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
