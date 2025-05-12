@@ -150,7 +150,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       }
       
       if (profileData) {
-        // Récupérer l'email de l'utilisateur
+        // Récupérer l'email depuis la session
         const userEmail = session.user.email || "";
         
         // Construire le nom complet

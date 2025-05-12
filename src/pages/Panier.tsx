@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { formatEuro } from "@/utils/formatters"; // Changement de l'import
+import { formatEuro } from "@/utils/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { CartItem } from "@/types";
 import { createOrder } from "@/services/orderService";
@@ -17,7 +16,7 @@ import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import * as dateFns from "date-fns";
 import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -637,7 +636,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
+  const formattedCurrentDay = dateFns.format(new Date(), "EEEE", { locale: fr });
 
   return (
     <div className="container mx-auto py-24 px-4">
