@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import * as dateFns from "date-fns";
-import { fr } from "date-fns/locale";
+import { format, addMinutes, isAfter, isBefore } from "date-fns";
+import { fr } from "date-fns/locale/fr";
 
 interface TimeOption {
   label: string;
@@ -40,7 +40,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
 
     // Ajout du délai minimum (30 min pour livraison, 20 min pour emporter)
     const minDelay = orderType === "delivery" ? 30 : 20;
-    const minTime = dateFns.addMinutes(now, minDelay);
+    const minTime = addMinutes(now, minDelay);
 
     // Générer les tranches horaires
     const startDate = new Date();
@@ -57,15 +57,15 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
 
     let currentTime = startDate;
     while (currentTime <= endDate) {
-      const isDisabled = dateFns.isAfter(minTime, currentTime);
+      const isDisabled = isAfter(minTime, currentTime);
       
       slots.push({
-        label: dateFns.format(currentTime, "HH'h'mm", { locale: fr }),
-        value: dateFns.format(currentTime, "HH:mm"),
+        label: format(currentTime, "HH'h'mm", { locale: fr }),
+        value: format(currentTime, "HH:mm"),
         disabled: isDisabled,
       });
 
-      currentTime = dateFns.addMinutes(currentTime, interval);
+      currentTime = addMinutes(currentTime, interval);
     }
 
     setTimeSlots(slots);
@@ -103,10 +103,10 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
     closeTime.setMilliseconds(0);
     
     // Si l'heure actuelle est dans la plage d'ouverture
-    return dateFns.isAfter(now, openTime) && dateFns.isBefore(now, closeTime);
+    return isAfter(now, openTime) && isBefore(now, closeTime);
   };
   
-  const formattedDate = dateFns.format(new Date(), "EEEE d MMMM", { locale: fr });
+  const formattedDate = format(new Date(), "EEEE d MMMM", { locale: fr });
 
   return (
     <div className="space-y-4">

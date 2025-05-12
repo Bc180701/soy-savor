@@ -16,10 +16,11 @@ import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import * as dateFns from "date-fns";
-import { fr } from "date-fns/locale";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale/fr";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getUserContactInfo } from "@/services/profileService";
 
 // Enum pour les étapes du checkout
 enum CheckoutStep {
@@ -59,6 +60,44 @@ const Panier = () => {
     phone: "",
     allergies: []
   });
+  
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
+  
+  // Check if user is logged in
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsLoggedIn(!!data.session);
+      
+      // If user is logged in, prefetch their contact information
+      if (data.session) {
+        fetchUserContactInfo();
+      }
+    };
+    
+    checkLoginStatus();
+  }, []);
+  
+  // Fetch user contact information if logged in
+  const fetchUserContactInfo = async () => {
+    setLoadingUserProfile(true);
+    try {
+      const contactInfo = await getUserContactInfo();
+      if (contactInfo.name || contactInfo.email || contactInfo.phone) {
+        setDeliveryInfo(prev => ({
+          ...prev,
+          name: contactInfo.name || prev.name,
+          email: contactInfo.email || prev.email,
+          phone: contactInfo.phone || prev.phone
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    } finally {
+      setLoadingUserProfile(false);
+    }
+  };
   
   const subtotal = total; // Utiliser total de useCart
   const tax = subtotal * TAX_RATE;
@@ -329,6 +368,14 @@ const Panier = () => {
         {/* Informations personnelles */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Vos coordonnées</h3>
+          
+          {isLoggedIn && (
+            <div className="bg-gold-50 border border-gold-200 p-3 rounded-md mb-4">
+              <p className="text-sm">
+                Vous êtes connecté. Vos informations de profil ont été automatiquement remplies.
+              </p>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -636,7 +683,7 @@ const Panier = () => {
   };
 
   // Formatage de la date du jour
-  const formattedCurrentDay = dateFns.format(new Date(), "EEEE", { locale: fr });
+  const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
 
   return (
     <div className="container mx-auto py-24 px-4">
