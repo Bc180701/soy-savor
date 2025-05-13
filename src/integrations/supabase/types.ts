@@ -436,6 +436,27 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_code_usage: {
+        Row: {
+          id: string
+          promo_code: string
+          used_at: string | null
+          user_email: string
+        }
+        Insert: {
+          id?: string
+          promo_code: string
+          used_at?: string | null
+          user_email: string
+        }
+        Update: {
+          id?: string
+          promo_code?: string
+          used_at?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
       promotions: {
         Row: {
           applicable_categories: string[] | null
@@ -446,6 +467,7 @@ export type Database = {
           end_date: string
           id: string
           image_url: string | null
+          is_one_time_use: boolean | null
           is_percentage: boolean
           min_order: number | null
           start_date: string
@@ -460,6 +482,7 @@ export type Database = {
           end_date: string
           id?: string
           image_url?: string | null
+          is_one_time_use?: boolean | null
           is_percentage?: boolean
           min_order?: number | null
           start_date: string
@@ -474,6 +497,7 @@ export type Database = {
           end_date?: string
           id?: string
           image_url?: string | null
+          is_one_time_use?: boolean | null
           is_percentage?: boolean
           min_order?: number | null
           start_date?: string

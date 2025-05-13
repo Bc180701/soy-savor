@@ -3,15 +3,14 @@ import { X, Trash } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CartItem } from "@/types";
 import { formatEuro } from "@/utils/formatters";
-import { useCart } from "@/hooks/use-cart";
 
 interface CartItemListProps {
   items: CartItem[];
+  removeItem: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
 }
 
-export const CartItemList = ({ items }: CartItemListProps) => {
-  const { removeItem, updateQuantity } = useCart();
-
+export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemListProps) => {
   if (items.length === 0) {
     return (
       <div className="text-center py-8">

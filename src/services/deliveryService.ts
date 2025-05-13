@@ -70,16 +70,15 @@ export const validatePromoCode = async (code: string, email?: string): Promise<{
     }
 
     // Check if the promo code has a one-time use restriction and if email is provided
-    if (data.is_one_time_use && email) {
+    if (data.is_one_time_use === true && email) {
       // Check if this user has already used this promo code
       const { data: usageData, error: usageError } = await supabase
         .from('promo_code_usage')
-        .select('*')
+        .select('id')
         .eq('promo_code', code.toUpperCase())
-        .eq('user_email', email)
-        .single();
+        .eq('user_email', email);
       
-      if (usageData) {
+      if (usageData && usageData.length > 0) {
         return { 
           valid: false, 
           message: "Vous avez déjà utilisé ce code promo" 
@@ -107,8 +106,7 @@ export const recordPromoCodeUsage = async (code: string, email: string): Promise
       .from('promo_code_usage')
       .insert({ 
         promo_code: code.toUpperCase(),
-        user_email: email,
-        used_at: new Date().toISOString()
+        user_email: email
       });
     
     if (error) {
