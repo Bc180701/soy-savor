@@ -28,6 +28,7 @@ const Navbar = () => {
     
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state change event:", event);
         setUser(session?.user || null);
       }
     );
@@ -56,7 +57,12 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      console.log("Tentative de déconnexion...");
+      
+      // Utilisation de l'option scope: 'global' pour assurer une déconnexion complète
+      const { error } = await supabase.auth.signOut({
+        scope: 'global'
+      });
       
       if (error) {
         console.error("Erreur lors de la déconnexion:", error);
@@ -68,10 +74,18 @@ const Navbar = () => {
         return;
       }
       
+      console.log("Déconnexion réussie");
+      
+      // Si la déconnexion réussit, on affiche un toast
       toast({
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté avec succès",
       });
+      
+      // Réinitialiser l'état utilisateur
+      setUser(null);
+      
+      // Rediriger vers la page d'accueil
       navigate("/");
     } catch (err) {
       console.error("Exception lors de la déconnexion:", err);
