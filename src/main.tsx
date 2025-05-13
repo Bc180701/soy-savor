@@ -1,17 +1,16 @@
 
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import { setupStorage } from './utils/setupStorage.ts'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
 
-// Setup storage buckets and database if needed
-setupStorage()
-  .then(() => console.log('Storage setup completed'))
-  .catch(err => console.error('Error in storage setup:', err));
+// Vérification pour déboguer l'erreur React.useState null
+console.log('React version:', React.version);
+console.log('React is available:', Boolean(React));
+console.log('useState is available:', Boolean(React.useState));
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
-)
+  </React.StrictMode>
+);

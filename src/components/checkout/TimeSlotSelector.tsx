@@ -1,9 +1,7 @@
+
 import { useState, useEffect } from "react";
-import format from "date-fns/format";
-import addMinutes from "date-fns/addMinutes";
-import isAfter from "date-fns/isAfter";
-import isBefore from "date-fns/isBefore";
-import fr from "date-fns/locale/fr/index.js";
+import { format, addMinutes, isAfter, isBefore } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface TimeOption {
   label: string;
@@ -129,4 +127,3 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
 };
 
 export default TimeSlotSelector;
-
