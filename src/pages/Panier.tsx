@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -11,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CartItem } from "@/types";
 import { createOrder } from "@/services/orderService";
 import { X, Trash, ArrowRight, Loader2 } from "lucide-react";
-import DeliveryAddressForm from "@/components/checkout/DeliveryAddressForm";
+import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/DeliveryAddressForm";
 import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -21,6 +22,7 @@ import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserContactInfo } from "@/services/profileService";
+import { checkPostalCodeDelivery } from "@/services/deliveryService";
 
 // Enum pour les étapes du checkout
 enum CheckoutStep {
@@ -42,6 +44,7 @@ interface DeliveryInfo {
   deliveryInstructions?: string;
   notes?: string;
   allergies: string[];
+  isPostalCodeValid?: boolean; // Add this flag to track postal code validation
 }
 
 const Panier = () => {
@@ -58,11 +61,13 @@ const Panier = () => {
     name: "",
     email: "",
     phone: "",
-    allergies: []
+    allergies: [],
+    isPostalCodeValid: undefined
   });
   
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
+  const [validatingPostalCode, setValidatingPostalCode] = useState<boolean>(false);
   
   // Check if user is logged in
   useEffect(() => {
@@ -169,13 +174,25 @@ const Panier = () => {
       return false;
     }
 
-    if (deliveryInfo.orderType === "delivery" && (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode)) {
-      toast({
-        title: "Adresse de livraison incomplète",
-        description: "Veuillez remplir tous les champs de l'adresse de livraison.",
-        variant: "destructive",
-      });
-      return false;
+    if (deliveryInfo.orderType === "delivery") {
+      if (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode) {
+        toast({
+          title: "Adresse de livraison incomplète",
+          description: "Veuillez remplir tous les champs de l'adresse de livraison.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Check if postal code is valid (we've validated it already)
+      if (deliveryInfo.isPostalCodeValid === false) {
+        toast({
+          title: "Code postal non desservi",
+          description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
+          variant: "destructive",
+        });
+        return false;
+      }
     }
 
     if (!deliveryInfo.pickupTime) {
@@ -197,6 +214,31 @@ const Panier = () => {
       if (!validateDeliveryInfo()) {
         setLoading(false);
         return;
+      }
+
+      // If delivery is selected and postal code is invalid, prevent proceeding
+      if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
+        toast({
+          title: "Code postal non desservi",
+          description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Validate postal code again before proceeding
+      if (deliveryInfo.orderType === "delivery" && deliveryInfo.postalCode) {
+        const isValidPostalCode = await checkPostalCodeDelivery(deliveryInfo.postalCode);
+        if (!isValidPostalCode) {
+          toast({
+            title: "Code postal non desservi",
+            description: `Nous ne livrons pas dans la zone ${deliveryInfo.postalCode}. Veuillez choisir un autre mode de livraison.`,
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
       }
 
       // Préparation des données pour la fonction edge
@@ -255,6 +297,8 @@ const Panier = () => {
     setDeliveryInfo((prev) => ({
       ...prev,
       orderType: type,
+      // Reset postal code validation when switching order type
+      isPostalCodeValid: type === "pickup" ? undefined : prev.isPostalCodeValid
     }));
   };
 
@@ -262,6 +306,21 @@ const Panier = () => {
     setDeliveryInfo((prev) => ({
       ...prev,
       pickupTime: time,
+    }));
+  };
+
+  // Handle address form completion
+  const handleAddressFormComplete = (data: DeliveryAddressData) => {
+    setDeliveryInfo((prev) => ({
+      ...prev,
+      name: data.name,
+      street: data.street,
+      city: data.city,
+      postalCode: data.postalCode,
+      phone: data.phone,
+      email: data.email,
+      deliveryInstructions: data.instructions,
+      isPostalCodeValid: true // Address validation is handled in DeliveryAddressForm
     }));
   };
 
@@ -365,91 +424,58 @@ const Panier = () => {
           onChange={handleOrderTypeChange}
         />
         
-        {/* Informations personnelles */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Vos coordonnées</h3>
-          
-          {isLoggedIn && (
-            <div className="bg-gold-50 border border-gold-200 p-3 rounded-md mb-4">
-              <p className="text-sm">
-                Vous êtes connecté. Vos informations de profil ont été automatiquement remplies.
-              </p>
-            </div>
-          )}
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Nom complet *</Label>
-              <Input
-                id="name"
-                value={deliveryInfo.name}
-                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Votre nom et prénom"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Téléphone *</Label>
-              <Input
-                id="phone"
-                value={deliveryInfo.phone}
-                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="Votre numéro de téléphone"
-                required
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              value={deliveryInfo.email}
-              onChange={(e) => setDeliveryInfo(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="Votre adresse email"
-              required
-            />
-          </div>
-        </div>
-        
-        {/* Adresse de livraison */}
-        {deliveryInfo.orderType === "delivery" && (
+        {/* Use DeliveryAddressForm component for delivery */}
+        {deliveryInfo.orderType === "delivery" ? (
+          <DeliveryAddressForm 
+            onComplete={handleAddressFormComplete}
+            onCancel={() => handleOrderTypeChange("pickup")}
+          />
+        ) : (
+          /* Informations personnelles for pickup */
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Adresse de livraison</h3>
+            <h3 className="text-lg font-medium">Vos coordonnées</h3>
             
-            <div>
-              <Label htmlFor="street">Adresse *</Label>
-              <Input
-                id="street"
-                value={deliveryInfo.street || ""}
-                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, street: e.target.value }))}
-                placeholder="123 rue de Paris"
-                required
-              />
+            {isLoggedIn && (
+              <div className="bg-gold-50 border border-gold-200 p-3 rounded-md mb-4">
+                <p className="text-sm">
+                  Vous êtes connecté. Vos informations de profil ont été automatiquement remplies.
+                </p>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Nom complet *</Label>
+                <Input
+                  id="name"
+                  value={deliveryInfo.name}
+                  onChange={(e) => setDeliveryInfo(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Votre nom et prénom"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Téléphone *</Label>
+                <Input
+                  id="phone"
+                  value={deliveryInfo.phone}
+                  onChange={(e) => setDeliveryInfo(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Votre numéro de téléphone"
+                  required
+                />
+              </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city">Ville *</Label>
-                <Input
-                  id="city"
-                  value={deliveryInfo.city || ""}
-                  onChange={(e) => setDeliveryInfo(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder="Paris"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="postalCode">Code postal *</Label>
-                <Input
-                  id="postalCode"
-                  value={deliveryInfo.postalCode || ""}
-                  onChange={(e) => setDeliveryInfo(prev => ({ ...prev, postalCode: e.target.value }))}
-                  placeholder="75000"
-                  required
-                />
-              </div>
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={deliveryInfo.email}
+                onChange={(e) => setDeliveryInfo(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Votre adresse email"
+                required
+              />
             </div>
           </div>
         )}
@@ -460,20 +486,6 @@ const Panier = () => {
           onSelect={handleTimeSelect}
           selectedTime={deliveryInfo.pickupTime}
         />
-        
-        {/* Instructions de livraison */}
-        {deliveryInfo.orderType === "delivery" && (
-          <div>
-            <Label htmlFor="deliveryInstructions">Instructions de livraison (facultatif)</Label>
-            <Textarea
-              id="deliveryInstructions"
-              value={deliveryInfo.deliveryInstructions || ""}
-              onChange={(e) => setDeliveryInfo(prev => ({ ...prev, deliveryInstructions: e.target.value }))}
-              placeholder="Instructions spécifiques pour la livraison..."
-              rows={3}
-            />
-          </div>
-        )}
         
         {/* Notes complémentaires */}
         <div>

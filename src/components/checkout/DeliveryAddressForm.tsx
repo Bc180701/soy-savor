@@ -53,6 +53,49 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     },
   });
 
+  // Watch the postal code field to validate it whenever it changes
+  const postalCode = form.watch("postalCode");
+  
+  // Validate postal code whenever it changes and has 5 characters
+  useEffect(() => {
+    const validatePostalCode = async () => {
+      if (postalCode && postalCode.length === 5) {
+        try {
+          const isValid = await checkPostalCodeDelivery(postalCode);
+          
+          if (!isValid) {
+            // Show warning toast but don't block form submission yet
+            toast({
+              variant: "warning",
+              title: "Zone non desservie",
+              description: `Nous ne livrons pas dans la zone ${postalCode}. Veuillez vérifier ou choisir un autre mode de livraison.`,
+            });
+            
+            // Mark the field as having an error
+            form.setError("postalCode", {
+              type: "manual",
+              message: "Code postal hors zone de livraison"
+            });
+          } else {
+            // Clear any error on the postal code field
+            form.clearErrors("postalCode");
+          }
+        } catch (error) {
+          console.error("Error validating postal code:", error);
+        }
+      }
+    };
+    
+    // Debounce the validation a bit to avoid too many API calls
+    const timer = setTimeout(() => {
+      if (postalCode && postalCode.length === 5) {
+        validatePostalCode();
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [postalCode, toast, form]);
+
   // Vérifier si l'utilisateur est connecté et récupérer son profil
   useEffect(() => {
     const checkUserProfile = async () => {
@@ -85,7 +128,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           .select("*")
           .eq("user_id", session.user.id)
           .eq("is_default", true)
-          .maybeSingle();
+          .single();
           
         if (addressError) {
           console.error("Erreur lors du chargement de l'adresse:", addressError);
@@ -376,7 +419,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                   <FormControl>
                     <Input placeholder="75000" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-red-500" />
                 </FormItem>
               )}
             />
@@ -441,7 +484,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
             </Button>
             <Button 
               type="submit"
-              disabled={isValidating}
+              disabled={isValidating || form.formState.errors.postalCode !== undefined}
               className="bg-akane-600 hover:bg-akane-700"
             >
               {isValidating ? "Validation..." : "Valider l'adresse"}
