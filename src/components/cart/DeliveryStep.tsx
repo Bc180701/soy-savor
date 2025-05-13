@@ -95,6 +95,25 @@ export const DeliveryStep = ({
     }));
   };
 
+  // Modified for DeliveryAddressForm
+  const handleAddressComplete = (addressData: any) => {
+    setDeliveryInfo(prev => ({
+      ...prev,
+      street: addressData.street,
+      city: addressData.city,
+      postalCode: addressData.postalCode,
+      name: addressData.name,
+      phone: addressData.phone,
+      email: addressData.email,
+      deliveryInstructions: addressData.instructions
+    }));
+  };
+
+  // Function to handle cancellation from DeliveryAddressForm
+  const handleAddressCancel = () => {
+    // Do nothing, just return to the current state
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Informations de livraison</h2>
@@ -149,9 +168,8 @@ export const DeliveryStep = ({
       {/* Address Information (only for delivery) */}
       {deliveryInfo.orderType === "delivery" && (
         <DeliveryAddressForm
-          deliveryInfo={deliveryInfo}
-          handleChange={handleChange}
-          isValidatingPostalCode={isValidatingPostalCode}
+          onComplete={handleAddressComplete}
+          onCancel={handleAddressCancel}
         />
       )}
       
