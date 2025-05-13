@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -668,6 +669,7 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleStripeCheckout}
+          // Only disable the button if loading OR we explicitly know the postal code is invalid
           disabled={loading || (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false)}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
