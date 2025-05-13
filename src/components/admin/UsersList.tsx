@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { getAllUsers } from "@/services/authService";
 
 type AuthUser = {
   id: string;
   email: string;
   created_at: string;
+  last_sign_in_at?: string;
 };
 
 type UserProfile = {
@@ -63,11 +65,8 @@ const UsersList = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Get all users from the auth.users table via a service role function
-      // This requires a service role key or admin access
-      const { data: authUsers, error: authUsersError } = await supabase
-        .from('auth_users_view')
-        .select('*');
+      // Get all users from the auth.users table via our view
+      const { data: authUsers, error: authUsersError } = await getAllUsers();
       
       if (authUsersError) {
         console.error("Error fetching auth users:", authUsersError);
@@ -102,7 +101,7 @@ const UsersList = () => {
       }
       
       // Merge auth users with profiles and addresses
-      const enrichedUsers = authUsers.map((authUser: any) => {
+      const enrichedUsers = authUsers.map((authUser: AuthUser) => {
         // Find matching profile
         const profile = profiles?.find(p => p.id === authUser.id) || {
           id: authUser.id,
@@ -122,7 +121,7 @@ const UsersList = () => {
           last_name: profile.last_name || "",
           phone: profile.phone || "",
           addresses: userAddresses,
-          created_at: authUser.created_at || profile.created_at || "",
+          created_at: authUser.created_at || new Date().toISOString(),
           loyalty_points: profile.loyalty_points || 0
         };
       });
@@ -192,7 +191,7 @@ const UsersList = () => {
             last_name: profile.last_name || "",
             phone: profile.phone || "",
             addresses: addresses || [],
-            created_at: profile.created_at || "",
+            created_at: profile.created_at || new Date().toISOString(),
             loyalty_points: profile.loyalty_points || 0
           };
         })
@@ -202,7 +201,7 @@ const UsersList = () => {
       setFilteredUsers(enrichedUsers);
       
       toast({
-        variant: "warning",
+        variant: "default",
         title: "Mode limité",
         description: "Impossible d'accéder à tous les utilisateurs. Affichage limité aux profils existants."
       });
