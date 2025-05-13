@@ -80,43 +80,37 @@ const FeaturedProductsSection = () => {
       try {
         setLoading(true);
         
-        // Mock data for sample products
-        const sampleProducts: Product[] = [
-          {
-            id: "1", 
-            name: "California Roll", 
-            description: "Avocat, concombre, crabe", 
-            price: 6.5, 
-            image_url: "/placeholder.svg", 
-            category_id: "maki", 
-            categories: { name: "Maki" }, 
-            is_new: true
-          },
-          {
-            id: "2", 
-            name: "Salmon Nigiri", 
-            description: "Saumon frais", 
-            price: 4.5, 
-            image_url: "/placeholder.svg", 
-            category_id: "sushi", 
-            categories: { name: "Sushi" }, 
-            is_new: true
-          },
-          {
-            id: "3", 
-            name: "Spicy Tuna Roll", 
-            description: "Thon épicé, avocat", 
-            price: 7.5, 
-            image_url: "/placeholder.svg", 
-            category_id: "maki", 
-            categories: { name: "Maki" }, 
-            is_new: true
-          }
-        ];
+        // Fetch new products (actifs uniquement)
+        const { data: newProductsData, error: newError } = await supabase
+          .from('products')
+          .select('*, categories(name)')
+          .eq('is_new', true)
+          .limit(3);
         
-        setNewProducts(sampleProducts);
-        setBestSellerProducts(sampleProducts.slice(0, 2));
-        setPopularProducts(sampleProducts);
+        if (newError) throw newError;
+        setNewProducts(newProductsData || []);
+        
+        // Fetch best seller products (actifs uniquement)
+        const { data: bestSellerData, error: bestError } = await supabase
+          .from('products')
+          .select('*, categories(name)')
+          .eq('is_best_seller', true)
+          .eq('is_new', true)
+          .limit(3);
+        
+        if (bestError) throw bestError;
+        setBestSellerProducts(bestSellerData || []);
+        
+        // Fetch most popular products (using order count from popular_products) (actifs uniquement)
+        const { data: popularData, error: popularError } = await supabase
+          .from('products')
+          .select('*, categories(name)')
+          .eq('is_new', true)
+          .order('price', { ascending: false })
+          .limit(4);
+        
+        if (popularError) throw popularError;
+        setPopularProducts(popularData || []);
       } catch (error) {
         console.error("Error fetching featured products:", error);
         toast({

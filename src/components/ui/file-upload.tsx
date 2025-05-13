@@ -1,139 +1,185 @@
-import { useState } from "react"
-import { useToast } from "@/components/ui/use-toast"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+
+import { ChangeEvent, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Upload, Loader2, X } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from "uuid";
 
 interface FileUploadProps {
-  bucketName: string
-  folderPath: string
-  onUploadComplete?: (url: string) => void
+  onChange: (value: string) => void;
+  value?: string;
+  accept?: string;
+  disabled?: boolean;
+  buttonText?: string;
+  showPreview?: boolean;
+  className?: string;
+  allowRemove?: boolean;
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ bucketName, folderPath, onUploadComplete }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [open, setOpen] = useState(false)
-  const { toast } = useToast()
+const FileUpload = ({ 
+  onChange, 
+  value, 
+  accept = "image/*", 
+  disabled = false,
+  buttonText = "Choisir un fichier",
+  showPreview = true,
+  className = "",
+  allowRemove = true
+}: FileUploadProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      setImageUrl(URL.createObjectURL(file))
+  const handleClick = () => {
+    if (!disabled && fileInputRef.current && !isUploading) {
+      fileInputRef.current.click();
     }
-  }
+  };
 
-  const handleOpenChange = () => {
-    setOpen(!open)
-  }
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange("");
+  };
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setUploading(true)
-    const filePath = `${folderPath}/${selectedFile.name}`
-
+  const handleChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploading(true);
+    
     try {
-      const { data, error } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, selectedFile)
-
-      if (error) {
-        console.error("Erreur lors du téléversement du fichier:", error)
-        toast({
-          title: "Erreur",
-          description: `Erreur lors du téléversement du fichier: ${error.message}`,
-          variant: "destructive",
-        })
-      } else {
-        const { data: publicUrlData } = supabase.storage
-          .from(bucketName)
-          .getPublicUrl(filePath)
+      console.log("Téléchargement du fichier:", file.name, "type:", file.type, "taille:", file.size);
+      
+      // Créer le bucket 'images' s'il n'existe pas déjà
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const imagesBucketExists = buckets?.some(bucket => bucket.name === 'images');
+      
+      if (!imagesBucketExists) {
+        console.log("Le bucket 'images' n'existe pas, tentative de création...");
+        const { data, error } = await supabase.storage.createBucket('images', {
+          public: true,
+          fileSizeLimit: 5242880 // 5MB
+        });
         
-        toast({
-          title: "Succès",
-          description: "Fichier téléversé avec succès!",
-        })
-        
-        if (onUploadComplete) {
-          onUploadComplete(publicUrlData.publicUrl);
+        if (error) {
+          console.error("Erreur lors de la création du bucket:", error);
+          // Continue anyway, the bucket might exist but not be accessible via listBuckets
+        } else {
+          console.log("Bucket 'images' créé avec succès!");
         }
       }
-    } catch (error: any) {
-      console.error("Erreur inattendue:", error)
+      
+      // Générer un nom unique pour le fichier
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = fileName;
+      
+      console.log("Envoi du fichier vers Supabase Storage...");
+      
+      // Télécharger vers le bucket "images" de Supabase
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+      
+      if (error) {
+        console.error("Erreur de téléchargement:", error);
+        throw error;
+      }
+      
+      console.log("Fichier téléversé avec succès:", data);
+      
+      // Obtenir l'URL publique
+      const { data: publicUrlData } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+        
+      console.log("Image téléchargée avec succès:", publicUrlData.publicUrl);
+      
+      // Mettre à jour avec l'URL
+      onChange(publicUrlData.publicUrl);
+      
       toast({
-        title: "Erreur",
-        description: `Erreur inattendue: ${error.message}`,
-        variant: "destructive",
-      })
+        title: "Succès",
+        description: "L'image a été téléchargée avec succès",
+        variant: "success"
+      });
+    } catch (error: any) {
+      console.error("Erreur d'upload:", error);
+      toast({
+        title: "Échec du téléchargement",
+        description: error.message || "Une erreur est survenue",
+        variant: "destructive"
+      });
     } finally {
-      setUploading(false)
-      setOpen(false)
+      setIsUploading(false);
+      // Réinitialiser l'input pour permettre de sélectionner à nouveau le même fichier
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-  }
+  };
 
   return (
-    <div>
-      <Button onClick={handleOpenChange}>Téléverser une image</Button>
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Téléverser une image</DialogTitle>
-            <DialogDescription>
-              Sélectionnez un fichier depuis votre ordinateur.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="picture" className="text-right">
-                Image
-              </Label>
-              <Input
-                type="file"
-                id="picture"
-                className="col-span-3"
-                onChange={handleFileChange}
-              />
-            </div>
-            {imageUrl && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="picture" className="text-right">
-                  Aperçu
-                </Label>
-                <div className="col-span-3">
-                  <img src={imageUrl} alt="Aperçu" className="max-h-40" />
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="button" onClick={handleUpload} disabled={uploading}>
-              {uploading ? "Téléversement..." : "Téléverser"}
+    <div className={`w-full space-y-2 ${className}`}>
+      {value && showPreview && (
+        <div className="relative w-full h-40 rounded-md overflow-hidden border border-gray-200">
+          <img
+            src={value}
+            alt="Image téléchargée"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error("Erreur de chargement d'image:", value);
+              e.currentTarget.src = "/placeholder.svg";
+            }}
+          />
+          {value && allowRemove && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              onClick={handleRemove}
+              className="absolute top-2 right-2 h-6 w-6 rounded-full"
+            >
+              <X className="h-4 w-4" />
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+        </div>
+      )}
+      
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleChange}
+        accept={accept}
+        className="hidden"
+        disabled={disabled || isUploading}
+      />
+      
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleClick}
+        disabled={disabled || isUploading}
+        className="w-full border-dashed"
+      >
+        {isUploading ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Téléchargement...
+          </>
+        ) : (
+          <>
+            <Upload className="h-4 w-4 mr-2" />
+            {buttonText}
+          </>
+        )}
+      </Button>
     </div>
-  )
-}
+  );
+};
 
-export default FileUpload
-
+export default FileUpload;

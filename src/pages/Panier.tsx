@@ -223,7 +223,7 @@ const Panier = () => {
           scheduledFor: scheduledForDate.toISOString(),
           successUrl: `${window.location.origin}/commande-confirmee`,
           cancelUrl: `${window.location.origin}/panier`,
-        }
+        },
       });
 
       if (error) {

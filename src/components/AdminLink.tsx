@@ -19,20 +19,22 @@ const AdminLink = () => {
     const checkAdminStatus = async () => {
       try {
         // Vérifier si l'utilisateur est connecté
-        const { data } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!data.session) {
+        if (!session) {
           setIsAdmin(false);
           setIsLoading(false);
           return;
         }
         
         // Vérifier si l'utilisateur a le rôle d'administrateur
-        // Since we're using a mock, this will always return null
-        const { data: hasRole, error } = await supabase.rpc('has_role');
+        const { data, error } = await supabase.rpc(
+          'has_role',
+          { user_id: session.user.id, role: 'administrateur' }
+        );
         
         if (error) throw error;
-        setIsAdmin(!!hasRole);
+        setIsAdmin(!!data);
       } catch (error) {
         console.error("Erreur lors de la vérification du statut admin:", error);
         setIsAdmin(false);
@@ -44,12 +46,12 @@ const AdminLink = () => {
     checkAdminStatus();
     
     // Écouter les changements d'état d'authentification
-    const { data } = supabase.auth.onAuthStateChange(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       checkAdminStatus();
     });
 
     return () => {
-      data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
