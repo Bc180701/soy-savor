@@ -1,5 +1,6 @@
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 export type OrderResponse = {
   orders: Order[];
@@ -315,6 +316,19 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
 
 export const updateOrderStatus = async (orderId: string, status: string): Promise<{ success: boolean; error?: string }> => {
   try {
+    // Récupérer les informations de la commande pour les notifications
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
+
+    if (fetchError) {
+      console.error("Erreur lors de la récupération des informations de commande:", fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    // Mise à jour du statut
     const { error } = await supabase
       .from('orders')
       .update({ status })
@@ -325,6 +339,19 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
       return { success: false, error: error.message };
     }
 
+    // Envoyer notification au client
+    const clientEmail = order.client_email;
+    const clientPhone = order.client_phone;
+    
+    if (clientEmail) {
+      await sendStatusUpdateEmail(clientEmail, order.client_name || "Client", status, orderId);
+    }
+    
+    if (clientPhone) {
+      // À implémenter si vous souhaitez envoyer des SMS
+      // await sendStatusUpdateSMS(clientPhone, status, orderId);
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Erreur inattendue lors de la mise à jour du statut de la commande:", error);
@@ -332,5 +359,42 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
       success: false, 
       error: error instanceof Error ? error.message : "Une erreur inattendue s'est produite lors de la mise à jour du statut de la commande." 
     };
+  }
+};
+
+// Fonction pour envoyer une notification par email
+const sendStatusUpdateEmail = async (email: string, name: string, status: string, orderId: string): Promise<void> => {
+  try {
+    const statusMessages: Record<string, string> = {
+      'pending': 'est en attente de confirmation',
+      'confirmed': 'a été confirmée',
+      'preparing': 'est en cours de préparation',
+      'ready': 'est prête à être retirée ou livrée',
+      'out-for-delivery': 'est en cours de livraison',
+      'delivered': 'a été livrée',
+      'completed': 'est terminée',
+      'cancelled': 'a été annulée'
+    };
+    
+    const statusMessage = statusMessages[status] || `a changé de statut (${status})`;
+    
+    const { error } = await supabase.functions.invoke('send-order-notification', {
+      body: {
+        email,
+        name,
+        orderId,
+        status,
+        statusMessage
+      }
+    });
+    
+    if (error) {
+      console.error("Erreur lors de l'envoi de l'email de notification:", error);
+      throw error;
+    }
+    
+    console.log(`Notification email envoyé à ${email} pour la commande ${orderId}`);
+  } catch (error) {
+    console.error("Erreur lors de l'envoi de l'email de notification:", error);
   }
 };

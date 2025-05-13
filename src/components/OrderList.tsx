@@ -64,7 +64,7 @@ const OrderList = () => {
         
         toast({
           title: "Statut mis à jour",
-          description: "Le statut de la commande a été mis à jour avec succès.",
+          description: "Le statut de la commande a été mis à jour et le client a été notifié.",
           variant: "success",
         });
       } else {
