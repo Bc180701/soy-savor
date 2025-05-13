@@ -55,9 +55,6 @@ export const PaymentStep = ({
     { id: "nuts", name: "Fruits à coque" },
     { id: "sesame", name: "Sésame" },
   ];
-  
-  // Calcul du montant total en tenant compte de la réduction
-  const total = subtotal + tax + deliveryFee - discount;
 
   return (
     <div>
@@ -76,15 +73,8 @@ export const PaymentStep = ({
       
       <PaymentMethod />
       
-      <div className="mt-8 border-t pt-6">
-        <div className="flex justify-between text-xl font-bold mb-4">
-          <span>Total à payer</span>
-          <span>{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(total)}</span>
-        </div>
-      </div>
-      
       {/* Navigation */}
-      <div className="flex justify-between mt-6">
+      <div className="flex justify-between">
         <Button
           variant="ghost"
           onClick={handlePreviousStep}

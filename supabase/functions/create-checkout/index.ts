@@ -26,7 +26,6 @@ interface OrderData {
   tax: number;
   deliveryFee: number;
   total: number;
-  discount: number;
   orderType: "delivery" | "pickup";
   clientName?: string;
   clientEmail?: string;
@@ -153,23 +152,6 @@ serve(async (req) => {
         quantity: 1,
       });
     }
-    
-    // Ajouter la réduction si un code promo est appliqué
-    if (orderData.discount > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: 'Réduction',
-          },
-          unit_amount: -Math.round(orderData.discount * 100), // Montant négatif en centimes
-        },
-        quantity: 1,
-      });
-    }
-
-    // Calculer le montant total (en tenant compte de la réduction)
-    const totalAmount = orderData.subtotal + orderData.tax + orderData.deliveryFee - orderData.discount;
 
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
@@ -198,8 +180,7 @@ serve(async (req) => {
         subtotal: orderData.subtotal,
         tax: orderData.tax,
         delivery_fee: orderData.deliveryFee,
-        discount: orderData.discount,
-        total: totalAmount, // Utiliser le montant total correct
+        total: orderData.total,
         order_type: orderData.orderType,
         status: 'pending',
         payment_method: 'credit-card',
@@ -213,6 +194,7 @@ serve(async (req) => {
         delivery_postal_code: orderData.deliveryPostalCode,
         customer_notes: orderData.customerNotes,
         stripe_session_id: session.id,
+        is_guest_order: userId ? false : true // Marquer comme commande invité si aucun userId
       })
       .select('id')
       .single();

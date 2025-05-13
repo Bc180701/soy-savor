@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useCart } from "@/hooks/use-cart";
@@ -224,7 +225,8 @@ const Panier = () => {
           tax,
           deliveryFee,
           discount: discount,
-          total: orderTotal,  // Utilisation du montant total incluant la réduction
+          promoCode: appliedPromoCode?.code,
+          total: orderTotal,
           orderType: deliveryInfo.orderType,
           clientName: deliveryInfo.name,
           clientEmail: deliveryInfo.email,
