@@ -49,7 +49,7 @@ export const CartStep = ({
           <p className="text-gray-500 mb-6">Ajoutez des articles depuis notre menu.</p>
           <Button 
             onClick={() => window.location.href = '/commander'}
-            className="bg-akane-600 hover:bg-akane-700"
+            className="bg-gold-500 hover:bg-gold-600 text-black"
           >
             Voir le menu
           </Button>
@@ -95,7 +95,7 @@ export const CartStep = ({
             <div className="mt-6 text-center">
               <Button 
                 onClick={handleNextStep}
-                className="w-full md:w-1/2 bg-akane-600 hover:bg-akane-700 text-white py-3"
+                className="w-full md:w-1/2 bg-gold-500 hover:bg-gold-600 text-black py-3"
               >
                 Continuer
               </Button>
