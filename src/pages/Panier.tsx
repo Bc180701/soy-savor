@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -320,8 +319,11 @@ const Panier = () => {
       phone: data.phone,
       email: data.email,
       deliveryInstructions: data.instructions,
-      isPostalCodeValid: true // Address validation is handled in DeliveryAddressForm
+      isPostalCodeValid: true // Set to true when the form completes, as DeliveryAddressForm validates the postal code
     }));
+
+    // Log that we've set the postal code as valid for debugging
+    console.log("Address form complete, postal code validation set to true");
   };
 
   const renderCartItems = () => {
@@ -536,10 +538,11 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleNextStep}
-          disabled={deliveryInfo.orderType === "delivery" && 
-                  (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || 
-                   !deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
-                   deliveryInfo.isPostalCodeValid === false)}
+          disabled={deliveryInfo.orderType === "delivery" ? 
+                    (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || 
+                    !deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
+                    deliveryInfo.isPostalCodeValid === false) : 
+                    (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email)}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
           Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />
