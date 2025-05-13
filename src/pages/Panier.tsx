@@ -308,7 +308,7 @@ const Panier = () => {
     }));
   };
 
-  // Handle address form completion
+  // Handle address form completion - now this just stores the address data
   const handleAddressFormComplete = (data: DeliveryAddressData) => {
     setDeliveryInfo((prev) => ({
       ...prev,
@@ -535,7 +535,10 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleNextStep}
-          disabled={deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false}
+          disabled={deliveryInfo.orderType === "delivery" && 
+                  (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || 
+                   !deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
+                   deliveryInfo.isPostalCodeValid === false)}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
           Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />

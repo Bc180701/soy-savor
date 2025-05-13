@@ -309,7 +309,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // If valid, continue
+      // If valid, continue with the form submission
       onComplete(data);
     } catch (error) {
       console.error("Error validating address:", error);
@@ -485,22 +485,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
             )}
           />
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onCancel}
-            >
-              Annuler
-            </Button>
-            <Button 
-              type="submit"
-              disabled={form.formState.errors.postalCode !== undefined}
-              className="bg-akane-600 hover:bg-akane-700"
-            >
-              Valider l'adresse
-            </Button>
-          </div>
+          {/* No buttons here - form will auto-submit when valid */}
         </form>
       </Form>
     </div>
