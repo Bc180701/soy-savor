@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -9,9 +8,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { checkPostalCodeDelivery } from "@/services/deliveryService";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, MapPinCheck, Check } from "lucide-react";
+import { Loader2, MapPinCheck } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
@@ -38,7 +37,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [hasAddress, setHasAddress] = useState(false);
-  const [isPostalCodeValid, setIsPostalCodeValid] = useState<boolean | undefined>(undefined);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,8 +60,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       if (postalCode && postalCode.length === 5) {
         try {
           const isValid = await checkPostalCodeDelivery(postalCode);
-          
-          setIsPostalCodeValid(isValid);
           
           if (!isValid) {
             // Show toast but don't block form submission yet
@@ -313,12 +309,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // Call onComplete with validated data - important to do this only if valid
-      console.log("Address form validated successfully, postal code is valid");
-      onComplete({
-        ...data,
-        // Explicitly set isPostalCodeValid to true in the parent component
-      });
+      // If valid, continue with the form submission
+      onComplete(data);
     } catch (error) {
       console.error("Error validating address:", error);
       toast({
@@ -429,19 +421,15 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                     <FormControl>
                       <Input placeholder="75000" {...field} />
                     </FormControl>
-                    {postalCode && postalCode.length === 5 && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
-                        {isPostalCodeValid === false ? (
-                          <div className="text-red-500">
-                            <MapPinCheck className="h-4 w-4" />
-                          </div>
-                        ) : isPostalCodeValid === true ? (
-                          <div className="text-green-500">
-                            <Check className="h-4 w-4" />
-                          </div>
-                        ) : null}
+                    {form.formState.errors.postalCode ? (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                        <MapPinCheck className="h-4 w-4" />
                       </div>
-                    )}
+                    ) : postalCode && postalCode.length === 5 && !form.formState.errors.postalCode ? (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                        <MapPinCheck className="h-4 w-4" />
+                      </div>
+                    ) : null}
                   </div>
                   <FormMessage className="text-red-500" />
                 </FormItem>

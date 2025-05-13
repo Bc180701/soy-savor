@@ -308,9 +308,8 @@ const Panier = () => {
     }));
   };
 
-  // Handle address form completion - now simply stores the address data and shows the postal code is valid
+  // Handle address form completion - now this just stores the address data
   const handleAddressFormComplete = (data: DeliveryAddressData) => {
-    console.log("Address form complete with validated postal code");
     setDeliveryInfo((prev) => ({
       ...prev,
       name: data.name,
@@ -320,7 +319,7 @@ const Panier = () => {
       phone: data.phone,
       email: data.email,
       deliveryInstructions: data.instructions,
-      // We no longer need to set isPostalCodeValid here because validation is visual in the form
+      isPostalCodeValid: true // Address validation is handled in DeliveryAddressForm
     }));
   };
 
@@ -536,10 +535,10 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleNextStep}
-          disabled={deliveryInfo.orderType === "delivery" ? 
-                    (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || 
-                    !deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email) : 
-                    (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email)}
+          disabled={deliveryInfo.orderType === "delivery" && 
+                  (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || 
+                   !deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
+                   deliveryInfo.isPostalCodeValid === false)}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
           Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />
@@ -669,7 +668,7 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleStripeCheckout}
-          disabled={loading} // We only disable on loading, not on postal code validity
+          disabled={loading}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
           {loading ? (
