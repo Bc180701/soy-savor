@@ -1,4 +1,3 @@
-
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -230,9 +229,8 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
       
     if (response.error) {
       console.error("Erreur lors de la récupération des commandes:", response.error);
-      // Créer un objet Error à partir du PostgrestError pour assurer la compatibilité des types
-      const error = new Error(response.error.message);
-      return { orders: [], error };
+      // Create a proper Error instance from the PostgrestError
+      return { orders: [], error: new Error(response.error.message) };
     }
     
     console.log(`${response.data?.length || 0} commandes récupérées de Supabase`);
