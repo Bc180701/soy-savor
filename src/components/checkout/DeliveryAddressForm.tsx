@@ -64,9 +64,9 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           const isValid = await checkPostalCodeDelivery(postalCode);
           
           if (!isValid) {
-            // Show warning toast but don't block form submission yet
+            // Show toast but don't block form submission yet
             toast({
-              variant: "warning",
+              variant: "destructive", // Changed from "warning" to "destructive"
               title: "Zone non desservie",
               description: `Nous ne livrons pas dans la zone ${postalCode}. Veuillez vérifier ou choisir un autre mode de livraison.`,
             });
