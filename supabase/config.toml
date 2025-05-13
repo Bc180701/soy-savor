@@ -4,8 +4,8 @@ project_id = "tdykegnmomyyucbhslok"
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage"]
-extra_search_path = ["public", "extensions"]
+schemas = ["public", "storage", "auth"]
+extra_search_path = ["public", "extensions", "auth"]
 max_rows = 1000
 
 [db]
@@ -63,4 +63,3 @@ backend = "postgres"
 [experimental.functions]
 invoke = true
 localServer = true
-;

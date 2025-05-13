@@ -9,6 +9,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+type AuthUser = {
+  id: string;
+  email: string;
+  created_at: string;
+};
+
 type UserProfile = {
   id: string;
   email: string;
@@ -57,6 +63,84 @@ const UsersList = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
+      // Get all users from the auth.users table via a service role function
+      // This requires a service role key or admin access
+      const { data: authUsers, error: authUsersError } = await supabase
+        .from('auth_users_view')
+        .select('*');
+      
+      if (authUsersError) {
+        console.error("Error fetching auth users:", authUsersError);
+        // Fall back to profiles table if we can't access auth.users
+        fallbackToProfiles();
+        return;
+      }
+      
+      if (!authUsers || authUsers.length === 0) {
+        setUsers([]);
+        setFilteredUsers([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Get all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*");
+      
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+      }
+      
+      // Get all user addresses
+      const { data: addresses, error: addressesError } = await supabase
+        .from("user_addresses")
+        .select("*");
+        
+      if (addressesError) {
+        console.error("Error fetching addresses:", addressesError);
+      }
+      
+      // Merge auth users with profiles and addresses
+      const enrichedUsers = authUsers.map((authUser: any) => {
+        // Find matching profile
+        const profile = profiles?.find(p => p.id === authUser.id) || {
+          id: authUser.id,
+          first_name: "",
+          last_name: "",
+          phone: "",
+          loyalty_points: 0
+        };
+        
+        // Find addresses for this user
+        const userAddresses = addresses?.filter(a => a.user_id === authUser.id) || [];
+        
+        return {
+          id: authUser.id,
+          email: authUser.email || "",
+          first_name: profile.first_name || "",
+          last_name: profile.last_name || "",
+          phone: profile.phone || "",
+          addresses: userAddresses,
+          created_at: authUser.created_at || profile.created_at || "",
+          loyalty_points: profile.loyalty_points || 0
+        };
+      });
+      
+      setUsers(enrichedUsers);
+      setFilteredUsers(enrichedUsers);
+    } catch (error) {
+      console.error("Error in fetchUsers:", error);
+      // Fall back to using only profiles if there's an error
+      fallbackToProfiles();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fallback method if we can't access auth.users
+  const fallbackToProfiles = async () => {
+    try {
       // Récupérer tous les utilisateurs depuis les profils
       // Cela nous donnera les IDs des utilisateurs
       const { data: profiles, error: profilesError } = await supabase
@@ -88,10 +172,8 @@ const UsersList = () => {
           // Récupérer l'email de l'utilisateur depuis la session s'il est connecté
           let email = "";
           
-          // On ne peut pas récupérer directement l'email depuis auth.users,
-          // donc on utilise un fallback pour les utilisateurs existants
+          // Chercher l'email dans les commandes existantes comme fallback
           if (!email) {
-            // Chercher l'email dans les commandes existantes
             const { data: orders } = await supabase
               .from("orders")
               .select("client_email")
@@ -118,6 +200,12 @@ const UsersList = () => {
       
       setUsers(enrichedUsers);
       setFilteredUsers(enrichedUsers);
+      
+      toast({
+        variant: "warning",
+        title: "Mode limité",
+        description: "Impossible d'accéder à tous les utilisateurs. Affichage limité aux profils existants."
+      });
     } catch (error) {
       console.error("Erreur lors de la récupération des utilisateurs:", error);
       toast({
@@ -125,6 +213,8 @@ const UsersList = () => {
         title: "Erreur",
         description: "Impossible de charger la liste des utilisateurs"
       });
+      setUsers([]);
+      setFilteredUsers([]);
     } finally {
       setLoading(false);
     }
