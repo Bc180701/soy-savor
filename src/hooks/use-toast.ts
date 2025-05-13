@@ -104,6 +104,7 @@ export function useToast() {
 let toasts: ToasterToast[] = [];
 const listeners: Set<(toasts: ToasterToast[]) => void> = new Set();
 
+// Define the notify function
 const notify = (props: Omit<ToasterToast, "id"> & { id?: string }) => {
   const id = props.id || generateId();
   const newToast = { ...props, id } as ToasterToast;
@@ -124,20 +125,34 @@ const notify = (props: Omit<ToasterToast, "id"> & { id?: string }) => {
   };
 };
 
-export const toast = {
-  ...notify,
-  dismiss: (toastId: string) => {
-    toasts = toasts.filter(t => t.id !== toastId);
-    listeners.forEach(listener => listener(toasts));
-  },
-  update: (toastId: string, props: Partial<ToasterToast>) => {
-    toasts = toasts.map(t => t.id === toastId ? { ...t, ...props } : t);
-    listeners.forEach(listener => listener(toasts));
-  },
-  subscribe: (callback: (toasts: ToasterToast[]) => void) => {
-    listeners.add(callback);
-    return () => listeners.delete(callback);
-  },
-  getToasts: () => toasts,
+// Make toast a function that can be called directly
+// and also has properties from the notify function
+interface ToastFunction {
+  (props: Omit<ToasterToast, "id"> & { id?: string }): ReturnType<typeof notify>;
+  dismiss: (toastId: string) => void;
+  update: (toastId: string, props: Partial<ToasterToast>) => void;
+  subscribe: (callback: (toasts: ToasterToast[]) => void) => () => boolean;
+  getToasts: () => ToasterToast[];
+}
+
+export const toast = (((props: Omit<ToasterToast, "id"> & { id?: string }) => {
+  return notify(props);
+}) as ToastFunction);
+
+// Add the additional methods to the toast function
+toast.dismiss = (toastId: string) => {
+  toasts = toasts.filter(t => t.id !== toastId);
+  listeners.forEach(listener => listener(toasts));
 };
 
+toast.update = (toastId: string, props: Partial<ToasterToast>) => {
+  toasts = toasts.map(t => t.id === toastId ? { ...t, ...props } : t);
+  listeners.forEach(listener => listener(toasts));
+};
+
+toast.subscribe = (callback: (toasts: ToasterToast[]) => void) => {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+};
+
+toast.getToasts = () => toasts;
