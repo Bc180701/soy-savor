@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -295,14 +294,14 @@ const Panier = () => {
           <div className="flex items-center mt-2">
             <button
               className="w-6 h-6 flex items-center justify-center border rounded-full"
-              onClick={() => updateQuantity(item, Math.max(1, item.quantity - 1))}
+              onClick={() => updateQuantity(item.menuItem.id, Math.max(1, item.quantity - 1))}
             >
               -
             </button>
             <span className="mx-2">{item.quantity}</span>
             <button
               className="w-6 h-6 flex items-center justify-center border rounded-full"
-              onClick={() => updateQuantity(item, item.quantity + 1)}
+              onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
             >
               +
             </button>
@@ -312,7 +311,7 @@ const Panier = () => {
           <p className="font-medium">{formatEuro(item.menuItem.price * item.quantity)}</p>
           <button
             className="text-red-500 hover:text-red-700 text-sm mt-1"
-            onClick={() => removeItem(item)}
+            onClick={() => removeItem(item.menuItem.id)}
           >
             <Trash className="h-4 w-4" />
           </button>
