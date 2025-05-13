@@ -10,7 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { toast } from "@/components/ui/use-toast";
 
 interface OrdersDeliveryViewProps {
   orders: Order[];
@@ -66,15 +65,6 @@ const OrdersDeliveryView = ({
     window.open(url, '_blank');
   };
 
-  const handleStatusUpdate = (orderId: string, newStatus: string) => {
-    onUpdateStatus(orderId, newStatus);
-    toast({
-      title: "Statut mis à jour",
-      description: `La commande est maintenant ${newStatus === 'out-for-delivery' ? 'en livraison' : 'livrée'}.`,
-      variant: "success",
-    });
-  };
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Vue Livraison ({deliveryOrders.length})</h2>
@@ -106,12 +96,12 @@ const OrdersDeliveryView = ({
               </CardHeader>
               
               <CardContent className="py-2 space-y-2">
-                {order.deliveryAddress && (
+                {order.deliveryStreet && (
                   <div className="flex items-start space-x-2">
                     <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-500" />
                     <div className="flex-1">
                       <span className="text-sm">
-                        {order.deliveryAddress}, {order.deliveryPostalCode} {order.deliveryCity}
+                        {order.deliveryStreet}, {order.deliveryPostalCode} {order.deliveryCity}
                         {order.deliveryInstructions && (
                           <p className="text-xs text-gray-500 mt-1">{order.deliveryInstructions}</p>
                         )}
@@ -131,7 +121,7 @@ const OrdersDeliveryView = ({
                         <DropdownMenuContent align="start">
                           <DropdownMenuItem 
                             onClick={() => openInMaps(
-                              `${order.deliveryAddress}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
+                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
                               'google'
                             )}
                           >
@@ -139,7 +129,7 @@ const OrdersDeliveryView = ({
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => openInMaps(
-                              `${order.deliveryAddress}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
+                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
                               'apple'
                             )}
                           >
@@ -147,7 +137,7 @@ const OrdersDeliveryView = ({
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => openInMaps(
-                              `${order.deliveryAddress}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
+                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
                               'waze'
                             )}
                           >
@@ -190,7 +180,7 @@ const OrdersDeliveryView = ({
                   <Button
                     size="sm"
                     className="bg-gold-500 hover:bg-gold-600 text-black"
-                    onClick={() => handleStatusUpdate(order.id, 'out-for-delivery')}
+                    onClick={() => onUpdateStatus(order.id, 'out-for-delivery')}
                   >
                     En livraison
                   </Button>
@@ -200,7 +190,7 @@ const OrdersDeliveryView = ({
                   <Button
                     size="sm"
                     className="bg-gold-500 hover:bg-gold-600 text-black"
-                    onClick={() => handleStatusUpdate(order.id, 'delivered')}
+                    onClick={() => onUpdateStatus(order.id, 'delivered')}
                   >
                     Livré
                   </Button>
