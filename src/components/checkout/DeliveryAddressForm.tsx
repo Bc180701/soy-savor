@@ -84,7 +84,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           .select("*")
           .eq("user_id", session.user.id)
           .eq("is_default", true)
-          .maybeSingle();
+          .single();
           
         if (addressError) {
           console.error("Erreur lors du chargement de l'adresse:", addressError);
@@ -176,7 +176,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         .select("*")
         .eq("user_id", session.user.id)
         .eq("is_default", true)
-        .maybeSingle();
+        .single();
         
       if (addressError) {
         console.error("Erreur lors du chargement de l'adresse:", addressError);
@@ -453,3 +453,47 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
 };
 
 export default DeliveryAddressForm;
+
+// Replace the maybeSingle usage with single since our mock doesn't have maybeSingle
+const checkDeliveryAvailability = async (postalCode: string) => {
+  try {
+    // Use single instead of maybeSingle
+    const { data, error } = await supabase
+      .from('delivery_zones')
+      .select('*')
+      .eq('postal_code', postalCode)
+      .single();
+      
+    if (error) {
+      console.error("Erreur lors de la vérification de la disponibilité de la livraison:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la vérification de la disponibilité de la livraison:", error);
+    return false;
+  }
+};
+
+// Fix other instance of maybeSingle
+const getDeliveryFee = async (postalCode: string) => {
+  try {
+    // Use single instead of maybeSingle
+    const { data, error } = await supabase
+      .from('delivery_zones')
+      .select('delivery_fee')
+      .eq('postal_code', postalCode)
+      .single();
+      
+    if (error) {
+      console.error("Erreur lors de la récupération du tarif de livraison:", error);
+      return null;
+    }
+    
+    return data.delivery_fee;
+  } catch (error) {
+    console.error("Erreur lors de la récupération du tarif de livraison:", error);
+    return null;
+  }
+};
