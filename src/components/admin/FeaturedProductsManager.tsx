@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { CheckCircle2, XCircle, Power } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const FeaturedProductsManager = () => {
@@ -85,40 +85,6 @@ const FeaturedProductsManager = () => {
     }
   };
 
-  // Toggle active status of all products
-  const toggleAllProductsStatus = async (flagName, value) => {
-    try {
-      setLoading(true);
-      
-      // Use rpc instead of direct update to avoid the empty UUID issue
-      const { data, error } = await supabase
-        .rpc('update_all_products_status', { 
-          flag_name: flagName, 
-          flag_value: value 
-        });
-      
-      if (error) throw error;
-      
-      // Refetch products after bulk update
-      await fetchProducts();
-      
-      toast({
-        title: "Produits mis à jour",
-        description: `Tous les produits ont été ${value ? 'activés' : 'désactivés'} avec succès`,
-        variant: "success",
-      });
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour des produits:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour tous les produits",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Filter products based on specific flags
   const newProducts = products.filter(product => product.is_new);
   const bestSellerProducts = products.filter(product => product.is_best_seller);
@@ -132,32 +98,11 @@ const FeaturedProductsManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Produits mis en avant</h2>
-          <p className="text-muted-foreground mb-6">
-            Gérez les produits affichés sur la page d'accueil dans les sections Nouveautés, Populaires et Exclusivités.
-          </p>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2"
-            onClick={() => toggleAllProductsStatus('is_new', true)}
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Activer tous</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2"
-            onClick={() => toggleAllProductsStatus('is_new', false)}
-          >
-            <XCircle className="h-4 w-4" />
-            <span>Désactiver tous</span>
-          </Button>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold mb-2">Produits mis en avant</h2>
+        <p className="text-muted-foreground mb-6">
+          Gérez les produits affichés sur la page d'accueil dans les sections Nouveautés, Populaires et Exclusivités.
+        </p>
       </div>
 
       <Tabs defaultValue="nouveautes" className="w-full">

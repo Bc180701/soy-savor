@@ -11,7 +11,7 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Helper function to fetch all menu data in a single request
+// Helper function to fetch all products and categories in a single request
 export const fetchAllMenuData = async () => {
   console.log("Fetching all menu data in a single request");
   
@@ -123,24 +123,6 @@ export const fetchAllProducts = async () => {
   }
   
   console.log(`Found ${data?.length || 0} total products`);
-  return data || [];
-};
-
-// Helper function to fetch active products only
-export const fetchActiveProducts = async () => {
-  console.log("Fetching active products");
-  const { data, error } = await supabase
-    .from('products')
-    .select('*, categories(name)')
-    .eq('is_new', true)
-    .order('name');
-  
-  if (error) {
-    console.error("Error fetching active products:", error);
-    return [];
-  }
-  
-  console.log(`Found ${data?.length || 0} active products`);
   return data || [];
 };
 
@@ -376,22 +358,5 @@ export const reorderCategories = async (categories: { id: string, display_order:
   } catch (error) {
     console.error("Error reordering categories:", error);
     throw error;
-  }
-};
-
-// Helper function to update all products' status at once
-export const updateAllProductsStatus = async (flagName: string, value: boolean) => {
-  try {
-    const { data, error } = await supabase
-      .rpc('update_all_products_status', { 
-        flag_name: flagName, 
-        flag_value: value 
-      });
-    
-    if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    console.error(`Error updating all products' ${flagName}:`, error);
-    return { success: false, error };
   }
 };
