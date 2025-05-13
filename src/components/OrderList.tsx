@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { getAllOrders, updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, ChefHat, Truck } from "lucide-react";
@@ -20,40 +20,62 @@ const OrderList = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
-      const { orders, error } = await getAllOrders();
-      if (error) {
+      try {
+        const { orders: fetchedOrders, error } = await getAllOrders();
+        if (error) {
+          console.error("Erreur lors de la récupération des commandes:", error);
+          toast({
+            title: "Erreur",
+            description: `Impossible de charger les commandes: ${error.message || error}`,
+            variant: "destructive",
+          });
+        } else {
+          console.log("Commandes récupérées:", fetchedOrders);
+          setOrders(fetchedOrders || []);
+        }
+      } catch (err) {
+        console.error("Exception lors de la récupération des commandes:", err);
         toast({
-          title: "Erreur",
-          description: `Impossible de charger les commandes: ${error}`,
+          title: "Erreur inattendue",
+          description: "Une erreur est survenue lors du chargement des commandes",
           variant: "destructive",
         });
-      } else {
-        setOrders(orders);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchOrders();
   }, [toast]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
-    const { success, error } = await updateOrderStatus(orderId, newStatus);
-    
-    if (success) {
-      setOrders(orders.map(order => 
-        order.id === orderId 
-          ? { ...order, status: newStatus as any } 
-          : order
-      ));
+    try {
+      const { success, error } = await updateOrderStatus(orderId, newStatus);
       
+      if (success) {
+        setOrders(orders.map(order => 
+          order.id === orderId 
+            ? { ...order, status: newStatus as any } 
+            : order
+        ));
+        
+        toast({
+          title: "Statut mis à jour",
+          description: "Le statut de la commande a été mis à jour avec succès.",
+          variant: "success",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: `Impossible de mettre à jour le statut: ${error}`,
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Exception lors de la mise à jour du statut:", err);
       toast({
-        title: "Statut mis à jour",
-        description: "Le statut de la commande a été mis à jour avec succès.",
-      });
-    } else {
-      toast({
-        title: "Erreur",
-        description: `Impossible de mettre à jour le statut: ${error}`,
+        title: "Erreur inattendue",
+        description: "Une erreur est survenue lors de la mise à jour du statut",
         variant: "destructive",
       });
     }
