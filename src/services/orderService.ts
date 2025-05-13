@@ -1,3 +1,4 @@
+
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -146,7 +147,7 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
 
     if (ordersError) {
       console.error("Erreur lors de la récupération des commandes:", ordersError);
-      return { orders: [], error: ordersError };
+      return { orders: [], error: new Error(ordersError.message) };
     }
 
     // Convert database orders to Order type
