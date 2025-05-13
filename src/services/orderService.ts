@@ -34,7 +34,7 @@ export const getDeliveryFee = async (postalCode: string): Promise<DeliveryFeeRes
     // Récupérer les frais de livraison depuis Supabase
     const { data, error } = await supabase
       .from('delivery_zones')
-      .select('fee')
+      .select('delivery_fee')
       .ilike('postal_codes', `%${postalCode}%`)
       .single();
 
@@ -52,7 +52,7 @@ export const getDeliveryFee = async (postalCode: string): Promise<DeliveryFeeRes
       return { fee: 0, error: new Error(error.message) };
     }
 
-    return { fee: data?.fee || 0, error: null };
+    return { fee: data?.delivery_fee || 0, error: null };
   } catch (error) {
     console.error("Exception lors de la récupération des frais de livraison:", error);
     return { fee: 0, error: error as Error };
@@ -91,9 +91,9 @@ export const createOrder = async (
       payment_status: "pending",
       total,
       subtotal,
-      tax_amount: taxAmount || 0,
+      tax: taxAmount || 0,
       delivery_fee: deliveryFee || 0,
-      tip_amount: tipAmount || 0,
+      tip: tipAmount || 0,
       promo_code: promoCode || null,
       order_type: orderType,
       scheduled_for: scheduledFor.toISOString(),
@@ -104,7 +104,8 @@ export const createOrder = async (
       delivery_city: deliveryCity || null,
       delivery_postal_code: deliveryPostalCode || null,
       delivery_instructions: deliveryInstructions || null,
-      customer_notes: customerNotes || null
+      customer_notes: customerNotes || null,
+      payment_method: "credit-card"
     };
 
     // Insérer la commande dans Supabase
@@ -125,9 +126,9 @@ export const createOrder = async (
     // Préparer les articles de la commande
     const orderItems = items.map(item => ({
       order_id: orderId,
-      product_id: item.id,
+      product_id: item.menuItem.id,
       quantity: item.quantity,
-      price: item.price,
+      price: item.menuItem.price,
       special_instructions: item.specialInstructions || null
     }));
 
@@ -180,7 +181,7 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
     console.log("Début de récupération de toutes les commandes");
     
     // Requête à Supabase pour récupérer toutes les commandes
-    const response = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .select(`
         id,
@@ -189,9 +190,9 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
         payment_status,
         total,
         subtotal,
-        tax_amount,
+        tax,
         delivery_fee,
-        tip_amount,
+        tip,
         promo_code,
         order_type,
         scheduled_for,
@@ -221,13 +222,13 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
       `)
       .order('created_at', { ascending: false });
       
-    if (response.error) {
-      console.error("Erreur Supabase lors de la récupération des commandes:", response.error);
-      return { orders: [], error: new Error(response.error.message) };
+    if (error) {
+      console.error("Erreur Supabase lors de la récupération des commandes:", error);
+      return { orders: [], error: new Error(error.message) };
     }
     
-    console.log(`${response.data?.length || 0} commandes récupérées de Supabase`);
-    const orders = response.data || [];
+    console.log(`${data?.length || 0} commandes récupérées de Supabase`);
+    const orders = data || [];
 
     // Convertir les données Supabase au format de notre application
     const formattedOrders: Order[] = orders.map(order => {
@@ -236,30 +237,30 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
 
       // Formater les infos de base de la commande
       const formattedOrder: Order = {
-      id: order.id,
-      userId: order.user_id || undefined,
-      total: order.total,
-      subtotal: order.subtotal,
-      taxAmount: order.tax_amount,
-      deliveryFee: order.delivery_fee || 0,
-      tipAmount: order.tip_amount || 0,
-      promoCode: order.promo_code || undefined,
-      orderType: order.order_type as "delivery" | "pickup" | "dine-in",
-      status: order.status as "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled",
-      paymentMethod: "credit-card",
-      paymentStatus: order.payment_status as "pending" | "paid" | "failed",
-      deliveryInstructions: order.delivery_instructions || undefined,
-      scheduledFor: new Date(order.scheduled_for),
-      createdAt: new Date(order.created_at),
-      updatedAt: new Date(order.updated_at),
-      customerName: order.customer_name || undefined,
-      customerEmail: order.customer_email || undefined,
-      customerPhone: order.customer_phone || undefined,
-      customerNotes: order.customer_notes || undefined,
-      deliveryAddress: order.delivery_address || undefined,
-      deliveryCity: order.delivery_city || undefined,
-      deliveryPostalCode: order.delivery_postal_code || undefined,
-      items: []
+        id: order.id,
+        userId: order.user_id || undefined,
+        total: order.total,
+        subtotal: order.subtotal,
+        tax: order.tax || 0,
+        deliveryFee: order.delivery_fee || 0,
+        tipAmount: order.tip || 0,
+        promoCode: order.promo_code || undefined,
+        orderType: order.order_type as "delivery" | "pickup" | "dine-in",
+        status: order.status as "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled",
+        paymentMethod: "credit-card",
+        paymentStatus: order.payment_status as "pending" | "paid" | "failed",
+        deliveryInstructions: order.delivery_instructions || undefined,
+        scheduledFor: new Date(order.scheduled_for),
+        createdAt: new Date(order.created_at),
+        updatedAt: new Date(order.updated_at),
+        customerName: order.customer_name || undefined,
+        customerEmail: order.customer_email || undefined,
+        customerPhone: order.customer_phone || undefined,
+        customerNotes: order.customer_notes || undefined,
+        deliveryAddress: order.delivery_address || undefined,
+        deliveryCity: order.delivery_city || undefined,
+        deliveryPostalCode: order.delivery_postal_code || undefined,
+        items: []
       };
 
       // Remplacer les valeurs null par undefined pour compatibilité avec l'interface Order
@@ -309,9 +310,9 @@ export const getOrderById = async (orderId: string): Promise<OrderResponse> => {
         payment_status,
         total,
         subtotal,
-        tax_amount,
+        tax,
         delivery_fee,
-        tip_amount,
+        tip,
         promo_code,
         order_type,
         scheduled_for,
@@ -356,9 +357,9 @@ export const getOrderById = async (orderId: string): Promise<OrderResponse> => {
       userId: order.user_id || undefined,
       total: order.total,
       subtotal: order.subtotal,
-      taxAmount: order.tax_amount,
+      tax: order.tax || 0,
       deliveryFee: order.delivery_fee || 0,
-      tipAmount: order.tip_amount || 0,
+      tipAmount: order.tip || 0,
       promoCode: order.promo_code || undefined,
       orderType: order.order_type,
       status: order.status,
@@ -391,6 +392,98 @@ export const getOrderById = async (orderId: string): Promise<OrderResponse> => {
   } catch (error) {
     console.error("Exception lors de la récupération de la commande:", error);
     return { error: error as Error };
+  }
+};
+
+// Fonction pour récupérer les commandes d'un utilisateur
+export const getOrdersByUser = async (): Promise<OrderResponse> => {
+  try {
+    // Récupérer l'utilisateur connecté
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { orders: [], error: new Error("Utilisateur non connecté") };
+    }
+    
+    // Récupérer ses commandes
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        user_id,
+        status,
+        payment_status,
+        total,
+        subtotal,
+        tax,
+        delivery_fee,
+        tip,
+        promo_code,
+        order_type,
+        scheduled_for,
+        created_at,
+        customer_name,
+        customer_email,
+        delivery_address,
+        delivery_city,
+        delivery_postal_code,
+        order_items (
+          id,
+          product_id,
+          quantity,
+          price,
+          special_instructions,
+          products (
+            id,
+            name
+          )
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Erreur lors de la récupération des commandes de l'utilisateur:", error);
+      return { orders: [], error: new Error(error.message) };
+    }
+    
+    // Convertir les données
+    const formattedOrders: Order[] = (data || []).map(order => ({
+      id: order.id,
+      userId: order.user_id,
+      total: order.total,
+      subtotal: order.subtotal,
+      tax: order.tax || 0,
+      deliveryFee: order.delivery_fee || 0,
+      tipAmount: order.tip || 0,
+      promoCode: order.promo_code || undefined,
+      orderType: order.order_type as "delivery" | "pickup" | "dine-in",
+      status: order.status as any,
+      paymentMethod: "credit-card",
+      paymentStatus: order.payment_status as any,
+      scheduledFor: new Date(order.scheduled_for),
+      createdAt: new Date(order.created_at),
+      customerName: order.customer_name || undefined,
+      customerEmail: order.customer_email || undefined,
+      deliveryAddress: order.delivery_address || undefined,
+      deliveryCity: order.delivery_city || undefined,
+      deliveryPostalCode: order.delivery_postal_code || undefined,
+      items: (order.order_items || []).map(item => ({
+        menuItem: {
+          id: item.product_id,
+          name: item.products?.name || 'Produit',
+          price: item.price,
+          category: "plateaux"
+        },
+        quantity: item.quantity,
+        specialInstructions: item.special_instructions
+      }))
+    }));
+    
+    return { orders: formattedOrders, error: null };
+  } catch (error) {
+    console.error("Exception lors de la récupération des commandes de l'utilisateur:", error);
+    return { orders: [], error: error as Error };
   }
 };
 

@@ -114,7 +114,7 @@ export interface Order {
   subtotal: number;
   tax: number;
   deliveryFee: number;
-  tip?: number;
+  tipAmount?: number;
   total: number;
   discount?: number;
   promoCode?: string;
@@ -122,20 +122,23 @@ export interface Order {
   status: "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled";
   paymentMethod: "credit-card"; // Modifié pour n'accepter que la carte bancaire
   paymentStatus: "pending" | "paid" | "failed";
-  deliveryAddress?: UserAddress;
+  deliveryAddress?: string;
   deliveryInstructions?: string;
   scheduledFor: Date;
   createdAt: Date;
+  updatedAt?: Date;
   customerNotes?: string;
   pickupTime?: string;
   contactPreference?: string;
   allergies?: string[];
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  deliveryCity?: string;
+  deliveryPostalCode?: string;
   clientName?: string;
   clientPhone?: string;
   clientEmail?: string;
-  deliveryStreet?: string;
-  deliveryCity?: string;
-  deliveryPostalCode?: string;
 }
 
 export interface Review {
