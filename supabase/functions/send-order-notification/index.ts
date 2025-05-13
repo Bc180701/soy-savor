@@ -25,31 +25,59 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { email, name, orderId, status, statusMessage } = await req.json() as NotificationRequest;
     
-    // Initialize Supabase client with admin privileges
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    // Récupérer la clé API Brevo depuis les variables d'environnement
+    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Erreur de configuration: variables d'environnement manquantes");
+    if (!brevoApiKey) {
+      throw new Error("Erreur de configuration: clé API Brevo manquante");
     }
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Préparer le contenu de l'email
+    const subject = `Mise à jour de votre commande #${orderId}`;
+    const htmlContent = `
+      <html><body>
+        <h1>Mise à jour de votre commande</h1>
+        <p>Bonjour ${name},</p>
+        <p>Nous vous informons que votre commande <strong>#${orderId}</strong> ${statusMessage}.</p>
+        <p>Statut actuel: <strong>${status}</strong></p>
+        <p>Merci de nous faire confiance !</p>
+        <p>L'équipe SushiEats</p>
+      </body></html>
+    `;
     
-    // Envoyer l'email via Supabase Postgres
-    const { error } = await supabase.rpc('send_order_status_email', {
-      p_email: email,
-      p_name: name,
-      p_order_id: orderId,
-      p_status: status,
-      p_status_message: statusMessage
+    // Envoyer l'email via l'API Brevo
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": brevoApiKey,
+      },
+      body: JSON.stringify({
+        sender: {
+          name: "SushiEats",
+          email: "notifications@sushieats.fr",
+        },
+        to: [
+          {
+            email: email,
+            name: name,
+          },
+        ],
+        subject: subject,
+        htmlContent: htmlContent,
+      }),
     });
     
-    if (error) {
-      console.error("Erreur lors de l'envoi de l'email via Postgres:", error);
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Erreur d'envoi d'email via Brevo:", errorData);
+      throw new Error(`Erreur Brevo: ${JSON.stringify(errorData)}`);
     }
     
-    return new Response(JSON.stringify({ success: true }), {
+    const responseData = await response.json();
+    console.log("Email envoyé avec succès via Brevo:", responseData);
+    
+    return new Response(JSON.stringify({ success: true, messageId: responseData.messageId }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
