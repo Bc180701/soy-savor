@@ -21,7 +21,9 @@ const OrderList = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
+        console.log("Récupération des commandes...");
         const { orders: fetchedOrders, error } = await getAllOrders();
+        
         if (error) {
           console.error("Erreur lors de la récupération des commandes:", error);
           toast({
@@ -30,7 +32,7 @@ const OrderList = () => {
             variant: "destructive",
           });
         } else {
-          console.log("Commandes récupérées:", fetchedOrders);
+          console.log(`${fetchedOrders?.length || 0} commandes récupérées:`, fetchedOrders);
           setOrders(fetchedOrders || []);
         }
       } catch (err) {
@@ -50,6 +52,7 @@ const OrderList = () => {
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
+      console.log(`Mise à jour du statut de la commande ${orderId} à ${newStatus}`);
       const { success, error } = await updateOrderStatus(orderId, newStatus);
       
       if (success) {
@@ -65,6 +68,7 @@ const OrderList = () => {
           variant: "success",
         });
       } else {
+        console.error("Erreur lors de la mise à jour du statut:", error);
         toast({
           title: "Erreur",
           description: `Impossible de mettre à jour le statut: ${error}`,

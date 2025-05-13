@@ -1,4 +1,3 @@
-
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -192,7 +191,9 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
 
 export const getAllOrders = async (): Promise<OrderResponse> => {
   try {
-    // Use explicit error handling for the database query
+    console.log("Début de récupération de toutes les commandes");
+    
+    // Requête à Supabase pour récupérer toutes les commandes
     const response = await supabase
       .from('orders')
       .select(`
@@ -223,7 +224,6 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
         delivery_city,
         delivery_postal_code
       `)
-      .eq("payment_status", "paid") // Uniquement les commandes payées
       .order('created_at', { ascending: false });
       
     if (response.error) {
@@ -231,6 +231,7 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
       return { orders: [], error: new Error(response.error.message) };
     }
     
+    console.log(`${response.data?.length || 0} commandes récupérées de Supabase`);
     const orders = response.data || [];
 
     // Convertir les données Supabase au format de notre application
@@ -246,7 +247,7 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
       promoCode: order.promo_code || undefined,
       orderType: order.order_type as "delivery" | "pickup" | "dine-in",
       status: order.status as "pending" | "confirmed" | "preparing" | "ready" | "out-for-delivery" | "delivered" | "completed" | "cancelled",
-      paymentMethod: "credit-card", // Modifié: toujours carte bancaire
+      paymentMethod: "credit-card",
       paymentStatus: order.payment_status as "pending" | "paid" | "failed",
       deliveryInstructions: order.delivery_instructions || undefined,
       scheduledFor: new Date(order.scheduled_for),
@@ -284,18 +285,24 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
       }
 
       // Mettre en forme les articles de commande
-      order.items = items.map(item => ({
-        menuItem: {
-          id: item.product_id,
-          name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
-          price: item.price,
-          category: "plateaux" // Catégorie par défaut
-        },
-        quantity: item.quantity,
-        specialInstructions: item.special_instructions
-      }));
+      if (items && items.length > 0) {
+        console.log(`${items.length} articles trouvés pour la commande ${order.id}`);
+        order.items = items.map(item => ({
+          menuItem: {
+            id: item.product_id,
+            name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
+            price: item.price,
+            category: "plateaux" // Catégorie par défaut
+          },
+          quantity: item.quantity,
+          specialInstructions: item.special_instructions
+        }));
+      } else {
+        console.log(`Aucun article trouvé pour la commande ${order.id}`);
+      }
     }
 
+    console.log(`${formattedOrders.length} commandes formatées avec succès`);
     return { orders: formattedOrders, error: null };
   } catch (error) {
     console.error("Erreur inattendue lors de la récupération des commandes:", error);

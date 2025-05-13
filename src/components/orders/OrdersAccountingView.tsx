@@ -71,6 +71,7 @@ const OrdersAccountingView = ({
       {orders.length === 0 ? (
         <div className="text-center p-10 bg-gray-50 rounded-lg">
           <p className="text-gray-500">Aucune commande trouvée.</p>
+          <p className="text-gray-500 mt-2">Les commandes apparaîtront ici une fois qu'elles seront créées et payées.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
