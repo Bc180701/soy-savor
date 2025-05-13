@@ -634,6 +634,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      update_all_products_status: {
+        Args: { flag_name: string; flag_value: boolean }
+        Returns: undefined
+      }
       update_homepage_data: {
         Args: { section_name: string; section_data: Json }
         Returns: undefined
