@@ -55,20 +55,34 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la déconnexion",
-      });
-    } else {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Erreur lors de la déconnexion:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la déconnexion. Veuillez réessayer.",
+        });
+        return;
+      }
+      
+      // Si la déconnexion réussit, on affiche un toast et on redirige l'utilisateur
       toast({
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté avec succès",
       });
+      
+      // Rediriger vers la page d'accueil
       navigate("/");
+    } catch (err) {
+      console.error("Exception lors de la déconnexion:", err);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur inattendue est survenue lors de la déconnexion",
+      });
     }
   };
 

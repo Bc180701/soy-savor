@@ -41,19 +41,6 @@ const UserActions = ({ user, handleLogout }: UserActionsProps) => {
     checkAdminStatus();
   }, [user]);
   
-  const handleLogoutWithErrorHandling = async () => {
-    try {
-      await handleLogout();
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion :", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la déconnexion. Veuillez réessayer.",
-      });
-    }
-  };
-  
   return (
     <div className="hidden md:flex items-center space-x-4">
       {user ? (
@@ -82,7 +69,7 @@ const UserActions = ({ user, handleLogout }: UserActionsProps) => {
             variant="ghost"
             size="icon"
             className="text-gray-800 hover:text-gold-500 hover:bg-gray-100"
-            onClick={handleLogoutWithErrorHandling}
+            onClick={handleLogout}
           >
             <LogOut size={20} />
           </Button>
