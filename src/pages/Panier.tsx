@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { formatEuro } from "@/utils/formatters";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { CartItem } from "@/types";
 import { createOrder } from "@/services/orderService";
 import { X, Trash, ArrowRight, Loader2 } from "lucide-react";
@@ -43,6 +43,7 @@ interface DeliveryInfo {
   deliveryInstructions?: string;
   notes?: string;
   allergies: string[];
+  isPostalCodeValid?: boolean; // Add this flag to track postal code validation
 }
 
 const Panier = () => {
@@ -51,7 +52,6 @@ const Panier = () => {
   const TAX_RATE = 0.1; // 10% TVA
   const DELIVERY_FEE = 3.5; // 3.50€ frais de livraison
 
-  const [postalCodeValid, setPostalCodeValid] = useState<boolean | null>(null);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
   const [loading, setLoading] = useState(false);
   const [allergies, setAllergies] = useState<string[]>([]);
@@ -60,11 +60,13 @@ const Panier = () => {
     name: "",
     email: "",
     phone: "",
-    allergies: []
+    allergies: [],
+    isPostalCodeValid: undefined
   });
   
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
+  const [validatingPostalCode, setValidatingPostalCode] = useState<boolean>(false);
   
   // Check if user is logged in
   useEffect(() => {
@@ -180,12 +182,12 @@ const Panier = () => {
         });
         return false;
       }
-      
-      // Check if postal code is valid for delivery addresses
-      if (postalCodeValid === false) {
+
+      // Important: Check if postal code is valid for delivery
+      if (deliveryInfo.isPostalCodeValid === false) {
         toast({
           title: "Code postal non desservi",
-          description: `Nous ne livrons pas dans la zone ${deliveryInfo.postalCode}. Veuillez vérifier ou choisir un autre mode de livraison.`,
+          description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
           variant: "destructive",
         });
         return false;
@@ -209,6 +211,17 @@ const Panier = () => {
       setLoading(true);
       
       if (!validateDeliveryInfo()) {
+        setLoading(false);
+        return;
+      }
+
+      // If delivery is selected and postal code is invalid, prevent proceeding
+      if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
+        toast({
+          title: "Code postal non desservi",
+          description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
+          variant: "destructive",
+        });
         setLoading(false);
         return;
       }
@@ -282,7 +295,9 @@ const Panier = () => {
   const handleOrderTypeChange = (type: "delivery" | "pickup") => {
     setDeliveryInfo((prev) => ({
       ...prev,
-      orderType: type
+      orderType: type,
+      // Reset postal code validation when switching order type
+      isPostalCodeValid: type === "pickup" ? undefined : prev.isPostalCodeValid
     }));
   };
 
@@ -293,13 +308,7 @@ const Panier = () => {
     }));
   };
 
-  // Handle postal code validation status
-  const handlePostalCodeValidated = (isValid: boolean) => {
-    console.log("Postal code validation status:", isValid);
-    setPostalCodeValid(isValid);
-  };
-
-  // Handle address form completion - now this just stores the address data
+  // Handle address form completion
   const handleAddressFormComplete = (data: DeliveryAddressData) => {
     setDeliveryInfo((prev) => ({
       ...prev,
@@ -309,7 +318,8 @@ const Panier = () => {
       postalCode: data.postalCode,
       phone: data.phone,
       email: data.email,
-      deliveryInstructions: data.instructions
+      deliveryInstructions: data.instructions,
+      isPostalCodeValid: true // Address validation is handled in DeliveryAddressForm
     }));
   };
 
@@ -418,7 +428,6 @@ const Panier = () => {
           <DeliveryAddressForm 
             onComplete={handleAddressFormComplete}
             onCancel={() => handleOrderTypeChange("pickup")}
-            onPostalCodeValidated={handlePostalCodeValidated}
           />
         ) : (
           // Informations personnelles for pickup
@@ -526,17 +535,8 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleNextStep}
+          disabled={deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false}
           className="bg-gold-500 hover:bg-gold-600 text-black"
-          disabled={
-            // Pour le formulaire de retrait
-            (deliveryInfo.orderType === "pickup" && (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || !deliveryInfo.pickupTime)) ||
-            // Pour le formulaire de livraison - tous les champs requis doivent être remplis
-            (deliveryInfo.orderType === "delivery" && 
-              ((!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
-              !deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || 
-              !deliveryInfo.pickupTime) || 
-              postalCodeValid === false)) // Ne désactive plus si postalCodeValid est null ou true
-          }
         >
           Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
