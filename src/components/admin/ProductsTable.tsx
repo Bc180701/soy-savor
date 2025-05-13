@@ -14,7 +14,7 @@ import {
   Select, SelectContent, SelectItem, 
   SelectTrigger, SelectValue 
 } from "@/components/ui/select";
-import { Filter, Pencil, Trash2, EyeOff, Eye, Plus, Search } from "lucide-react";
+import { Filter, Pencil, Trash2, EyeOff, Eye, Plus, Search, Power } from "lucide-react";
 import { fetchAllProducts, fetchCategories, supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ProductForm from "./ProductForm";
@@ -101,6 +101,37 @@ const ProductsTable = () => {
     }
   };
 
+  const toggleAllProductsStatus = async (value: boolean) => {
+    try {
+      setIsLoading(true);
+      
+      // Update all products
+      const { error } = await supabase
+        .from('products')
+        .update({ is_new: value })
+        .neq('id', ''); // Update all products
+      
+      if (error) throw error;
+      
+      // Update local state
+      setProducts(products.map(p => ({ ...p, is_new: value })));
+      
+      toast({
+        title: "Succès",
+        description: `Tous les produits ont été ${value ? "activés" : "désactivés"} avec succès`,
+      });
+    } catch (error) {
+      console.error("Error updating all products:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le statut de tous les produits",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!selectedProduct) return;
     
@@ -159,9 +190,27 @@ const ProductsTable = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold">Liste des produits</h3>
-        <Button onClick={handleAdd} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Ajouter un produit
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-1"
+            onClick={() => toggleAllProductsStatus(true)}
+          >
+            <Power className="h-4 w-4" />
+            <span>Tout activer</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-1"
+            onClick={() => toggleAllProductsStatus(false)}
+          >
+            <Power className="h-4 w-4" />
+            <span>Tout désactiver</span>
+          </Button>
+          <Button onClick={handleAdd} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Ajouter un produit
+          </Button>
+        </div>
       </div>
       
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
