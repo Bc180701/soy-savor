@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { checkPostalCodeDelivery } from "@/services/deliveryService";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, MapPinCheck } from "lucide-react";
 
@@ -309,7 +310,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // If valid, continue with the form submission
+      // Call onComplete with validated data - important to do this only if valid
+      console.log("Address form validated successfully, postal code is valid");
       onComplete(data);
     } catch (error) {
       console.error("Error validating address:", error);

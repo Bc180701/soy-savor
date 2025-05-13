@@ -308,8 +308,9 @@ const Panier = () => {
     }));
   };
 
-  // Handle address form completion - now this just stores the address data
+  // Handle address form completion - now this properly stores the address data and sets validation flag
   const handleAddressFormComplete = (data: DeliveryAddressData) => {
+    console.log("Address form complete with validated postal code");
     setDeliveryInfo((prev) => ({
       ...prev,
       name: data.name,
@@ -319,11 +320,8 @@ const Panier = () => {
       phone: data.phone,
       email: data.email,
       deliveryInstructions: data.instructions,
-      isPostalCodeValid: true // Set to true when the form completes, as DeliveryAddressForm validates the postal code
+      isPostalCodeValid: true // Explicitly set to true when the form completes with validated postal code
     }));
-
-    // Log that we've set the postal code as valid for debugging
-    console.log("Address form complete, postal code validation set to true");
   };
 
   const renderCartItems = () => {
@@ -672,7 +670,7 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleStripeCheckout}
-          // Only disable the button if loading OR we explicitly know the postal code is invalid
+          // Only disable if loading OR postal code is explicitly invalid
           disabled={loading || (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false)}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
