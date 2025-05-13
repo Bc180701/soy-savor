@@ -10,7 +10,7 @@ import * as z from "zod";
 import { checkPostalCodeDelivery } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPinCheck } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
@@ -31,10 +31,9 @@ interface DeliveryAddressFormProps {
 
 const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps) => {
   const { toast } = useToast();
-  const [isValidating, setIsValidating] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [useProfileAddress, setUseProfileAddress] = useState(false);
   const [useProfileContact, setUseProfileContact] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [hasAddress, setHasAddress] = useState(false);
@@ -78,6 +77,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           } else {
             // Clear any error on the postal code field
             form.clearErrors("postalCode");
+            
+            // Show success toast
+            toast({
+              title: "Zone desservie",
+              description: `Nous livrons bien dans la zone ${postalCode}.`,
+              variant: "default",
+            });
           }
         } catch (error) {
           console.error("Error validating postal code:", error);
@@ -290,8 +296,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   };
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    setIsValidating(true);
-    
     try {
       // Check if postal code is in delivery range
       const isValidPostalCode = await checkPostalCodeDelivery(data.postalCode);
@@ -302,7 +306,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           title: "Zone non desservie",
           description: `Nous ne livrons pas dans la zone ${data.postalCode}. Veuillez choisir un autre mode de livraison.`,
         });
-        setIsValidating(false);
         return;
       }
       
@@ -315,7 +318,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         title: "Erreur",
         description: "Une erreur est survenue lors de la validation de votre adresse.",
       });
-      setIsValidating(false);
     }
   };
 
@@ -415,9 +417,20 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Code postal</FormLabel>
-                  <FormControl>
-                    <Input placeholder="75000" {...field} />
-                  </FormControl>
+                  <div className="relative">
+                    <FormControl>
+                      <Input placeholder="75000" {...field} />
+                    </FormControl>
+                    {form.formState.errors.postalCode ? (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                        <MapPinCheck className="h-4 w-4" />
+                      </div>
+                    ) : postalCode && postalCode.length === 5 && !form.formState.errors.postalCode ? (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                        <MapPinCheck className="h-4 w-4" />
+                      </div>
+                    ) : null}
+                  </div>
                   <FormMessage className="text-red-500" />
                 </FormItem>
               )}
@@ -477,16 +490,15 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
               type="button" 
               variant="outline" 
               onClick={onCancel}
-              disabled={isValidating}
             >
               Annuler
             </Button>
             <Button 
               type="submit"
-              disabled={isValidating || form.formState.errors.postalCode !== undefined}
+              disabled={form.formState.errors.postalCode !== undefined}
               className="bg-akane-600 hover:bg-akane-700"
             >
-              {isValidating ? "Validation..." : "Valider l'adresse"}
+              Valider l'adresse
             </Button>
           </div>
         </form>
