@@ -2,12 +2,18 @@
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Loader2 } from "lucide-react";
+import { Download, Search, Loader2, ChevronDown, ChevronUp, Phone, Mail, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
+import { 
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 import { getAllUsers } from "@/services/authService";
 
 type AuthUser = {
@@ -24,13 +30,16 @@ type UserProfile = {
   last_name: string;
   phone: string;
   addresses: Array<{
+    id: string;
     street: string;
     city: string;
     postal_code: string;
     additional_info?: string;
+    is_default: boolean;
   }>;
   created_at: string;
   loyalty_points: number;
+  last_sign_in_at?: string;
 };
 
 const UsersList = () => {
@@ -39,6 +48,7 @@ const UsersList = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,11 +66,28 @@ const UsersList = () => {
             user.first_name?.toLowerCase().includes(lowercaseQuery) ||
             user.last_name?.toLowerCase().includes(lowercaseQuery) ||
             user.email.toLowerCase().includes(lowercaseQuery) ||
-            user.phone?.toLowerCase().includes(lowercaseQuery)
+            user.phone?.toLowerCase().includes(lowercaseQuery) ||
+            user.addresses.some(addr => 
+              addr.street?.toLowerCase().includes(lowercaseQuery) ||
+              addr.city?.toLowerCase().includes(lowercaseQuery) ||
+              addr.postal_code?.toLowerCase().includes(lowercaseQuery)
+            )
         )
       );
     }
   }, [searchQuery, users]);
+
+  const toggleUserExpanded = (userId: string) => {
+    setExpandedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -122,7 +149,8 @@ const UsersList = () => {
           phone: profile.phone || "",
           addresses: userAddresses,
           created_at: authUser.created_at || new Date().toISOString(),
-          loyalty_points: profile.loyalty_points || 0
+          loyalty_points: profile.loyalty_points || 0,
+          last_sign_in_at: authUser.last_sign_in_at || null
         };
       });
       
@@ -192,7 +220,8 @@ const UsersList = () => {
             phone: profile.phone || "",
             addresses: addresses || [],
             created_at: profile.created_at || new Date().toISOString(),
-            loyalty_points: profile.loyalty_points || 0
+            loyalty_points: profile.loyalty_points || 0,
+            last_sign_in_at: null
           };
         })
       );
@@ -229,18 +258,21 @@ const UsersList = () => {
         "Prénom", 
         "Nom", 
         "Téléphone", 
-        "Adresse", 
+        "Adresse principale", 
         "Ville", 
         "Code postal", 
         "Informations supplémentaires",
+        "Nombre d'adresses",
         "Date d'inscription",
+        "Dernière connexion",
         "Points de fidélité"
       ];
       
       // Convertir les données en lignes CSV
       const csvRows = filteredUsers.map(user => {
         // Adresse par défaut (utiliser la première si disponible)
-        const defaultAddress = user.addresses && user.addresses.length > 0 ? user.addresses[0] : null;
+        const defaultAddress = user.addresses && user.addresses.length > 0 ? 
+          user.addresses.find(addr => addr.is_default) || user.addresses[0] : null;
         
         return [
           user.id,
@@ -252,7 +284,9 @@ const UsersList = () => {
           defaultAddress?.city || "",
           defaultAddress?.postal_code || "",
           defaultAddress?.additional_info || "",
+          user.addresses.length.toString(),
           new Date(user.created_at).toLocaleDateString("fr-FR"),
+          user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString("fr-FR") : "Jamais",
           user.loyalty_points.toString()
         ].map(value => `"${value}"`).join(",");
       });
@@ -293,9 +327,25 @@ const UsersList = () => {
     }
   };
 
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return "Jamais";
+    try {
+      return new Date(dateStr).toLocaleDateString("fr-FR", { 
+        day: "2-digit", 
+        month: "2-digit", 
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (e) {
+      return "Date invalide";
+    }
+  };
+
   const renderSkeletonRows = () => {
     return Array(5).fill(null).map((_, index) => (
       <TableRow key={`skeleton-${index}`}>
+        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-full" /></TableCell>
         <TableCell><Skeleton className="h-4 w-full" /></TableCell>
@@ -333,10 +383,12 @@ const UsersList = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead></TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Nom</TableHead>
               <TableHead>Téléphone</TableHead>
-              <TableHead>Adresse</TableHead>
+              <TableHead>Inscrit le</TableHead>
+              <TableHead>Dernière connexion</TableHead>
               <TableHead>Points</TableHead>
             </TableRow>
           </TableHeader>
@@ -345,27 +397,71 @@ const UsersList = () => {
               renderSkeletonRows()
             ) : filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.email || "-"}</TableCell>
-                  <TableCell>
-                    {user.first_name || user.last_name ? `${user.first_name} ${user.last_name}` : "-"}
-                  </TableCell>
-                  <TableCell>{user.phone || "-"}</TableCell>
-                  <TableCell>
-                    {user.addresses && user.addresses.length > 0 ? (
-                      <span>
-                        {user.addresses[0].street}, {user.addresses[0].postal_code} {user.addresses[0].city}
-                      </span>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  <TableCell>{user.loyalty_points}</TableCell>
-                </TableRow>
+                <Collapsible key={user.id} open={expandedUsers.has(user.id)} onOpenChange={() => toggleUserExpanded(user.id)}>
+                  <TableRow className="cursor-pointer hover:bg-accent/50" onClick={() => toggleUserExpanded(user.id)}>
+                    <TableCell className="w-6">
+                      <CollapsibleTrigger asChild>
+                        <div>
+                          {expandedUsers.has(user.id) ? 
+                            <ChevronUp className="h-4 w-4" /> : 
+                            <ChevronDown className="h-4 w-4" />}
+                        </div>
+                      </CollapsibleTrigger>
+                    </TableCell>
+                    <TableCell>{user.email || "-"}</TableCell>
+                    <TableCell>
+                      {user.first_name || user.last_name ? `${user.first_name} ${user.last_name}` : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {user.phone ? <Phone className="h-3 w-3 text-muted-foreground" /> : null}
+                        {user.phone || "-"}
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatDate(user.created_at)}</TableCell>
+                    <TableCell>{formatDate(user.last_sign_in_at)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-gold-50">
+                        {user.loyalty_points}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                  <CollapsibleContent>
+                    <TableRow className="bg-muted/30">
+                      <TableCell colSpan={7} className="p-4">
+                        {user.addresses.length > 0 ? (
+                          <div className="space-y-3">
+                            <h4 className="font-medium text-sm flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              Adresses ({user.addresses.length})
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {user.addresses.map((address) => (
+                                <div key={address.id} className="p-3 rounded-md border bg-card text-sm">
+                                  {address.is_default && 
+                                    <Badge className="mb-2 bg-blue-100 text-blue-800 hover:bg-blue-200">Par défaut</Badge>
+                                  }
+                                  <div><span className="font-medium">Rue :</span> {address.street}</div>
+                                  <div><span className="font-medium">Ville :</span> {address.city}</div>
+                                  <div><span className="font-medium">Code postal :</span> {address.postal_code}</div>
+                                  {address.additional_info && 
+                                    <div><span className="font-medium">Infos supplémentaires :</span> {address.additional_info}</div>
+                                  }
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Aucune adresse enregistrée</p>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </CollapsibleContent>
+                </Collapsible>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                   {searchQuery ? "Aucun utilisateur ne correspond à votre recherche" : "Aucun utilisateur trouvé"}
                 </TableCell>
               </TableRow>
