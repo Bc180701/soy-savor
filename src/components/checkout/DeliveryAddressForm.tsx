@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -28,9 +27,10 @@ export type DeliveryAddressData = z.infer<typeof formSchema>;
 interface DeliveryAddressFormProps {
   onComplete: (data: DeliveryAddressData) => void;
   onCancel: () => void;
+  onPostalCodeValidated?: (isValid: boolean) => void;
 }
 
-const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps) => {
+const DeliveryAddressForm = ({ onComplete, onCancel, onPostalCodeValidated }: DeliveryAddressFormProps) => {
   const { toast } = useToast();
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [useProfileAddress, setUseProfileAddress] = useState(false);
@@ -66,6 +66,11 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           const isValid = await checkPostalCodeDelivery(postalCode);
           setPostalCodeValid(isValid);
           
+          // Notify the parent component about postal code validation
+          if (onPostalCodeValidated) {
+            onPostalCodeValidated(isValid);
+          }
+          
           if (!isValid) {
             toast({
               variant: "destructive",
@@ -94,6 +99,9 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         } catch (error) {
           console.error("Error validating postal code:", error);
           setPostalCodeValid(false);
+          if (onPostalCodeValidated) {
+            onPostalCodeValidated(false);
+          }
         } finally {
           setValidatingPostalCode(false);
         }
@@ -109,7 +117,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [postalCode, toast, form]);
+  }, [postalCode, toast, form, onPostalCodeValidated]);
 
   // Vérifier si l'utilisateur est connecté et récupérer son profil
   useEffect(() => {
@@ -263,6 +271,9 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         // Valider le code postal immédiatement
         const isValid = await checkPostalCodeDelivery(addressData.postal_code);
         setPostalCodeValid(isValid);
+        if (onPostalCodeValidated) {
+          onPostalCodeValidated(isValid);
+        }
       } else {
         toast({
           variant: "destructive",

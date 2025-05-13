@@ -51,6 +51,7 @@ const Panier = () => {
   const TAX_RATE = 0.1; // 10% TVA
   const DELIVERY_FEE = 3.5; // 3.50€ frais de livraison
 
+  const [postalCodeValid, setPostalCodeValid] = useState<boolean | null>(null);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
   const [loading, setLoading] = useState(false);
   const [allergies, setAllergies] = useState<string[]>([]);
@@ -179,6 +180,16 @@ const Panier = () => {
         });
         return false;
       }
+      
+      // Check if postal code is valid for delivery addresses
+      if (postalCodeValid === false) {
+        toast({
+          title: "Code postal non desservi",
+          description: `Nous ne livrons pas dans la zone ${deliveryInfo.postalCode}. Veuillez vérifier ou choisir un autre mode de livraison.`,
+          variant: "destructive",
+        });
+        return false;
+      }
     }
 
     if (!deliveryInfo.pickupTime) {
@@ -280,6 +291,12 @@ const Panier = () => {
       ...prev,
       pickupTime: time,
     }));
+  };
+
+  // Handle postal code validation status
+  const handlePostalCodeValidated = (isValid: boolean) => {
+    console.log("Postal code validation status:", isValid);
+    setPostalCodeValid(isValid);
   };
 
   // Handle address form completion - now this just stores the address data
@@ -401,6 +418,7 @@ const Panier = () => {
           <DeliveryAddressForm 
             onComplete={handleAddressFormComplete}
             onCancel={() => handleOrderTypeChange("pickup")}
+            onPostalCodeValidated={handlePostalCodeValidated}
           />
         ) : (
           // Informations personnelles for pickup
@@ -513,8 +531,11 @@ const Panier = () => {
             // Pour le formulaire de retrait
             (deliveryInfo.orderType === "pickup" && (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || !deliveryInfo.pickupTime)) ||
             // Pour le formulaire de livraison - tous les champs requis doivent être remplis
-            (deliveryInfo.orderType === "delivery" && (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
-             !deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || !deliveryInfo.pickupTime))
+            (deliveryInfo.orderType === "delivery" && 
+              ((!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
+              !deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || 
+              !deliveryInfo.pickupTime) || 
+              postalCodeValid === false)) // Ne désactive plus si postalCodeValid est null ou true
           }
         >
           Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />
