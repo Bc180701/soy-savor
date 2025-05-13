@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { DeliveryMethod } from "../checkout/DeliveryMethod";
-import { DeliveryAddressForm } from "../checkout/DeliveryAddressForm";
-import { TimeSlotSelector } from "../checkout/TimeSlotSelector";
+import DeliveryMethod from "../checkout/DeliveryMethod";
+import DeliveryAddressForm from "../checkout/DeliveryAddressForm";
+import TimeSlotSelector from "../checkout/TimeSlotSelector";
 import { AllergiesSelector } from "../checkout/AllergiesSelector";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -101,7 +101,7 @@ export const DeliveryStep = ({
       
       {/* Delivery Method */}
       <DeliveryMethod 
-        orderType={deliveryInfo.orderType} 
+        defaultValue={deliveryInfo.orderType} 
         onChange={handleOrderTypeChange} 
       />
       
@@ -157,9 +157,9 @@ export const DeliveryStep = ({
       
       {/* Pickup/Delivery Time */}
       <TimeSlotSelector
+        orderType={deliveryInfo.orderType}
+        onSelect={handleTimeSelection}
         selectedTime={deliveryInfo.pickupTime}
-        onSelectTime={handleTimeSelection}
-        isDelivery={deliveryInfo.orderType === "delivery"}
       />
       
       {/* Special Instructions */}
@@ -177,8 +177,14 @@ export const DeliveryStep = ({
       
       {/* Allergies */}
       <AllergiesSelector
-        selectedAllergies={allergies}
-        onChange={setAllergies}
+        allergies={allergies}
+        toggleAllergy={(allergyId) => {
+          if (allergies.includes(allergyId)) {
+            setAllergies(allergies.filter(a => a !== allergyId));
+          } else {
+            setAllergies([...allergies, allergyId]);
+          }
+        }}
       />
       
       {/* Navigation Buttons */}
