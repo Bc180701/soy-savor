@@ -668,7 +668,7 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleStripeCheckout}
-          disabled={loading}
+          disabled={loading || (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false)}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
           {loading ? (
