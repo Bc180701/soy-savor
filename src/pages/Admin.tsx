@@ -19,6 +19,7 @@ import CategoriesTable from "@/components/admin/CategoriesTable";
 import FeaturedProductsManager from "@/components/admin/FeaturedProductsManager";
 import AdminManager from "@/components/admin/AdminManager";
 import HomepageEditor from "@/components/admin/HomepageEditor";
+import UsersList from "@/components/admin/UsersList";
 
 const Admin = () => {
   const [loading, setLoading] = useState(true);
@@ -77,7 +78,7 @@ const Admin = () => {
         <h1 className="text-3xl font-bold mb-8">Administration</h1>
         
         <Tabs defaultValue="dashboard">
-          <TabsList className="mb-6 grid grid-cols-3 md:grid-cols-7 w-full">
+          <TabsList className="mb-6 grid grid-cols-3 md:grid-cols-8 w-full">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <LayoutGrid className="h-4 w-4" />
               <span className="hidden md:inline">Dashboard</span>
@@ -101,6 +102,10 @@ const Admin = () => {
             <TabsTrigger value="homepage" className="flex items-center gap-2">
               <LayoutTemplate className="h-4 w-4" />
               <span className="hidden md:inline">Page d'accueil</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden md:inline">Utilisateurs</span>
             </TabsTrigger>
             <TabsTrigger value="admins" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -130,6 +135,10 @@ const Admin = () => {
           
           <TabsContent value="homepage">
             <HomepageEditor />
+          </TabsContent>
+          
+          <TabsContent value="users">
+            <UsersList />
           </TabsContent>
           
           <TabsContent value="admins">
