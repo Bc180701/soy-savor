@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { formatEuro } from "@/utils/formatters";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { CartItem } from "@/types";
 import { createOrder } from "@/services/orderService";
-import { X, Trash, ArrowRight, Loader2 } from "lucide-react";
+import { X, Trash, ArrowRight, Loader2, TicketPercent, CheckCircle } from "lucide-react";
 import DeliveryAddressForm, { DeliveryAddressData } from "@/components/checkout/DeliveryAddressForm";
 import DeliveryMethod from "@/components/checkout/DeliveryMethod";
 import TimeSlotSelector from "@/components/checkout/TimeSlotSelector";
@@ -21,7 +21,7 @@ import { fr } from "date-fns/locale";
 import { Salad, Leaf, Soup, Fish, Apple, Banana } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserContactInfo } from "@/services/profileService";
-import { checkPostalCodeDelivery } from "@/services/deliveryService";
+import { checkPostalCodeDelivery, validatePromoCode } from "@/services/deliveryService";
 
 // Enum pour les étapes du checkout
 enum CheckoutStep {
@@ -63,6 +63,15 @@ const Panier = () => {
     allergies: [],
     isPostalCodeValid: undefined
   });
+  
+  // New state for promo code
+  const [promoCode, setPromoCode] = useState<string>("");
+  const [promoCodeLoading, setPromoCodeLoading] = useState<boolean>(false);
+  const [appliedPromoCode, setAppliedPromoCode] = useState<{
+    code: string;
+    discount: number;
+    isPercentage: boolean;
+  } | null>(null);
   
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
@@ -106,7 +115,16 @@ const Panier = () => {
   const subtotal = total; // Utiliser total de useCart
   const tax = subtotal * TAX_RATE;
   const deliveryFee = deliveryInfo.orderType === "delivery" ? DELIVERY_FEE : 0;
-  const orderTotal = subtotal + tax + deliveryFee;
+  
+  // Calculate discount if promo code is applied
+  const discount = appliedPromoCode 
+    ? appliedPromoCode.isPercentage 
+      ? (subtotal * appliedPromoCode.discount / 100)
+      : appliedPromoCode.discount
+    : 0;
+  
+  // Calculate total with discount
+  const orderTotal = subtotal + tax + deliveryFee - discount;
   
   // État pour gérer les allergies sélectionnées
   const allergyOptions = [
@@ -252,6 +270,8 @@ const Panier = () => {
           subtotal,
           tax,
           deliveryFee,
+          discount: discount,
+          promoCode: appliedPromoCode?.code,
           total: orderTotal,
           orderType: deliveryInfo.orderType,
           clientName: deliveryInfo.name,
@@ -386,6 +406,60 @@ const Panier = () => {
           {renderCartItems()}
         </div>
         
+        {/* Ajout du champ pour le code promo */}
+        <div className="border-t pt-4 mb-4">
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-lg font-medium">Code promo</h3>
+            
+            {appliedPromoCode ? (
+              <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-md p-3">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                  <div>
+                    <p className="font-medium">{appliedPromoCode.code}</p>
+                    <p className="text-sm text-gray-600">
+                      {appliedPromoCode.isPercentage
+                        ? `Réduction de ${appliedPromoCode.discount}%`
+                        : `Réduction de ${formatEuro(appliedPromoCode.discount)}`}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={removePromoCode}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex space-x-2">
+                <div className="flex-grow relative">
+                  <Input
+                    placeholder="Entrez votre code promo"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                    className="pr-10"
+                  />
+                  <TicketPercent className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                </div>
+                <Button 
+                  onClick={handleApplyPromoCode} 
+                  disabled={promoCodeLoading || !promoCode.trim()} 
+                  className="bg-gold-500 hover:bg-gold-600 text-black"
+                >
+                  {promoCodeLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Appliquer"
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="border-t pt-4">
           <div className="flex justify-between mb-2">
             <span>Sous-total</span>
@@ -395,9 +469,18 @@ const Panier = () => {
             <span>TVA (10%)</span>
             <span>{formatEuro(tax)}</span>
           </div>
+          
+          {/* Afficher la réduction si un code promo est appliqué */}
+          {appliedPromoCode && (
+            <div className="flex justify-between mb-2 text-green-600">
+              <span>Réduction</span>
+              <span>-{formatEuro(discount)}</span>
+            </div>
+          )}
+          
           <div className="flex justify-between font-bold text-lg mt-4">
             <span>Total</span>
-            <span>{formatEuro(subtotal + tax)}</span>
+            <span>{formatEuro(subtotal + tax - discount)}</span>
           </div>
         </div>
       </div>
@@ -585,6 +668,22 @@ const Panier = () => {
           </p>
         </div>
         
+        {/* Code promo appliqué */}
+        {appliedPromoCode && (
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-3">Code promo</h3>
+            <p className="flex items-center">
+              <TicketPercent className="h-4 w-4 mr-2 text-green-500" />
+              <span className="font-medium">{appliedPromoCode.code}</span>
+              <span className="ml-2 text-green-600">
+                ({appliedPromoCode.isPercentage
+                  ? `${appliedPromoCode.discount}% de réduction`
+                  : `${formatEuro(appliedPromoCode.discount)} de réduction`})
+              </span>
+            </p>
+          </div>
+        )}
+        
         {/* Informations de contact */}
         <div className="mb-6">
           <h3 className="text-lg font-medium mb-3">Contact</h3>
@@ -631,6 +730,12 @@ const Panier = () => {
             <div className="flex justify-between mb-2">
               <span>Frais de livraison</span>
               <span>{formatEuro(deliveryFee)}</span>
+            </div>
+          )}
+          {appliedPromoCode && (
+            <div className="flex justify-between mb-2 text-green-600">
+              <span>Réduction</span>
+              <span>-{formatEuro(discount)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-lg mt-4">
