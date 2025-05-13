@@ -55,6 +55,7 @@ const Panier = () => {
   } | null>(null);
   
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
   const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
   
   // Check if user is logged in
@@ -65,6 +66,7 @@ const Panier = () => {
       
       // If user is logged in, prefetch their contact information
       if (data.session) {
+        setUserEmail(data.session.user.email);
         fetchUserContactInfo();
       }
     };
@@ -280,6 +282,7 @@ const Panier = () => {
             appliedPromoCode={appliedPromoCode}
             setAppliedPromoCode={setAppliedPromoCode}
             handleNextStep={handleNextStep}
+            userEmail={userEmail}
           />
         );
       case CheckoutStep.DeliveryDetails:

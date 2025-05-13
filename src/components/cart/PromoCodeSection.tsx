@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TicketPercent, X, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { validatePromoCode } from "@/services/deliveryService";
+import { validatePromoCode, recordPromoCodeUsage } from "@/services/deliveryService";
 import { formatEuro } from "@/utils/formatters";
 
 interface PromoCodeSectionProps {
@@ -18,9 +18,10 @@ interface PromoCodeSectionProps {
     discount: number;
     isPercentage: boolean;
   } | null>>;
+  userEmail?: string;
 }
 
-export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode }: PromoCodeSectionProps) => {
+export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEmail }: PromoCodeSectionProps) => {
   const [promoCode, setPromoCode] = useState<string>("");
   const [promoCodeLoading, setPromoCodeLoading] = useState<boolean>(false);
   const { toast } = useToast();
@@ -30,9 +31,14 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode }: Prom
     
     setPromoCodeLoading(true);
     try {
-      const result = await validatePromoCode(promoCode.trim());
+      const result = await validatePromoCode(promoCode.trim(), userEmail);
       
       if (result.valid && result.discount !== undefined) {
+        // If validation is successful, record the usage if we have a user email
+        if (userEmail) {
+          await recordPromoCodeUsage(promoCode.trim(), userEmail);
+        }
+        
         setAppliedPromoCode({
           code: promoCode.toUpperCase(),
           discount: result.discount,
@@ -125,6 +131,11 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode }: Prom
               )}
             </Button>
           </div>
+        )}
+        {!userEmail && !appliedPromoCode && (
+          <p className="text-sm text-amber-600">
+            Connectez-vous pour utiliser des codes promo personnalisés
+          </p>
         )}
       </div>
     </div>

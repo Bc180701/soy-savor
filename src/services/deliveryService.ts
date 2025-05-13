@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const checkPostalCodeDelivery = async (postalCode: string): Promise<boolean> => {
@@ -39,8 +40,8 @@ export const calculateDeliveryFee = (subtotal: number): number => {
   return subtotal >= 30 ? 0 : 3;
 };
 
-// Add function to validate promo codes
-export const validatePromoCode = async (code: string): Promise<{ 
+// Enhanced promo code validation with single-use per email check
+export const validatePromoCode = async (code: string, email?: string): Promise<{ 
   valid: boolean; 
   discount?: number; 
   isPercentage?: boolean;
@@ -67,6 +68,24 @@ export const validatePromoCode = async (code: string): Promise<{
     if (now < startDate || now > endDate) {
       return { valid: false, message: "Ce code promo a expiré ou n'est pas encore actif" };
     }
+
+    // Check if the promo code has a one-time use restriction and if email is provided
+    if (data.is_one_time_use && email) {
+      // Check if this user has already used this promo code
+      const { data: usageData, error: usageError } = await supabase
+        .from('promo_code_usage')
+        .select('*')
+        .eq('promo_code', code.toUpperCase())
+        .eq('user_email', email)
+        .single();
+      
+      if (usageData) {
+        return { 
+          valid: false, 
+          message: "Vous avez déjà utilisé ce code promo" 
+        };
+      }
+    }
     
     return { 
       valid: true, 
@@ -77,5 +96,29 @@ export const validatePromoCode = async (code: string): Promise<{
   } catch (error) {
     console.error("Error validating promo code:", error);
     return { valid: false, message: "Erreur lors de la validation du code promo" };
+  }
+};
+
+// Track the usage of a promo code by a specific email
+export const recordPromoCodeUsage = async (code: string, email: string): Promise<boolean> => {
+  try {
+    // Insert record of promo code usage
+    const { error } = await supabase
+      .from('promo_code_usage')
+      .insert({ 
+        promo_code: code.toUpperCase(),
+        user_email: email,
+        used_at: new Date().toISOString()
+      });
+    
+    if (error) {
+      console.error("Error recording promo code usage:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error recording promo code usage:", error);
+    return false;
   }
 };

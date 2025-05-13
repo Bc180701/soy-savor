@@ -1,14 +1,13 @@
 
-import { Link } from "react-router-dom";
-import { ArrowRight, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CartItem } from "@/types";
-import { CartItemList } from "./CartItemList";
+import { useCart } from "@/hooks/use-cart";
+import { formatEuro } from "@/utils/formatters";
 import { PromoCodeSection } from "./PromoCodeSection";
-import { OrderSummary } from "./OrderSummary";
+import { CartItemList } from "./CartItemList";
 
 interface CartStepProps {
-  items: CartItem[];
+  items: any[];
   subtotal: number;
   tax: number;
   discount: number;
@@ -23,50 +22,87 @@ interface CartStepProps {
     isPercentage: boolean;
   } | null>>;
   handleNextStep: () => void;
+  userEmail?: string; // Optional user email
 }
 
-export const CartStep = ({ 
-  items, 
-  subtotal, 
-  tax, 
+export const CartStep = ({
+  items,
+  subtotal,
+  tax,
   discount,
-  appliedPromoCode, 
+  appliedPromoCode,
   setAppliedPromoCode,
-  handleNextStep 
+  handleNextStep,
+  userEmail
 }: CartStepProps) => {
-  
+  const { removeItem, updateQuantity } = useCart();
+  const orderTotal = subtotal + tax - discount;
+  const isCartEmpty = items.length === 0;
+
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Votre Panier</h2>
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <CartItemList items={items} />
-        
-        <PromoCodeSection 
-          appliedPromoCode={appliedPromoCode}
-          setAppliedPromoCode={setAppliedPromoCode}
-        />
-        
-        <OrderSummary 
-          subtotal={subtotal}
-          tax={tax}
-          deliveryFee={0}
-          discount={discount}
-          appliedPromoCode={appliedPromoCode}
-        />
-      </div>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-semibold">Votre panier</h2>
       
-      <div className="flex justify-between">
-        <Link to="/menu" className="text-gray-500 hover:text-gray-700 flex items-center">
-          <X className="mr-2 h-4 w-4" /> Continuer les achats
-        </Link>
-        <Button 
-          onClick={handleNextStep} 
-          disabled={items.length === 0} 
-          className="bg-gold-500 hover:bg-gold-600 text-black"
-        >
-          Commander <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </div>
+      {isCartEmpty ? (
+        <div className="text-center py-12">
+          <h3 className="text-xl font-medium mb-2">Votre panier est vide</h3>
+          <p className="text-gray-500 mb-6">Ajoutez des articles depuis notre menu.</p>
+          <Button 
+            onClick={() => window.location.href = '/commander'}
+            className="bg-akane-600 hover:bg-akane-700"
+          >
+            Voir le menu
+          </Button>
+        </div>
+      ) : (
+        <>
+          <CartItemList 
+            items={items} 
+            removeItem={removeItem} 
+            updateQuantity={updateQuantity}
+          />
+          
+          <div className="border-t pt-4">
+            <PromoCodeSection 
+              appliedPromoCode={appliedPromoCode} 
+              setAppliedPromoCode={setAppliedPromoCode}
+              userEmail={userEmail} 
+            />
+            
+            <div className="space-y-2 text-right">
+              <div className="flex justify-between">
+                <span>Sous-total</span>
+                <span className="font-medium">{formatEuro(subtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>TVA (10%)</span>
+                <span>{formatEuro(tax)}</span>
+              </div>
+              
+              {discount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Réduction</span>
+                  <span>-{formatEuro(discount)}</span>
+                </div>
+              )}
+              
+              <div className="flex justify-between border-t pt-2 text-lg font-bold">
+                <span>Total</span>
+                <span>{formatEuro(orderTotal)}</span>
+              </div>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <Button 
+                onClick={handleNextStep}
+                className="w-full md:w-1/2 bg-akane-600 hover:bg-akane-700 text-white py-3"
+              >
+                Continuer
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
