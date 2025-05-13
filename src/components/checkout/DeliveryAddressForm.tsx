@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -66,7 +65,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           if (!isValid) {
             // Show toast but don't block form submission yet
             toast({
-              variant: "destructive", // Changed from "warning" to "destructive"
+              variant: "destructive", // Using destructive variant
               title: "Zone non desservie",
               description: `Nous ne livrons pas dans la zone ${postalCode}. Veuillez vérifier ou choisir un autre mode de livraison.`,
             });

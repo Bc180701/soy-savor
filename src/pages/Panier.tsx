@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -184,7 +183,7 @@ const Panier = () => {
         return false;
       }
 
-      // Check if postal code is valid (we've validated it already)
+      // Important: Check if postal code is valid for delivery
       if (deliveryInfo.isPostalCodeValid === false) {
         toast({
           title: "Code postal non desservi",
@@ -431,7 +430,7 @@ const Panier = () => {
             onCancel={() => handleOrderTypeChange("pickup")}
           />
         ) : (
-          /* Informations personnelles for pickup */
+          // Informations personnelles for pickup
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Vos coordonnées</h3>
             
@@ -536,6 +535,7 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleNextStep}
+          disabled={deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
           Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />
