@@ -20,6 +20,9 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedImageAlt, setSelectedImageAlt] = useState<string>("");
 
+  // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
+  const activeItems = category.items.filter(item => item.isNew !== false);
+
   // Check if an item is a custom product (sushi or poke)
   const isCustomProduct = (item: MenuItem) => {
     // Check product name for custom product keywords
@@ -74,98 +77,104 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
       <div className="grid grid-cols-1 gap-6">
         <AnimatePresence>
-          {category.items.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2, delay: index * 0.05 }}
-            >
-              <Card className="overflow-hidden hover:shadow-md transition-shadow">
-                <CardContent className="p-0">
-                  <div className="flex flex-col md:flex-row">
-                    {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                      <div className="w-full md:w-1/4 bg-[#f9fafb] flex items-center justify-center">
-                        <div className="w-full max-w-[120px] md:max-w-none mx-auto py-4 px-2">
-                          <div className="aspect-square relative">
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => handleImageClick(item.imageUrl, item.name)}
-                            />
+          {activeItems.length > 0 ? (
+            activeItems.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2, delay: index * 0.05 }}
+              >
+                <Card className="overflow-hidden hover:shadow-md transition-shadow">
+                  <CardContent className="p-0">
+                    <div className="flex flex-col md:flex-row">
+                      {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
+                        <div className="w-full md:w-1/4 bg-[#f9fafb] flex items-center justify-center">
+                          <div className="w-full max-w-[120px] md:max-w-none mx-auto py-4 px-2">
+                            <div className="aspect-square relative">
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => handleImageClick(item.imageUrl, item.name)}
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                    <div
-                      className={`w-full ${
-                        item.imageUrl && item.imageUrl !== "/placeholder.svg"
-                          ? "md:w-3/4"
-                          : ""
-                      } p-6 flex flex-col justify-between`}
-                    >
-                      <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="text-lg font-bold">{item.name}</h3>
-                            {item.description && (
-                              <p className="text-gray-600 text-sm mt-1">
-                                {item.description}
-                              </p>
-                            )}
+                      )}
+                      <div
+                        className={`w-full ${
+                          item.imageUrl && item.imageUrl !== "/placeholder.svg"
+                            ? "md:w-3/4"
+                            : ""
+                        } p-6 flex flex-col justify-between`}
+                      >
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h3 className="text-lg font-bold">{item.name}</h3>
+                              {item.description && (
+                                <p className="text-gray-600 text-sm mt-1">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end">
+                              <span className="font-semibold text-gold-600">
+                                {item.price.toFixed(2)} €
+                              </span>
+                              {item.isBestSeller && (
+                                <Badge className="bg-gold-600 mt-2">
+                                  Populaire
+                                </Badge>
+                              )}
+                              {item.isVegetarian && (
+                                <Badge variant="outline" className="mt-2 border-wasabi-500 text-wasabi-700">
+                                  Végétarien
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span className="font-semibold text-gold-600">
-                              {item.price.toFixed(2)} €
-                            </span>
-                            {item.isBestSeller && (
-                              <Badge className="bg-gold-600 mt-2">
-                                Populaire
-                              </Badge>
-                            )}
-                            {item.isVegetarian && (
-                              <Badge variant="outline" className="mt-2 border-wasabi-500 text-wasabi-700">
-                                Végétarien
-                              </Badge>
-                            )}
-                          </div>
+                          {item.allergens && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              Allergènes: {item.allergens}
+                            </p>
+                          )}
                         </div>
-                        {item.allergens && (
-                          <p className="text-xs text-gray-500 mt-2">
-                            Allergènes: {item.allergens}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex justify-end mt-4">
-                        {isCustomProduct(item) ? (
-                          <Button
-                            asChild
-                            className="bg-gold-500 hover:bg-gold-600 text-black"
-                          >
-                            <Link 
-                              to={isCustomProduct(item) === "poke" ? "/composer-poke" : "/composer-sushi"} 
-                              state={{ baseItem: item }}
+                        <div className="flex justify-end mt-4">
+                          {isCustomProduct(item) ? (
+                            <Button
+                              asChild
+                              className="bg-gold-500 hover:bg-gold-600 text-black"
                             >
-                              <Pencil className="mr-2 h-4 w-4" /> Composer
-                            </Link>
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={() => onAddToCart(item)}
-                            className="bg-gold-500 hover:bg-gold-600 text-black"
-                          >
-                            <Plus className="mr-2 h-4 w-4" /> Ajouter
-                          </Button>
-                        )}
+                              <Link 
+                                to={isCustomProduct(item) === "poke" ? "/composer-poke" : "/composer-sushi"} 
+                                state={{ baseItem: item }}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" /> Composer
+                              </Link>
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => onAddToCart(item)}
+                              className="bg-gold-500 hover:bg-gold-600 text-black"
+                            >
+                              <Plus className="mr-2 h-4 w-4" /> Ajouter
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))
+          ) : (
+            <div className="text-center p-8">
+              <p className="text-muted-foreground">Aucun produit disponible dans cette catégorie</p>
+            </div>
+          )}
         </AnimatePresence>
       </div>
 

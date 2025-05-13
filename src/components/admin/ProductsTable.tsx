@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Filter, Pencil, Trash2, EyeOff, Eye, Plus, Search } from "lucide-react";
 import { fetchAllProducts, fetchCategories, supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import ProductForm from "./ProductForm";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ const ProductsTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [showInactive, setShowInactive] = useState(false);
   const productsPerPage = 10;
   const { toast } = useToast();
 
@@ -128,11 +129,12 @@ const ProductsTable = () => {
     }
   };
 
-  // Filtrer les produits par recherche et catégorie
+  // Filtrer les produits par recherche, catégorie et statut actif/inactif
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === "all" || product.category_id === categoryFilter;
-    return matchesSearch && matchesCategory;
+    const matchesStatus = showInactive || product.is_new !== false;
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const indexOfLastProduct = currentPage * productsPerPage;
@@ -142,7 +144,7 @@ const ProductsTable = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, categoryFilter]);
+  }, [searchQuery, categoryFilter, showInactive]);
 
   const handleSaveProduct = (updatedProducts: any[]) => {
     setProducts(updatedProducts);
@@ -191,6 +193,19 @@ const ProductsTable = () => {
               ))}
             </SelectContent>
           </Select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="showInactive"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+            className="rounded text-gold-600 focus:ring-gold-500"
+          />
+          <label htmlFor="showInactive" className="text-sm text-muted-foreground">
+            Afficher les produits désactivés
+          </label>
         </div>
       </div>
       
@@ -252,7 +267,7 @@ const ProductsTable = () => {
           ) : (
             <TableRow>
               <TableCell colSpan={7} className="h-24 text-center">
-                {searchQuery || categoryFilter !== "all" ? (
+                {searchQuery || categoryFilter !== "all" || !showInactive ? (
                   <div className="text-muted-foreground">Aucun produit ne correspond aux critères de recherche</div>
                 ) : (
                   <div className="text-muted-foreground">Aucun produit disponible</div>

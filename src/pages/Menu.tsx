@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 import { getMenuData } from "@/services/productService";
 import { MenuCategory } from "@/types";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,11 +40,17 @@ const Menu = () => {
         const menuData = await getMenuData();
         console.timeEnd('Loading Menu Data');
         
-        setCategories(menuData);
+        // Filtrer les produits actifs dans chaque catégorie
+        const filteredCategories = menuData.map(category => ({
+          ...category,
+          items: category.items.filter(item => item.isNew !== false)
+        }));
+        
+        setCategories(filteredCategories);
         
         // Set the active category to the first one if available
-        if (menuData.length > 0 && !activeCategory) {
-          setActiveCategory(menuData[0].id);
+        if (filteredCategories.length > 0 && !activeCategory) {
+          setActiveCategory(filteredCategories[0].id);
         }
       } catch (error) {
         console.error("Error loading menu data:", error);
@@ -105,7 +111,9 @@ const Menu = () => {
               <h2 className="text-xl font-bold mb-4">Catégories</h2>
               <ScrollArea className="h-[70vh] pr-4">
                 <ul className="space-y-2">
-                  {categories.map((category) => (
+                  {categories
+                    .filter(category => category.items.length > 0) // Afficher uniquement les catégories avec des produits actifs
+                    .map((category) => (
                     <li key={category.id}>
                       <button
                         onClick={() => setActiveCategory(category.id)}
@@ -127,7 +135,7 @@ const Menu = () => {
           <div className="md:w-3/4">
             <AnimatePresence mode="wait">
               {categories.map((category) => (
-                activeCategory === category.id && (
+                activeCategory === category.id && category.items.length > 0 && (
                   <motion.div 
                     key={category.id}
                     initial={{ opacity: 0 }}

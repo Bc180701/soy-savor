@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -74,11 +75,17 @@ const Commander = () => {
           setIsInitializing(false);
         }
         
-        setCategories(menuData);
+        // Filtrer les produits actifs dans chaque catégorie
+        const filteredCategories = menuData.map(category => ({
+          ...category,
+          items: category.items.filter(item => item.isNew !== false)
+        }));
+        
+        setCategories(filteredCategories);
         
         // Set the active category to the first one if available
-        if (menuData.length > 0 && !activeCategory) {
-          setActiveCategory(menuData[0].id);
+        if (filteredCategories.length > 0 && !activeCategory) {
+          setActiveCategory(filteredCategories[0].id);
         }
       } catch (error) {
         console.error("Error loading menu data:", error);
@@ -121,6 +128,9 @@ const Commander = () => {
     );
   }
 
+  // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
+  const nonEmptyCategories = categories.filter(cat => cat.items.length > 0);
+
   return (
     <div className="container mx-auto py-24 px-4">
       <motion.div
@@ -150,43 +160,51 @@ const Commander = () => {
           </motion.div>
         )}
 
-        {/* Show horizontal scrolling categories on mobile */}
-        {isMobile && (
-          <MobileCategorySelector 
-            categories={categories} 
-            activeCategory={activeCategory} 
-            onCategoryChange={handleCategoryChange} 
-          />
-        )}
-
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Show vertical categories sidebar on desktop */}
-          {!isMobile && (
-            <DesktopCategorySelector 
-              categories={categories} 
-              activeCategory={activeCategory} 
-              onCategoryChange={handleCategoryChange} 
-            />
-          )}
-
-          <div className={isMobile ? "w-full" : "md:w-3/4"}>
-            <AnimatePresence mode="wait">
-              {categories.map((category) => (
-                activeCategory === category.id && (
-                  <motion.div 
-                    key={category.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <CategoryContent category={category} onAddToCart={addToCart} />
-                  </motion.div>
-                )
-              ))}
-            </AnimatePresence>
+        {nonEmptyCategories.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-600">Aucun produit disponible actuellement.</p>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Show horizontal scrolling categories on mobile */}
+            {isMobile && (
+              <MobileCategorySelector 
+                categories={nonEmptyCategories} 
+                activeCategory={activeCategory} 
+                onCategoryChange={handleCategoryChange} 
+              />
+            )}
+
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Show vertical categories sidebar on desktop */}
+              {!isMobile && (
+                <DesktopCategorySelector 
+                  categories={nonEmptyCategories} 
+                  activeCategory={activeCategory} 
+                  onCategoryChange={handleCategoryChange} 
+                />
+              )}
+
+              <div className={isMobile ? "w-full" : "md:w-3/4"}>
+                <AnimatePresence mode="wait">
+                  {nonEmptyCategories.map((category) => (
+                    activeCategory === category.id && (
+                      <motion.div 
+                        key={category.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <CategoryContent category={category} onAddToCart={addToCart} />
+                      </motion.div>
+                    )
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          </>
+        )}
       </motion.div>
     </div>
   );

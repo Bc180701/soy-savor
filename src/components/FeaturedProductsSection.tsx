@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 interface Product {
@@ -18,6 +18,7 @@ interface Product {
   image_url: string;
   category_id: string;
   categories: { name: string } | null;
+  is_new: boolean;
 }
 
 const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant: "default" | "new" | "exclusive" }) => {
@@ -79,7 +80,7 @@ const FeaturedProductsSection = () => {
       try {
         setLoading(true);
         
-        // Fetch new products
+        // Fetch new products (actifs uniquement)
         const { data: newProductsData, error: newError } = await supabase
           .from('products')
           .select('*, categories(name)')
@@ -89,20 +90,22 @@ const FeaturedProductsSection = () => {
         if (newError) throw newError;
         setNewProducts(newProductsData || []);
         
-        // Fetch best seller products
+        // Fetch best seller products (actifs uniquement)
         const { data: bestSellerData, error: bestError } = await supabase
           .from('products')
           .select('*, categories(name)')
           .eq('is_best_seller', true)
+          .eq('is_new', true)
           .limit(3);
         
         if (bestError) throw bestError;
         setBestSellerProducts(bestSellerData || []);
         
-        // Fetch most popular products (using order count from popular_products)
+        // Fetch most popular products (using order count from popular_products) (actifs uniquement)
         const { data: popularData, error: popularError } = await supabase
           .from('products')
           .select('*, categories(name)')
+          .eq('is_new', true)
           .order('price', { ascending: false })
           .limit(4);
         
