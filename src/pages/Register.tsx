@@ -53,6 +53,28 @@ const Register = () => {
     
     fetchPromotion();
   }, []);
+
+  const sendWelcomeEmail = async (email: string, promoCode: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: { 
+          email, 
+          promoCode
+        }
+      });
+
+      if (error) {
+        console.error("Erreur lors de l'envoi de l'email de bienvenue:", error);
+        return false;
+      }
+      
+      console.log("Email de bienvenue envoyé avec succès:", data);
+      return true;
+    } catch (error) {
+      console.error("Exception lors de l'envoi de l'email de bienvenue:", error);
+      return false;
+    }
+  };
   
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +121,12 @@ const Register = () => {
           description: error.message,
         });
       } else {
-        // Ne montrons pas le code ici, pour éviter la triche
+        // Récupérer le code promo
+        const promoCode = promotion?.code || "BIENVENUE10";
+        
+        // Envoyer l'email de bienvenue avec le code promo
+        await sendWelcomeEmail(email, promoCode);
+        
         let successMessage = "Vérifiez votre email pour confirmer votre compte et profitez de 10% de réduction sur votre prochaine commande!";
         
         toast({
