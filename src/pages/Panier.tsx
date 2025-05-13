@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { formatEuro } from "@/utils/formatters";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { CartItem } from "@/types";
 import { createOrder } from "@/services/orderService";
 import { X, Trash, ArrowRight, Loader2 } from "lucide-react";
@@ -43,7 +43,6 @@ interface DeliveryInfo {
   deliveryInstructions?: string;
   notes?: string;
   allergies: string[];
-  isPostalCodeValid?: boolean; // Add this flag to track postal code validation
 }
 
 const Panier = () => {
@@ -60,13 +59,11 @@ const Panier = () => {
     name: "",
     email: "",
     phone: "",
-    allergies: [],
-    isPostalCodeValid: undefined
+    allergies: []
   });
   
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
-  const [validatingPostalCode, setValidatingPostalCode] = useState<boolean>(false);
   
   // Check if user is logged in
   useEffect(() => {
@@ -182,16 +179,6 @@ const Panier = () => {
         });
         return false;
       }
-
-      // Important: Check if postal code is valid for delivery
-      if (deliveryInfo.isPostalCodeValid === false) {
-        toast({
-          title: "Code postal non desservi",
-          description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
-          variant: "destructive",
-        });
-        return false;
-      }
     }
 
     if (!deliveryInfo.pickupTime) {
@@ -211,17 +198,6 @@ const Panier = () => {
       setLoading(true);
       
       if (!validateDeliveryInfo()) {
-        setLoading(false);
-        return;
-      }
-
-      // If delivery is selected and postal code is invalid, prevent proceeding
-      if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
-        toast({
-          title: "Code postal non desservi",
-          description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
-          variant: "destructive",
-        });
         setLoading(false);
         return;
       }
@@ -295,9 +271,7 @@ const Panier = () => {
   const handleOrderTypeChange = (type: "delivery" | "pickup") => {
     setDeliveryInfo((prev) => ({
       ...prev,
-      orderType: type,
-      // Reset postal code validation when switching order type
-      isPostalCodeValid: type === "pickup" ? undefined : prev.isPostalCodeValid
+      orderType: type
     }));
   };
 
@@ -318,8 +292,7 @@ const Panier = () => {
       postalCode: data.postalCode,
       phone: data.phone,
       email: data.email,
-      deliveryInstructions: data.instructions,
-      isPostalCodeValid: true // Address validation is handled in DeliveryAddressForm
+      deliveryInstructions: data.instructions
     }));
   };
 
@@ -535,11 +508,14 @@ const Panier = () => {
         </Button>
         <Button
           onClick={handleNextStep}
-          disabled={deliveryInfo.orderType === "delivery" && 
-                  (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || 
-                   !deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
-                   deliveryInfo.isPostalCodeValid === false)}
           className="bg-gold-500 hover:bg-gold-600 text-black"
+          disabled={
+            // Pour le formulaire de retrait
+            (deliveryInfo.orderType === "pickup" && (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || !deliveryInfo.pickupTime)) ||
+            // Pour le formulaire de livraison - tous les champs requis doivent être remplis
+            (deliveryInfo.orderType === "delivery" && (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.email || 
+             !deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode || !deliveryInfo.pickupTime))
+          }
         >
           Continuer vers le paiement <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
