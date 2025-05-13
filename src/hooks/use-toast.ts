@@ -126,7 +126,6 @@ const notify = (props: Omit<ToasterToast, "id"> & { id?: string }) => {
 };
 
 // Make toast a function that can be called directly
-// and also has properties from the notify function
 interface ToastFunction {
   (props: Omit<ToasterToast, "id"> & { id?: string }): ReturnType<typeof notify>;
   dismiss: (toastId: string) => void;
@@ -135,9 +134,9 @@ interface ToastFunction {
   getToasts: () => ToasterToast[];
 }
 
-export const toast = (((props: Omit<ToasterToast, "id"> & { id?: string }) => {
+const toast = ((props: Omit<ToasterToast, "id"> & { id?: string }) => {
   return notify(props);
-}) as ToastFunction);
+}) as ToastFunction;
 
 // Add the additional methods to the toast function
 toast.dismiss = (toastId: string) => {
@@ -156,3 +155,5 @@ toast.subscribe = (callback: (toasts: ToasterToast[]) => void) => {
 };
 
 toast.getToasts = () => toasts;
+
+export { toast };
