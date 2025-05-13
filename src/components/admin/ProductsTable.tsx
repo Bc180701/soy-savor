@@ -105,16 +105,24 @@ const ProductsTable = () => {
     try {
       setIsLoading(true);
       
-      // Update all products
-      const { error } = await supabase
-        .from('products')
-        .update({ is_new: value })
-        .neq('id', ''); // Update all products
+      // Use rpc instead of direct update to avoid the empty UUID issue
+      const { data, error } = await supabase
+        .rpc('update_all_products_status', { 
+          flag_name: 'is_new', 
+          flag_value: value 
+        });
       
       if (error) throw error;
+
+      // Refetch the products
+      const { data: refreshedProducts, error: refreshError } = await supabase
+        .from('products')
+        .select('*, categories(name)')
+        .order('name');
       
-      // Update local state
-      setProducts(products.map(p => ({ ...p, is_new: value })));
+      if (refreshError) throw refreshError;
+      
+      setProducts(refreshedProducts || []);
       
       toast({
         title: "Succès",

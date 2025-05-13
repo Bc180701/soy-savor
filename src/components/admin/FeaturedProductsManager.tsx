@@ -90,16 +90,17 @@ const FeaturedProductsManager = () => {
     try {
       setLoading(true);
       
-      // Prepare a batch of updates
-      const { error } = await supabase
-        .from('products')
-        .update({ [flagName]: value })
-        .neq('id', ''); // Update all products
+      // Use rpc instead of direct update to avoid the empty UUID issue
+      const { data, error } = await supabase
+        .rpc('update_all_products_status', { 
+          flag_name: flagName, 
+          flag_value: value 
+        });
       
       if (error) throw error;
       
-      // Update local state
-      setProducts(products.map(product => ({ ...product, [flagName]: value })));
+      // Refetch products after bulk update
+      await fetchProducts();
       
       toast({
         title: "Produits mis à jour",
