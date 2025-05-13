@@ -1,7 +1,9 @@
-
 import { useState, useEffect } from "react";
-import { format as dateFormat, addMinutes as addDateMinutes, isAfter as isDateAfter, isBefore as isDateBefore } from "date-fns";
-import fr from "date-fns/locale/fr";
+import format from "date-fns/format";
+import addMinutes from "date-fns/addMinutes";
+import isAfter from "date-fns/isAfter";
+import isBefore from "date-fns/isBefore";
+import fr from "date-fns/locale/fr/index.js";
 
 interface TimeOption {
   label: string;
@@ -26,51 +28,39 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
   const generateTimeSlots = () => {
     const now = new Date();
     const slots: TimeOption[] = [];
-    
-    // Heure de début (11h30 pour livraison, 11h pour emporter)
-    const startHour = orderType === "delivery" ? 11 : 11;
+
+    const startHour = 11;
     const startMinute = orderType === "delivery" ? 30 : 0;
-    
-    // Heure de fin (22h30 pour livraison, 22h pour emporter)
-    const endHour = orderType === "delivery" ? 22 : 22;
+
+    const endHour = 22;
     const endMinute = orderType === "delivery" ? 30 : 0;
 
-    // Intervalle en minutes (30 minutes pour livraison, 15 minutes pour emporter)
     const interval = orderType === "delivery" ? 30 : 15;
-
-    // Ajout du délai minimum (30 min pour livraison, 20 min pour emporter)
     const minDelay = orderType === "delivery" ? 30 : 20;
-    const minTime = addDateMinutes(now, minDelay);
+    const minTime = addMinutes(now, minDelay);
 
-    // Générer les tranches horaires
     const startDate = new Date();
-    startDate.setHours(startHour);
-    startDate.setMinutes(startMinute);
-    startDate.setSeconds(0);
-    startDate.setMilliseconds(0);
+    startDate.setHours(startHour, startMinute, 0, 0);
 
     const endDate = new Date();
-    endDate.setHours(endHour);
-    endDate.setMinutes(endMinute);
-    endDate.setSeconds(0);
-    endDate.setMilliseconds(0);
+    endDate.setHours(endHour, endMinute, 0, 0);
 
     let currentTime = startDate;
+
     while (currentTime <= endDate) {
-      const isDisabled = isDateAfter(minTime, currentTime);
-      
+      const isDisabled = isAfter(minTime, currentTime);
+
       slots.push({
-        label: dateFormat(currentTime, "HH'h'mm", { locale: fr }),
-        value: dateFormat(currentTime, "HH:mm"),
+        label: format(currentTime, "HH'h'mm", { locale: fr }),
+        value: format(currentTime, "HH:mm"),
         disabled: isDisabled,
       });
 
-      currentTime = addDateMinutes(currentTime, interval);
+      currentTime = addMinutes(currentTime, interval);
     }
 
     setTimeSlots(slots);
 
-    // Sélection automatique du premier créneau disponible si aucun n'est sélectionné
     if (!selectedTime) {
       const firstAvailable = slots.find((slot) => !slot.disabled);
       if (firstAvailable) {
@@ -85,32 +75,25 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
     onSelect(time);
   };
 
-  // Vérifier si le créneau est disponible aujourd'hui
   const isAvailableToday = () => {
     const now = new Date();
-    
-    // Si avant l'heure d'ouverture ou après l'heure de fermeture
+
     const openTime = new Date();
-    openTime.setHours(orderType === "delivery" ? 11 : 11);
-    openTime.setMinutes(orderType === "delivery" ? 0 : 0);
-    openTime.setSeconds(0);
-    openTime.setMilliseconds(0);
-    
+    openTime.setHours(11, 0, 0, 0);
+
     const closeTime = new Date();
-    closeTime.setHours(orderType === "delivery" ? 22 : 22);
-    closeTime.setMinutes(0);
-    closeTime.setSeconds(0);
-    closeTime.setMilliseconds(0);
-    
-    // Si l'heure actuelle est dans la plage d'ouverture
-    return isDateAfter(now, openTime) && isDateBefore(now, closeTime);
+    closeTime.setHours(22, 0, 0, 0);
+
+    return isAfter(now, openTime) && isBefore(now, closeTime);
   };
-  
-  const formattedDate = dateFormat(new Date(), "EEEE d MMMM", { locale: fr });
+
+  const formattedDate = format(new Date(), "EEEE d MMMM", { locale: fr });
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Horaire de {orderType === "delivery" ? "livraison" : "retrait"}</h3>
+      <h3 className="text-lg font-medium">
+        Horaire de {orderType === "delivery" ? "livraison" : "retrait"}
+      </h3>
       <p className="text-sm text-gray-500">
         Choisissez l'heure à laquelle vous souhaitez {orderType === "delivery" ? "être livré" : "récupérer votre commande"} pour {formattedDate}
       </p>
@@ -146,3 +129,4 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
 };
 
 export default TimeSlotSelector;
+
