@@ -6,6 +6,8 @@ import { Download, Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type UserProfile = {
   id: string;
@@ -55,44 +57,61 @@ const UsersList = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Récupérer les utilisateurs depuis auth.users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      // Récupérer tous les utilisateurs depuis les profils
+      // Cela nous donnera les IDs des utilisateurs
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*");
       
-      if (authError) throw authError;
+      if (profilesError) throw profilesError;
       
-      // Pour chaque utilisateur, récupérer son profil et ses adresses
+      if (!profiles || profiles.length === 0) {
+        setUsers([]);
+        setFilteredUsers([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Pour chaque profil, récupérer les informations d'adresse
       const enrichedUsers = await Promise.all(
-        authUsers.users.map(async (user) => {
-          // Récupérer le profil
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .single();
-            
-          if (profileError && profileError.code !== "PGRST116") {
-            console.error(`Erreur lors de la récupération du profil pour ${user.id}:`, profileError);
-          }
-          
+        profiles.map(async (profile) => {
           // Récupérer les adresses
           const { data: addresses, error: addressesError } = await supabase
             .from("user_addresses")
             .select("*")
-            .eq("user_id", user.id);
+            .eq("user_id", profile.id);
             
           if (addressesError) {
-            console.error(`Erreur lors de la récupération des adresses pour ${user.id}:`, addressesError);
+            console.error(`Erreur lors de la récupération des adresses pour ${profile.id}:`, addressesError);
+          }
+          
+          // Récupérer l'email de l'utilisateur depuis la session s'il est connecté
+          let email = "";
+          
+          // On ne peut pas récupérer directement l'email depuis auth.users,
+          // donc on utilise un fallback pour les utilisateurs existants
+          if (!email) {
+            // Chercher l'email dans les commandes existantes
+            const { data: orders } = await supabase
+              .from("orders")
+              .select("client_email")
+              .eq("user_id", profile.id)
+              .limit(1);
+              
+            if (orders && orders.length > 0) {
+              email = orders[0].client_email || "";
+            }
           }
           
           return {
-            id: user.id,
-            email: user.email || "",
-            first_name: profile?.first_name || "",
-            last_name: profile?.last_name || "",
-            phone: profile?.phone || "",
+            id: profile.id,
+            email: email,
+            first_name: profile.first_name || "",
+            last_name: profile.last_name || "",
+            phone: profile.phone || "",
             addresses: addresses || [],
-            created_at: user.created_at,
-            loyalty_points: profile?.loyalty_points || 0
+            created_at: profile.created_at || "",
+            loyalty_points: profile.loyalty_points || 0
           };
         })
       );
@@ -185,6 +204,18 @@ const UsersList = () => {
     }
   };
 
+  const renderSkeletonRows = () => {
+    return Array(5).fill(null).map((_, index) => (
+      <TableRow key={`skeleton-${index}`}>
+        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+      </TableRow>
+    ));
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -209,59 +240,53 @@ const UsersList = () => {
         />
       </div>
       
-      {loading ? (
-        <div className="flex justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-gold-500" />
-        </div>
-      ) : (
-        <>
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Adresse</TableHead>
-                  <TableHead>Points</TableHead>
+      <Card className="border rounded-md overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Email</TableHead>
+              <TableHead>Nom</TableHead>
+              <TableHead>Téléphone</TableHead>
+              <TableHead>Adresse</TableHead>
+              <TableHead>Points</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              renderSkeletonRows()
+            ) : filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.email || "-"}</TableCell>
+                  <TableCell>
+                    {user.first_name || user.last_name ? `${user.first_name} ${user.last_name}` : "-"}
+                  </TableCell>
+                  <TableCell>{user.phone || "-"}</TableCell>
+                  <TableCell>
+                    {user.addresses && user.addresses.length > 0 ? (
+                      <span>
+                        {user.addresses[0].street}, {user.addresses[0].postal_code} {user.addresses[0].city}
+                      </span>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                  <TableCell>{user.loyalty_points}</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        {user.first_name} {user.last_name}
-                      </TableCell>
-                      <TableCell>{user.phone || "-"}</TableCell>
-                      <TableCell>
-                        {user.addresses && user.addresses.length > 0 ? (
-                          <span>
-                            {user.addresses[0].street}, {user.addresses[0].postal_code} {user.addresses[0].city}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell>{user.loyalty_points}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                      {searchQuery ? "Aucun utilisateur ne correspond à votre recherche" : "Aucun utilisateur trouvé"}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {filteredUsers.length} utilisateur(s) au total
-          </p>
-        </>
-      )}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  {searchQuery ? "Aucun utilisateur ne correspond à votre recherche" : "Aucun utilisateur trouvé"}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+      <p className="text-sm text-muted-foreground">
+        {filteredUsers.length} utilisateur(s) au total
+      </p>
     </div>
   );
 };
