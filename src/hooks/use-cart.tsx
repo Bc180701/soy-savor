@@ -14,6 +14,8 @@ interface CartStore {
   clearCart: () => void;
   total: number;
   itemCount: number;
+  isOrderingLocked: boolean;
+  setOrderingLocked: (locked: boolean) => void;
 }
 
 export const useCart = create<CartStore>()(
@@ -22,8 +24,16 @@ export const useCart = create<CartStore>()(
       items: [],
       total: 0,
       itemCount: 0,
+      isOrderingLocked: false,
+      
+      setOrderingLocked: (locked) => {
+        set({ isOrderingLocked: locked });
+      },
       
       addItem: (menuItem, quantity, specialInstructions) => {
+        // Si les commandes sont verrouillées, ne pas permettre l'ajout
+        if (get().isOrderingLocked) return;
+        
         set((state) => {
           const existingItemIndex = state.items.findIndex(
             (item) => item.menuItem.id === menuItem.id

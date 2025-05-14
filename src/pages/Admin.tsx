@@ -10,7 +10,8 @@ import {
   Tag, 
   Settings, 
   Users,
-  LayoutTemplate
+  LayoutTemplate,
+  Lock
 } from "lucide-react";
 import DashboardStats from "@/components/admin/DashboardStats";
 import OrderList from "@/components/OrderList";
@@ -20,6 +21,7 @@ import FeaturedProductsManager from "@/components/admin/FeaturedProductsManager"
 import AdminManager from "@/components/admin/AdminManager";
 import HomepageEditor from "@/components/admin/HomepageEditor";
 import UsersList from "@/components/admin/UsersList";
+import OrderingLockControl from "@/components/admin/OrderingLockControl";
 
 const Admin = () => {
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,7 @@ const Admin = () => {
         <h1 className="text-3xl font-bold mb-8">Administration</h1>
         
         <Tabs defaultValue="dashboard">
-          <TabsList className="mb-6 grid grid-cols-3 md:grid-cols-8 w-full">
+          <TabsList className="mb-6 grid grid-cols-3 md:grid-cols-9 w-full">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <LayoutGrid className="h-4 w-4" />
               <span className="hidden md:inline">Dashboard</span>
@@ -110,6 +112,10 @@ const Admin = () => {
             <TabsTrigger value="admins" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden md:inline">Administrateurs</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              <span className="hidden md:inline">Paramètres</span>
             </TabsTrigger>
           </TabsList>
           
@@ -143,6 +149,12 @@ const Admin = () => {
           
           <TabsContent value="admins">
             <AdminManager />
+          </TabsContent>
+          
+          <TabsContent value="settings">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <OrderingLockControl />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

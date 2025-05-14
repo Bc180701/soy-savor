@@ -1,31 +1,42 @@
 
 import { Button } from "@/components/ui/button";
+import { ShoppingBag, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Phone } from "lucide-react";
+import { useCart } from "@/hooks/use-cart";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export const OrderCTA = () => {
-  return (
-    <section className="py-8 bg-gold-600 text-white">
-      <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
-        <div className="mb-4 md:mb-0">
-          <h2 className="text-2xl font-bold">Envie de sushi aujourd'hui ?</h2>
-          <p className="text-gold-100">Commandez en ligne ou appelez-nous !</p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button asChild className="bg-white hover:bg-gray-100 text-gold-800 border-none font-semibold">
-            <Link to="/commander" className="flex items-center">
-              Commander en ligne <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-          
-          <Button asChild className="bg-white hover:bg-gray-100 text-gold-800 border-none font-semibold">
-            <a href="tel:+33490000000" className="flex items-center">
-              <Phone className="mr-2 h-4 w-4" /> 04 90 00 00 00
-            </a>
-          </Button>
-        </div>
+const OrderCTA = () => {
+  const { isOrderingLocked } = useCart();
+
+  if (isOrderingLocked) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <Alert variant="destructive" className="mb-8 border-red-500">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Commandes temporairement fermées</AlertTitle>
+          <AlertDescription>
+            Nous ne prenons pas de commandes pour le moment. Veuillez réessayer plus tard.
+          </AlertDescription>
+        </Alert>
       </div>
-    </section>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-12 text-center">
+      <h2 className="text-3xl font-bold mb-4">Envie de sushi?</h2>
+      <p className="text-gray-600 mb-8 max-w-xl mx-auto">
+        Commandez en ligne et dégustez nos délicieux plats préparés avec soin par nos chefs.
+        Livraison à domicile ou à emporter.
+      </p>
+      <Button asChild size="lg" className="rounded-full px-8 transition-all">
+        <Link to="/commander" className="flex items-center gap-2">
+          <ShoppingBag className="w-5 h-5" />
+          Commander maintenant
+        </Link>
+      </Button>
+    </div>
   );
 };
+
+export default OrderCTA;
