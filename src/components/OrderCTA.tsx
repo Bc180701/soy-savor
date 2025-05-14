@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const OrderCTA = () => {
+export const OrderCTA = () => {
   const { isOrderingLocked } = useCart();
 
   if (isOrderingLocked) {
