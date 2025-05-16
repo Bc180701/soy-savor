@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,28 +86,20 @@ const AdminManager = () => {
     setIsLoading(true);
 
     try {
-      // 1. Create the user with email and password
-      const { data: userData, error: userError } = await supabase.auth.admin.createUser({
-        email: email,
-        password: password,
-        email_confirm: true,
-      });
+      // 1. Create the user using a server RPC function instead of direct admin API
+      const { data: userData, error: userError } = await supabase.rpc(
+        'create_admin_user',
+        { admin_email: email, admin_password: password }
+      );
 
       if (userError) throw userError;
 
-      // 2. Add the user to the administrateur role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: userData.user.id,
-          role: "administrateur",
-        });
-
-      if (roleError) throw roleError;
+      if (!userData || !userData.user_id) {
+        throw new Error("Erreur lors de la création de l'utilisateur");
+      }
       
-      // 3. Send welcome email with credentials
+      // 2. Send welcome email with credentials
       try {
-        // Utiliser la clé anonyme de Supabase pour les appels aux fonctions Edge
         const { data: authData } = await supabase.auth.getSession();
         const response = await fetch('https://tdykegnmomyyucbhslok.supabase.co/functions/v1/send-admin-welcome', {
           method: 'POST',
@@ -134,7 +125,7 @@ const AdminManager = () => {
         // On continue même si l'envoi de l'email échoue
       }
 
-      // 4. Update UI and reset form
+      // 3. Update UI and reset form
       toast({
         title: "Administrateur créé",
         description: `${email} a été ajouté comme administrateur et a reçu un email avec ses identifiants.`,
