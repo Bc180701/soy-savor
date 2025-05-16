@@ -95,7 +95,7 @@ const AdminManager = () => {
 
     try {
       // 1. Create the user using the database function we created
-      const { data, error: userError } = await supabase.rpc<CreateAdminResponse>(
+      const { data, error: userError } = await supabase.rpc<CreateAdminResponse, { admin_email: string, admin_password: string }>(
         'create_admin_user',
         { admin_email: email, admin_password: password }
       );
