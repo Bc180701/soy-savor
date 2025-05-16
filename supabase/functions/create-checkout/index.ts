@@ -27,6 +27,8 @@ interface OrderData {
   deliveryFee: number;
   tip?: number;
   total: number;
+  discount?: number;
+  promoCode?: string;
   orderType: "delivery" | "pickup";
   clientName?: string;
   clientEmail?: string;
@@ -167,8 +169,22 @@ serve(async (req) => {
         quantity: 1,
       });
     }
+    
+    // Si une réduction est appliquée, ajouter un élément de ligne négatif pour la réduction
+    if (orderData.discount && orderData.discount > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: 'Réduction (Code promo)',
+          },
+          unit_amount: -Math.round(orderData.discount * 100), // Montant négatif en centimes pour la réduction
+        },
+        quantity: 1,
+      });
+    }
 
-    // Créer la session Stripe Checkout
+    // Créer la session Stripe Checkout avec le montant total exact de la commande
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: !customerId ? orderData.clientEmail : undefined,
@@ -177,6 +193,8 @@ serve(async (req) => {
       mode: 'payment',
       success_url: orderData.successUrl,
       cancel_url: orderData.cancelUrl,
+      // Utiliser le montant total exact fourni par le frontend, qui inclut déjà le pourboire et la réduction
+      amount_total: Math.round(orderData.total * 100), // Convertir en centimes
       metadata: {
         user_id: userId || 'guest',
         order_type: orderData.orderType,
@@ -184,11 +202,13 @@ serve(async (req) => {
         customer_notes: orderData.customerNotes || '',
         delivery_address: orderData.orderType === 'delivery' ? 
           `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
-        tip_amount: orderData.tip ? (orderData.tip).toString() : '0', // Ajouter le pourboire aux métadonnées
+        tip_amount: orderData.tip ? (orderData.tip).toString() : '0',
+        promo_code: orderData.promoCode || '',
+        discount_amount: orderData.discount ? (orderData.discount).toString() : '0',
       },
     });
 
-    // Créer la commande avec un statut de paiement "pending" et inclure le pourboire
+    // Créer la commande avec un statut de paiement "pending" et inclure le pourboire et la réduction
     const { data: orderRecord, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -196,8 +216,10 @@ serve(async (req) => {
         subtotal: orderData.subtotal,
         tax: orderData.tax,
         delivery_fee: orderData.deliveryFee,
-        tip: orderData.tip || 0, // Ajouter le pourboire
-        total: orderData.total,
+        tip: orderData.tip || 0,
+        discount: orderData.discount || 0,
+        promo_code: orderData.promoCode || null,
+        total: orderData.total, // Utiliser le montant total exact fourni
         order_type: orderData.orderType,
         status: 'pending',
         payment_method: 'credit-card',
