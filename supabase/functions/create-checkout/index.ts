@@ -26,6 +26,8 @@ interface OrderData {
   tax: number;
   deliveryFee: number;
   tip?: number;
+  discount?: number; // Montant de la réduction du code promo
+  promoCode?: string; // Code promo appliqué
   total: number;
   orderType: "delivery" | "pickup";
   clientName?: string;
@@ -167,6 +169,20 @@ serve(async (req) => {
         quantity: 1,
       });
     }
+    
+    // Ajouter la réduction du code promo si présente (comme élément négatif)
+    if (orderData.discount && orderData.discount > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `Réduction${orderData.promoCode ? ' (' + orderData.promoCode + ')' : ''}`,
+          },
+          unit_amount: Math.round(-orderData.discount * 100), // Montant négatif en centimes
+        },
+        quantity: 1,
+      });
+    }
 
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
@@ -185,6 +201,8 @@ serve(async (req) => {
         delivery_address: orderData.orderType === 'delivery' ? 
           `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
         tip_amount: orderData.tip ? (orderData.tip).toString() : '0', // Ajouter le pourboire aux métadonnées
+        discount_amount: orderData.discount ? (orderData.discount).toString() : '0', // Ajouter la réduction aux métadonnées
+        promo_code: orderData.promoCode || '', // Ajouter le code promo aux métadonnées
       },
     });
 
@@ -197,6 +215,8 @@ serve(async (req) => {
         tax: orderData.tax,
         delivery_fee: orderData.deliveryFee,
         tip: orderData.tip || 0, // Ajouter le pourboire
+        discount: orderData.discount || 0, // Ajouter la réduction du code promo
+        promo_code: orderData.promoCode || null, // Ajouter le code promo utilisé
         total: orderData.total,
         order_type: orderData.orderType,
         status: 'pending',
