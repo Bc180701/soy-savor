@@ -11,10 +11,10 @@ const ProductManager = () => {
       <h2 className="text-2xl font-bold">Gestion des produits</h2>
       
       <Tabs defaultValue="products" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="products">Produits</TabsTrigger>
-          <TabsTrigger value="categories">Catégories</TabsTrigger>
-          <TabsTrigger value="featured">Produits mis en avant</TabsTrigger>
+        <TabsList variant="horizontal" className="mb-4">
+          <TabsTrigger variant="horizontal" value="products">Produits</TabsTrigger>
+          <TabsTrigger variant="horizontal" value="categories">Catégories</TabsTrigger>
+          <TabsTrigger variant="horizontal" value="featured">Produits mis en avant</TabsTrigger>
         </TabsList>
         
         <TabsContent value="products">

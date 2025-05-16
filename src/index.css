@@ -87,3 +87,18 @@
     display: none;
   }
 }
+
+/* Styles pour les onglets d'administration de type WordPress */
+@layer components {
+  .admin-tabs {
+    @apply border-b;
+  }
+  
+  .admin-tab {
+    @apply -mb-px py-3 px-4 inline-block border-b-2 border-transparent hover:text-akane-600 transition-colors;
+  }
+  
+  .admin-tab-active {
+    @apply border-akane-600 text-akane-600 font-medium;
+  }
+}

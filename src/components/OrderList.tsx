@@ -99,16 +99,16 @@ const OrderList = () => {
         </div>
       ) : (
         <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
-          <TabsList className="mb-6 grid grid-cols-3 w-full">
-            <TabsTrigger value="accounting" className="flex items-center gap-2">
+          <TabsList variant="horizontal" className="mb-6 w-full">
+            <TabsTrigger variant="horizontal" value="accounting" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               <span>Comptable</span>
             </TabsTrigger>
-            <TabsTrigger value="kitchen" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="kitchen" className="flex items-center gap-2">
               <ChefHat className="h-4 w-4" />
               <span>Cuisine</span>
             </TabsTrigger>
-            <TabsTrigger value="delivery" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="delivery" className="flex items-center gap-2">
               <Truck className="h-4 w-4" />
               <span>Livraison</span>
             </TabsTrigger>

@@ -80,42 +80,42 @@ const Admin = () => {
         <h1 className="text-3xl font-bold mb-8">Administration</h1>
         
         <Tabs defaultValue="dashboard">
-          <TabsList className="mb-6 grid grid-cols-3 md:grid-cols-9 w-full">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+          <TabsList variant="horizontal" className="mb-6 w-full overflow-x-auto scrollbar-hide">
+            <TabsTrigger variant="horizontal" value="dashboard" className="flex items-center gap-2">
               <LayoutGrid className="h-4 w-4" />
-              <span className="hidden md:inline">Dashboard</span>
+              <span>Dashboard</span>
             </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="orders" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              <span className="hidden md:inline">Commandes</span>
+              <span>Commandes</span>
             </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="products" className="flex items-center gap-2">
               <ShoppingBag className="h-4 w-4" />
-              <span className="hidden md:inline">Produits</span>
+              <span>Produits</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="categories" className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
-              <span className="hidden md:inline">Catégories</span>
+              <span>Catégories</span>
             </TabsTrigger>
-            <TabsTrigger value="featured" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="featured" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              <span className="hidden md:inline">Mise en avant</span>
+              <span>Mise en avant</span>
             </TabsTrigger>
-            <TabsTrigger value="homepage" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="homepage" className="flex items-center gap-2">
               <LayoutTemplate className="h-4 w-4" />
-              <span className="hidden md:inline">Page d'accueil</span>
+              <span>Page d'accueil</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <span className="hidden md:inline">Utilisateurs</span>
+              <span>Utilisateurs</span>
             </TabsTrigger>
-            <TabsTrigger value="admins" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="admins" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <span className="hidden md:inline">Administrateurs</span>
+              <span>Administrateurs</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger variant="horizontal" value="settings" className="flex items-center gap-2">
               <Lock className="h-4 w-4" />
-              <span className="hidden md:inline">Paramètres</span>
+              <span>Paramètres</span>
             </TabsTrigger>
           </TabsList>
           
