@@ -92,6 +92,7 @@ const AdminManager = () => {
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log("Creating admin with email:", email);
 
     try {
       // 1. Create the user using the database function we created
@@ -100,23 +101,38 @@ const AdminManager = () => {
         { admin_email: email, admin_password: password }
       );
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error("Error creating admin user:", userError);
+        throw userError;
+      }
 
+      console.log("Admin creation response:", data);
+      
       // First cast to unknown, then to our expected type for safety
       const adminResponse = data as unknown as CreateAdminResponse;
 
       if (!adminResponse || !adminResponse.user_id) {
+        console.error("Invalid admin response:", adminResponse);
         throw new Error("Erreur lors de la création de l'utilisateur");
       }
+      
+      console.log("Admin created successfully, sending welcome email");
       
       // 2. Send welcome email with credentials
       try {
         const { data: authData } = await supabase.auth.getSession();
+        if (!authData.session?.access_token) {
+          console.error("No auth session found for sending email");
+          throw new Error("Session non disponible");
+        }
+        
+        console.log("Sending welcome email to:", email);
+        
         const response = await fetch('https://tdykegnmomyyucbhslok.supabase.co/functions/v1/send-admin-welcome', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authData.session?.access_token}`
+            'Authorization': `Bearer ${authData.session.access_token}`
           },
           body: JSON.stringify({
             email: email,
@@ -124,9 +140,11 @@ const AdminManager = () => {
           })
         });
         
+        const responseData = await response.json();
+        console.log("Email API response:", responseData);
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          console.warn("Problème lors de l'envoi du mail de bienvenue:", errorData);
+          console.warn("Problème lors de l'envoi du mail de bienvenue:", responseData);
           // On continue même si l'envoi de l'email échoue
         } else {
           console.log("Email de bienvenue envoyé avec succès");

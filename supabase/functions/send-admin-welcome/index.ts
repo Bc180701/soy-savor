@@ -19,15 +19,31 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, password } = await req.json() as AdminWelcomeEmailRequest;
+    console.log("Send admin welcome function called");
+    
+    // Parse request body
+    const requestData = await req.json();
+    console.log("Request data received:", JSON.stringify({
+      email: requestData.email,
+      password: "********" // Masked for security
+    }));
+    
+    const { email, password } = requestData as AdminWelcomeEmailRequest;
+    
+    if (!email || !password) {
+      throw new Error("Email et mot de passe requis");
+    }
     
     // Récupérer la clé API Brevo depuis les variables d'environnement
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     
     if (!brevoApiKey) {
+      console.error("BREVO_API_KEY not found in environment variables");
       throw new Error("Erreur de configuration: clé API Brevo manquante");
     }
 
+    console.log("Preparing to send email using Brevo API");
+    
     // Préparer le contenu de l'email
     const subject = "Bienvenue dans l'équipe d'administration SushiEats";
     const htmlContent = `
@@ -73,16 +89,17 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
     
+    const responseBody = await response.json();
+    console.log("Brevo API response:", JSON.stringify(responseBody));
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Erreur d'envoi d'email via Brevo:", errorData);
-      throw new Error(`Erreur Brevo: ${JSON.stringify(errorData)}`);
+      console.error("Erreur d'envoi d'email via Brevo:", responseBody);
+      throw new Error(`Erreur Brevo: ${JSON.stringify(responseBody)}`);
     }
     
-    const responseData = await response.json();
-    console.log("Email d'accueil admin envoyé avec succès via Brevo:", responseData);
+    console.log("Email d'accueil admin envoyé avec succès via Brevo");
     
-    return new Response(JSON.stringify({ success: true, messageId: responseData.messageId }), {
+    return new Response(JSON.stringify({ success: true, messageId: responseBody.messageId }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
