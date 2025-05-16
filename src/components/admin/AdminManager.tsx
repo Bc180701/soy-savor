@@ -95,7 +95,15 @@ const AdminManager = () => {
     console.log("Creating admin with email:", email);
 
     try {
-      // 1. Create the user using the database function we created
+      if (!email || !password) {
+        throw new Error("L'email et le mot de passe sont requis");
+      }
+      
+      if (password.length < 8) {
+        throw new Error("Le mot de passe doit contenir au moins 8 caractères");
+      }
+
+      // 1. Create the user using the database function
       const { data, error: userError } = await supabase.rpc(
         'create_admin_user',
         { admin_email: email, admin_password: password }
@@ -108,19 +116,30 @@ const AdminManager = () => {
 
       console.log("Admin creation response:", data);
       
-      // First cast to unknown, then to our expected type for safety
+      // Safely handle the response data
+      if (!data) {
+        throw new Error("Aucune réponse reçue du serveur lors de la création de l'utilisateur");
+      }
+      
+      // Use type assertion with better safety
       const adminResponse = data as unknown as CreateAdminResponse;
-
-      if (!adminResponse || !adminResponse.user_id) {
-        console.error("Invalid admin response:", adminResponse);
-        throw new Error("Erreur lors de la création de l'utilisateur");
+      
+      if (!adminResponse.user_id || !adminResponse.success) {
+        console.error("Invalid admin creation response:", adminResponse);
+        throw new Error("Erreur lors de la création de l'administrateur");
       }
       
       console.log("Admin created successfully, sending welcome email");
       
       // 2. Send welcome email with credentials
       try {
-        const { data: authData } = await supabase.auth.getSession();
+        const { data: authData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Error getting auth session:", sessionError);
+          throw new Error("Impossible de récupérer votre session");
+        }
+        
         if (!authData.session?.access_token) {
           console.error("No auth session found for sending email");
           throw new Error("Session non disponible");
