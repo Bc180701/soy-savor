@@ -105,11 +105,39 @@ const AdminManager = () => {
         });
 
       if (roleError) throw roleError;
+      
+      // 3. Send welcome email with credentials
+      try {
+        // Utiliser la clé anonyme de Supabase pour les appels aux fonctions Edge
+        const { data: authData } = await supabase.auth.getSession();
+        const response = await fetch('https://tdykegnmomyyucbhslok.supabase.co/functions/v1/send-admin-welcome', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authData.session?.access_token}`
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.warn("Problème lors de l'envoi du mail de bienvenue:", errorData);
+          // On continue même si l'envoi de l'email échoue
+        } else {
+          console.log("Email de bienvenue envoyé avec succès");
+        }
+      } catch (emailError) {
+        console.warn("Erreur lors de l'envoi de l'email de bienvenue:", emailError);
+        // On continue même si l'envoi de l'email échoue
+      }
 
-      // 3. Update UI and reset form
+      // 4. Update UI and reset form
       toast({
         title: "Administrateur créé",
-        description: `${email} a été ajouté comme administrateur.`,
+        description: `${email} a été ajouté comme administrateur et a reçu un email avec ses identifiants.`,
       });
       setEmail("");
       setPassword("");
