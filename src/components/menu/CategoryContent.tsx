@@ -37,7 +37,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
       if (item.name.toLowerCase().includes("poke") || 
           item.name.toLowerCase().includes("poké")) {
         return "poke";
-      } else {
+      } else if (item.category === "custom" || 
+                item.name.toLowerCase().includes("sushi")) {
         return "sushi";
       }
     }
