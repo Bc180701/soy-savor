@@ -2,8 +2,13 @@
 import { Order } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Eye } from "lucide-react";
+import { Clock, Eye, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { formatCustomProduct } from "@/utils/formatCustomProduct";
+import { useToast } from "@/components/ui/use-toast";
 
 interface OrdersKitchenViewProps {
   orders: Order[];
@@ -16,6 +21,12 @@ const OrdersKitchenView = ({
   onViewDetails, 
   onUpdateStatus 
 }: OrdersKitchenViewProps) => {
+  const [delayDialogOpen, setDelayDialogOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [delayMinutes, setDelayMinutes] = useState(15);
+  const [delayReason, setDelayReason] = useState("");
+  const { toast } = useToast();
+  
   // Filtrer uniquement les commandes pertinentes pour la cuisine
   // (commandes confirmées ou en préparation)
   const kitchenOrders = orders.filter(order => 
@@ -41,53 +52,55 @@ const OrdersKitchenView = ({
     }
   };
 
-  // Fonction pour extraire et formater les détails des produits personnalisés
-  const formatCustomProduct = (description: string | undefined) => {
-    if (!description) return null;
-    
-    // Vérifier si c'est un produit personnalisé
-    if (!description.includes('Enrobage:') && !description.includes('Ingrédients:')) {
-      return null;
+  const handleDelayOrder = async () => {
+    if (!selectedOrderId || !delayReason) return;
+
+    try {
+      const selectedOrder = orders.find(order => order.id === selectedOrderId);
+      if (!selectedOrder) return;
+
+      const response = await fetch(`https://tdykegnmomyyucbhslok.supabase.co/functions/v1/notify-order-delay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkeWtlZ25tb215eXVjYmhzbG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NjA2NjUsImV4cCI6MjA1ODMzNjY2NX0.88jbkZIkFiFXudHvqe0l2DhqQGh2V9JIThv9FFFagas`
+        },
+        body: JSON.stringify({
+          orderId: selectedOrderId,
+          customerEmail: selectedOrder.clientEmail,
+          customerName: selectedOrder.clientName || "Client",
+          delayMinutes,
+          delayReason,
+          orderType: selectedOrder.orderType
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Erreur lors de l'envoi de la notification");
+      }
+
+      toast({
+        title: "Client notifié",
+        description: `Le client a été informé d'un retard de ${delayMinutes} minutes.`,
+        variant: "success",
+      });
+
+      setDelayDialogOpen(false);
+      setDelayReason("");
+    } catch (error) {
+      console.error("Erreur lors de la notification de retard:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer la notification de retard",
+        variant: "destructive",
+      });
     }
-    
-    // Extraire les différentes parties
-    const parts = description.split(', ');
-    
-    // Pour les sushis personnalisés
-    if (description.includes('Enrobage:')) {
-      const enrobage = parts.find(p => p.startsWith('Enrobage:'))?.replace('Enrobage: ', '');
-      const base = parts.find(p => p.startsWith('Base:'))?.replace('Base: ', '');
-      const garnitures = parts.find(p => p.startsWith('Garnitures:'))?.replace('Garnitures: ', '');
-      const topping = parts.find(p => p.startsWith('Topping:'))?.replace('Topping: ', '');
-      const sauce = parts.find(p => p.startsWith('Sauce:'))?.replace('Sauce: ', '');
-      
-      return (
-        <div className="mt-2 space-y-1 text-xs border-l-2 border-gold-500 pl-2">
-          {enrobage && <p><span className="font-semibold">Enrobage:</span> {enrobage}</p>}
-          {base && <p><span className="font-semibold">Base:</span> {base}</p>}
-          {garnitures && <p><span className="font-semibold">Garnitures:</span> {garnitures}</p>}
-          {topping && <p><span className="font-semibold">Topping:</span> {topping}</p>}
-          {sauce && <p><span className="font-semibold">Sauce:</span> {sauce}</p>}
-        </div>
-      );
-    }
-    
-    // Pour les pokés personnalisés
-    if (description.includes('Ingrédients:')) {
-      const ingredients = parts.find(p => p.startsWith('Ingrédients:'))?.replace('Ingrédients: ', '');
-      const proteine = parts.find(p => p.startsWith('Protéine:'))?.replace('Protéine: ', '');
-      const sauce = parts.find(p => p.startsWith('Sauce:'))?.replace('Sauce: ', '');
-      
-      return (
-        <div className="mt-2 space-y-1 text-xs border-l-2 border-wasabi-500 pl-2">
-          {ingredients && <p><span className="font-semibold">Ingrédients:</span> {ingredients}</p>}
-          {proteine && <p><span className="font-semibold">Protéine:</span> {proteine}</p>}
-          {sauce && <p><span className="font-semibold">Sauce:</span> {sauce}</p>}
-        </div>
-      );
-    }
-    
-    return null;
+  };
+
+  const openDelayDialog = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setDelayDialogOpen(true);
   };
 
   return (
@@ -150,7 +163,7 @@ const OrdersKitchenView = ({
                 )}
               </CardContent>
               
-              <CardFooter className="pt-2 flex justify-between">
+              <CardFooter className="pt-2 flex flex-wrap gap-2">
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -158,6 +171,16 @@ const OrdersKitchenView = ({
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   Détails
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-amber-100 border-amber-300 hover:bg-amber-200 text-amber-800"
+                  onClick={() => openDelayDialog(order.id)}
+                >
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  Signaler retard
                 </Button>
                 
                 {order.status === 'confirmed' && (
@@ -184,6 +207,66 @@ const OrdersKitchenView = ({
           ))}
         </div>
       )}
+      
+      {/* Dialogue de retard */}
+      <Dialog open={delayDialogOpen} onOpenChange={setDelayDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Signaler un retard</DialogTitle>
+            <DialogDescription>
+              Informez le client que sa commande sera retardée. Un email sera envoyé.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium flex-shrink-0 w-24">Retard estimé:</label>
+              <div className="flex items-center">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setDelayMinutes(Math.max(5, delayMinutes - 5))}
+                  className="mr-2"
+                >
+                  -
+                </Button>
+                <span className="w-16 text-center">{delayMinutes} min</span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setDelayMinutes(delayMinutes + 5)}
+                  className="ml-2"
+                >
+                  +
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Raison du retard:</label>
+              <Input
+                value={delayReason}
+                onChange={(e) => setDelayReason(e.target.value)}
+                placeholder="Ex: Volume important de commandes..."
+                required
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDelayDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleDelayOrder}
+              disabled={!delayReason}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              Notifier le client
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
