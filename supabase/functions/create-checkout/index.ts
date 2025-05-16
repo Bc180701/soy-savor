@@ -184,7 +184,7 @@ serve(async (req) => {
       });
     }
 
-    // Créer la session Stripe Checkout avec le montant total exact de la commande
+    // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: !customerId ? orderData.clientEmail : undefined,
@@ -193,8 +193,6 @@ serve(async (req) => {
       mode: 'payment',
       success_url: orderData.successUrl,
       cancel_url: orderData.cancelUrl,
-      // Utiliser le montant total exact fourni par le frontend, qui inclut déjà le pourboire et la réduction
-      amount_total: Math.round(orderData.total * 100), // Convertir en centimes
       metadata: {
         user_id: userId || 'guest',
         order_type: orderData.orderType,
