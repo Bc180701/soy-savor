@@ -38,6 +38,7 @@ const Panier = () => {
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
   const [loading, setLoading] = useState(false);
   const [allergies, setAllergies] = useState<string[]>([]);
+  const [tip, setTip] = useState<number>(0); // Nouveau state pour le pourboire
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
     orderType: "delivery",
     name: "",
@@ -105,8 +106,8 @@ const Panier = () => {
       : appliedPromoCode.discount
     : 0;
   
-  // Calculate total with discount
-  const orderTotal = subtotal + tax + deliveryFee - discount;
+  // Calculate total with discount and tip
+  const orderTotal = subtotal + tax + deliveryFee + tip - discount;
 
   const handleNextStep = () => {
     if (currentStep === CheckoutStep.Cart) {
@@ -224,9 +225,10 @@ const Panier = () => {
           subtotal,
           tax,
           deliveryFee,
+          tip, // Inclure le pourboire dans la requête
           discount: discount,
           promoCode: appliedPromoCode?.code,
-          total: orderTotal,
+          total: orderTotal, // Total inclut maintenant le pourboire
           orderType: deliveryInfo.orderType,
           clientName: deliveryInfo.name,
           clientEmail: deliveryInfo.email,
@@ -310,6 +312,8 @@ const Panier = () => {
             loading={loading}
             handlePreviousStep={handlePreviousStep}
             handleStripeCheckout={handleStripeCheckout}
+            tip={tip}
+            setTip={setTip}
           />
         );
       default:

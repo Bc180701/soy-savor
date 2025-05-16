@@ -6,6 +6,7 @@ interface OrderSummaryProps {
   tax: number;
   deliveryFee: number;
   discount: number;
+  tip?: number;
   appliedPromoCode: {
     code: string;
     discount: number;
@@ -17,7 +18,8 @@ export const OrderSummary = ({
   subtotal, 
   tax, 
   deliveryFee, 
-  discount, 
+  discount,
+  tip = 0,
   appliedPromoCode 
 }: OrderSummaryProps) => {
   return (
@@ -38,6 +40,13 @@ export const OrderSummary = ({
         </div>
       )}
       
+      {tip > 0 && (
+        <div className="flex justify-between mb-2 text-green-700">
+          <span>Pourboire</span>
+          <span>{formatEuro(tip)}</span>
+        </div>
+      )}
+      
       {appliedPromoCode && (
         <div className="flex justify-between mb-2 text-green-600">
           <span>Réduction</span>
@@ -47,7 +56,7 @@ export const OrderSummary = ({
       
       <div className="flex justify-between font-bold text-lg mt-4">
         <span>Total</span>
-        <span>{formatEuro(subtotal + tax + deliveryFee - discount)}</span>
+        <span>{formatEuro(subtotal + tax + deliveryFee + (tip || 0) - discount)}</span>
       </div>
     </div>
   );

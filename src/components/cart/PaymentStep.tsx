@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { CartItem } from "@/types";
 import { OrderSummaryDetails } from "../checkout/OrderSummaryDetails";
 import { PaymentMethod } from "../checkout/PaymentMethod";
+import { TipSelector } from "./TipSelector";
 
 interface PaymentStepProps {
   items: CartItem[];
@@ -31,6 +32,8 @@ interface PaymentStepProps {
   loading: boolean;
   handlePreviousStep: () => void;
   handleStripeCheckout: () => Promise<void>;
+  tip: number;
+  setTip: (amount: number) => void;
 }
 
 export const PaymentStep = ({
@@ -43,7 +46,9 @@ export const PaymentStep = ({
   deliveryInfo,
   loading,
   handlePreviousStep,
-  handleStripeCheckout
+  handleStripeCheckout,
+  tip,
+  setTip
 }: PaymentStepProps) => {
   const allergyOptions = [
     { id: "gluten", name: "Gluten" },
@@ -70,6 +75,14 @@ export const PaymentStep = ({
         deliveryInfo={deliveryInfo}
         allergyOptions={allergyOptions}
       />
+      
+      <div className="my-6">
+        <TipSelector 
+          subtotal={subtotal} 
+          onTipChange={setTip} 
+          currentTip={tip}
+        />
+      </div>
       
       <PaymentMethod />
       
