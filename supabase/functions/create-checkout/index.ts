@@ -170,26 +170,24 @@ serve(async (req) => {
       });
     }
     
-    // Ajouter la réduction du code promo si présente (comme élément négatif)
-    if (orderData.discount && orderData.discount > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: `Réduction${orderData.promoCode ? ' (' + orderData.promoCode + ')' : ''}`,
-          },
-          unit_amount: Math.round(-orderData.discount * 100), // Montant négatif en centimes
-        },
-        quantity: 1,
-      });
-    }
+    // Pour la réduction, nous devons l'appliquer différemment car Stripe n'accepte pas les montants négatifs
+    // Au lieu de ça, nous ajustons les autres line items ou utilisons un coupon
 
+    // Calculer le montant total à payer (en tenant compte de la réduction)
+    // Nous laissons Stripe calculer le total à partir des line items
+    
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: !customerId ? orderData.clientEmail : undefined,
       payment_method_types: ['card'],
       line_items: lineItems,
+      // Appliquer la réduction comme un coupon si présent
+      discounts: orderData.discount && orderData.discount > 0 ? [
+        {
+          coupon: await createOrRetrieveCoupon(stripe, orderData.discount, orderData.promoCode),
+        },
+      ] : undefined,
       mode: 'payment',
       success_url: orderData.successUrl,
       cancel_url: orderData.cancelUrl,
@@ -200,9 +198,9 @@ serve(async (req) => {
         customer_notes: orderData.customerNotes || '',
         delivery_address: orderData.orderType === 'delivery' ? 
           `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
-        tip_amount: orderData.tip ? (orderData.tip).toString() : '0', // Ajouter le pourboire aux métadonnées
-        discount_amount: orderData.discount ? (orderData.discount).toString() : '0', // Ajouter la réduction aux métadonnées
-        promo_code: orderData.promoCode || '', // Ajouter le code promo aux métadonnées
+        tip_amount: orderData.tip ? (orderData.tip).toString() : '0',
+        discount_amount: orderData.discount ? (orderData.discount).toString() : '0',
+        promo_code: orderData.promoCode || '',
       },
     });
 
@@ -214,9 +212,9 @@ serve(async (req) => {
         subtotal: orderData.subtotal,
         tax: orderData.tax,
         delivery_fee: orderData.deliveryFee,
-        tip: orderData.tip || 0, // Ajouter le pourboire
-        discount: orderData.discount || 0, // Ajouter la réduction du code promo
-        promo_code: orderData.promoCode || null, // Ajouter le code promo utilisé
+        tip: orderData.tip || 0,
+        discount: orderData.discount || 0,
+        promo_code: orderData.promoCode || null,
         total: orderData.total,
         order_type: orderData.orderType,
         status: 'pending',
@@ -268,3 +266,23 @@ serve(async (req) => {
     );
   }
 });
+
+// Fonction pour créer ou récupérer un coupon Stripe
+async function createOrRetrieveCoupon(stripe: Stripe, discountAmount: number, promoCode?: string): Promise<string> {
+  const couponId = `discount_${discountAmount.toString().replace('.', '_')}`;
+  
+  try {
+    // Essayer d'abord de récupérer le coupon existant
+    const existingCoupon = await stripe.coupons.retrieve(couponId);
+    return existingCoupon.id;
+  } catch (error) {
+    // Si le coupon n'existe pas, le créer
+    const newCoupon = await stripe.coupons.create({
+      id: couponId,
+      amount_off: Math.round(discountAmount * 100), // Montant en centimes
+      currency: 'eur',
+      name: promoCode ? `Réduction (${promoCode})` : 'Réduction',
+    });
+    return newCoupon.id;
+  }
+}

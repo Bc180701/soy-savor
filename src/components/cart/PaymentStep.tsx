@@ -6,6 +6,7 @@ import { OrderSummaryDetails } from "../checkout/OrderSummaryDetails";
 import { PaymentMethod } from "../checkout/PaymentMethod";
 import { TipSelector } from "./TipSelector";
 import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface PaymentStepProps {
   items: CartItem[];
@@ -51,6 +52,7 @@ export const PaymentStep = ({
   tip,
   setTip
 }: PaymentStepProps) => {
+  const { toast } = useToast();
   const allergyOptions = [
     { id: "gluten", name: "Gluten" },
     { id: "crustaces", name: "Crustacés" },
@@ -64,8 +66,17 @@ export const PaymentStep = ({
 
   const [isTipDialogOpen, setIsTipDialogOpen] = useState(false);
 
-  const handlePayButtonClick = () => {
-    setIsTipDialogOpen(true);
+  const handlePayButtonClick = async () => {
+    try {
+      await handleStripeCheckout();
+    } catch (error) {
+      console.error("Erreur lors du paiement:", error);
+      toast({
+        title: "Erreur de paiement",
+        description: "Une erreur est survenue. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
