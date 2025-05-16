@@ -1,4 +1,3 @@
-
 import { CartItem } from "@/types";
 import { formatEuro } from "@/utils/formatters";
 import { TicketPercent } from "lucide-react";
@@ -9,6 +8,7 @@ interface OrderSummaryDetailsProps {
   tax: number;
   deliveryFee: number;
   discount: number;
+  tip?: number; // Add tip property
   appliedPromoCode: {
     code: string;
     discount: number;
@@ -38,11 +38,12 @@ export const OrderSummaryDetails = ({
   tax, 
   deliveryFee, 
   discount,
+  tip = 0, // Add default value
   appliedPromoCode,
   deliveryInfo,
   allergyOptions
 }: OrderSummaryDetailsProps) => {
-  const orderTotal = subtotal + tax + deliveryFee - discount;
+  const orderTotal = subtotal + tax + deliveryFee + (tip || 0) - discount; // Include tip in orderTotal
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -145,6 +146,13 @@ export const OrderSummaryDetails = ({
           <div className="flex justify-between mb-2">
             <span>Frais de livraison</span>
             <span>{formatEuro(deliveryFee)}</span>
+          </div>
+        )}
+        {/* Add tip display */}
+        {tip > 0 && (
+          <div className="flex justify-between mb-2 text-green-600">
+            <span>Pourboire</span>
+            <span>{formatEuro(tip)}</span>
           </div>
         )}
         {appliedPromoCode && (
