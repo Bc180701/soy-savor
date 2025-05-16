@@ -28,11 +28,12 @@ const handler = async (req: Request): Promise<Response> => {
       password: "********" // Masked for security
     }));
     
-    const { email, password } = requestData as AdminWelcomeEmailRequest;
-    
-    if (!email || !password) {
-      throw new Error("Email et mot de passe requis");
+    // Validate required fields
+    if (!requestData || !requestData.email || !requestData.password) {
+      throw new Error("Email et mot de passe requis dans la requête");
     }
+    
+    const { email, password } = requestData as AdminWelcomeEmailRequest;
     
     // Récupérer la clé API Brevo depuis les variables d'environnement
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
@@ -68,6 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
     
     // Envoyer l'email via l'API Brevo
+    console.log("Sending email via Brevo API");
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -89,14 +91,14 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
     
-    const responseBody = await response.json();
-    console.log("Brevo API response:", JSON.stringify(responseBody));
-    
     if (!response.ok) {
+      const responseBody = await response.json();
       console.error("Erreur d'envoi d'email via Brevo:", responseBody);
       throw new Error(`Erreur Brevo: ${JSON.stringify(responseBody)}`);
     }
     
+    const responseBody = await response.json();
+    console.log("Brevo API response:", JSON.stringify(responseBody));
     console.log("Email d'accueil admin envoyé avec succès via Brevo");
     
     return new Response(JSON.stringify({ success: true, messageId: responseBody.messageId }), {

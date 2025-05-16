@@ -103,7 +103,8 @@ const AdminManager = () => {
         throw new Error("Le mot de passe doit contenir au moins 8 caractères");
       }
 
-      // 1. Create the user using the database function
+      // 1. Create the user using auth.users directly via the RPC function
+      console.log("Calling create_admin_user RPC");
       const { data, error: userError } = await supabase.rpc(
         'create_admin_user',
         { admin_email: email, admin_password: password }
@@ -116,7 +117,6 @@ const AdminManager = () => {
 
       console.log("Admin creation response:", data);
       
-      // Safely handle the response data
       if (!data) {
         throw new Error("Aucune réponse reçue du serveur lors de la création de l'utilisateur");
       }
@@ -129,48 +129,45 @@ const AdminManager = () => {
         throw new Error("Erreur lors de la création de l'administrateur");
       }
       
-      console.log("Admin created successfully, sending welcome email");
+      console.log("Admin created successfully with ID:", adminResponse.user_id);
+      console.log("Now sending welcome email");
       
       // 2. Send welcome email with credentials
-      try {
-        const { data: authData, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Error getting auth session:", sessionError);
-          throw new Error("Impossible de récupérer votre session");
-        }
-        
-        if (!authData.session?.access_token) {
-          console.error("No auth session found for sending email");
-          throw new Error("Session non disponible");
-        }
-        
-        console.log("Sending welcome email to:", email);
-        
-        const response = await fetch('https://tdykegnmomyyucbhslok.supabase.co/functions/v1/send-admin-welcome', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authData.session.access_token}`
-          },
-          body: JSON.stringify({
-            email: email,
-            password: password
-          })
-        });
-        
-        const responseData = await response.json();
-        console.log("Email API response:", responseData);
-        
-        if (!response.ok) {
-          console.warn("Problème lors de l'envoi du mail de bienvenue:", responseData);
-          // On continue même si l'envoi de l'email échoue
-        } else {
-          console.log("Email de bienvenue envoyé avec succès");
-        }
-      } catch (emailError) {
-        console.warn("Erreur lors de l'envoi de l'email de bienvenue:", emailError);
+      const { data: authData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error("Error getting auth session:", sessionError);
+        throw new Error("Impossible de récupérer votre session");
+      }
+      
+      if (!authData.session?.access_token) {
+        console.error("No auth session found for sending email");
+        throw new Error("Session non disponible");
+      }
+      
+      // Call the send-admin-welcome edge function
+      console.log("Sending welcome email to:", email);
+      
+      const response = await fetch('https://tdykegnmomyyucbhslok.supabase.co/functions/v1/send-admin-welcome', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authData.session.access_token}`
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        })
+      });
+      
+      const responseData = await response.json();
+      console.log("Email API response:", responseData);
+      
+      if (!response.ok) {
+        console.warn("Problème lors de l'envoi du mail de bienvenue:", responseData);
         // On continue même si l'envoi de l'email échoue
+      } else {
+        console.log("Email de bienvenue envoyé avec succès");
       }
 
       // 3. Update UI and reset form
