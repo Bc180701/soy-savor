@@ -5,6 +5,7 @@ import { OrderCTA } from "@/components/OrderCTA";
 import { OrderOptions } from "@/components/OrderOptions";
 import { DeliveryMap } from "@/components/DeliveryMap";
 import { PromotionCard } from "@/components/PromotionCard";
+import { CustomCreationSection } from "@/components/CustomCreationSection";
 import FeaturedProductsSection from "@/components/FeaturedProductsSection";
 import { useHomepageData, HomepageData } from "@/hooks/useHomepageData";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +86,14 @@ const Index = () => {
       {/* Order Options */}
       <OrderOptions options={homepageData?.order_options || DEFAULT_HOMEPAGE_DATA.order_options} />
 
+      {/* Custom Creation Section */}
+      {homepageData?.custom_creation_section && (
+        <CustomCreationSection data={homepageData.custom_creation_section} />
+      )}
+
+      {/* Featured Products Section */}
+      <FeaturedProductsSection />
+
       {/* Delivery Map */}
       <DeliveryMap deliveryZones={homepageData?.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones} />
 
@@ -99,9 +108,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* Featured Products Section */}
-      <FeaturedProductsSection />
     </>
   );
 };

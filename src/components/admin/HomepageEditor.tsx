@@ -11,6 +11,7 @@ import HeroSectionEditor from "./homepage-editor/HeroSectionEditor";
 import PromotionsEditor from "./homepage-editor/PromotionsEditor";
 import DeliveryZonesEditor from "./homepage-editor/DeliveryZonesEditor";
 import OrderOptionsEditor from "./homepage-editor/OrderOptionsEditor";
+import CustomCreationSectionEditor from "./homepage-editor/CustomCreationSectionEditor";
 import { HomepageData, useHomepageData } from "@/hooks/useHomepageData";
 
 const HomepageEditor = () => {
@@ -124,6 +125,7 @@ const HomepageEditor = () => {
       >
         <TabsList className="mb-4">
           <TabsTrigger value="hero">Section Principale</TabsTrigger>
+          <TabsTrigger value="custom_creation">Création Personnalisée</TabsTrigger>
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="delivery">Zones de livraison</TabsTrigger>
           <TabsTrigger value="order">Options de commande</TabsTrigger>
@@ -141,6 +143,23 @@ const HomepageEditor = () => {
               <HeroSectionEditor 
                 data={homepageData.hero_section} 
                 onSave={(data) => saveHomepageData('hero_section', data)} 
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="custom_creation">
+          <Card>
+            <CardHeader>
+              <CardTitle>Section de création personnalisée</CardTitle>
+              <CardDescription>
+                Personnalisez la section de création de sushi et poké sur la page d'accueil.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CustomCreationSectionEditor 
+                data={homepageData.custom_creation_section} 
+                onSave={(data) => saveHomepageData('custom_creation_section', data)} 
               />
             </CardContent>
           </Card>

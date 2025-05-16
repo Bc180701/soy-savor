@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
@@ -25,12 +24,23 @@ export interface OrderOption {
   icon: string;
 }
 
+export interface CustomCreationSection {
+  title: string;
+  subtitle: string;
+  background_image?: string;
+  sushi_button_text: string; 
+  sushi_button_link: string;
+  poke_button_text: string;
+  poke_button_link: string;
+}
+
 export interface HomepageData {
   id?: number;
   hero_section: HeroSection;
   promotions: Promotion[];
   delivery_zones: string[];
   order_options: OrderOption[];
+  custom_creation_section?: CustomCreationSection;
 }
 
 // Default data to use as fallback
@@ -87,7 +97,16 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       description: "Profitez de votre repas dans notre restaurant",
       icon: "Users"
     }
-  ]
+  ],
+  custom_creation_section: {
+    title: "Composez vos créations",
+    subtitle: "Laissez libre cours à votre créativité avec nos options de personnalisation",
+    background_image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
+    sushi_button_text: "Créer mes sushis",
+    sushi_button_link: "/composer-sushi",
+    poke_button_text: "Créer mon poké",
+    poke_button_link: "/composer-poke"
+  }
 };
 
 // Type-safe casting helper with improved JSON parsing
@@ -169,6 +188,8 @@ export const useHomepageData = () => {
             console.log("Zones de livraison récupérées:", homepageData.delivery_zones);
           } else if (section.section_name === 'order_options') {
             homepageData.order_options = safeCast<OrderOption[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.order_options);
+          } else if (section.section_name === 'custom_creation_section') {
+            homepageData.custom_creation_section = safeCast<CustomCreationSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.custom_creation_section);
           }
         }
         
@@ -177,7 +198,8 @@ export const useHomepageData = () => {
           hero_section: homepageData.hero_section || DEFAULT_HOMEPAGE_DATA.hero_section,
           promotions: homepageData.promotions || DEFAULT_HOMEPAGE_DATA.promotions,
           delivery_zones: homepageData.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones,
-          order_options: homepageData.order_options || DEFAULT_HOMEPAGE_DATA.order_options
+          order_options: homepageData.order_options || DEFAULT_HOMEPAGE_DATA.order_options,
+          custom_creation_section: homepageData.custom_creation_section || DEFAULT_HOMEPAGE_DATA.custom_creation_section
         };
         
         console.log("Données validées pour la page d'accueil:", validatedData);
