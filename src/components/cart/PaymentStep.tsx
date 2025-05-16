@@ -5,6 +5,7 @@ import { CartItem } from "@/types";
 import { OrderSummaryDetails } from "../checkout/OrderSummaryDetails";
 import { PaymentMethod } from "../checkout/PaymentMethod";
 import { TipSelector } from "./TipSelector";
+import { useState } from "react";
 
 interface PaymentStepProps {
   items: CartItem[];
@@ -61,6 +62,12 @@ export const PaymentStep = ({
     { id: "sesame", name: "Sésame" },
   ];
 
+  const [isTipDialogOpen, setIsTipDialogOpen] = useState(false);
+
+  const handlePayButtonClick = () => {
+    setIsTipDialogOpen(true);
+  };
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">Récapitulatif de commande</h2>
@@ -71,17 +78,23 @@ export const PaymentStep = ({
         tax={tax}
         deliveryFee={deliveryFee}
         discount={discount}
+        tip={tip}
         appliedPromoCode={appliedPromoCode}
         deliveryInfo={deliveryInfo}
         allergyOptions={allergyOptions}
       />
       
       <div className="my-6">
-        <TipSelector 
-          subtotal={subtotal} 
-          onTipChange={setTip} 
-          currentTip={tip}
-        />
+        <Button 
+          variant="outline" 
+          className="w-full mb-4 flex justify-between items-center"
+          onClick={() => setIsTipDialogOpen(true)}
+        >
+          <span>Ajouter un pourboire</span>
+          <span className="text-green-600 font-medium">
+            {tip > 0 ? `${(tip).toFixed(2)}€` : "Optionnel"}
+          </span>
+        </Button>
       </div>
       
       <PaymentMethod />
@@ -96,7 +109,7 @@ export const PaymentStep = ({
           Modifier les informations
         </Button>
         <Button
-          onClick={handleStripeCheckout}
+          onClick={handlePayButtonClick}
           disabled={loading}
           className="bg-gold-500 hover:bg-gold-600 text-black"
         >
@@ -109,6 +122,16 @@ export const PaymentStep = ({
           )}
         </Button>
       </div>
+
+      {/* Tip Selector Dialog */}
+      <TipSelector
+        subtotal={subtotal}
+        onTipChange={setTip}
+        currentTip={tip}
+        isOpen={isTipDialogOpen}
+        onOpenChange={setIsTipDialogOpen}
+        onContinue={handleStripeCheckout}
+      />
     </div>
   );
 };

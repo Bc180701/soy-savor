@@ -1,19 +1,30 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatEuro } from "@/utils/formatters";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface TipSelectorProps {
   subtotal: number;
   onTipChange: (tipAmount: number) => void;
   currentTip: number;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onContinue: () => void;
 }
 
-export const TipSelector = ({ subtotal, onTipChange, currentTip }: TipSelectorProps) => {
+export const TipSelector = ({ 
+  subtotal, 
+  onTipChange, 
+  currentTip, 
+  isOpen, 
+  onOpenChange,
+  onContinue 
+}: TipSelectorProps) => {
   const [tipType, setTipType] = useState<"percentage" | "custom">(currentTip > 0 ? "custom" : "percentage");
   const [percentage, setPercentage] = useState<number>(
     currentTip > 0 ? Math.round((currentTip / subtotal) * 100) : 0
@@ -21,7 +32,15 @@ export const TipSelector = ({ subtotal, onTipChange, currentTip }: TipSelectorPr
   const [customAmount, setCustomAmount] = useState<string>(
     currentTip > 0 ? currentTip.toFixed(2) : "0.00"
   );
-  const [isOpen, setIsOpen] = useState(false);
+
+  // Reset state when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setTipType(currentTip > 0 ? "custom" : "percentage");
+      setPercentage(currentTip > 0 ? Math.round((currentTip / subtotal) * 100) : 0);
+      setCustomAmount(currentTip > 0 ? currentTip.toFixed(2) : "0.00");
+    }
+  }, [isOpen, currentTip, subtotal]);
 
   // Predefined tip percentages
   const tipOptions = [0, 5, 10, 15];
@@ -53,27 +72,25 @@ export const TipSelector = ({ subtotal, onTipChange, currentTip }: TipSelectorPr
       finalTip = parseFloat(customAmount) || 0;
     }
     onTipChange(finalTip);
-    setIsOpen(false);
+    onOpenChange(false);
+    onContinue();
+  };
+
+  const handleSkip = () => {
+    onTipChange(0);
+    onOpenChange(false);
+    onContinue();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="w-full mb-4 flex justify-between items-center"
-          onClick={() => setIsOpen(true)}
-        >
-          <span>Ajouter un pourboire</span>
-          <span className="text-green-600 font-medium">
-            {currentTip > 0 ? formatEuro(currentTip) : "Optionnel"}
-          </span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Ajouter un pourboire</DialogTitle>
-        </DialogHeader>
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="sm:max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Ajouter un pourboire ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vous pouvez ajouter un pourboire pour remercier l'équipe qui prépare votre commande.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         
         <div className="space-y-6 py-4">
           <div className="space-y-4">
@@ -122,20 +139,20 @@ export const TipSelector = ({ subtotal, onTipChange, currentTip }: TipSelectorPr
               <span>€</span>
             </div>
           </div>
-
-          <div className="flex justify-between items-center pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsOpen(false)}>
-              Annuler
-            </Button>
-            <Button 
-              onClick={handleConfirm}
-              className="bg-gold-500 hover:bg-gold-600 text-black"
-            >
-              Confirmer
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <AlertDialogFooter className="gap-2 flex-col sm:flex-row">
+          <AlertDialogCancel onClick={handleSkip}>
+            Passer
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleConfirm}
+            className="bg-gold-500 hover:bg-gold-600 text-black"
+          >
+            Confirmer et continuer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
