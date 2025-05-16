@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import Stripe from 'https://esm.sh/stripe@14.20.0';
@@ -25,6 +24,7 @@ interface OrderData {
   subtotal: number;
   tax: number;
   deliveryFee: number;
+  tip?: number;
   total: number;
   orderType: "delivery" | "pickup";
   clientName?: string;
@@ -152,6 +152,20 @@ serve(async (req) => {
         quantity: 1,
       });
     }
+    
+    // Ajouter le pourboire si présent
+    if (orderData.tip && orderData.tip > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: 'Pourboire',
+          },
+          unit_amount: Math.round(orderData.tip * 100), // Montant en centimes
+        },
+        quantity: 1,
+      });
+    }
 
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
@@ -169,10 +183,11 @@ serve(async (req) => {
         customer_notes: orderData.customerNotes || '',
         delivery_address: orderData.orderType === 'delivery' ? 
           `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
+        tip_amount: orderData.tip ? (orderData.tip).toString() : '0', // Ajouter le pourboire aux métadonnées
       },
     });
 
-    // Créer la commande avec un statut de paiement "pending"
+    // Créer la commande avec un statut de paiement "pending" et inclure le pourboire
     const { data: orderRecord, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -180,6 +195,7 @@ serve(async (req) => {
         subtotal: orderData.subtotal,
         tax: orderData.tax,
         delivery_fee: orderData.deliveryFee,
+        tip: orderData.tip || 0, // Ajouter le pourboire
         total: orderData.total,
         order_type: orderData.orderType,
         status: 'pending',
@@ -193,8 +209,7 @@ serve(async (req) => {
         delivery_city: orderData.deliveryCity,
         delivery_postal_code: orderData.deliveryPostalCode,
         customer_notes: orderData.customerNotes,
-        stripe_session_id: session.id,
-        is_guest_order: userId ? false : true // Marquer comme commande invité si aucun userId
+        stripe_session_id: session.id
       })
       .select('id')
       .single();
