@@ -679,6 +679,10 @@ export type Database = {
         Args: { table_name: string }
         Returns: number
       }
+      create_admin_user: {
+        Args: { admin_email: string; admin_password: string }
+        Returns: Json
+      }
       get_homepage_data: {
         Args: Record<PropertyKey, never>
         Returns: Json

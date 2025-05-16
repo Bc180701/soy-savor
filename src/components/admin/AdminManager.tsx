@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,15 +87,15 @@ const AdminManager = () => {
     setIsLoading(true);
 
     try {
-      // 1. Create the user using a server RPC function instead of direct admin API
-      const { data: userData, error: userError } = await supabase.rpc(
+      // 1. Create the user using the database function we created
+      const { data, error: userError } = await supabase.rpc(
         'create_admin_user',
         { admin_email: email, admin_password: password }
       );
 
       if (userError) throw userError;
 
-      if (!userData || !userData.user_id) {
+      if (!data || !data.user_id) {
         throw new Error("Erreur lors de la création de l'utilisateur");
       }
       
