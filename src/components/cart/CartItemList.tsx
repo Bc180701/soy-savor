@@ -11,6 +11,55 @@ interface CartItemListProps {
 }
 
 export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemListProps) => {
+  // Fonction pour extraire et formater les détails des produits personnalisés
+  const formatCustomProduct = (description: string | undefined) => {
+    if (!description) return null;
+    
+    // Vérifier si c'est un produit personnalisé
+    if (!description.includes('Enrobage:') && !description.includes('Ingrédients:')) {
+      return null;
+    }
+    
+    // Extraire les différentes parties
+    const parts = description.split(', ');
+    
+    // Pour les sushis personnalisés
+    if (description.includes('Enrobage:')) {
+      const enrobage = parts.find(p => p.startsWith('Enrobage:'))?.replace('Enrobage: ', '');
+      const base = parts.find(p => p.startsWith('Base:'))?.replace('Base: ', '');
+      const garnitures = parts.find(p => p.startsWith('Garnitures:'))?.replace('Garnitures: ', '');
+      const topping = parts.find(p => p.startsWith('Topping:'))?.replace('Topping: ', '');
+      const sauce = parts.find(p => p.startsWith('Sauce:'))?.replace('Sauce: ', '');
+      
+      return (
+        <div className="mt-1 space-y-0.5 text-xs text-gray-600">
+          {enrobage && <p><span className="font-semibold">Enrobage:</span> {enrobage}</p>}
+          {base && <p><span className="font-semibold">Base:</span> {base}</p>}
+          {garnitures && <p><span className="font-semibold">Garnitures:</span> {garnitures}</p>}
+          {topping && <p><span className="font-semibold">Topping:</span> {topping}</p>}
+          {sauce && <p><span className="font-semibold">Sauce:</span> {sauce}</p>}
+        </div>
+      );
+    }
+    
+    // Pour les pokés personnalisés
+    if (description.includes('Ingrédients:')) {
+      const ingredients = parts.find(p => p.startsWith('Ingrédients:'))?.replace('Ingrédients: ', '');
+      const proteine = parts.find(p => p.startsWith('Protéine:'))?.replace('Protéine: ', '');
+      const sauce = parts.find(p => p.startsWith('Sauce:'))?.replace('Sauce: ', '');
+      
+      return (
+        <div className="mt-1 space-y-0.5 text-xs text-gray-600">
+          {ingredients && <p><span className="font-semibold">Ingrédients:</span> {ingredients}</p>}
+          {proteine && <p><span className="font-semibold">Protéine:</span> {proteine}</p>}
+          {sauce && <p><span className="font-semibold">Sauce:</span> {sauce}</p>}
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   if (items.length === 0) {
     return (
       <div className="text-center py-8">
@@ -25,7 +74,7 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
   return (
     <div className="mb-6">
       {items.map((item) => (
-        <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex items-center border-b py-4">
+        <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex items-start border-b py-4">
           {item.menuItem.imageUrl && (
             <img
               src={item.menuItem.imageUrl}
@@ -35,8 +84,12 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
           )}
           <div className="flex-1">
             <h3 className="font-medium">{item.menuItem.name}</h3>
+            
+            {/* Affichage des détails de composition pour les produits personnalisés */}
+            {formatCustomProduct(item.menuItem.description)}
+            
             {item.specialInstructions && (
-              <p className="text-sm text-gray-500">{item.specialInstructions}</p>
+              <p className="text-sm text-gray-500 mt-1">{item.specialInstructions}</p>
             )}
             <div className="flex items-center mt-2">
               <button

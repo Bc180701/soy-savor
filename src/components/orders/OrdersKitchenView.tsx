@@ -41,6 +41,55 @@ const OrdersKitchenView = ({
     }
   };
 
+  // Fonction pour extraire et formater les détails des produits personnalisés
+  const formatCustomProduct = (description: string | undefined) => {
+    if (!description) return null;
+    
+    // Vérifier si c'est un produit personnalisé
+    if (!description.includes('Enrobage:') && !description.includes('Ingrédients:')) {
+      return null;
+    }
+    
+    // Extraire les différentes parties
+    const parts = description.split(', ');
+    
+    // Pour les sushis personnalisés
+    if (description.includes('Enrobage:')) {
+      const enrobage = parts.find(p => p.startsWith('Enrobage:'))?.replace('Enrobage: ', '');
+      const base = parts.find(p => p.startsWith('Base:'))?.replace('Base: ', '');
+      const garnitures = parts.find(p => p.startsWith('Garnitures:'))?.replace('Garnitures: ', '');
+      const topping = parts.find(p => p.startsWith('Topping:'))?.replace('Topping: ', '');
+      const sauce = parts.find(p => p.startsWith('Sauce:'))?.replace('Sauce: ', '');
+      
+      return (
+        <div className="mt-2 space-y-1 text-xs border-l-2 border-gold-500 pl-2">
+          {enrobage && <p><span className="font-semibold">Enrobage:</span> {enrobage}</p>}
+          {base && <p><span className="font-semibold">Base:</span> {base}</p>}
+          {garnitures && <p><span className="font-semibold">Garnitures:</span> {garnitures}</p>}
+          {topping && <p><span className="font-semibold">Topping:</span> {topping}</p>}
+          {sauce && <p><span className="font-semibold">Sauce:</span> {sauce}</p>}
+        </div>
+      );
+    }
+    
+    // Pour les pokés personnalisés
+    if (description.includes('Ingrédients:')) {
+      const ingredients = parts.find(p => p.startsWith('Ingrédients:'))?.replace('Ingrédients: ', '');
+      const proteine = parts.find(p => p.startsWith('Protéine:'))?.replace('Protéine: ', '');
+      const sauce = parts.find(p => p.startsWith('Sauce:'))?.replace('Sauce: ', '');
+      
+      return (
+        <div className="mt-2 space-y-1 text-xs border-l-2 border-wasabi-500 pl-2">
+          {ingredients && <p><span className="font-semibold">Ingrédients:</span> {ingredients}</p>}
+          {proteine && <p><span className="font-semibold">Protéine:</span> {proteine}</p>}
+          {sauce && <p><span className="font-semibold">Sauce:</span> {sauce}</p>}
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Vue Cuisine ({kitchenOrders.length})</h2>
@@ -73,12 +122,24 @@ const OrdersKitchenView = ({
               </CardHeader>
               
               <CardContent className="py-2">
-                <ul className="space-y-1">
+                <ul className="space-y-3">
                   {order.items.map((item, index) => (
-                    <li key={index} className="flex justify-between text-sm">
-                      <span className="font-medium">
-                        {item.quantity}× {item.menuItem.name}
-                      </span>
+                    <li key={index} className="text-sm">
+                      <div className="flex justify-between">
+                        <span className="font-medium">
+                          {item.quantity}× {item.menuItem.name}
+                        </span>
+                      </div>
+                      
+                      {/* Afficher les détails des produits personnalisés */}
+                      {formatCustomProduct(item.menuItem.description)}
+                      
+                      {/* Afficher les instructions spéciales s'il y en a */}
+                      {item.specialInstructions && (
+                        <div className="mt-1 text-xs italic text-gray-600">
+                          Note: {item.specialInstructions}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
