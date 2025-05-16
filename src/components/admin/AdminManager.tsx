@@ -22,6 +22,13 @@ interface AdminUser {
   created_at: string;
 }
 
+// Interface for the response from create_admin_user RPC function
+interface CreateAdminResponse {
+  user_id: string;
+  email: string;
+  success: boolean;
+}
+
 const AdminManager = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -88,7 +95,7 @@ const AdminManager = () => {
 
     try {
       // 1. Create the user using the database function we created
-      const { data, error: userError } = await supabase.rpc(
+      const { data, error: userError } = await supabase.rpc<CreateAdminResponse>(
         'create_admin_user',
         { admin_email: email, admin_password: password }
       );
