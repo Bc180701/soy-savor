@@ -102,8 +102,8 @@ const AdminManager = () => {
 
       if (userError) throw userError;
 
-      // Type assertion to use the CreateAdminResponse interface
-      const adminResponse = data as CreateAdminResponse;
+      // First cast to unknown, then to our expected type for safety
+      const adminResponse = data as unknown as CreateAdminResponse;
 
       if (!adminResponse || !adminResponse.user_id) {
         throw new Error("Erreur lors de la création de l'utilisateur");
