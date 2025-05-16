@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [hasAddress, setHasAddress] = useState(false);
+  const [formComplete, setFormComplete] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,6 +54,41 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     },
   });
 
+  // Watch all the required fields to check if form is complete
+  const watchedFields = form.watch();
+  
+  // Check if all required fields are filled
+  useEffect(() => {
+    const { name, street, city, postalCode, phone, email } = watchedFields;
+    
+    // Check if all required fields have values and are valid
+    const allFieldsFilled = 
+      name && name.length >= 2 && 
+      street && street.length >= 5 && 
+      city && city.length >= 2 && 
+      postalCode && postalCode.length >= 5 && 
+      phone && phone.length >= 10 && 
+      email && email.includes('@');
+    
+    setFormComplete(allFieldsFilled && Object.keys(form.formState.errors).length === 0);
+  }, [watchedFields, form.formState.errors]);
+  
+  // Auto-submit when form is complete and there are no errors
+  useEffect(() => {
+    const validateAndSubmit = async () => {
+      if (formComplete && !isValidating && !form.formState.isSubmitting && Object.keys(form.formState.errors).length === 0) {
+        const postalCodeError = form.getFieldState('postalCode').error;
+        // Only proceed if there's no postal code error
+        if (!postalCodeError) {
+          const data = form.getValues();
+          await validatePostalCodeAndSubmit(data);
+        }
+      }
+    };
+    
+    validateAndSubmit();
+  }, [formComplete, form.formState.errors, isValidating, form.formState.isSubmitting]);
+
   // Watch the postal code field to validate it whenever it changes
   const postalCode = form.watch("postalCode");
   
@@ -63,9 +100,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           const isValid = await checkPostalCodeDelivery(postalCode);
           
           if (!isValid) {
-            // Show toast but don't block form submission yet
             toast({
-              variant: "destructive", // Using destructive variant
+              variant: "destructive",
               title: "Zone non desservie",
               description: `Nous ne livrons pas dans la zone ${postalCode}. Veuillez vérifier ou choisir un autre mode de livraison.`,
             });
@@ -289,7 +325,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     }
   };
 
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+  const validatePostalCodeAndSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsValidating(true);
     
     try {
@@ -302,6 +338,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           title: "Zone non desservie",
           description: `Nous ne livrons pas dans la zone ${data.postalCode}. Veuillez choisir un autre mode de livraison.`,
         });
+        
+        // Set error on postal code field
+        form.setError("postalCode", {
+          type: "manual",
+          message: "Code postal hors zone de livraison"
+        });
+        
         setIsValidating(false);
         return;
       }
@@ -365,7 +408,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form className="space-y-4">
           <FormField
             control={form.control}
             name="name"
@@ -481,16 +524,15 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
             >
               Annuler
             </Button>
-            <Button 
-              type="submit"
-              disabled={isValidating || form.formState.errors.postalCode !== undefined}
-              className="bg-akane-600 hover:bg-akane-700"
-            >
-              {isValidating ? "Validation..." : "Valider l'adresse"}
-            </Button>
           </div>
         </form>
       </Form>
+      {isValidating && (
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          <span className="text-sm text-gray-500">Validation en cours...</span>
+        </div>
+      )}
     </div>
   );
 };
