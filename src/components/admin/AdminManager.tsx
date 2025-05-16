@@ -22,6 +22,12 @@ interface AdminUser {
   created_at: string;
 }
 
+// Interface for admin creation input
+interface AdminInput {
+  email: string;
+  password: string;
+}
+
 // Interface for the response from create_admin_user RPC function
 interface CreateAdminResponse {
   user_id: string;
@@ -92,9 +98,9 @@ const AdminManager = () => {
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    console.log("Creating admin with email:", email);
-
+    
     try {
+      // Form validation
       if (!email || !password) {
         throw new Error("L'email et le mot de passe sont requis");
       }
@@ -103,81 +109,78 @@ const AdminManager = () => {
         throw new Error("Le mot de passe doit contenir au moins 8 caractères");
       }
 
-      // 1. Create the user using auth.users directly via the RPC function
-      console.log("Calling create_admin_user RPC");
-      const { data, error: userError } = await supabase.rpc(
+      // 1. Call the RPC function to create admin user
+      console.log("Creating admin with email:", email);
+      
+      const { data: adminData, error: adminError } = await supabase.rpc(
         'create_admin_user',
         { admin_email: email, admin_password: password }
       );
 
-      if (userError) {
-        console.error("Error creating admin user:", userError);
-        throw userError;
+      if (adminError) {
+        console.error("Error creating admin user:", adminError);
+        throw adminError;
       }
 
-      console.log("Admin creation response:", data);
-      
-      if (!data) {
-        throw new Error("Aucune réponse reçue du serveur lors de la création de l'utilisateur");
+      if (!adminData || typeof adminData !== 'object') {
+        console.error("Invalid response from create_admin_user:", adminData);
+        throw new Error("Réponse invalide du serveur");
       }
+
+      // Parse response data
+      const response = adminData as unknown as CreateAdminResponse;
+      console.log("Admin creation response:", response);
       
-      // Use type assertion with better safety
-      const adminResponse = data as unknown as CreateAdminResponse;
-      
-      if (!adminResponse.user_id || !adminResponse.success) {
-        console.error("Invalid admin creation response:", adminResponse);
-        throw new Error("Erreur lors de la création de l'administrateur");
+      if (!response.success || !response.user_id) {
+        throw new Error("Échec de la création de l'administrateur");
       }
+
+      // 2. Send welcome email
+      console.log("Admin created, now sending welcome email to:", email);
       
-      console.log("Admin created successfully with ID:", adminResponse.user_id);
-      console.log("Now sending welcome email");
+      // Get current session for authentication
+      const { data: authData } = await supabase.auth.getSession();
+      const accessToken = authData?.session?.access_token;
       
-      // 2. Send welcome email with credentials
-      const { data: authData, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error("Error getting auth session:", sessionError);
-        throw new Error("Impossible de récupérer votre session");
-      }
-      
-      if (!authData.session?.access_token) {
-        console.error("No auth session found for sending email");
-        throw new Error("Session non disponible");
-      }
-      
-      // Call the send-admin-welcome edge function
-      console.log("Sending welcome email to:", email);
-      
-      const response = await fetch('https://tdykegnmomyyucbhslok.supabase.co/functions/v1/send-admin-welcome', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authData.session.access_token}`
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password
-        })
-      });
-      
-      const responseData = await response.json();
-      console.log("Email API response:", responseData);
-      
-      if (!response.ok) {
-        console.warn("Problème lors de l'envoi du mail de bienvenue:", responseData);
-        // On continue même si l'envoi de l'email échoue
+      if (!accessToken) {
+        console.warn("No auth session found, continuing without sending welcome email");
+        // Continue without sending email
       } else {
-        console.log("Email de bienvenue envoyé avec succès");
+        // Call edge function to send welcome email
+        const emailResponse = await fetch('https://tdykegnmomyyucbhslok.supabase.co/functions/v1/send-admin-welcome', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password
+          })
+        });
+
+        if (!emailResponse.ok) {
+          const errorData = await emailResponse.json();
+          console.warn("Warning: Failed to send welcome email:", errorData);
+          // Continue even if email fails
+        } else {
+          console.log("Welcome email sent successfully");
+        }
       }
 
-      // 3. Update UI and reset form
+      // 3. Show success message and refresh admin list
       toast({
         title: "Administrateur créé",
-        description: `${email} a été ajouté comme administrateur et a reçu un email avec ses identifiants.`,
+        description: `${email} a été ajouté comme administrateur.`,
       });
+      
+      // Reset form
       setEmail("");
       setPassword("");
+      
+      // Refresh admin users list
       fetchAdminUsers();
+      
     } catch (error: any) {
       console.error("Error creating admin:", error);
       toast({

@@ -22,30 +22,35 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Send admin welcome function called");
     
     // Parse request body
-    const requestData = await req.json();
-    console.log("Request data received:", JSON.stringify({
-      email: requestData.email,
-      password: "********" // Masked for security
-    }));
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log("Request data received:", JSON.stringify({
+        email: requestData?.email,
+        password: requestData?.password ? "********" : undefined // Masked for security
+      }));
+    } catch (error) {
+      console.error("Error parsing request body:", error);
+      throw new Error("Format de requête invalide");
+    }
     
     // Validate required fields
     if (!requestData || !requestData.email || !requestData.password) {
-      throw new Error("Email et mot de passe requis dans la requête");
+      const errorMsg = "Email et mot de passe requis dans la requête";
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
     
     const { email, password } = requestData as AdminWelcomeEmailRequest;
     
-    // Récupérer la clé API Brevo depuis les variables d'environnement
+    // Get Brevo API key from environment variables
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
-    
     if (!brevoApiKey) {
       console.error("BREVO_API_KEY not found in environment variables");
       throw new Error("Erreur de configuration: clé API Brevo manquante");
     }
 
-    console.log("Preparing to send email using Brevo API");
-    
-    // Préparer le contenu de l'email
+    // Prepare email content
     const subject = "Bienvenue dans l'équipe d'administration SushiEats";
     const htmlContent = `
       <html><body>
@@ -68,50 +73,66 @@ const handler = async (req: Request): Promise<Response> => {
       </body></html>
     `;
     
-    // Envoyer l'email via l'API Brevo
+    // Send email via Brevo API
     console.log("Sending email via Brevo API");
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": brevoApiKey,
-      },
-      body: JSON.stringify({
-        sender: {
-          name: "SushiEats Admin",
-          email: "admin@sushieats.fr",
+    try {
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": brevoApiKey,
         },
-        to: [
-          {
-            email: email,
+        body: JSON.stringify({
+          sender: {
+            name: "SushiEats Admin",
+            email: "admin@sushieats.fr",
           },
-        ],
-        subject: subject,
-        htmlContent: htmlContent,
-      }),
-    });
-    
-    if (!response.ok) {
+          to: [
+            {
+              email: email,
+            },
+          ],
+          subject: subject,
+          htmlContent: htmlContent,
+        }),
+      });
+      
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { status: response.status, statusText: response.statusText };
+        }
+        console.error("Brevo API error:", errorData);
+        throw new Error(`Erreur d'envoi d'email: ${response.status} ${response.statusText}`);
+      }
+      
       const responseBody = await response.json();
-      console.error("Erreur d'envoi d'email via Brevo:", responseBody);
-      throw new Error(`Erreur Brevo: ${JSON.stringify(responseBody)}`);
+      console.log("Brevo API response:", JSON.stringify(responseBody));
+      console.log("Admin welcome email sent successfully to:", email);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: "Email d'accueil admin envoyé avec succès" 
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    } catch (emailError: any) {
+      console.error("Error sending email:", emailError);
+      throw new Error(`Erreur d'envoi d'email: ${emailError.message}`);
     }
-    
-    const responseBody = await response.json();
-    console.log("Brevo API response:", JSON.stringify(responseBody));
-    console.log("Email d'accueil admin envoyé avec succès via Brevo");
-    
-    return new Response(JSON.stringify({ success: true, messageId: responseBody.messageId }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
   } catch (error: any) {
-    console.error("Erreur dans la fonction send-admin-welcome:", error);
+    console.error("Error in send-admin-welcome function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || "Erreur interne du serveur",
+        success: false
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
