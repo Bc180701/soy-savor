@@ -218,7 +218,7 @@ const Panier = () => {
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
       scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       
-      // Recalcule le montant total incluant le pourboire et la réduction avant l'appel à Stripe
+      // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
       const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;
       
       // Appel à la fonction edge pour créer la session de paiement
@@ -229,9 +229,9 @@ const Panier = () => {
           tax,
           deliveryFee,
           tip, // Inclure le pourboire dans la requête
-          discount: discount, // Inclure la réduction dans la requête
+          discount: discount,
           promoCode: appliedPromoCode?.code,
-          total: finalOrderTotal, // Utiliser le total final qui inclut le pourboire et la réduction
+          total: finalOrderTotal, // Utiliser le total final qui inclut le pourboire
           orderType: deliveryInfo.orderType,
           clientName: deliveryInfo.name,
           clientEmail: deliveryInfo.email,
