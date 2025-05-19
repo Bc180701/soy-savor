@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { z } from "zod";
@@ -18,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
-import ContactMap from "@/components/ContactMap";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -118,11 +118,10 @@ const Contact = () => {
             </div>
 
             <div className="mt-8 rounded-lg overflow-hidden h-64">
-              <ContactMap 
-                address="123 Rue du Sushi, 75001 Paris, France" 
-                longitude={2.3522} 
-                latitude={48.8566} 
-              />
+              {/* Placeholder pour une carte - dans un vrai projet, on utiliserait Google Maps ou équivalent */}
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                <p className="text-gray-600">Carte interactive</p>
+              </div>
             </div>
           </div>
 
