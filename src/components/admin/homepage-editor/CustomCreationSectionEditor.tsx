@@ -25,6 +25,8 @@ const DEFAULT_DATA: CustomCreationSection = {
   title: "Composez vos créations",
   subtitle: "Laissez libre cours à votre créativité avec nos options de personnalisation",
   background_image: "",
+  sushi_image: "",
+  poke_image: "",
   sushi_button_text: "Créer mes sushis",
   sushi_button_link: "/composer-sushi",
   poke_button_text: "Créer mon poké",
@@ -40,6 +42,8 @@ const CustomCreationSectionEditor = ({ data, onSave }: CustomCreationSectionEdit
       title: data?.title || DEFAULT_DATA.title,
       subtitle: data?.subtitle || DEFAULT_DATA.subtitle,
       background_image: data?.background_image || DEFAULT_DATA.background_image,
+      sushi_image: data?.sushi_image || DEFAULT_DATA.sushi_image,
+      poke_image: data?.poke_image || DEFAULT_DATA.poke_image,
       sushi_button_text: data?.sushi_button_text || DEFAULT_DATA.sushi_button_text,
       sushi_button_link: data?.sushi_button_link || DEFAULT_DATA.sushi_button_link,
       poke_button_text: data?.poke_button_text || DEFAULT_DATA.poke_button_text,
@@ -110,7 +114,7 @@ const CustomCreationSectionEditor = ({ data, onSave }: CustomCreationSectionEdit
                         field.onChange(value);
                         setPreviewImage(value);
                       }}
-                      buttonText="Choisir une image"
+                      buttonText="Choisir une image de fond"
                     />
                   </FormControl>
                   <FormDescription>
@@ -134,64 +138,136 @@ const CustomCreationSectionEditor = ({ data, onSave }: CustomCreationSectionEdit
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Sushi Creation Settings */}
+          <div className="border rounded-md p-4">
+            <h3 className="font-medium text-lg mb-4">Section Sushi Créa</h3>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <FormField
-                  control={form.control}
-                  name="sushi_button_text"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Texte bouton Sushi</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Créer mes sushis" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="sushi_button_link"
-                  render={({ field }) => (
-                    <FormItem className="mt-2">
-                      <FormLabel>Lien bouton Sushi</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="/composer-sushi" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="sushi_image"
+              render={({ field }) => (
+                <FormItem className="mb-4">
+                  <FormLabel>Image Sushi Créa</FormLabel>
+                  <FormControl>
+                    <FileUpload
+                      accept="image/*"
+                      value={field.value}
+                      onChange={(value) => {
+                        field.onChange(value);
+                      }}
+                      buttonText="Choisir une image"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            {form.watch("sushi_image") && (
+              <div className="mb-4">
+                <p className="text-sm font-medium mb-2">Aperçu</p>
+                <div className="border rounded-md overflow-hidden h-32">
+                  <img 
+                    src={form.watch("sushi_image")} 
+                    alt="Aperçu sushi" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
-              
-              <div>
-                <FormField
-                  control={form.control}
-                  name="poke_button_text"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Texte bouton Poké</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Créer mon poké" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="poke_button_link"
-                  render={({ field }) => (
-                    <FormItem className="mt-2">
-                      <FormLabel>Lien bouton Poké</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="/composer-poke" />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+            )}
+            
+            <FormField
+              control={form.control}
+              name="sushi_button_text"
+              render={({ field }) => (
+                <FormItem className="mb-4">
+                  <FormLabel>Texte bouton</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Créer mes sushis" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="sushi_button_link"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lien bouton</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="/composer-sushi" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          {/* Poke Creation Settings */}
+          <div className="border rounded-md p-4">
+            <h3 className="font-medium text-lg mb-4">Section Poké Créa</h3>
+            
+            <FormField
+              control={form.control}
+              name="poke_image"
+              render={({ field }) => (
+                <FormItem className="mb-4">
+                  <FormLabel>Image Poké Créa</FormLabel>
+                  <FormControl>
+                    <FileUpload
+                      accept="image/*"
+                      value={field.value}
+                      onChange={(value) => {
+                        field.onChange(value);
+                      }}
+                      buttonText="Choisir une image"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            {form.watch("poke_image") && (
+              <div className="mb-4">
+                <p className="text-sm font-medium mb-2">Aperçu</p>
+                <div className="border rounded-md overflow-hidden h-32">
+                  <img 
+                    src={form.watch("poke_image")} 
+                    alt="Aperçu poké" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
-            </div>
+            )}
+            
+            <FormField
+              control={form.control}
+              name="poke_button_text"
+              render={({ field }) => (
+                <FormItem className="mb-4">
+                  <FormLabel>Texte bouton</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Créer mon poké" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="poke_button_link"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lien bouton</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="/composer-poke" />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
           </div>
         </div>
         

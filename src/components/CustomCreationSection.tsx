@@ -40,7 +40,7 @@ export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
           >
             <div className="relative h-56">
               <img 
-                src="/lovable-uploads/c30dd633-dfec-4589-afdf-9cf0abf72049.png"
+                src={data.sushi_image || "/lovable-uploads/c30dd633-dfec-4589-afdf-9cf0abf72049.png"}
                 alt="Créer vos sushis" 
                 className="w-full h-full object-cover"
               />
@@ -64,7 +64,7 @@ export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
           >
             <div className="relative h-56">
               <img 
-                src="/lovable-uploads/e94446cb-ba03-42bd-a3bc-9562513a950e.png" 
+                src={data.poke_image || "/lovable-uploads/e94446cb-ba03-42bd-a3bc-9562513a950e.png"} 
                 alt="Créer votre poké" 
                 className="w-full h-full object-cover"
               />
