@@ -86,47 +86,6 @@ const ComposerPoke = () => {
         setIngredientOptions(ingredients || []);
         setProteinOptions(proteins || []);
         setSauceOptions(sauces || []);
-
-        // Fallback aux options par défaut si aucune n'est trouvée dans la base de données
-        if (ingredients?.length === 0) {
-          setIngredientOptions([
-            { id: "radis", name: "Radis", price: 0, included: true },
-            { id: "concombre", name: "Concombre", price: 0, included: true },
-            { id: "edamame", name: "Edamame", price: 0, included: true },
-            { id: "avocat", name: "Avocat", price: 0, included: true },
-            { id: "mais", name: "Maïs", price: 0, included: true },
-            { id: "chou-rouge", name: "Chou rouge", price: 0, included: true },
-            { id: "wakame", name: "Algues wakame", price: 0, included: true },
-            { id: "mangue", name: "Mangue", price: 0, included: true },
-            { id: "ananas", name: "Ananas", price: 0, included: true },
-            { id: "oignons-frits", name: "Oignons frits", price: 0, included: true },
-            { id: "cream-cheese", name: "Cream cheese", price: 0, included: true },
-            { id: "chevre", name: "Chèvre", price: 0, included: true },
-          ]);
-        }
-
-        if (proteins?.length === 0) {
-          setProteinOptions([
-            { id: "saumon", name: "Saumon", price: 0, included: true },
-            { id: "saumon-tataki", name: "Saumon tataki", price: 0, included: true },
-            { id: "thon", name: "Thon", price: 0, included: true },
-            { id: "thon-tataki", name: "Thon tataki", price: 0, included: true },
-            { id: "thon-cuit", name: "Thon cuit", price: 0, included: true },
-            { id: "crevette-tempura", name: "Crevette tempura", price: 0, included: true },
-            { id: "poulet-tempura", name: "Poulet tempura", price: 0, included: true },
-            { id: "tofu", name: "Tofu", price: 0, included: true },
-          ]);
-        }
-
-        if (sauces?.length === 0) {
-          setSauceOptions([
-            { id: "soja-sucre", name: "Soja sucré", price: 0, included: true },
-            { id: "soja-salee", name: "Soja salée", price: 0, included: true },
-            { id: "mayonnaise-spicy", name: "Mayonnaise spicy", price: 0, included: true },
-            { id: "mayonnaise", name: "Mayonnaise", price: 0, included: true },
-            { id: "teriyaki", name: "Teriyaki", price: 0, included: true },
-          ]);
-        }
       } catch (error) {
         console.error("Erreur lors du chargement des ingrédients:", error);
         toast({

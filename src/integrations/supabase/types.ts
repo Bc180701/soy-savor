@@ -320,6 +320,33 @@ export type Database = {
           },
         ]
       }
+      poke_ingredients: {
+        Row: {
+          created_at: string | null
+          id: string
+          included: boolean
+          ingredient_type: string
+          name: string
+          price: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          included?: boolean
+          ingredient_type: string
+          name: string
+          price?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          included?: boolean
+          ingredient_type?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
       popular_products: {
         Row: {
           created_at: string | null

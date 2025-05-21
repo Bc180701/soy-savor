@@ -58,9 +58,9 @@ const PokeIngredientsManager = () => {
         throw new Error("Erreur lors du chargement des ingrédients");
       }
       
-      setIngredients(ingredientsData || []);
-      setProteinOptions(proteinsData || []);
-      setSauceOptions(saucesData || []);
+      setIngredients(ingredientsData as PokeIngredient[] || []);
+      setProteinOptions(proteinsData as PokeIngredient[] || []);
+      setSauceOptions(saucesData as PokeIngredient[] || []);
       
     } catch (error) {
       console.error("Erreur lors du chargement des ingrédients:", error);
