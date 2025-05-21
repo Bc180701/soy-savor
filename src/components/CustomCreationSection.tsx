@@ -9,6 +9,10 @@ interface CustomCreationSectionProps {
 }
 
 export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
+  // Utilisation directe des images sélectionnées sans valeurs par défaut
+  const sushiImage = data.sushi_image || "";
+  const pokeImage = data.poke_image || "";
+  
   return (
     <section className="py-16 relative">
       {data.background_image && (
@@ -39,11 +43,17 @@ export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all"
           >
             <div className="relative h-56">
-              <img 
-                src={data.sushi_image || "/lovable-uploads/c30dd633-dfec-4589-afdf-9cf0abf72049.png"}
-                alt="Créer vos sushis" 
-                className="w-full h-full object-cover"
-              />
+              {sushiImage ? (
+                <img 
+                  src={sushiImage}
+                  alt="Créer vos sushis" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <p className="text-gray-500">Image non disponible</p>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
               <div className="absolute bottom-0 p-6">
                 <h3 className="text-2xl font-bold text-white">Sushi Créa</h3>
@@ -63,11 +73,17 @@ export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
             className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all"
           >
             <div className="relative h-56">
-              <img 
-                src={data.poke_image || "/lovable-uploads/e94446cb-ba03-42bd-a3bc-9562513a950e.png"} 
-                alt="Créer votre poké" 
-                className="w-full h-full object-cover"
-              />
+              {pokeImage ? (
+                <img 
+                  src={pokeImage} 
+                  alt="Créer votre poké" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <p className="text-gray-500">Image non disponible</p>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
               <div className="absolute bottom-0 p-6">
                 <h3 className="text-2xl font-bold text-white">Poké Créa</h3>
