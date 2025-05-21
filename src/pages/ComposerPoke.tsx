@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
 import { ArrowLeft, Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ComposerPokeState {
   baseItem: MenuItem;
@@ -42,46 +43,104 @@ const ComposerPoke = () => {
   const [selectedProtein, setSelectedProtein] = useState<IngredientOption | null>(null);
   const [selectedSauce, setSelectedSauce] = useState<IngredientOption | null>(null);
 
+  // Ingredient options from database
+  const [ingredientOptions, setIngredientOptions] = useState<IngredientOption[]>([]);
+  const [proteinOptions, setProteinOptions] = useState<IngredientOption[]>([]);
+  const [sauceOptions, setSauceOptions] = useState<IngredientOption[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // Base price
   const basePrice = 15.9;
 
-  // Ingredient options
-  const ingredientOptions: IngredientOption[] = [
-    { id: "carotte", name: "Carotte", price: 0, included: true },
-    { id: "radis", name: "Radis", price: 0, included: true },
-    { id: "concombre", name: "Concombre", price: 0, included: true },
-    { id: "edamame", name: "Edamame", price: 0, included: true },
-    { id: "avocat", name: "Avocat", price: 0, included: true },
-    { id: "mais", name: "Maïs", price: 0, included: true },
-    { id: "chou-rouge", name: "Chou rouge", price: 0, included: true },
-    { id: "wakame", name: "Algues wakame", price: 0, included: true },
-    { id: "mangue", name: "Mangue", price: 0, included: true },
-    { id: "ananas", name: "Ananas", price: 0, included: true },
-    { id: "oignons-frits", name: "Oignons frits", price: 0, included: true },
-    { id: "cream-cheese", name: "Cream cheese", price: 0, included: true },
-    { id: "chevre", name: "Chèvre", price: 0, included: true },
-  ];
+  useEffect(() => {
+    const fetchIngredients = async () => {
+      setLoading(true);
+      try {
+        // Charger les ingrédients
+        const { data: ingredients, error: ingredientsError } = await supabase
+          .from('poke_ingredients')
+          .select('*')
+          .eq('ingredient_type', 'ingredient')
+          .order('name');
+        
+        if (ingredientsError) throw ingredientsError;
+        
+        // Charger les protéines
+        const { data: proteins, error: proteinsError } = await supabase
+          .from('poke_ingredients')
+          .select('*')
+          .eq('ingredient_type', 'protein')
+          .order('name');
+        
+        if (proteinsError) throw proteinsError;
+        
+        // Charger les sauces
+        const { data: sauces, error: saucesError } = await supabase
+          .from('poke_ingredients')
+          .select('*')
+          .eq('ingredient_type', 'sauce')
+          .order('name');
+        
+        if (saucesError) throw saucesError;
+        
+        setIngredientOptions(ingredients || []);
+        setProteinOptions(proteins || []);
+        setSauceOptions(sauces || []);
 
-  // Protein options
-  const proteinOptions: IngredientOption[] = [
-    { id: "saumon", name: "Saumon", price: 0, included: true },
-    { id: "saumon-tataki", name: "Saumon tataki", price: 0, included: true },
-    { id: "thon", name: "Thon", price: 0, included: true },
-    { id: "thon-tataki", name: "Thon tataki", price: 0, included: true },
-    { id: "thon-cuit", name: "Thon cuit", price: 0, included: true },
-    { id: "crevette-tempura", name: "Crevette tempura", price: 0, included: true },
-    { id: "poulet-tempura", name: "Poulet tempura", price: 0, included: true },
-    { id: "tofu", name: "Tofu", price: 0, included: true },
-  ];
+        // Fallback aux options par défaut si aucune n'est trouvée dans la base de données
+        if (ingredients?.length === 0) {
+          setIngredientOptions([
+            { id: "radis", name: "Radis", price: 0, included: true },
+            { id: "concombre", name: "Concombre", price: 0, included: true },
+            { id: "edamame", name: "Edamame", price: 0, included: true },
+            { id: "avocat", name: "Avocat", price: 0, included: true },
+            { id: "mais", name: "Maïs", price: 0, included: true },
+            { id: "chou-rouge", name: "Chou rouge", price: 0, included: true },
+            { id: "wakame", name: "Algues wakame", price: 0, included: true },
+            { id: "mangue", name: "Mangue", price: 0, included: true },
+            { id: "ananas", name: "Ananas", price: 0, included: true },
+            { id: "oignons-frits", name: "Oignons frits", price: 0, included: true },
+            { id: "cream-cheese", name: "Cream cheese", price: 0, included: true },
+            { id: "chevre", name: "Chèvre", price: 0, included: true },
+          ]);
+        }
 
-  // Sauce options
-  const sauceOptions: IngredientOption[] = [
-    { id: "soja-sucre", name: "Soja sucré", price: 0, included: true },
-    { id: "soja-salee", name: "Soja salée", price: 0, included: true },
-    { id: "mayonnaise-spicy", name: "Mayonnaise spicy", price: 0, included: true },
-    { id: "mayonnaise", name: "Mayonnaise", price: 0, included: true },
-    { id: "teriyaki", name: "Teriyaki", price: 0, included: true },
-  ];
+        if (proteins?.length === 0) {
+          setProteinOptions([
+            { id: "saumon", name: "Saumon", price: 0, included: true },
+            { id: "saumon-tataki", name: "Saumon tataki", price: 0, included: true },
+            { id: "thon", name: "Thon", price: 0, included: true },
+            { id: "thon-tataki", name: "Thon tataki", price: 0, included: true },
+            { id: "thon-cuit", name: "Thon cuit", price: 0, included: true },
+            { id: "crevette-tempura", name: "Crevette tempura", price: 0, included: true },
+            { id: "poulet-tempura", name: "Poulet tempura", price: 0, included: true },
+            { id: "tofu", name: "Tofu", price: 0, included: true },
+          ]);
+        }
+
+        if (sauces?.length === 0) {
+          setSauceOptions([
+            { id: "soja-sucre", name: "Soja sucré", price: 0, included: true },
+            { id: "soja-salee", name: "Soja salée", price: 0, included: true },
+            { id: "mayonnaise-spicy", name: "Mayonnaise spicy", price: 0, included: true },
+            { id: "mayonnaise", name: "Mayonnaise", price: 0, included: true },
+            { id: "teriyaki", name: "Teriyaki", price: 0, included: true },
+          ]);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des ingrédients:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les ingrédients",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIngredients();
+  }, [toast]);
 
   // Handle ingredient selection (max 5 included)
   const handleIngredientSelect = (option: IngredientOption) => {
@@ -112,6 +171,23 @@ const ComposerPoke = () => {
     // Extra cost for ingredients beyond 5
     if (selectedIngredients.length > 5) {
       extraCost += (selectedIngredients.length - 5) * 1; // +1€ per extra ingredient
+    }
+
+    // Add extra cost for any non-included ingredients
+    selectedIngredients.forEach(ingredient => {
+      if (!ingredient.included) {
+        extraCost += ingredient.price;
+      }
+    });
+
+    // Add extra cost for non-included protein
+    if (selectedProtein && !selectedProtein.included) {
+      extraCost += selectedProtein.price;
+    }
+
+    // Add extra cost for non-included sauce
+    if (selectedSauce && !selectedSauce.included) {
+      extraCost += selectedSauce.price;
     }
 
     return extraCost;
@@ -180,6 +256,14 @@ const ComposerPoke = () => {
 
   // Get current step content
   const renderStepContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
+        </div>
+      );
+    }
+    
     switch (step) {
       case 1:
         return (
@@ -194,7 +278,12 @@ const ComposerPoke = () => {
                     onCheckedChange={() => handleIngredientSelect(option)}
                     disabled={selectedIngredients.length >= 5 && !selectedIngredients.some(item => item.id === option.id)}
                   />
-                  <Label htmlFor={`ingredient-${option.id}`}>{option.name}</Label>
+                  <Label htmlFor={`ingredient-${option.id}`}>
+                    {option.name}
+                    {!option.included && option.price > 0 && (
+                      <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
+                    )}
+                  </Label>
                 </div>
               ))}
             </div>
@@ -218,7 +307,12 @@ const ComposerPoke = () => {
                 {proteinOptions.map((option) => (
                   <div key={option.id} className="flex items-center space-x-2 mb-2">
                     <RadioGroupItem value={option.id} id={`protein-${option.id}`} />
-                    <Label htmlFor={`protein-${option.id}`}>{option.name}</Label>
+                    <Label htmlFor={`protein-${option.id}`}>
+                      {option.name}
+                      {!option.included && option.price > 0 && (
+                        <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
+                      )}
+                    </Label>
                   </div>
                 ))}
               </div>
@@ -238,7 +332,12 @@ const ComposerPoke = () => {
                 {sauceOptions.map((option) => (
                   <div key={option.id} className="flex items-center space-x-2 mb-2">
                     <RadioGroupItem value={option.id} id={`sauce-${option.id}`} />
-                    <Label htmlFor={`sauce-${option.id}`}>{option.name}</Label>
+                    <Label htmlFor={`sauce-${option.id}`}>
+                      {option.name}
+                      {!option.included && option.price > 0 && (
+                        <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
+                      )}
+                    </Label>
                   </div>
                 ))}
               </div>

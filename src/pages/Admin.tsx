@@ -22,6 +22,7 @@ import AdminManager from "@/components/admin/AdminManager";
 import HomepageEditor from "@/components/admin/HomepageEditor";
 import UsersList from "@/components/admin/UsersList";
 import OrderingLockControl from "@/components/admin/OrderingLockControl";
+import PokeIngredientsManager from "@/components/admin/PokeIngredientsManager";
 
 const Admin = () => {
   const [loading, setLoading] = useState(true);
@@ -117,6 +118,10 @@ const Admin = () => {
               <Lock className="h-4 w-4" />
               <span>Paramètres</span>
             </TabsTrigger>
+            <TabsTrigger variant="horizontal" value="poke-ingredients" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              <span>Ingrédients Poké</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="dashboard">
@@ -155,6 +160,10 @@ const Admin = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <OrderingLockControl />
             </div>
+          </TabsContent>
+
+          <TabsContent value="poke-ingredients">
+            <PokeIngredientsManager />
           </TabsContent>
         </Tabs>
       </div>
