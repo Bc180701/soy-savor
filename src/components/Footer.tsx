@@ -90,9 +90,9 @@ const Footer = () => {
             <div className="flex items-start space-x-2 text-gray-400">
               <Clock size={18} className="mt-1 flex-shrink-0" />
               <div>
-                <p className="mb-1">Mardi - Dimanche</p>
+                <p className="mb-1">Mardi - Samedi</p>
                 <p className="mb-1">11h - 14h | 18h - 22h</p>
-                <p className="text-gold-400">Fermé le lundi</p>
+                <p className="text-gold-400">Fermé le dimanche et lundi</p>
               </div>
             </div>
           </div>
