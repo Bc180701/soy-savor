@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
@@ -7,7 +6,7 @@ export interface HeroSection {
   background_image: string;
   title: string;
   subtitle: string;
-  overlay_image?: string; // Add the overlay_image property as optional
+  overlay_image?: string;
 }
 
 export interface Promotion {
@@ -37,6 +36,12 @@ export interface CustomCreationSection {
   poke_button_link: string;
 }
 
+export interface ContactInfo {
+  address: string;
+  phone: string;
+  email: string;
+}
+
 export interface HomepageData {
   id?: number;
   hero_section: HeroSection;
@@ -44,6 +49,7 @@ export interface HomepageData {
   delivery_zones: string[];
   order_options: OrderOption[];
   custom_creation_section?: CustomCreationSection;
+  contact_info?: ContactInfo;
 }
 
 // Default data to use as fallback
@@ -109,6 +115,11 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
     sushi_button_link: "/composer-sushi",
     poke_button_text: "Créer mon poké",
     poke_button_link: "/composer-poke"
+  },
+  contact_info: {
+    address: "16 cours Carnot, 13160 Châteaurenard",
+    phone: "04 90 00 00 00",
+    email: "contact@sushieats.fr"
   }
 };
 
@@ -193,6 +204,8 @@ export const useHomepageData = () => {
             homepageData.order_options = safeCast<OrderOption[]>(section.section_data, DEFAULT_HOMEPAGE_DATA.order_options);
           } else if (section.section_name === 'custom_creation_section') {
             homepageData.custom_creation_section = safeCast<CustomCreationSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.custom_creation_section);
+          } else if (section.section_name === 'contact_info') {
+            homepageData.contact_info = safeCast<ContactInfo>(section.section_data, DEFAULT_HOMEPAGE_DATA.contact_info);
           }
         }
         
@@ -202,7 +215,8 @@ export const useHomepageData = () => {
           promotions: homepageData.promotions || DEFAULT_HOMEPAGE_DATA.promotions,
           delivery_zones: homepageData.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones,
           order_options: homepageData.order_options || DEFAULT_HOMEPAGE_DATA.order_options,
-          custom_creation_section: homepageData.custom_creation_section || DEFAULT_HOMEPAGE_DATA.custom_creation_section
+          custom_creation_section: homepageData.custom_creation_section || DEFAULT_HOMEPAGE_DATA.custom_creation_section,
+          contact_info: homepageData.contact_info || DEFAULT_HOMEPAGE_DATA.contact_info
         };
         
         console.log("Données validées pour la page d'accueil:", validatedData);

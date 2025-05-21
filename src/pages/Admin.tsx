@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +12,8 @@ import {
   Users,
   LayoutTemplate,
   Lock,
-  Clock
+  Clock,
+  Phone
 } from "lucide-react";
 import DashboardStats from "@/components/admin/DashboardStats";
 import OrderList from "@/components/OrderList";
@@ -107,6 +109,10 @@ const Admin = () => {
               <LayoutTemplate className="h-4 w-4" />
               <span>Page d'accueil</span>
             </TabsTrigger>
+            <TabsTrigger variant="horizontal" value="contact" className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              <span>Contact</span>
+            </TabsTrigger>
             <TabsTrigger variant="horizontal" value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span>Utilisateurs</span>
@@ -150,6 +156,10 @@ const Admin = () => {
           </TabsContent>
           
           <TabsContent value="homepage">
+            <HomepageEditor />
+          </TabsContent>
+          
+          <TabsContent value="contact">
             <HomepageEditor />
           </TabsContent>
           

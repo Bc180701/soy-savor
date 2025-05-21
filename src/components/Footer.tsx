@@ -1,8 +1,42 @@
 
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Clock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ContactInfo } from "@/hooks/useHomepageData";
 
 const Footer = () => {
+  const [contactInfo, setContactInfo] = useState<ContactInfo>({
+    address: "16 cours Carnot, 13160 Châteaurenard",
+    phone: "04 90 00 00 00",
+    email: "contact@sushieats.fr"
+  });
+
+  useEffect(() => {
+    const fetchContactInfo = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('section_data')
+          .eq('section_name', 'contact_info')
+          .single();
+        
+        if (error) {
+          console.error("Erreur lors de la récupération des coordonnées de contact:", error);
+          return;
+        }
+        
+        if (data && data.section_data) {
+          setContactInfo(data.section_data as unknown as ContactInfo);
+        }
+      } catch (error) {
+        console.error("Exception lors de la récupération des coordonnées de contact:", error);
+      }
+    };
+    
+    fetchContactInfo();
+  }, []);
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto py-12 px-4">
@@ -104,24 +138,29 @@ const Footer = () => {
               <div className="flex items-start space-x-2 text-gray-400">
                 <MapPin size={18} className="mt-1 flex-shrink-0" />
                 <a
-                  href="https://maps.google.com/?q=16+cours+Carnot+13160+Chateaurenard"
+                  href={`https://maps.google.com/?q=${encodeURIComponent(contactInfo.address)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-white transition-colors"
                 >
-                  16 cours Carnot,<br />13160 Châteaurenard
+                  {contactInfo.address.split(',').map((part, index) => (
+                    <span key={index}>
+                      {part}
+                      {index < contactInfo.address.split(',').length - 1 && <br />}
+                    </span>
+                  ))}
                 </a>
               </div>
               <div className="flex items-center space-x-2 text-gray-400">
                 <Phone size={18} className="flex-shrink-0" />
-                <a href="tel:+33490000000" className="hover:text-white transition-colors">
-                  04 90 00 00 00
+                <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="hover:text-white transition-colors">
+                  {contactInfo.phone}
                 </a>
               </div>
               <div className="flex items-center space-x-2 text-gray-400">
                 <Mail size={18} className="flex-shrink-0" />
-                <a href="mailto:contact@sushieats.fr" className="hover:text-white transition-colors">
-                  contact@sushieats.fr
+                <a href={`mailto:${contactInfo.email}`} className="hover:text-white transition-colors">
+                  {contactInfo.email}
                 </a>
               </div>
             </div>
