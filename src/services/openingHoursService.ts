@@ -29,7 +29,8 @@ export const isRestaurantOpenNow = async (): Promise<boolean> => {
       return false;
     }
     
-    const openingHours = data.section_data as DayOpeningHours[];
+    // Cast the section_data to DayOpeningHours[] type with proper type checking
+    const openingHours = data.section_data as unknown as DayOpeningHours[];
     const todayHours = openingHours.find(day => day.day === currentDay);
     
     if (!todayHours || !todayHours.is_open) {
@@ -56,7 +57,8 @@ export const getWeekOpeningHours = async (): Promise<DayOpeningHours[]> => {
       return [];
     }
     
-    return (data?.section_data as DayOpeningHours[]) || [];
+    // Use proper type casting to ensure TypeScript understands the data structure
+    return (data?.section_data as unknown as DayOpeningHours[]) || [];
   } catch (error) {
     console.error("Exception when fetching opening hours:", error);
     return [];
@@ -80,7 +82,8 @@ export const getNextOpenDay = async (): Promise<DayOpeningHours | null> => {
       return null;
     }
     
-    const openingHours = data.section_data as DayOpeningHours[];
+    // Cast the section_data to DayOpeningHours[] with proper type checking
+    const openingHours = data.section_data as unknown as DayOpeningHours[];
     
     // Find the next open day
     for (let i = 1; i <= 7; i++) {
