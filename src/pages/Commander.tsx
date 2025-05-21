@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Ban, AlertTriangle } from "lucide-react";
+import { Loader2, Ban, AlertTriangle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
+import { isRestaurantOpenNow, getNextOpenDay } from "@/services/openingHoursService";
 import MobileCategorySelector from "@/components/menu/MobileCategorySelector";
 import DesktopCategorySelector from "@/components/menu/DesktopCategorySelector";
 import CategoryContent from "@/components/menu/CategoryContent";
@@ -15,6 +16,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const Commander = () => {
   const { toast } = useToast();
@@ -26,6 +29,8 @@ const Commander = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isRestaurantOpen, setIsRestaurantOpen] = useState<boolean>(true);
+  const [nextOpenDay, setNextOpenDay] = useState<any>(null);
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
 
   useEffect(() => {
@@ -36,6 +41,19 @@ const Commander = () => {
     };
     
     checkAuth();
+    
+    // Vérifier si le restaurant est ouvert maintenant
+    const checkOpeningHours = async () => {
+      const isOpen = await isRestaurantOpenNow();
+      setIsRestaurantOpen(isOpen);
+      
+      if (!isOpen) {
+        const nextDay = await getNextOpenDay();
+        setNextOpenDay(nextDay);
+      }
+    };
+    
+    checkOpeningHours();
     
     const loadMenuData = async () => {
       setIsLoading(true);
@@ -161,6 +179,64 @@ const Commander = () => {
       </div>
     );
   }
+  
+  // Si le restaurant est fermé aujourd'hui
+  if (!isRestaurantOpen && nextOpenDay) {
+    return (
+      <div className="container mx-auto py-24 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <div className="flex justify-center mb-6">
+            <Clock size={80} className="text-amber-500" />
+          </div>
+          
+          <h1 className="text-3xl font-bold mb-4">Restaurant Fermé Aujourd'hui</h1>
+          
+          <Alert className="mb-8 border-amber-500">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <AlertTitle>Commandes indisponibles</AlertTitle>
+            <AlertDescription>
+              Notre restaurant est actuellement fermé. Nous sommes ouverts de mardi à samedi.
+            </AlertDescription>
+          </Alert>
+          
+          {nextOpenDay && (
+            <p className="text-gray-600 mb-8">
+              Nous serons ouverts à nouveau {getFormattedDayName(nextOpenDay.day)} de {nextOpenDay.open_time} à {nextOpenDay.close_time}.
+              Nous serons ravis de vous accueillir prochainement !
+            </p>
+          )}
+          
+          <div className="flex flex-col md:flex-row gap-4 justify-center">
+            <Button asChild variant="outline">
+              <Link to="/">Retour à l'accueil</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/contact">Nous contacter</Link>
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Fonction auxiliaire pour formater le nom du jour
+  function getFormattedDayName(day: string): string {
+    const dayNames: {[key: string]: string} = {
+      "monday": "lundi",
+      "tuesday": "mardi", 
+      "wednesday": "mercredi",
+      "thursday": "jeudi",
+      "friday": "vendredi",
+      "saturday": "samedi",
+      "sunday": "dimanche"
+    };
+    return dayNames[day] || day;
+  }
 
   // Afficher uniquement le chargement initial, pas lors des changements de catégorie
   if ((isLoading && categories.length === 0) || isInitializing) {
@@ -257,4 +333,3 @@ const Commander = () => {
 };
 
 export default Commander;
-

@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from "react";
-import { format, addMinutes, isAfter, isBefore } from "date-fns";
+import { format, addMinutes, isAfter, isBefore, getDay } from "date-fns";
 import { fr } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TimeOption {
   label: string;
@@ -15,33 +16,92 @@ interface TimeSlotSelectorProps {
   selectedTime?: string;
 }
 
+interface OpeningHours {
+  day: string;
+  is_open: boolean;
+  open_time: string;
+  close_time: string;
+}
+
 const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<TimeOption[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(selectedTime || null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [todayOpeningHours, setTodayOpeningHours] = useState<OpeningHours | null>(null);
+
+  const getDayOfWeek = (date: Date) => {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[getDay(date)];
+  };
 
   useEffect(() => {
-    generateTimeSlots();
-  }, [orderType]);
+    const fetchOpeningHours = async () => {
+      setIsLoading(true);
+      
+      try {
+        const today = new Date();
+        const dayOfWeek = getDayOfWeek(today);
+        
+        const { data, error } = await supabase
+          .from('opening_hours')
+          .select('*')
+          .eq('day', dayOfWeek)
+          .single();
+        
+        if (error) {
+          console.error("Erreur lors du chargement des horaires:", error);
+          setTodayOpeningHours(null);
+        } else {
+          setTodayOpeningHours(data as OpeningHours);
+        }
+      } catch (error) {
+        console.error("Exception lors du chargement des horaires:", error);
+        setTodayOpeningHours(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchOpeningHours();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      generateTimeSlots();
+    }
+  }, [orderType, isLoading, todayOpeningHours]);
 
   const generateTimeSlots = () => {
     const now = new Date();
     const slots: TimeOption[] = [];
 
-    const startHour = 11;
-    const startMinute = orderType === "delivery" ? 30 : 0;
+    // Si nous sommes fermés aujourd'hui ou pas d'horaires trouvés
+    if (!todayOpeningHours || !todayOpeningHours.is_open) {
+      setTimeSlots([]);
+      return;
+    }
 
-    const endHour = 22;
-    const endMinute = orderType === "delivery" ? 30 : 0;
+    // Convertir les heures d'ouverture et de fermeture en objets Date
+    const today = new Date();
+    
+    const openTimeParts = todayOpeningHours.open_time.split(':');
+    const openHour = parseInt(openTimeParts[0], 10);
+    const openMinute = parseInt(openTimeParts[1], 10);
+    
+    const closeTimeParts = todayOpeningHours.close_time.split(':');
+    const closeHour = parseInt(closeTimeParts[0], 10);
+    const closeMinute = parseInt(closeTimeParts[1], 10);
 
+    const startDate = new Date();
+    startDate.setHours(openHour, openMinute, 0, 0);
+
+    const endDate = new Date();
+    endDate.setHours(closeHour, closeMinute, 0, 0);
+
+    // Ajuster pour le délai de livraison ou de retrait
     const interval = orderType === "delivery" ? 30 : 15;
     const minDelay = orderType === "delivery" ? 30 : 20;
     const minTime = addMinutes(now, minDelay);
-
-    const startDate = new Date();
-    startDate.setHours(startHour, startMinute, 0, 0);
-
-    const endDate = new Date();
-    endDate.setHours(endHour, endMinute, 0, 0);
 
     let currentTime = startDate;
 
@@ -59,6 +119,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
 
     setTimeSlots(slots);
 
+    // Sélectionner automatiquement le premier créneau disponible si aucun n'est sélectionné
     if (!selectedTime) {
       const firstAvailable = slots.find((slot) => !slot.disabled);
       if (firstAvailable) {
@@ -73,19 +134,36 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
     onSelect(time);
   };
 
-  const isAvailableToday = () => {
-    const now = new Date();
-
-    const openTime = new Date();
-    openTime.setHours(11, 0, 0, 0);
-
-    const closeTime = new Date();
-    closeTime.setHours(22, 0, 0, 0);
-
-    return isAfter(now, openTime) && isBefore(now, closeTime);
-  };
-
   const formattedDate = format(new Date(), "EEEE d MMMM", { locale: fr });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">
+          Horaire de {orderType === "delivery" ? "livraison" : "retrait"}
+        </h3>
+        <div className="flex justify-center py-4">
+          <div className="h-6 w-6 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  // Si le restaurant est fermé aujourd'hui
+  if (!todayOpeningHours || !todayOpeningHours.is_open) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">
+          Horaire de {orderType === "delivery" ? "livraison" : "retrait"}
+        </h3>
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-md">
+          <p className="text-amber-800">
+            Nous sommes fermés aujourd'hui. Veuillez sélectionner un autre jour pour votre commande.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,8 @@ import {
   Settings, 
   Users,
   LayoutTemplate,
-  Lock
+  Lock,
+  Clock
 } from "lucide-react";
 import DashboardStats from "@/components/admin/DashboardStats";
 import OrderList from "@/components/OrderList";
@@ -23,6 +23,7 @@ import HomepageEditor from "@/components/admin/HomepageEditor";
 import UsersList from "@/components/admin/UsersList";
 import OrderingLockControl from "@/components/admin/OrderingLockControl";
 import PokeIngredientsManager from "@/components/admin/PokeIngredientsManager";
+import OpeningHoursManager from "@/components/admin/OpeningHoursManager";
 
 const Admin = () => {
   const [loading, setLoading] = useState(true);
@@ -118,6 +119,10 @@ const Admin = () => {
               <Lock className="h-4 w-4" />
               <span>Paramètres</span>
             </TabsTrigger>
+            <TabsTrigger variant="horizontal" value="opening-hours" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span>Horaires</span>
+            </TabsTrigger>
             <TabsTrigger variant="horizontal" value="poke-ingredients" className="flex items-center gap-2">
               <ShoppingBag className="h-4 w-4" />
               <span>Ingrédients Poké</span>
@@ -160,6 +165,10 @@ const Admin = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <OrderingLockControl />
             </div>
+          </TabsContent>
+
+          <TabsContent value="opening-hours">
+            <OpeningHoursManager />
           </TabsContent>
 
           <TabsContent value="poke-ingredients">
