@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from "react";
-import { format, addMinutes, isAfter, isBefore, getDay } from "date-fns";
+import { format, addMinutes, isAfter } from "date-fns";
 import { fr } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
+import { isRestaurantOpenNow, getWeekOpeningHours } from "@/services/openingHoursService";
 
 interface TimeOption {
   label: string;
@@ -16,53 +16,53 @@ interface TimeSlotSelectorProps {
   selectedTime?: string;
 }
 
-interface OpeningHours {
-  day: string;
-  is_open: boolean;
-  open_time: string;
-  close_time: string;
-}
-
 const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<TimeOption[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(selectedTime || null);
   const [isLoading, setIsLoading] = useState(true);
-  const [todayOpeningHours, setTodayOpeningHours] = useState<OpeningHours | null>(null);
-
-  const getDayOfWeek = (date: Date) => {
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    return days[getDay(date)];
-  };
+  const [isOpen, setIsOpen] = useState(false);
+  const [todayOpeningHours, setTodayOpeningHours] = useState<{
+    is_open: boolean;
+    open_time: string;
+    close_time: string;
+  } | null>(null);
 
   useEffect(() => {
-    const fetchOpeningHours = async () => {
+    const checkOpeningStatus = async () => {
       setIsLoading(true);
       
       try {
-        const today = new Date();
-        const dayOfWeek = getDayOfWeek(today);
+        // Check if restaurant is open today
+        const open = await isRestaurantOpenNow();
+        setIsOpen(open);
         
-        const { data, error } = await supabase
-          .from('opening_hours')
-          .select('*')
-          .eq('day', dayOfWeek)
-          .single();
+        // Get all opening hours
+        const weekHours = await getWeekOpeningHours();
         
-        if (error) {
-          console.error("Erreur lors du chargement des horaires:", error);
-          setTodayOpeningHours(null);
-        } else {
-          setTodayOpeningHours(data as OpeningHours);
+        if (weekHours.length > 0) {
+          const today = new Date();
+          const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+          const currentDay = days[today.getDay()];
+          
+          const todayHours = weekHours.find(day => day.day === currentDay);
+          
+          if (todayHours) {
+            setTodayOpeningHours({
+              is_open: todayHours.is_open,
+              open_time: todayHours.open_time,
+              close_time: todayHours.close_time
+            });
+          }
         }
       } catch (error) {
-        console.error("Exception lors du chargement des horaires:", error);
+        console.error("Error checking opening status:", error);
         setTodayOpeningHours(null);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchOpeningHours();
+    checkOpeningStatus();
   }, []);
 
   useEffect(() => {

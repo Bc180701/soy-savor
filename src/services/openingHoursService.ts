@@ -9,7 +9,7 @@ export interface DayOpeningHours {
   day_order: number;
 }
 
-// Vérifier si le restaurant est ouvert maintenant
+// Store opening hours in the homepage_sections table
 export const isRestaurantOpenNow = async (): Promise<boolean> => {
   try {
     const now = new Date();
@@ -17,84 +17,85 @@ export const isRestaurantOpenNow = async (): Promise<boolean> => {
     const currentDay = days[now.getDay()];
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     
-    // Récupérer les horaires d'ouverture pour le jour actuel
+    // Get opening hours from homepage_sections table
     const { data, error } = await supabase
-      .from('opening_hours')
-      .select('*')
-      .eq('day', currentDay)
+      .from('homepage_sections')
+      .select('section_data')
+      .eq('section_name', 'opening_hours')
       .single();
     
     if (error || !data) {
-      console.error("Erreur lors de la vérification des horaires d'ouverture:", error);
+      console.error("Error checking opening hours:", error);
       return false;
     }
     
-    // Si le restaurant est fermé ce jour-là
-    if (!data.is_open) {
+    const openingHours = data.section_data as DayOpeningHours[];
+    const todayHours = openingHours.find(day => day.day === currentDay);
+    
+    if (!todayHours || !todayHours.is_open) {
       return false;
     }
     
-    // Vérifier si l'heure actuelle est dans la plage d'ouverture
-    return currentTime >= data.open_time && currentTime <= data.close_time;
+    return currentTime >= todayHours.open_time && currentTime <= todayHours.close_time;
   } catch (error) {
-    console.error("Exception lors de la vérification des horaires d'ouverture:", error);
+    console.error("Exception when checking opening hours:", error);
     return false;
   }
 };
 
-// Obtenir les horaires d'ouverture pour tous les jours
 export const getWeekOpeningHours = async (): Promise<DayOpeningHours[]> => {
   try {
     const { data, error } = await supabase
-      .from('opening_hours')
-      .select('*')
-      .order('day_order');
+      .from('homepage_sections')
+      .select('section_data')
+      .eq('section_name', 'opening_hours')
+      .single();
     
     if (error) {
-      console.error("Erreur lors de la récupération des horaires d'ouverture:", error);
+      console.error("Error fetching opening hours:", error);
       return [];
     }
     
-    return data as DayOpeningHours[];
+    return (data?.section_data as DayOpeningHours[]) || [];
   } catch (error) {
-    console.error("Exception lors de la récupération des horaires d'ouverture:", error);
+    console.error("Exception when fetching opening hours:", error);
     return [];
   }
 };
 
-// Obtenir le jour d'ouverture suivant
 export const getNextOpenDay = async (): Promise<DayOpeningHours | null> => {
   try {
     const now = new Date();
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const currentDayIndex = now.getDay();
     
-    // Récupérer tous les jours d'ouverture
     const { data, error } = await supabase
-      .from('opening_hours')
-      .select('*')
-      .eq('is_open', true)
-      .order('day_order');
+      .from('homepage_sections')
+      .select('section_data')
+      .eq('section_name', 'opening_hours')
+      .single();
     
-    if (error || !data || data.length === 0) {
-      console.error("Erreur lors de la récupération des jours d'ouverture:", error);
+    if (error || !data) {
+      console.error("Error fetching next open day:", error);
       return null;
     }
     
-    // Chercher le prochain jour ouvert
+    const openingHours = data.section_data as DayOpeningHours[];
+    
+    // Find the next open day
     for (let i = 1; i <= 7; i++) {
       const nextDayIndex = (currentDayIndex + i) % 7;
       const nextDay = days[nextDayIndex];
       
-      const nextOpenDay = data.find(day => day.day === nextDay);
+      const nextOpenDay = openingHours.find(day => day.day === nextDay && day.is_open);
       if (nextOpenDay) {
-        return nextOpenDay as DayOpeningHours;
+        return nextOpenDay;
       }
     }
     
     return null;
   } catch (error) {
-    console.error("Exception lors de la récupération du prochain jour d'ouverture:", error);
+    console.error("Exception when fetching next open day:", error);
     return null;
   }
 };

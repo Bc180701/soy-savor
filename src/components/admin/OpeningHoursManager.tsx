@@ -37,17 +37,32 @@ const OpeningHoursManager = () => {
       setLoading(true);
       
       const { data, error } = await supabase
-        .from('opening_hours')
-        .select('*')
-        .order('day_order');
+        .from('homepage_sections')
+        .select('section_data')
+        .eq('section_name', 'opening_hours')
+        .single();
       
       if (error) {
-        throw new Error("Erreur lors du chargement des horaires d'ouverture");
+        // If record doesn't exist, we'll use the default values
+        if (error.code === 'PGRST116') {
+          console.log("Opening hours not found, using default values");
+          return;
+        }
+        throw error;
       }
       
-      if (data && data.length > 0) {
+      if (data && data.section_data) {
+        // Convert from DayOpeningHours to our component state format
+        const dbHours = data.section_data as Array<{
+          day: string;
+          is_open: boolean;
+          open_time: string;
+          close_time: string;
+          day_order: number;
+        }>;
+        
         // Map database data to our state format
-        const formattedData = data.map(item => ({
+        const formattedData = dbHours.map(item => ({
           day: item.day,
           dayName: getDayName(item.day),
           isOpen: item.is_open,
@@ -58,7 +73,7 @@ const OpeningHoursManager = () => {
         setOpeningHours(formattedData);
       }
     } catch (error) {
-      console.error("Erreur lors du chargement des horaires:", error);
+      console.error("Error loading opening hours:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les horaires d'ouverture",
@@ -107,17 +122,17 @@ const OpeningHoursManager = () => {
         close_time: item.closeTime
       }));
       
-      // First, delete existing records
-      await supabase
-        .from('opening_hours')
-        .delete()
-        .not('day', 'eq', 'placeholder'); // Delete all records
-      
-      // Then, insert new records
+      // Using the homepage_sections table to store opening hours
       const { error } = await supabase
-        .from('opening_hours')
-        .insert(dbData);
-        
+        .from('homepage_sections')
+        .upsert({ 
+          section_name: 'opening_hours',
+          section_data: dbData,
+          updated_at: new Date().toISOString()
+        }, { 
+          onConflict: 'section_name' 
+        });
+      
       if (error) throw error;
       
       toast({
@@ -126,7 +141,7 @@ const OpeningHoursManager = () => {
       });
       
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde des horaires:", error);
+      console.error("Error saving opening hours:", error);
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les horaires d'ouverture",
