@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Ban, AlertTriangle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,8 @@ const Commander = () => {
   const [isRestaurantOpen, setIsRestaurantOpen] = useState<boolean>(true);
   const [nextOpenDay, setNextOpenDay] = useState<any>(null);
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
+  const [visibleSections, setVisibleSections] = useState<{[key: string]: boolean}>({});
+  const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
@@ -122,9 +124,65 @@ const Commander = () => {
     loadMenuData();
   }, [toast, activeCategory]);
 
-  // Fonction pour changer de catégorie sans montrer de chargement
+  // Configuration de l'Intersection Observer pour détecter les sections visibles
+  useEffect(() => {
+    if (categories.length === 0 || isLoading) return;
+    
+    const observerOptions = {
+      root: null,
+      rootMargin: "0px",
+      threshold: 0.3, // La section est considérée visible quand 30% est visible
+    };
+    
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      const updatedVisibleSections = { ...visibleSections };
+      
+      entries.forEach((entry) => {
+        const id = entry.target.id;
+        updatedVisibleSections[id] = entry.isIntersecting;
+      });
+      
+      setVisibleSections(updatedVisibleSections);
+      
+      // Déterminer quelle catégorie est la plus visible (celle qui apparaît en premier dans la liste)
+      const visibleCategoryIds = Object.keys(updatedVisibleSections).filter(
+        id => updatedVisibleSections[id]
+      );
+      
+      if (visibleCategoryIds.length > 0) {
+        // Utiliser la première catégorie visible dans l'ordre du DOM
+        const firstVisibleCategoryId = visibleCategoryIds[0];
+        if (firstVisibleCategoryId !== activeCategory) {
+          setActiveCategory(firstVisibleCategoryId);
+        }
+      }
+    };
+    
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    
+    // Observer chaque section de catégorie
+    Object.keys(categoryRefs.current).forEach((categoryId) => {
+      const el = categoryRefs.current[categoryId];
+      if (el) observer.observe(el);
+    });
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [categories, isLoading, categoryRefs.current]);
+
+  // Fonction pour changer de catégorie et défiler vers cette section
   const handleCategoryChange = (categoryId: string) => {
     setActiveCategory(categoryId);
+    
+    // Défiler jusqu'à la catégorie sélectionnée
+    const element = categoryRefs.current[categoryId];
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
   };
 
   const addToCart = (item: MenuItem) => {
@@ -308,21 +366,21 @@ const Commander = () => {
               )}
 
               <div className={isMobile ? "w-full" : "md:w-3/4"}>
-                <AnimatePresence mode="wait">
+                {/* Afficher toutes les catégories en une seule fois pour permettre le défilement */}
+                <div className="space-y-12">
                   {nonEmptyCategories.map((category) => (
-                    activeCategory === category.id && (
-                      <motion.div 
-                        key={category.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <CategoryContent category={category} onAddToCart={addToCart} />
-                      </motion.div>
-                    )
+                    <div 
+                      key={category.id}
+                      id={category.id}
+                      ref={el => categoryRefs.current[category.id] = el}
+                    >
+                      <CategoryContent 
+                        category={category} 
+                        onAddToCart={addToCart} 
+                      />
+                    </div>
                   ))}
-                </AnimatePresence>
+                </div>
               </div>
             </div>
           </>

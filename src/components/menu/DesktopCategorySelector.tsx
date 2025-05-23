@@ -1,4 +1,5 @@
 
+import { useEffect, useRef } from "react";
 import { MenuCategory } from "@/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -13,6 +14,18 @@ const DesktopCategorySelector = ({
   activeCategory,
   onCategoryChange
 }: DesktopCategorySelectorProps) => {
+  const activeCategoryRef = useRef<HTMLButtonElement | null>(null);
+
+  // Faire défiler le sélecteur de catégories pour montrer la catégorie active
+  useEffect(() => {
+    if (activeCategoryRef.current) {
+      activeCategoryRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      });
+    }
+  }, [activeCategory]);
+
   return (
     <div className="md:w-1/4">
       <div className="sticky top-24">
@@ -22,10 +35,11 @@ const DesktopCategorySelector = ({
             {categories.map((category) => (
               <li key={category.id}>
                 <button
+                  ref={activeCategory === category.id ? activeCategoryRef : null}
                   onClick={() => onCategoryChange(category.id)}
-                  className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
+                  className={`w-full text-left px-4 py-2 rounded-md transition-all duration-300 ${
                     activeCategory === category.id
-                      ? "bg-gold-600 text-white"
+                      ? "bg-gold-600 text-white font-medium shadow-md"
                       : "hover:bg-gray-100"
                   }`}
                 >
