@@ -1,4 +1,3 @@
-
 export type SushiCategory = 
   | "box" 
   | "plateaux" 
@@ -66,6 +65,7 @@ export interface Promotion {
   isPercentage: boolean;
   minOrder?: number;
   applicableCategories?: SushiCategory[];
+  isActive?: boolean; // Add this property to support marking promotions as active
 }
 
 export interface CartItem {

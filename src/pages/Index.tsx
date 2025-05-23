@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { OrderCTA } from "@/components/OrderCTA";

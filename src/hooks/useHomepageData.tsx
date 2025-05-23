@@ -16,6 +16,7 @@ export interface Promotion {
   imageUrl: string;
   buttonText: string;
   buttonLink: string;
+  isActive?: boolean; // Add the isActive property
 }
 
 export interface OrderOption {
