@@ -16,17 +16,17 @@ const MobileCategorySelector = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeCategoryRef = useRef<HTMLButtonElement>(null);
 
-  // Faire défiler pour montrer la catégorie active
+  // Scroll to show the active category
   useEffect(() => {
     if (activeCategoryRef.current && scrollContainerRef.current) {
-      // Calculer la position de défilement pour centrer l'élément actif
+      // Calculate scroll position to center the active element
       const container = scrollContainerRef.current;
       const activeButton = activeCategoryRef.current;
       const containerWidth = container.offsetWidth;
       const buttonLeft = activeButton.offsetLeft;
       const buttonWidth = activeButton.offsetWidth;
       
-      // Centrer le bouton dans le conteneur
+      // Center the button in the container
       const scrollLeft = buttonLeft - (containerWidth / 2) + (buttonWidth / 2);
       
       container.scrollTo({

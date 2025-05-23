@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Ban, AlertTriangle, Clock } from "lucide-react";
@@ -124,14 +123,14 @@ const Commander = () => {
     loadMenuData();
   }, [toast, activeCategory]);
 
-  // Configuration de l'Intersection Observer pour détecter les sections visibles
+  // Configuration of the Intersection Observer to detect visible sections
   useEffect(() => {
     if (categories.length === 0 || isLoading) return;
     
     const observerOptions = {
       root: null,
       rootMargin: "0px",
-      threshold: 0.3, // La section est considérée visible quand 30% est visible
+      threshold: 0.3, // The section is considered visible when 30% is visible
     };
     
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
@@ -144,13 +143,13 @@ const Commander = () => {
       
       setVisibleSections(updatedVisibleSections);
       
-      // Déterminer quelle catégorie est la plus visible (celle qui apparaît en premier dans la liste)
+      // Determine which category is most visible (the one that appears first in the list)
       const visibleCategoryIds = Object.keys(updatedVisibleSections).filter(
         id => updatedVisibleSections[id]
       );
       
-      if (visibleCategoryIds.length > 0) {
-        // Utiliser la première catégorie visible dans l'ordre du DOM
+      if (visibleCategoryIds.length > 0 && !isCategoryChanging) {
+        // Use the first visible category in the DOM order
         const firstVisibleCategoryId = visibleCategoryIds[0];
         if (firstVisibleCategoryId !== activeCategory) {
           setActiveCategory(firstVisibleCategoryId);
@@ -160,7 +159,7 @@ const Commander = () => {
     
     const observer = new IntersectionObserver(observerCallback, observerOptions);
     
-    // Observer chaque section de catégorie
+    // Observe each category section
     Object.keys(categoryRefs.current).forEach((categoryId) => {
       const el = categoryRefs.current[categoryId];
       if (el) observer.observe(el);
@@ -169,19 +168,25 @@ const Commander = () => {
     return () => {
       observer.disconnect();
     };
-  }, [categories, isLoading, categoryRefs.current]);
+  }, [categories, isLoading, categoryRefs.current, activeCategory, visibleSections, isCategoryChanging]);
 
-  // Fonction pour changer de catégorie et défiler vers cette section
+  // Function to change category and scroll to that section
   const handleCategoryChange = (categoryId: string) => {
+    setIsCategoryChanging(true);
     setActiveCategory(categoryId);
     
-    // Défiler jusqu'à la catégorie sélectionnée
+    // Scroll to the selected category
     const element = categoryRefs.current[categoryId];
     if (element) {
       element.scrollIntoView({ 
         behavior: 'smooth',
         block: 'start'
       });
+      
+      // Reset the flag after scrolling is complete
+      setTimeout(() => {
+        setIsCategoryChanging(false);
+      }, 1000); // Give enough time for scrolling to complete
     }
   };
 
@@ -366,7 +371,7 @@ const Commander = () => {
               )}
 
               <div className={isMobile ? "w-full" : "md:w-3/4"}>
-                {/* Afficher toutes les catégories en une seule fois pour permettre le défilement */}
+                {/* Display all categories at once to allow scrolling */}
                 <div className="space-y-12">
                   {nonEmptyCategories.map((category) => (
                     <div 

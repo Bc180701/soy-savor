@@ -16,7 +16,7 @@ const DesktopCategorySelector = ({
 }: DesktopCategorySelectorProps) => {
   const activeCategoryRef = useRef<HTMLButtonElement | null>(null);
 
-  // Faire défiler le sélecteur de catégories pour montrer la catégorie active
+  // Scroll the category selector to show the active category
   useEffect(() => {
     if (activeCategoryRef.current) {
       activeCategoryRef.current.scrollIntoView({
@@ -35,7 +35,7 @@ const DesktopCategorySelector = ({
             {categories.map((category) => (
               <li key={category.id}>
                 <button
-                  ref={activeCategory === category.id ? activeCategoryRef : null}
+                  ref={category.id === activeCategory ? activeCategoryRef : null}
                   onClick={() => onCategoryChange(category.id)}
                   className={`w-full text-left px-4 py-2 rounded-md transition-all duration-300 ${
                     activeCategory === category.id
