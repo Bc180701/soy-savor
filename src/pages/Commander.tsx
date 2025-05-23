@@ -129,31 +129,48 @@ const Commander = () => {
     
     const observerOptions = {
       root: null,
-      rootMargin: "0px",
-      threshold: 0.3, // The section is considered visible when 30% is visible
+      rootMargin: "-80px 0px -70% 0px", // Adjust to better detect when a category is actually in view
+      threshold: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], // Multiple thresholds for better accuracy
     };
     
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      const updatedVisibleSections = { ...visibleSections };
+      const updatedVisibleSections: {[key: string]: {visible: boolean, ratio: number}} = {};
       
       entries.forEach((entry) => {
         const id = entry.target.id;
-        updatedVisibleSections[id] = entry.isIntersecting;
+        // Store both visibility state and intersection ratio
+        if (!updatedVisibleSections[id] || entry.intersectionRatio > updatedVisibleSections[id].ratio) {
+          updatedVisibleSections[id] = {
+            visible: entry.isIntersecting,
+            ratio: entry.intersectionRatio
+          };
+        }
       });
       
-      setVisibleSections(updatedVisibleSections);
+      // Update visibleSections state with just the boolean values
+      const simplifiedVisibleSections: {[key: string]: boolean} = {};
+      Object.keys(updatedVisibleSections).forEach(id => {
+        simplifiedVisibleSections[id] = updatedVisibleSections[id].visible;
+      });
       
-      // Determine which category is most visible (the one that appears first in the list)
-      const visibleCategoryIds = Object.keys(updatedVisibleSections).filter(
-        id => updatedVisibleSections[id]
-      );
+      setVisibleSections(simplifiedVisibleSections);
       
-      if (visibleCategoryIds.length > 0 && !isCategoryChanging) {
-        // Use the first visible category in the DOM order
-        const firstVisibleCategoryId = visibleCategoryIds[0];
-        if (firstVisibleCategoryId !== activeCategory) {
-          setActiveCategory(firstVisibleCategoryId);
+      // Find the most visible category (highest intersection ratio)
+      let bestCategoryId = "";
+      let highestRatio = -1;
+      
+      Object.keys(updatedVisibleSections).forEach(id => {
+        const section = updatedVisibleSections[id];
+        if (section.visible && section.ratio > highestRatio) {
+          highestRatio = section.ratio;
+          bestCategoryId = id;
         }
+      });
+      
+      // Only update if we found a visible category and we're not in the middle of a manual category change
+      if (bestCategoryId && !isCategoryChanging && bestCategoryId !== activeCategory) {
+        console.log("Automatically changing to category:", bestCategoryId);
+        setActiveCategory(bestCategoryId);
       }
     };
     
@@ -168,7 +185,7 @@ const Commander = () => {
     return () => {
       observer.disconnect();
     };
-  }, [categories, isLoading, categoryRefs.current, activeCategory, visibleSections, isCategoryChanging]);
+  }, [categories, isLoading, activeCategory, isCategoryChanging]);
 
   // Function to change category and scroll to that section
   const handleCategoryChange = (categoryId: string) => {
