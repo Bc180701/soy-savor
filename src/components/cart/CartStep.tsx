@@ -5,6 +5,11 @@ import { useCart } from "@/hooks/use-cart";
 import { formatEuro } from "@/utils/formatters";
 import { PromoCodeSection } from "./PromoCodeSection";
 import { CartItemList } from "./CartItemList";
+import { useEffect, useState } from "react";
+import { MenuItem } from "@/types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 interface CartStepProps {
   items: any[];
@@ -35,9 +40,73 @@ export const CartStep = ({
   handleNextStep,
   userEmail
 }: CartStepProps) => {
-  const { removeItem, updateQuantity } = useCart();
+  const { 
+    removeItem, 
+    updateQuantity, 
+    hasPlateauInCart, 
+    hasAddedFreeDessert,
+    setHasAddedFreeDessert,
+    addItem
+  } = useCart();
+  
   const orderTotal = subtotal + tax - discount;
   const isCartEmpty = items.length === 0;
+  
+  // Free dessert promotion
+  const [showDessertDialog, setShowDessertDialog] = useState(false);
+  const [desserts, setDesserts] = useState<MenuItem[]>([]);
+  const [loadingDesserts, setLoadingDesserts] = useState(false);
+  
+  // Check if a plateau has been added and offer a free dessert
+  useEffect(() => {
+    const checkForPromotion = async () => {
+      if (hasPlateauInCart && !hasAddedFreeDessert) {
+        setLoadingDesserts(true);
+        try {
+          // Fetch desserts from Supabase
+          const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('category_id', 'desserts');
+            
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            // Format the desserts
+            const formattedDesserts: MenuItem[] = data.map(dessert => ({
+              id: dessert.id,
+              name: dessert.name,
+              description: dessert.description || '',
+              price: 0, // Free dessert
+              imageUrl: dessert.image_url,
+              category: 'desserts',
+              originalPrice: dessert.price // Keep original price for reference
+            }));
+            
+            setDesserts(formattedDesserts);
+            setShowDessertDialog(true);
+          }
+        } catch (error) {
+          console.error("Error fetching desserts:", error);
+        } finally {
+          setLoadingDesserts(false);
+        }
+      }
+    };
+    
+    checkForPromotion();
+  }, [hasPlateauInCart, hasAddedFreeDessert]);
+  
+  // Handle dessert selection
+  const handleSelectDessert = (dessert: MenuItem) => {
+    addItem({
+      ...dessert,
+      price: 0 // Ensure it's free
+    }, 1, "Dessert offert - Promotion 1 plateau acheté = 1 dessert offert");
+    
+    setHasAddedFreeDessert(true);
+    setShowDessertDialog(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -103,6 +172,49 @@ export const CartStep = ({
           </div>
         </>
       )}
+
+      {/* Free Dessert Dialog */}
+      <Dialog open={showDessertDialog} onOpenChange={setShowDessertDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Choisissez votre dessert offert</DialogTitle>
+          </DialogHeader>
+          
+          {loadingDesserts ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-gold-500" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              {desserts.map((dessert) => (
+                <div 
+                  key={dessert.id} 
+                  className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => handleSelectDessert(dessert)}
+                >
+                  {dessert.imageUrl && (
+                    <div className="relative h-24 mb-2">
+                      <img 
+                        src={dessert.imageUrl} 
+                        alt={dessert.name} 
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                  <h4 className="font-medium">{dessert.name}</h4>
+                  <p className="text-sm text-gray-500 line-clamp-2">{dessert.description}</p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-green-600 font-medium">Gratuit</span>
+                    <Button size="sm" className="bg-gold-500 hover:bg-gold-600 text-black">
+                      Sélectionner
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

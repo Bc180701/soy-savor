@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, MenuItem } from '@/types';
@@ -16,6 +15,9 @@ interface CartStore {
   itemCount: number;
   isOrderingLocked: boolean;
   setOrderingLocked: (locked: boolean) => void;
+  hasPlateauInCart: boolean;
+  hasAddedFreeDessert: boolean;
+  setHasAddedFreeDessert: (value: boolean) => void;
 }
 
 export const useCart = create<CartStore>()(
@@ -25,9 +27,15 @@ export const useCart = create<CartStore>()(
       total: 0,
       itemCount: 0,
       isOrderingLocked: false,
+      hasPlateauInCart: false,
+      hasAddedFreeDessert: false,
       
       setOrderingLocked: (locked) => {
         set({ isOrderingLocked: locked });
+      },
+      
+      setHasAddedFreeDessert: (value) => {
+        set({ hasAddedFreeDessert: value });
       },
       
       addItem: (menuItem, quantity, specialInstructions) => {
@@ -67,7 +75,17 @@ export const useCart = create<CartStore>()(
             0
           );
           
-          return { items: updatedItems, total, itemCount };
+          // Check if there's a "plateau" in the cart
+          const hasPlateauInCart = updatedItems.some(
+            item => item.menuItem.category === "plateaux"
+          );
+
+          return { 
+            items: updatedItems, 
+            total, 
+            itemCount,
+            hasPlateauInCart 
+          };
         });
       },
       
@@ -84,8 +102,22 @@ export const useCart = create<CartStore>()(
             (count, item) => count + item.quantity, 
             0
           );
+
+          // Check if there's still a "plateau" in the cart after removal
+          const hasPlateauInCart = updatedItems.some(
+            item => item.menuItem.category === "plateaux"
+          );
           
-          return { items: updatedItems, total, itemCount };
+          // Reset hasAddedFreeDessert if no plateau in cart
+          const hasAddedFreeDessert = hasPlateauInCart ? state.hasAddedFreeDessert : false;
+          
+          return { 
+            items: updatedItems, 
+            total, 
+            itemCount,
+            hasPlateauInCart,
+            hasAddedFreeDessert 
+          };
         });
       },
       
@@ -163,7 +195,13 @@ export const useCart = create<CartStore>()(
       },
       
       clearCart: () => {
-        set({ items: [], total: 0, itemCount: 0 });
+        set({ 
+          items: [], 
+          total: 0, 
+          itemCount: 0, 
+          hasPlateauInCart: false,
+          hasAddedFreeDessert: false 
+        });
       },
     }),
     {

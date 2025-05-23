@@ -33,6 +33,7 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
       buttonText: "Découvrir",
       buttonLink: "/menu",
+      isActive: true, // Mark this promotion as active
     },
     {
       id: 3,
@@ -71,6 +72,14 @@ const Index = () => {
   // Use the homepage data hook
   const { data: homepageData, loading } = useHomepageData();
   
+  // Mark promotion as active
+  const promotionsWithActive = (homepageData?.promotions || DEFAULT_HOMEPAGE_DATA.promotions).map(promo => {
+    if (promo.id === 2) { // ID of the "1 Plateau Acheté = 1 Dessert Offert" promotion
+      return { ...promo, isActive: true };
+    }
+    return promo;
+  });
+  
   return (
     <>
       {/* Hero Section */}
@@ -102,7 +111,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-2xl font-bold mb-6">Nos Promotions du Moment</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(homepageData?.promotions || DEFAULT_HOMEPAGE_DATA.promotions).map((promotion) => (
+            {promotionsWithActive.map((promotion) => (
               <PromotionCard key={promotion.id} promotion={promotion} />
             ))}
           </div>

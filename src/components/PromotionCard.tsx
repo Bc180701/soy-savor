@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 
 interface Promotion {
   id: number;
@@ -10,6 +11,7 @@ interface Promotion {
   imageUrl: string;
   buttonText: string;
   buttonLink: string;
+  isActive?: boolean;
 }
 
 interface PromotionCardProps {
@@ -20,8 +22,13 @@ export const PromotionCard = ({ promotion }: PromotionCardProps) => {
   return (
     <motion.div 
       whileHover={{ y: -5 }}
-      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow relative"
     >
+      {promotion.isActive && (
+        <Badge className="absolute top-2 right-2 bg-green-500 hover:bg-green-600 z-10">
+          Promotion active
+        </Badge>
+      )}
       <div className="relative pb-[60%]">
         <img 
           src={promotion.imageUrl} 
