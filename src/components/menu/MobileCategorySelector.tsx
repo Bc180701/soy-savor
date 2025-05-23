@@ -16,7 +16,7 @@ const MobileCategorySelector = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeCategoryRef = useRef<HTMLButtonElement>(null);
 
-  // Scroll to show the active category
+  // Scroll to show the active category when it changes
   useEffect(() => {
     if (activeCategoryRef.current && scrollContainerRef.current) {
       // Calculate scroll position to center the active element
