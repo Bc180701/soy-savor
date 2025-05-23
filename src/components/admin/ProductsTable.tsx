@@ -104,10 +104,14 @@ const ProductsTable = () => {
     if (!selectedProduct) return;
     
     try {
+      setIsLoading(true);
       const success = await deleteProduct(selectedProduct.id);
 
-      if (!success) throw new Error("Failed to delete product");
+      if (!success) {
+        throw new Error("La suppression du produit a échoué");
+      }
 
+      // Successfully deleted - update local state
       setProducts(products.filter(p => p.id !== selectedProduct.id));
       setIsDeleteDialogOpen(false);
       
@@ -119,9 +123,11 @@ const ProductsTable = () => {
       console.error("Error deleting product:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer le produit",
+        description: "Impossible de supprimer le produit. Veuillez réessayer.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -327,11 +333,15 @@ const ProductsTable = () => {
             Cette action est irréversible.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isLoading}>
               Annuler
             </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Supprimer
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete} 
+              disabled={isLoading}
+            >
+              {isLoading ? "Suppression..." : "Supprimer"}
             </Button>
           </DialogFooter>
         </DialogContent>
