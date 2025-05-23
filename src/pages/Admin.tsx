@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   LayoutGrid, 
   ShoppingBag, 
@@ -26,10 +25,21 @@ import UsersList from "@/components/admin/UsersList";
 import OrderingLockControl from "@/components/admin/OrderingLockControl";
 import PokeIngredientsManager from "@/components/admin/PokeIngredientsManager";
 import OpeningHoursManager from "@/components/admin/OpeningHoursManager";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  SidebarProvider, 
+  Sidebar, 
+  SidebarContent, 
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from "@/components/ui/sidebar";
 
 const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,114 +88,95 @@ const Admin = () => {
     );
   }
 
+  const renderActiveContent = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return <DashboardStats />;
+      case "orders":
+        return <OrderList />;
+      case "products":
+        return <ProductManager />;
+      case "categories":
+        return <CategoriesTable />;
+      case "featured":
+        return <FeaturedProductsManager />;
+      case "homepage":
+        return <HomepageEditor />;
+      case "contact":
+        return <HomepageEditor />;
+      case "users":
+        return <UsersList />;
+      case "admins":
+        return <AdminManager />;
+      case "settings":
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <OrderingLockControl />
+          </div>
+        );
+      case "opening-hours":
+        return <OpeningHoursManager />;
+      case "poke-ingredients":
+        return <PokeIngredientsManager />;
+      default:
+        return <DashboardStats />;
+    }
+  };
+
+  // Définition des éléments de menu
+  const menuItems = [
+    { id: "dashboard", label: "Dashboard", icon: <LayoutGrid className="h-4 w-4" /> },
+    { id: "orders", label: "Commandes", icon: <FileText className="h-4 w-4" /> },
+    { id: "products", label: "Produits", icon: <ShoppingBag className="h-4 w-4" /> },
+    { id: "categories", label: "Catégories", icon: <Tag className="h-4 w-4" /> },
+    { id: "featured", label: "Mise en avant", icon: <Settings className="h-4 w-4" /> },
+    { id: "homepage", label: "Page d'accueil", icon: <LayoutTemplate className="h-4 w-4" /> },
+    { id: "contact", label: "Contact", icon: <Phone className="h-4 w-4" /> },
+    { id: "users", label: "Utilisateurs", icon: <Users className="h-4 w-4" /> },
+    { id: "admins", label: "Administrateurs", icon: <Users className="h-4 w-4" /> },
+    { id: "settings", label: "Paramètres", icon: <Lock className="h-4 w-4" /> },
+    { id: "opening-hours", label: "Horaires", icon: <Clock className="h-4 w-4" /> },
+    { id: "poke-ingredients", label: "Ingrédients Poké", icon: <ShoppingBag className="h-4 w-4" /> },
+  ];
+
   return (
-    <div className="pt-[72px] pb-16 min-h-screen">
-      <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8">Administration</h1>
-        
-        <Tabs defaultValue="dashboard">
-          <TabsList variant="horizontal" className="mb-6 w-full overflow-x-auto scrollbar-hide">
-            <TabsTrigger variant="horizontal" value="dashboard" className="flex items-center gap-2">
-              <LayoutGrid className="h-4 w-4" />
-              <span>Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="orders" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>Commandes</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="products" className="flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4" />
-              <span>Produits</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="categories" className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              <span>Catégories</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="featured" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              <span>Mise en avant</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="homepage" className="flex items-center gap-2">
-              <LayoutTemplate className="h-4 w-4" />
-              <span>Page d'accueil</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="contact" className="flex items-center gap-2">
-              <Phone className="h-4 w-4" />
-              <span>Contact</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="users" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>Utilisateurs</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="admins" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>Administrateurs</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="settings" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              <span>Paramètres</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="opening-hours" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>Horaires</span>
-            </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="poke-ingredients" className="flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4" />
-              <span>Ingrédients Poké</span>
-            </TabsTrigger>
-          </TabsList>
+    <div className="min-h-screen flex flex-col">
+      <SidebarProvider defaultOpen={true}>
+        <div className="flex w-full min-h-screen pt-[72px]">
+          <Sidebar collapsible="icon" side="left" variant="sidebar">
+            <SidebarHeader className="p-4 border-b">
+              <h2 className="text-lg font-bold">Administration</h2>
+            </SidebarHeader>
+            <ScrollArea className="h-[calc(100vh-140px)]">
+              <SidebarContent>
+                <SidebarMenu>
+                  {menuItems.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton 
+                        isActive={activeTab === item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className="w-full justify-start"
+                        tooltip={item.label}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarContent>
+            </ScrollArea>
+          </Sidebar>
           
-          <TabsContent value="dashboard">
-            <DashboardStats />
-          </TabsContent>
-          
-          <TabsContent value="orders">
-            <OrderList />
-          </TabsContent>
-          
-          <TabsContent value="products">
-            <ProductManager />
-          </TabsContent>
-          
-          <TabsContent value="categories">
-            <CategoriesTable />
-          </TabsContent>
-          
-          <TabsContent value="featured">
-            <FeaturedProductsManager />
-          </TabsContent>
-          
-          <TabsContent value="homepage">
-            <HomepageEditor />
-          </TabsContent>
-          
-          <TabsContent value="contact">
-            <HomepageEditor />
-          </TabsContent>
-          
-          <TabsContent value="users">
-            <UsersList />
-          </TabsContent>
-          
-          <TabsContent value="admins">
-            <AdminManager />
-          </TabsContent>
-          
-          <TabsContent value="settings">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <OrderingLockControl />
+          <div className="flex-1 p-6 overflow-auto">
+            <div className="container mx-auto">
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                {renderActiveContent()}
+              </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="opening-hours">
-            <OpeningHoursManager />
-          </TabsContent>
-
-          <TabsContent value="poke-ingredients">
-            <PokeIngredientsManager />
-          </TabsContent>
-        </Tabs>
-      </div>
+          </div>
+        </div>
+      </SidebarProvider>
     </div>
   );
 };
