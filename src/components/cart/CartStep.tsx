@@ -177,7 +177,7 @@ export const CartStep = ({
       <Dialog open={showDessertDialog} onOpenChange={setShowDessertDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Choisissez votre dessert offert</DialogTitle>
+            <DialogTitle className="text-center text-xl font-bold mb-4">Choisissez votre dessert offert</DialogTitle>
           </DialogHeader>
           
           {loadingDesserts ? (
@@ -185,29 +185,31 @@ export const CartStep = ({
               <Loader2 className="h-8 w-8 animate-spin text-gold-500" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-2 gap-4 mt-4 max-h-[60vh] overflow-y-auto p-2">
               {desserts.map((dessert) => (
                 <div 
                   key={dessert.id} 
-                  className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="border rounded-lg overflow-hidden hover:border-gold-500 cursor-pointer transition-all shadow-sm hover:shadow-md"
                   onClick={() => handleSelectDessert(dessert)}
                 >
                   {dessert.imageUrl && (
-                    <div className="relative h-24 mb-2">
+                    <div className="relative h-28 w-full">
                       <img 
                         src={dessert.imageUrl} 
                         alt={dessert.name} 
-                        className="w-full h-full object-cover rounded-md"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   )}
-                  <h4 className="font-medium">{dessert.name}</h4>
-                  <p className="text-sm text-gray-500 line-clamp-2">{dessert.description}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-green-600 font-medium">Gratuit</span>
-                    <Button size="sm" className="bg-gold-500 hover:bg-gold-600 text-black">
-                      Sélectionner
-                    </Button>
+                  <div className="p-3">
+                    <h4 className="font-medium text-sm truncate">{dessert.name}</h4>
+                    <p className="text-xs text-gray-500 line-clamp-2 h-8">{dessert.description}</p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-green-600 font-medium text-sm">Gratuit</span>
+                      <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-black text-xs px-2 py-1 h-8">
+                        Sélectionner
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
