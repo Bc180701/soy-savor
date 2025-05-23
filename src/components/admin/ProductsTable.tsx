@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Table, TableBody, TableCell, TableHead, 
@@ -15,7 +14,7 @@ import {
   SelectTrigger, SelectValue 
 } from "@/components/ui/select";
 import { Filter, Pencil, Trash2, EyeOff, Eye, Plus, Search } from "lucide-react";
-import { fetchAllProducts, fetchCategories, supabase } from "@/integrations/supabase/client";
+import { fetchAllProducts, fetchCategories, supabase, deleteProduct } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ProductForm from "./ProductForm";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
@@ -105,12 +104,9 @@ const ProductsTable = () => {
     if (!selectedProduct) return;
     
     try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', selectedProduct.id);
+      const success = await deleteProduct(selectedProduct.id);
 
-      if (error) throw error;
+      if (!success) throw new Error("Failed to delete product");
 
       setProducts(products.filter(p => p.id !== selectedProduct.id));
       setIsDeleteDialogOpen(false);
