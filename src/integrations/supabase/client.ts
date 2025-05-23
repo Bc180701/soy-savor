@@ -374,3 +374,57 @@ export const reorderCategories = async (categories: { id: string, display_order:
     throw error;
   }
 };
+
+// Function to optimize image URL with resize parameters if it's from Supabase Storage
+export const getOptimizedImageUrl = (url: string, width?: number, height?: number) => {
+  if (!url) return '/placeholder.svg';
+  
+  // Check if it's a Supabase Storage URL
+  if (url.includes(SUPABASE_URL) && url.includes('storage/v1')) {
+    // Construct transform URL parameters
+    const params = new URLSearchParams();
+    
+    if (width) params.append('width', width.toString());
+    if (height) params.append('height', height.toString());
+    
+    // Only add transform parameters if at least one is provided
+    if (params.toString()) {
+      const separator = url.includes('?') ? '&' : '?';
+      return `${url}${separator}${params.toString()}`;
+    }
+  }
+  
+  return url;
+};
+
+// Function to preload an image
+export const preloadImage = (url: string) => {
+  if (!url || url === '/placeholder.svg') return;
+  
+  const img = new Image();
+  img.src = url;
+};
+
+// Function to preload multiple images
+export const preloadImages = (urls: string[]) => {
+  if (!urls || !urls.length) return;
+  
+  urls.forEach(url => preloadImage(url));
+};
+
+// Function to preload product images for a category
+export const preloadCategoryImages = async (categoryId: string) => {
+  try {
+    console.log(`Preloading images for category: ${categoryId}`);
+    const products = await fetchProductsByCategory(categoryId);
+    
+    const imageUrls = products
+      .filter(product => product.image_url && product.image_url !== '/placeholder.svg')
+      .map(product => product.image_url);
+    
+    preloadImages(imageUrls);
+    console.log(`Preloaded ${imageUrls.length} images for category ${categoryId}`);
+  } catch (error) {
+    console.error("Error preloading category images:", error);
+  }
+};

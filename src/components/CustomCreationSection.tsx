@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CustomCreationSection as CustomCreationSectionType } from "@/hooks/useHomepageData";
+import OptimizedImage from "@/components/common/OptimizedImage";
 
 interface CustomCreationSectionProps {
   data: CustomCreationSectionType;
@@ -17,10 +18,11 @@ export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
     <section className="py-16 relative">
       {data.background_image && (
         <div className="absolute inset-0 z-0">
-          <img 
-            src={data.background_image} 
-            alt="Fond de création personnalisée" 
-            className="w-full h-full object-cover"
+          <OptimizedImage 
+            src={data.background_image}
+            alt="Fond de création personnalisée"
+            className="w-full h-full"
+            objectFit="cover"
           />
           <div className="absolute inset-0 bg-black/50" />
         </div>
@@ -44,10 +46,11 @@ export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
           >
             <div className="relative h-56">
               {sushiImage ? (
-                <img 
+                <OptimizedImage 
                   src={sushiImage}
-                  alt="Créer vos sushis" 
-                  className="w-full h-full object-cover"
+                  alt="Créer vos sushis"
+                  className="w-full h-full"
+                  objectFit="cover"
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -74,10 +77,11 @@ export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
           >
             <div className="relative h-56">
               {pokeImage ? (
-                <img 
-                  src={pokeImage} 
-                  alt="Créer votre poké" 
-                  className="w-full h-full object-cover"
+                <OptimizedImage 
+                  src={pokeImage}
+                  alt="Créer votre poké"
+                  className="w-full h-full"
+                  objectFit="cover"
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">

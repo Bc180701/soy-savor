@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import OptimizedImage from "@/components/common/OptimizedImage";
 
 interface Product {
   id: string;
@@ -30,10 +31,11 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
       whileHover={{ y: -5 }}
     >
       <div className="relative pb-[60%] w-full bg-[#f9fafb] flex items-center justify-center overflow-hidden">
-        <img 
-          src={product.image_url || "/placeholder.svg"} 
-          alt={product.name} 
-          className="absolute inset-0 w-full h-full object-cover p-2 cursor-pointer"
+        <OptimizedImage 
+          src={product.image_url || "/placeholder.svg"}
+          alt={product.name}
+          className="absolute inset-0 w-full h-full p-2 cursor-pointer"
+          objectFit="cover"
           onClick={() => setShowFullImage(true)}
         />
       </div>
@@ -56,10 +58,12 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
         <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
           <DialogTitle className="sr-only">Image de {product.name}</DialogTitle>
           <div className="w-full bg-[#f9fafb] rounded-lg overflow-hidden">
-            <img
+            <OptimizedImage
               src={product.image_url || "/placeholder.svg"}
               alt={product.name}
-              className="w-full h-auto object-contain max-h-[80vh]"
+              className="w-full h-auto max-h-[80vh]"
+              objectFit="contain"
+              priority={true}
             />
           </div>
         </DialogContent>

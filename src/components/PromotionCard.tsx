@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import OptimizedImage from "@/components/common/OptimizedImage";
 
 interface Promotion {
   id: number;
@@ -23,10 +24,11 @@ export const PromotionCard = ({ promotion }: PromotionCardProps) => {
       className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
     >
       <div className="relative pb-[60%]">
-        <img 
-          src={promotion.imageUrl} 
+        <OptimizedImage 
+          src={promotion.imageUrl}
           alt={promotion.title}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full"
+          objectFit="cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-0 left-0 p-4 text-white">

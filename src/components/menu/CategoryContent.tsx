@@ -7,9 +7,9 @@ import { Plus, Pencil } from "lucide-react";
 import { MenuItem, MenuCategory } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import OptimizedImage from "@/components/common/OptimizedImage";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -94,11 +94,12 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                         <div className="w-full md:w-1/4 bg-[#f9fafb] flex items-center justify-center">
                           <div className="w-full max-w-[120px] md:max-w-none mx-auto py-4 px-2">
                             <div className="aspect-square relative">
-                              <img
+                              <OptimizedImage
                                 src={item.imageUrl}
                                 alt={item.name}
-                                className="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                className="w-full h-full object-contain hover:opacity-90 transition-opacity"
                                 onClick={() => handleImageClick(item.imageUrl, item.name)}
+                                objectFit="contain"
                               />
                             </div>
                           </div>
@@ -184,10 +185,12 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
         <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
           <DialogTitle className="sr-only">Image de {selectedImageAlt}</DialogTitle>
           <div className="w-full bg-[#f9fafb] rounded-lg overflow-hidden">
-            <img
+            <OptimizedImage
               src={selectedImage || ''}
               alt={selectedImageAlt}
-              className="w-full h-auto object-contain max-h-[80vh]"
+              className="w-full h-auto max-h-[80vh]"
+              objectFit="contain"
+              priority={true}
             />
           </div>
         </DialogContent>
