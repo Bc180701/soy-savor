@@ -37,7 +37,7 @@ const MobileCategorySelector = ({
   }, [activeCategory]);
 
   return (
-    <div className="mb-6 pb-2 border-b border-gray-200">
+    <div className="sticky top-16 z-40 bg-white/95 backdrop-blur-sm shadow-sm pt-2 pb-2 mb-6 border-b border-gray-200">
       <div 
         ref={scrollContainerRef}
         className="flex overflow-x-auto pb-2 scrollbar-hide snap-x"

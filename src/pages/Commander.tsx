@@ -351,7 +351,7 @@ const Commander = () => {
           </div>
         ) : (
           <>
-            {/* Show horizontal scrolling categories on mobile */}
+            {/* Show fixed horizontal scrolling categories on mobile */}
             {isMobile && (
               <MobileCategorySelector 
                 categories={nonEmptyCategories} 
