@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 import { useHomepageData } from "@/hooks/useHomepageData";
-import OptimizedImage from "@/components/common/OptimizedImage";
 
 interface DeliveryMapProps {
   deliveryZones: string[];
@@ -34,16 +33,14 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
             <div className="absolute inset-0 flex items-center justify-center">
               <div 
                 className="relative w-full h-full flex items-center justify-center"
+                style={{
+                  backgroundImage: `url('${overlayImage}')`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
               >
-                {overlayImage && (
-                  <OptimizedImage
-                    src={overlayImage}
-                    alt="Carte des zones de livraison"
-                    className="w-full h-full absolute inset-0"
-                    objectFit="cover"
-                  />
-                )}
-                <div className="bg-white bg-opacity-80 p-6 rounded-lg shadow-md text-center z-10">
+                <div className="bg-white bg-opacity-80 p-6 rounded-lg shadow-md text-center">
                   <MapPin className="mx-auto h-10 w-10 text-gold-600 mb-2" />
                   <h3 className="text-xl font-bold mb-2">SushiEats Châteaurenard</h3>
                   <p className="text-gray-600 mb-2">16 cours Carnot, 13160 Châteaurenard</p>
