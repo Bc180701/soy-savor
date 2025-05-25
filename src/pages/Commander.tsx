@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, Ban, AlertTriangle, Clock } from "lucide-react";
@@ -31,7 +32,6 @@ const Commander = () => {
   const [isRestaurantOpen, setIsRestaurantOpen] = useState<boolean>(true);
   const [nextOpenDay, setNextOpenDay] = useState<any>(null);
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
-  const [visibleSections, setVisibleSections] = useState<{[key: string]: boolean}>({});
   const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   useEffect(() => {
@@ -123,63 +123,44 @@ const Commander = () => {
     loadMenuData();
   }, [toast, activeCategory]);
 
-  // Configuration of the Intersection Observer to detect visible sections
+  // Configuration améliorée de l'Intersection Observer
   useEffect(() => {
     if (categories.length === 0 || isLoading) return;
     
     const observerOptions = {
       root: null,
-      rootMargin: "-80px 0px -70% 0px", // Adjust to better detect when a category is actually in view
-      threshold: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3], // Multiple thresholds for better accuracy
+      rootMargin: "-20% 0px -70% 0px", // Zone plus petite pour détecter plus précisément
+      threshold: [0, 0.1, 0.25, 0.5, 0.75, 1], // Plus de seuils pour une meilleure détection
     };
     
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      const updatedVisibleSections: {[key: string]: {visible: boolean, ratio: number}} = {};
+      if (isCategoryChanging) return; // Ignorer pendant les changements manuels
+      
+      // Trouver la catégorie la plus visible
+      let mostVisibleCategory = "";
+      let highestRatio = 0;
       
       entries.forEach((entry) => {
-        const id = entry.target.id;
-        // Store both visibility state and intersection ratio
-        if (!updatedVisibleSections[id] || entry.intersectionRatio > updatedVisibleSections[id].ratio) {
-          updatedVisibleSections[id] = {
-            visible: entry.isIntersecting,
-            ratio: entry.intersectionRatio
-          };
+        if (entry.isIntersecting && entry.intersectionRatio > highestRatio) {
+          highestRatio = entry.intersectionRatio;
+          mostVisibleCategory = entry.target.id;
         }
       });
       
-      // Update visibleSections state with just the boolean values
-      const simplifiedVisibleSections: {[key: string]: boolean} = {};
-      Object.keys(updatedVisibleSections).forEach(id => {
-        simplifiedVisibleSections[id] = updatedVisibleSections[id].visible;
-      });
-      
-      setVisibleSections(simplifiedVisibleSections);
-      
-      // Find the most visible category (highest intersection ratio)
-      let bestCategoryId = "";
-      let highestRatio = -1;
-      
-      Object.keys(updatedVisibleSections).forEach(id => {
-        const section = updatedVisibleSections[id];
-        if (section.visible && section.ratio > highestRatio) {
-          highestRatio = section.ratio;
-          bestCategoryId = id;
-        }
-      });
-      
-      // Only update if we found a visible category and we're not in the middle of a manual category change
-      if (bestCategoryId && !isCategoryChanging && bestCategoryId !== activeCategory) {
-        console.log("Automatically changing to category:", bestCategoryId);
-        setActiveCategory(bestCategoryId);
+      // Si on a trouvé une catégorie visible et qu'elle est différente de l'actuelle
+      if (mostVisibleCategory && mostVisibleCategory !== activeCategory && highestRatio > 0.1) {
+        console.log(`Auto-changing to category: ${mostVisibleCategory} (ratio: ${highestRatio})`);
+        setActiveCategory(mostVisibleCategory);
       }
     };
     
     const observer = new IntersectionObserver(observerCallback, observerOptions);
     
-    // Observe each category section
-    Object.keys(categoryRefs.current).forEach((categoryId) => {
-      const el = categoryRefs.current[categoryId];
-      if (el) observer.observe(el);
+    // Observer chaque section de catégorie
+    Object.values(categoryRefs.current).forEach((element) => {
+      if (element) {
+        observer.observe(element);
+      }
     });
     
     return () => {
@@ -187,23 +168,30 @@ const Commander = () => {
     };
   }, [categories, isLoading, activeCategory, isCategoryChanging]);
 
-  // Function to change category and scroll to that section
+  // Fonction pour changer de catégorie et faire défiler vers cette section
   const handleCategoryChange = (categoryId: string) => {
+    console.log(`Manual category change to: ${categoryId}`);
     setIsCategoryChanging(true);
     setActiveCategory(categoryId);
     
-    // Scroll to the selected category
+    // Faire défiler vers la catégorie sélectionnée
     const element = categoryRefs.current[categoryId];
     if (element) {
-      element.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
+      const headerOffset = 120; // Offset pour le header fixe
+      const elementPosition = element.offsetTop;
+      const offsetPosition = elementPosition - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
       });
       
-      // Reset the flag after scrolling is complete
+      // Réinitialiser le flag après que le défilement soit terminé
       setTimeout(() => {
         setIsCategoryChanging(false);
-      }, 1000); // Give enough time for scrolling to complete
+      }, 1200); // Temps plus long pour s'assurer que le scroll est fini
+    } else {
+      setIsCategoryChanging(false);
     }
   };
 
