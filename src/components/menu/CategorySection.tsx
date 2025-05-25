@@ -1,4 +1,3 @@
-
 import { useRef, useEffect } from "react";
 import { MenuCategory } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -122,13 +121,11 @@ const CategorySection = ({
         />
       ) : (
         /* Show vertical categories sidebar on desktop */
-        <div className="md:w-1/4">
-          <DesktopCategorySelector 
-            categories={categories} 
-            activeCategory={activeCategory} 
-            onCategoryChange={handleCategoryChange} 
-          />
-        </div>
+        <DesktopCategorySelector 
+          categories={categories} 
+          activeCategory={activeCategory} 
+          onCategoryChange={handleCategoryChange} 
+        />
       )}
       
       {/* This ref object is exposed so the parent can access it */}
