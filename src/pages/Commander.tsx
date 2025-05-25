@@ -1,29 +1,23 @@
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Ban, AlertTriangle, Clock } from "lucide-react";
+import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
 import { isRestaurantOpenNow, getNextOpenDay } from "@/services/openingHoursService";
-import MobileCategorySelector from "@/components/menu/MobileCategorySelector";
-import DesktopCategorySelector from "@/components/menu/DesktopCategorySelector";
-import CategoryContent from "@/components/menu/CategoryContent";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
+import LoadingSpinner from "@/components/menu/LoadingSpinner";
+import RestaurantClosedMessage from "@/components/menu/RestaurantClosedMessage";
+import OrderingLockedMessage from "@/components/menu/OrderingLockedMessage";
+import PromotionalBanner from "@/components/menu/PromotionalBanner";
+import CategorySection from "@/components/menu/CategorySection";
+import ProductsDisplay from "@/components/menu/ProductsDisplay";
 
 const Commander = () => {
   const { toast } = useToast();
   const cart = useCart();
   const { isOrderingLocked } = useCart();
-  const isMobile = useIsMobile();
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,6 +26,7 @@ const Commander = () => {
   const [isRestaurantOpen, setIsRestaurantOpen] = useState<boolean>(true);
   const [nextOpenDay, setNextOpenDay] = useState<any>(null);
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
+  const [visibleSections, setVisibleSections] = useState<{[key: string]: boolean}>({});
   const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   useEffect(() => {
@@ -123,78 +118,6 @@ const Commander = () => {
     loadMenuData();
   }, [toast, activeCategory]);
 
-  // Configuration améliorée de l'Intersection Observer
-  useEffect(() => {
-    if (categories.length === 0 || isLoading) return;
-    
-    const observerOptions = {
-      root: null,
-      rootMargin: "-20% 0px -70% 0px", // Zone plus petite pour détecter plus précisément
-      threshold: [0, 0.1, 0.25, 0.5, 0.75, 1], // Plus de seuils pour une meilleure détection
-    };
-    
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      if (isCategoryChanging) return; // Ignorer pendant les changements manuels
-      
-      // Trouver la catégorie la plus visible
-      let mostVisibleCategory = "";
-      let highestRatio = 0;
-      
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && entry.intersectionRatio > highestRatio) {
-          highestRatio = entry.intersectionRatio;
-          mostVisibleCategory = entry.target.id;
-        }
-      });
-      
-      // Si on a trouvé une catégorie visible et qu'elle est différente de l'actuelle
-      if (mostVisibleCategory && mostVisibleCategory !== activeCategory && highestRatio > 0.1) {
-        console.log(`Auto-changing to category: ${mostVisibleCategory} (ratio: ${highestRatio})`);
-        setActiveCategory(mostVisibleCategory);
-      }
-    };
-    
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-    
-    // Observer chaque section de catégorie
-    Object.values(categoryRefs.current).forEach((element) => {
-      if (element) {
-        observer.observe(element);
-      }
-    });
-    
-    return () => {
-      observer.disconnect();
-    };
-  }, [categories, isLoading, activeCategory, isCategoryChanging]);
-
-  // Fonction pour changer de catégorie et faire défiler vers cette section
-  const handleCategoryChange = (categoryId: string) => {
-    console.log(`Manual category change to: ${categoryId}`);
-    setIsCategoryChanging(true);
-    setActiveCategory(categoryId);
-    
-    // Faire défiler vers la catégorie sélectionnée
-    const element = categoryRefs.current[categoryId];
-    if (element) {
-      const headerOffset = 120; // Offset pour le header fixe
-      const elementPosition = element.offsetTop;
-      const offsetPosition = elementPosition - headerOffset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-      
-      // Réinitialiser le flag après que le défilement soit terminé
-      setTimeout(() => {
-        setIsCategoryChanging(false);
-      }, 1200); // Temps plus long pour s'assurer que le scroll est fini
-    } else {
-      setIsCategoryChanging(false);
-    }
-  };
-
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
     
@@ -206,115 +129,20 @@ const Commander = () => {
 
   // Si les commandes sont verrouillées, afficher un message au lieu du menu
   if (isOrderingLocked) {
-    return (
-      <div className="container mx-auto py-24 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <div className="flex justify-center mb-6">
-            <Ban size={80} className="text-red-500" />
-          </div>
-          
-          <h1 className="text-3xl font-bold mb-4">Commandes Temporairement Fermées</h1>
-          
-          <Alert variant="destructive" className="mb-8 border-red-500">
-            <AlertTriangle className="h-5 w-5" />
-            <AlertTitle>Commandes indisponibles</AlertTitle>
-            <AlertDescription>
-              Nous sommes désolés, mais notre service de commande en ligne est temporairement indisponible.
-              Veuillez réessayer ultérieurement ou nous contacter par téléphone.
-            </AlertDescription>
-          </Alert>
-          
-          <p className="text-gray-600 mb-8">
-            Cette interruption de service peut être due à une fermeture exceptionnelle, à un jour férié, 
-            ou à une maintenance technique. Nous nous excusons pour la gêne occasionnée et vous remercions 
-            de votre compréhension.
-          </p>
-          
-          <div className="flex flex-col md:flex-row gap-4 justify-center">
-            <Button asChild variant="outline">
-              <Link to="/">Retour à l'accueil</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/contact">Nous contacter</Link>
-            </Button>
-          </div>
-        </motion.div>
-      </div>
-    );
+    return <OrderingLockedMessage />;
   }
   
   // Si le restaurant est fermé aujourd'hui
   if (!isRestaurantOpen && nextOpenDay) {
-    return (
-      <div className="container mx-auto py-24 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <div className="flex justify-center mb-6">
-            <Clock size={80} className="text-amber-500" />
-          </div>
-          
-          <h1 className="text-3xl font-bold mb-4">Restaurant Fermé Aujourd'hui</h1>
-          
-          <Alert className="mb-8 border-amber-500">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <AlertTitle>Commandes indisponibles</AlertTitle>
-            <AlertDescription>
-              Notre restaurant est actuellement fermé. Nous sommes ouverts de mardi à samedi.
-            </AlertDescription>
-          </Alert>
-          
-          {nextOpenDay && (
-            <p className="text-gray-600 mb-8">
-              Nous serons ouverts à nouveau {getFormattedDayName(nextOpenDay.day)} de {nextOpenDay.open_time} à {nextOpenDay.close_time}.
-              Nous serons ravis de vous accueillir prochainement !
-            </p>
-          )}
-          
-          <div className="flex flex-col md:flex-row gap-4 justify-center">
-            <Button asChild variant="outline">
-              <Link to="/">Retour à l'accueil</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/contact">Nous contacter</Link>
-            </Button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // Fonction auxiliaire pour formater le nom du jour
-  function getFormattedDayName(day: string): string {
-    const dayNames: {[key: string]: string} = {
-      "monday": "lundi",
-      "tuesday": "mardi", 
-      "wednesday": "mercredi",
-      "thursday": "jeudi",
-      "friday": "vendredi",
-      "saturday": "samedi",
-      "sunday": "dimanche"
-    };
-    return dayNames[day] || day;
+    return <RestaurantClosedMessage nextOpenDay={nextOpenDay} />;
   }
 
   // Afficher uniquement le chargement initial, pas lors des changements de catégorie
   if ((isLoading && categories.length === 0) || isInitializing) {
     return (
-      <div className="container mx-auto py-24 px-4 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gold-600" />
-        <span className="ml-2">
-          {isInitializing ? "Initialisation du menu..." : "Chargement du menu..."}
-        </span>
-      </div>
+      <LoadingSpinner 
+        message={isInitializing ? "Initialisation du menu..." : "Chargement du menu..."}
+      />
     );
   }
 
@@ -334,21 +162,7 @@ const Commander = () => {
           Commandez en ligne et récupérez votre repas dans notre restaurant
         </p>
 
-        {!isAuthenticated && (
-          <motion.div 
-            className="mb-8 bg-gradient-to-r from-gold-500 to-gold-300 p-6 rounded-lg shadow-lg text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-          >
-            <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
-            <h3 className="text-white text-xl font-bold mb-2">-10% sur votre première commande</h3>
-            <p className="text-white/90 mb-4">Créez un compte maintenant pour profiter de cette promotion exclusive</p>
-            <Button asChild className="bg-white hover:bg-gray-100 text-gold-600">
-              <Link to="/register">Créer un compte</Link>
-            </Button>
-          </motion.div>
-        )}
+        {!isAuthenticated && <PromotionalBanner />}
 
         {nonEmptyCategories.length === 0 ? (
           <div className="text-center py-12">
@@ -356,43 +170,21 @@ const Commander = () => {
           </div>
         ) : (
           <>
-            {/* Show fixed horizontal scrolling categories on mobile */}
-            {isMobile && (
-              <MobileCategorySelector 
-                categories={nonEmptyCategories} 
-                activeCategory={activeCategory} 
-                onCategoryChange={handleCategoryChange} 
-              />
-            )}
-
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Show vertical categories sidebar on desktop */}
-              {!isMobile && (
-                <DesktopCategorySelector 
-                  categories={nonEmptyCategories} 
-                  activeCategory={activeCategory} 
-                  onCategoryChange={handleCategoryChange} 
-                />
-              )}
-
-              <div className={isMobile ? "w-full" : "md:w-3/4"}>
-                {/* Display all categories at once to allow scrolling */}
-                <div className="space-y-12">
-                  {nonEmptyCategories.map((category) => (
-                    <div 
-                      key={category.id}
-                      id={category.id}
-                      ref={el => categoryRefs.current[category.id] = el}
-                    >
-                      <CategoryContent 
-                        category={category} 
-                        onAddToCart={addToCart} 
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <CategorySection
+              categories={nonEmptyCategories}
+              activeCategory={activeCategory}
+              onCategoryChange={setActiveCategory}
+              isCategoryChanging={isCategoryChanging}
+              setIsCategoryChanging={setIsCategoryChanging}
+              setActiveCategory={setActiveCategory}
+              setVisibleSections={setVisibleSections}
+            />
+            
+            <ProductsDisplay
+              categories={nonEmptyCategories}
+              onAddToCart={addToCart}
+              categoryRefs={categoryRefs}
+            />
           </>
         )}
       </motion.div>
