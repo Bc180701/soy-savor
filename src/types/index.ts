@@ -37,7 +37,6 @@ export interface MenuItem {
   allergens?: string[];
   pieces?: number;
   prepTime?: number;
-  originalPrice?: number; // Added for free dessert promotion
 }
 
 export interface MenuCategory {
