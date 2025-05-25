@@ -175,44 +175,85 @@ export const CartStep = ({
 
       {/* Free Dessert Dialog */}
       <Dialog open={showDessertDialog} onOpenChange={setShowDessertDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold mb-4">Choisissez votre dessert offert</DialogTitle>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader className="text-center space-y-4 pb-6">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-r from-gold-400 to-gold-600 rounded-full flex items-center justify-center mb-2">
+              <span className="text-2xl">🎁</span>
+            </div>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-gold-600 to-gold-800 bg-clip-text text-transparent">
+              Félicitations !
+            </DialogTitle>
+            <p className="text-lg text-gray-600">
+              Vous avez droit à un <span className="font-semibold text-gold-600">dessert offert</span> avec votre plateau
+            </p>
           </DialogHeader>
           
           {loadingDesserts ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-gold-500" />
+              <span className="ml-2 text-gray-600">Chargement des desserts...</span>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 mt-4 max-h-[60vh] overflow-y-auto p-2">
-              {desserts.map((dessert) => (
-                <div 
-                  key={dessert.id} 
-                  className="border rounded-lg overflow-hidden hover:border-gold-500 cursor-pointer transition-all shadow-sm hover:shadow-md"
-                  onClick={() => handleSelectDessert(dessert)}
-                >
-                  {dessert.imageUrl && (
-                    <div className="relative h-28 w-full">
-                      <img 
-                        src={dessert.imageUrl} 
-                        alt={dessert.name} 
-                        className="w-full h-full object-cover"
-                      />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {desserts.map((dessert) => (
+                  <div 
+                    key={dessert.id} 
+                    className="group relative border-2 border-gray-200 rounded-xl overflow-hidden hover:border-gold-400 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
+                    onClick={() => handleSelectDessert(dessert)}
+                  >
+                    {/* Badge "Gratuit" */}
+                    <div className="absolute top-3 right-3 z-10 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      GRATUIT
                     </div>
-                  )}
-                  <div className="p-3">
-                    <h4 className="font-medium text-sm truncate">{dessert.name}</h4>
-                    <p className="text-xs text-gray-500 line-clamp-2 h-8">{dessert.description}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-green-600 font-medium text-sm">Gratuit</span>
-                      <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-black text-xs px-2 py-1 h-8">
-                        Sélectionner
-                      </Button>
+                    
+                    {dessert.imageUrl && (
+                      <div className="relative h-40 w-full overflow-hidden">
+                        <img 
+                          src={dessert.imageUrl} 
+                          alt={dessert.name} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </div>
+                    )}
+                    
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-lg text-gray-800 group-hover:text-gold-600 transition-colors">
+                          {dessert.name}
+                        </h4>
+                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                          {dessert.description}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg font-bold text-green-600">Gratuit</span>
+                          {dessert.originalPrice && (
+                            <span className="text-sm text-gray-400 line-through">
+                              {formatEuro(dessert.originalPrice)}
+                            </span>
+                          )}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          className="bg-gold-500 hover:bg-gold-600 text-black font-medium px-4 py-2 rounded-lg transition-all duration-200 group-hover:shadow-md"
+                        >
+                          Choisir
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              
+              <div className="mt-6 p-4 bg-gold-50 border border-gold-200 rounded-lg">
+                <p className="text-center text-sm text-gold-700">
+                  <span className="font-semibold">🎉 Offre spéciale :</span> 1 plateau acheté = 1 dessert offert !
+                </p>
+              </div>
             </div>
           )}
         </DialogContent>
