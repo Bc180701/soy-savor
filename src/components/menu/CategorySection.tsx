@@ -114,32 +114,30 @@ const CategorySection = ({
   return (
     <>
       {/* Show fixed horizontal scrolling categories on mobile */}
-      {isMobile && (
+      {isMobile ? (
         <MobileCategorySelector 
           categories={categories} 
           activeCategory={activeCategory} 
           onCategoryChange={handleCategoryChange} 
         />
-      )}
-
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Show vertical categories sidebar on desktop */}
-        {!isMobile && (
+      ) : (
+        /* Show vertical categories sidebar on desktop */
+        <div className="md:w-1/4">
           <DesktopCategorySelector 
             categories={categories} 
             activeCategory={activeCategory} 
             onCategoryChange={handleCategoryChange} 
           />
-        )}
-        
-        {/* This ref object is exposed so the parent can access it */}
-        <div style={{ display: 'none' }} ref={(el) => {
-          // Expose categoryRefs to parent through a custom property
-          if (el) {
-            (el as any).categoryRefs = categoryRefs;
-          }
-        }} />
-      </div>
+        </div>
+      )}
+      
+      {/* This ref object is exposed so the parent can access it */}
+      <div style={{ display: 'none' }} ref={(el) => {
+        // Expose categoryRefs to parent through a custom property
+        if (el) {
+          (el as any).categoryRefs = categoryRefs;
+        }
+      }} />
     </>
   );
 };

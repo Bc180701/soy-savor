@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -169,7 +168,7 @@ const Commander = () => {
             <p className="text-lg text-gray-600">Aucun produit disponible actuellement.</p>
           </div>
         ) : (
-          <>
+          <div className="flex flex-col md:flex-row gap-6">
             <CategorySection
               categories={nonEmptyCategories}
               activeCategory={activeCategory}
@@ -185,7 +184,7 @@ const Commander = () => {
               onAddToCart={addToCart}
               categoryRefs={categoryRefs}
             />
-          </>
+          </div>
         )}
       </motion.div>
     </div>
