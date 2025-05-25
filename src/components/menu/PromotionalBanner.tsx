@@ -3,20 +3,41 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { usePromotions } from "@/hooks/usePromotions";
+import { getDayName } from "@/services/promotionService";
 
 const PromotionalBanner = () => {
+  const { activePromotions } = usePromotions();
+  const boxDuMidiPromotion = activePromotions.find(p => p.id === "box-du-midi-weekdays");
+  
+  if (!boxDuMidiPromotion) {
+    return null; // Ne rien afficher si aucune promotion n'est active
+  }
+
+  const today = new Date();
+  const todayName = getDayName(today.getDay());
+
   return (
     <motion.div 
-      className="mb-8 bg-gradient-to-r from-gold-500 to-gold-300 p-6 rounded-lg shadow-lg text-center"
+      className="mb-8 bg-gradient-to-r from-red-500 to-red-400 p-6 rounded-lg shadow-lg text-center"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.5 }}
     >
-      <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
-      <h3 className="text-white text-xl font-bold mb-2">-10% sur votre première commande</h3>
-      <p className="text-white/90 mb-4">Créez un compte maintenant pour profiter de cette promotion exclusive</p>
-      <Button asChild className="bg-white hover:bg-gray-100 text-gold-600">
-        <Link to="/register">Créer un compte</Link>
+      <Badge className="bg-white text-red-600 mb-2 animate-pulse">
+        PROMOTION {todayName.toUpperCase()}
+      </Badge>
+      <h3 className="text-white text-xl font-bold mb-2">
+        {boxDuMidiPromotion.title}
+      </h3>
+      <p className="text-white/90 mb-4">
+        {boxDuMidiPromotion.description}
+      </p>
+      <div className="text-white/80 text-sm mb-4">
+        Horaires: {boxDuMidiPromotion.startTime} - {boxDuMidiPromotion.endTime}
+      </div>
+      <Button asChild className="bg-white hover:bg-gray-100 text-red-600">
+        <Link to="/commander">Profiter de l'offre</Link>
       </Button>
     </motion.div>
   );

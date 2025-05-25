@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { OrderCTA } from "@/components/OrderCTA";
@@ -7,6 +8,7 @@ import { PromotionCard } from "@/components/PromotionCard";
 import { CustomCreationSection } from "@/components/CustomCreationSection";
 import FeaturedProductsSection from "@/components/FeaturedProductsSection";
 import { useHomepageData, HomepageData } from "@/hooks/useHomepageData";
+import { usePromotions } from "@/hooks/usePromotions";
 import { supabase } from "@/integrations/supabase/client";
 
 // Default data to use as fallback
@@ -23,7 +25,7 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       description: "Du mardi au vendredi, profitez de -20% sur nos box du midi !",
       imageUrl: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1000&auto=format&fit=crop",
       buttonText: "En profiter",
-      buttonLink: "/menu",
+      buttonLink: "/commander",
     },
     {
       id: 2,
@@ -31,7 +33,7 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       description: "Pour toute commande d'un plateau, recevez un dessert au choix offert !",
       imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
       buttonText: "Découvrir",
-      buttonLink: "/menu",
+      buttonLink: "/commander",
       isActive: true, // Mark this promotion as active
     },
     {
@@ -70,11 +72,15 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
 const Index = () => {
   // Use the homepage data hook
   const { data: homepageData, loading } = useHomepageData();
+  const { activePromotions, isPromotionActive } = usePromotions();
   
-  // Mark promotion as active
+  // Mark promotions as active based on day-based promotions
   const promotionsWithActive = (homepageData?.promotions || DEFAULT_HOMEPAGE_DATA.promotions).map(promo => {
     if (promo.id === 2) { // ID of the "1 Plateau Acheté = 1 Dessert Offert" promotion
       return { ...promo, isActive: true };
+    }
+    if (promo.id === 1) { // ID of the "Box du Midi à -20%" promotion
+      return { ...promo, isActive: isPromotionActive("box-du-midi-weekdays") };
     }
     return promo;
   });
@@ -109,6 +115,18 @@ const Index = () => {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl font-bold mb-6">Nos Promotions du Moment</h2>
+          {activePromotions.length > 0 && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">🎉 Promotions actives aujourd'hui :</h3>
+              <ul className="space-y-1">
+                {activePromotions.map(promo => (
+                  <li key={promo.id} className="text-red-700">
+                    • {promo.title} - {promo.description}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {promotionsWithActive.map((promotion) => (
               <PromotionCard key={promotion.id} promotion={promotion} />
