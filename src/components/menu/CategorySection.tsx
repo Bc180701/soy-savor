@@ -1,3 +1,4 @@
+
 import { useRef, useEffect } from "react";
 import { MenuCategory } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -12,6 +13,7 @@ interface CategorySectionProps {
   setIsCategoryChanging: (value: boolean) => void;
   setActiveCategory: (categoryId: string) => void;
   setVisibleSections: (sections: {[key: string]: boolean}) => void;
+  categoryRefs: React.MutableRefObject<{[key: string]: HTMLDivElement | null}>;
 }
 
 const CategorySection = ({
@@ -21,10 +23,10 @@ const CategorySection = ({
   isCategoryChanging,
   setIsCategoryChanging,
   setActiveCategory,
-  setVisibleSections
+  setVisibleSections,
+  categoryRefs
 }: CategorySectionProps) => {
   const isMobile = useIsMobile();
-  const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   // Configuration of the Intersection Observer to detect visible sections
   useEffect(() => {
@@ -88,7 +90,7 @@ const CategorySection = ({
     return () => {
       observer.disconnect();
     };
-  }, [categories, activeCategory, isCategoryChanging, setActiveCategory, setVisibleSections]);
+  }, [categories, activeCategory, isCategoryChanging, setActiveCategory, setVisibleSections, categoryRefs]);
 
   // Function to change category and scroll to that section
   const handleCategoryChange = (categoryId: string) => {
@@ -127,14 +129,6 @@ const CategorySection = ({
           onCategoryChange={handleCategoryChange} 
         />
       )}
-      
-      {/* This ref object is exposed so the parent can access it */}
-      <div style={{ display: 'none' }} ref={(el) => {
-        // Expose categoryRefs to parent through a custom property
-        if (el) {
-          (el as any).categoryRefs = categoryRefs;
-        }
-      }} />
     </>
   );
 };

@@ -177,6 +177,7 @@ const Commander = () => {
               setIsCategoryChanging={setIsCategoryChanging}
               setActiveCategory={setActiveCategory}
               setVisibleSections={setVisibleSections}
+              categoryRefs={categoryRefs}
             />
             
             <ProductsDisplay
