@@ -34,7 +34,7 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       imageUrl: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1000&auto=format&fit=crop",
       buttonText: "Découvrir",
       buttonLink: "/commander",
-      isActive: true, // Mark this promotion as active
+      isActive: true,
     },
     {
       id: 3,
@@ -72,17 +72,19 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
 const Index = () => {
   // Use the homepage data hook
   const { data: homepageData, loading } = useHomepageData();
-  const { activePromotions, isPromotionActive } = usePromotions();
+  const { activePromotions } = usePromotions();
   
   // Mark promotions as active based on day-based promotions
   const promotionsWithActive = (homepageData?.promotions || DEFAULT_HOMEPAGE_DATA.promotions).map(promo => {
     if (promo.id === 2) { // ID of the "1 Plateau Acheté = 1 Dessert Offert" promotion
       return { ...promo, isActive: true };
     }
-    if (promo.id === 1) { // ID of the "Box du Midi à -20%" promotion
-      return { ...promo, isActive: isPromotionActive("box-du-midi-weekdays") };
-    }
-    return promo;
+    // Check if any active promotion matches this promotion
+    const hasActivePromotion = activePromotions.some(activePromo => 
+      activePromo.title === promo.title || 
+      (promo.id === 1 && activePromo.applicableCategories?.includes('box_du_midi'))
+    );
+    return { ...promo, isActive: hasActivePromotion };
   });
   
   return (

@@ -8,12 +8,12 @@ import { getDayName } from "@/services/promotionService";
 
 const PromotionalBanner = () => {
   const { activePromotions } = usePromotions();
-  const boxDuMidiPromotion = activePromotions.find(p => p.id === "box-du-midi-weekdays");
   
-  if (!boxDuMidiPromotion) {
-    return null; // Ne rien afficher si aucune promotion n'est active
+  if (activePromotions.length === 0) {
+    return null;
   }
 
+  const mainPromotion = activePromotions[0];
   const today = new Date();
   const todayName = getDayName(today.getDay());
 
@@ -28,14 +28,16 @@ const PromotionalBanner = () => {
         PROMOTION {todayName.toUpperCase()}
       </Badge>
       <h3 className="text-white text-xl font-bold mb-2">
-        {boxDuMidiPromotion.title}
+        {mainPromotion.title}
       </h3>
       <p className="text-white/90 mb-4">
-        {boxDuMidiPromotion.description}
+        {mainPromotion.description}
       </p>
-      <div className="text-white/80 text-sm mb-4">
-        Horaires: {boxDuMidiPromotion.startTime} - {boxDuMidiPromotion.endTime}
-      </div>
+      {mainPromotion.startTime && mainPromotion.endTime && (
+        <div className="text-white/80 text-sm mb-4">
+          Horaires: {mainPromotion.startTime} - {mainPromotion.endTime}
+        </div>
+      )}
       <Button asChild className="bg-white hover:bg-gray-100 text-red-600">
         <Link to="/commander">Profiter de l'offre</Link>
       </Button>

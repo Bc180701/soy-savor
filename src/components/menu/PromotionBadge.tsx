@@ -12,7 +12,7 @@ export const PromotionBadge = ({ promotion, className = "" }: PromotionBadgeProp
     <Badge 
       className={`bg-red-500 hover:bg-red-600 text-white animate-pulse ${className}`}
     >
-      -{promotion.discount}% {promotion.isPercentage ? '' : '€'}
+      -{promotion.discount}{promotion.isPercentage ? '%' : '€'}
     </Badge>
   );
 };

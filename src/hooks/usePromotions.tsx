@@ -12,8 +12,8 @@ export const usePromotions = () => {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   useEffect(() => {
-    const updatePromotions = () => {
-      const promotions = checkDayBasedPromotions();
+    const updatePromotions = async () => {
+      const promotions = await checkDayBasedPromotions();
       setActivePromotions(promotions);
       setLastUpdate(new Date());
       console.log(`Promotions mises à jour: ${promotions.length} promotion(s) active(s)`);
@@ -28,12 +28,12 @@ export const usePromotions = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const getPromotionForCategory = (category: string) => {
-    return getActivePromotionForCategory(category);
+  const getPromotionForCategory = async (category: string) => {
+    return await getActivePromotionForCategory(category);
   };
 
-  const isPromotionActive = (promotionId: string) => {
-    return isPromotionActiveToday(promotionId);
+  const isPromotionActive = async (promotionId: string) => {
+    return await isPromotionActiveToday(promotionId);
   };
 
   return {

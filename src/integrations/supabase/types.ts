@@ -30,6 +30,51 @@ export type Database = {
         }
         Relationships: []
       }
+      day_based_promotions: {
+        Row: {
+          applicable_categories: string[] | null
+          applicable_days: number[]
+          created_at: string
+          description: string
+          discount: number
+          end_time: string | null
+          id: string
+          is_active: boolean
+          is_percentage: boolean
+          start_time: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          applicable_categories?: string[] | null
+          applicable_days: number[]
+          created_at?: string
+          description: string
+          discount: number
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          is_percentage?: boolean
+          start_time?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          applicable_categories?: string[] | null
+          applicable_days?: number[]
+          created_at?: string
+          description?: string
+          discount?: number
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          is_percentage?: boolean
+          start_time?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       delivery_locations: {
         Row: {
           city: string

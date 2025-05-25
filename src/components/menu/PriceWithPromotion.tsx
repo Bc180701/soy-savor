@@ -1,6 +1,6 @@
 
-import { usePromotions } from "@/hooks/usePromotions";
-import { calculatePromotionDiscount } from "@/services/promotionService";
+import { useEffect, useState } from "react";
+import { getActivePromotionForCategory, calculatePromotionDiscount, DayBasedPromotion } from "@/services/promotionService";
 import { formatEuro } from "@/utils/formatters";
 import PromotionBadge from "./PromotionBadge";
 
@@ -15,8 +15,31 @@ export const PriceWithPromotion = ({
   category, 
   className = "" 
 }: PriceWithPromotionProps) => {
-  const { getPromotionForCategory } = usePromotions();
-  const promotion = getPromotionForCategory(category);
+  const [promotion, setPromotion] = useState<DayBasedPromotion | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkPromotion = async () => {
+      try {
+        const activePromotion = await getActivePromotionForCategory(category);
+        setPromotion(activePromotion);
+      } catch (error) {
+        console.error('Erreur lors de la vérification de la promotion:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkPromotion();
+  }, [category]);
+
+  if (loading) {
+    return (
+      <span className={`text-lg font-semibold ${className}`}>
+        {formatEuro(price)}
+      </span>
+    );
+  }
 
   if (!promotion) {
     return (

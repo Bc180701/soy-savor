@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 export interface DayBasedPromotion {
   id: string;
   title: string;
@@ -9,31 +11,51 @@ export interface DayBasedPromotion {
   applicableCategories?: string[];
   startTime?: string; // Format HH:MM
   endTime?: string; // Format HH:MM
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// Définir les promotions basées sur les jours
-export const DAY_BASED_PROMOTIONS: DayBasedPromotion[] = [
-  {
-    id: "box-du-midi-weekdays",
-    title: "Box du Midi à -20%",
-    description: "Du mardi au vendredi, profitez de -20% sur nos box du midi !",
-    discount: 20,
-    isPercentage: true,
-    applicableDays: [2, 3, 4, 5], // Mardi à vendredi (2 = mardi, 3 = mercredi, 4 = jeudi, 5 = vendredi)
-    applicableCategories: ["box_du_midi"],
-    startTime: "11:30",
-    endTime: "14:30"
-  }
-];
+// Fonction pour récupérer toutes les promotions depuis la base de données
+export const fetchDayBasedPromotions = async (): Promise<DayBasedPromotion[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('day_based_promotions')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
 
-export const checkDayBasedPromotions = (): DayBasedPromotion[] => {
+    if (error) throw error;
+
+    return data.map(promo => ({
+      id: promo.id,
+      title: promo.title,
+      description: promo.description,
+      discount: promo.discount,
+      isPercentage: promo.is_percentage,
+      applicableDays: promo.applicable_days,
+      applicableCategories: promo.applicable_categories,
+      startTime: promo.start_time,
+      endTime: promo.end_time,
+      isActive: promo.is_active,
+      createdAt: promo.created_at,
+      updatedAt: promo.updated_at
+    }));
+  } catch (error) {
+    console.error('Erreur lors de la récupération des promotions:', error);
+    return [];
+  }
+};
+
+export const checkDayBasedPromotions = async (): Promise<DayBasedPromotion[]> => {
+  const promotions = await fetchDayBasedPromotions();
   const now = new Date();
   const currentDay = now.getDay(); // 0 = dimanche, 1 = lundi, etc.
   const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   
   console.log(`Vérification des promotions - Jour: ${currentDay}, Heure: ${currentTime}`);
   
-  return DAY_BASED_PROMOTIONS.filter(promotion => {
+  return promotions.filter(promotion => {
     // Vérifier si le jour actuel est dans les jours applicables
     const isDayApplicable = promotion.applicableDays.includes(currentDay);
     
@@ -53,8 +75,8 @@ export const checkDayBasedPromotions = (): DayBasedPromotion[] => {
   });
 };
 
-export const getActivePromotionForCategory = (category: string): DayBasedPromotion | null => {
-  const activePromotions = checkDayBasedPromotions();
+export const getActivePromotionForCategory = async (category: string): Promise<DayBasedPromotion | null> => {
+  const activePromotions = await checkDayBasedPromotions();
   
   return activePromotions.find(promotion => 
     !promotion.applicableCategories || 
@@ -88,7 +110,135 @@ export const getDayName = (dayIndex: number): string => {
 };
 
 // Fonction pour vérifier si une promotion est active aujourd'hui
-export const isPromotionActiveToday = (promotionId: string): boolean => {
-  const activePromotions = checkDayBasedPromotions();
+export const isPromotionActiveToday = async (promotionId: string): Promise<boolean> => {
+  const activePromotions = await checkDayBasedPromotions();
   return activePromotions.some(promo => promo.id === promotionId);
+};
+
+// Fonctions CRUD pour l'administration
+export const createPromotion = async (promotion: Omit<DayBasedPromotion, 'id' | 'createdAt' | 'updatedAt'>): Promise<DayBasedPromotion | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('day_based_promotions')
+      .insert({
+        title: promotion.title,
+        description: promotion.description,
+        discount: promotion.discount,
+        is_percentage: promotion.isPercentage,
+        applicable_days: promotion.applicableDays,
+        applicable_categories: promotion.applicableCategories,
+        start_time: promotion.startTime,
+        end_time: promotion.endTime,
+        is_active: promotion.isActive
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      discount: data.discount,
+      isPercentage: data.is_percentage,
+      applicableDays: data.applicable_days,
+      applicableCategories: data.applicable_categories,
+      startTime: data.start_time,
+      endTime: data.end_time,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  } catch (error) {
+    console.error('Erreur lors de la création de la promotion:', error);
+    throw error;
+  }
+};
+
+export const updatePromotion = async (id: string, promotion: Partial<Omit<DayBasedPromotion, 'id' | 'createdAt' | 'updatedAt'>>): Promise<DayBasedPromotion | null> => {
+  try {
+    const updateData: any = {};
+    
+    if (promotion.title !== undefined) updateData.title = promotion.title;
+    if (promotion.description !== undefined) updateData.description = promotion.description;
+    if (promotion.discount !== undefined) updateData.discount = promotion.discount;
+    if (promotion.isPercentage !== undefined) updateData.is_percentage = promotion.isPercentage;
+    if (promotion.applicableDays !== undefined) updateData.applicable_days = promotion.applicableDays;
+    if (promotion.applicableCategories !== undefined) updateData.applicable_categories = promotion.applicableCategories;
+    if (promotion.startTime !== undefined) updateData.start_time = promotion.startTime;
+    if (promotion.endTime !== undefined) updateData.end_time = promotion.endTime;
+    if (promotion.isActive !== undefined) updateData.is_active = promotion.isActive;
+
+    const { data, error } = await supabase
+      .from('day_based_promotions')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      discount: data.discount,
+      isPercentage: data.is_percentage,
+      applicableDays: data.applicable_days,
+      applicableCategories: data.applicable_categories,
+      startTime: data.start_time,
+      endTime: data.end_time,
+      isActive: data.is_active,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la promotion:', error);
+    throw error;
+  }
+};
+
+export const deletePromotion = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('day_based_promotions')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la promotion:', error);
+    throw error;
+  }
+};
+
+export const getAllPromotions = async (): Promise<DayBasedPromotion[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('day_based_promotions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return data.map(promo => ({
+      id: promo.id,
+      title: promo.title,
+      description: promo.description,
+      discount: promo.discount,
+      isPercentage: promo.is_percentage,
+      applicableDays: promo.applicable_days,
+      applicableCategories: promo.applicable_categories,
+      startTime: promo.start_time,
+      endTime: promo.end_time,
+      isActive: promo.is_active,
+      createdAt: promo.created_at,
+      updatedAt: promo.updated_at
+    }));
+  } catch (error) {
+    console.error('Erreur lors de la récupération des promotions:', error);
+    return [];
+  }
 };

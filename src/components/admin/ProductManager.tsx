@@ -1,5 +1,6 @@
 
 import ProductsTable from "./ProductsTable";
+import PromotionsManager from "./PromotionsManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 
@@ -19,16 +20,7 @@ const ProductManager = () => {
           <ProductsTable />
         </TabsContent>
         <TabsContent value="promotions">
-          <div className="p-4 border rounded-md">
-            <h3 className="text-lg font-medium mb-4">Promotion active</h3>
-            <div className="bg-green-50 p-4 border border-green-200 rounded-md">
-              <p className="font-medium">1 Plateau Acheté = 1 Dessert Offert</p>
-              <p className="text-sm text-gray-600 mt-2">
-                Cette promotion est active. Lorsqu'un client ajoute un plateau dans son panier, 
-                il pourra choisir un dessert gratuit.
-              </p>
-            </div>
-          </div>
+          <PromotionsManager />
         </TabsContent>
       </Tabs>
     </div>
