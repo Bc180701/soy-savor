@@ -19,6 +19,7 @@ interface CategoryContentProps {
 const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedImageAlt, setSelectedImageAlt] = useState<string>("");
+  const [clickedButton, setClickedButton] = useState<string | null>(null);
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);
@@ -58,6 +59,16 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
   const handleCloseDialog = () => {
     setSelectedImage(null);
+  };
+
+  const handleAddToCart = (item: MenuItem) => {
+    setClickedButton(item.id);
+    onAddToCart(item);
+    
+    // Reset animation after 300ms
+    setTimeout(() => {
+      setClickedButton(null);
+    }, 300);
   };
 
   return (
@@ -157,12 +168,19 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                               </Link>
                             </Button>
                           ) : (
-                            <Button
-                              onClick={() => onAddToCart(item)}
-                              className="bg-gold-500 hover:bg-gold-600 text-black"
+                            <motion.div
+                              animate={clickedButton === item.id ? {
+                                scale: [1, 0.95, 1.05, 1],
+                                transition: { duration: 0.3, ease: "easeInOut" }
+                              } : {}}
                             >
-                              <Plus className="mr-2 h-4 w-4" /> Ajouter
-                            </Button>
+                              <Button
+                                onClick={() => handleAddToCart(item)}
+                                className="bg-gold-500 hover:bg-gold-600 text-black"
+                              >
+                                <Plus className="mr-2 h-4 w-4" /> Ajouter
+                              </Button>
+                            </motion.div>
                           )}
                         </div>
                       </div>
