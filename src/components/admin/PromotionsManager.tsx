@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Edit, Clock, Calendar } from "lucide-react";
+import { Trash2, Plus, Edit, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -90,7 +90,9 @@ const PromotionsManager = () => {
       setLoading(true);
       const data = await getAllPromotions();
       setPromotions(data);
+      console.log('Promotions chargées:', data);
     } catch (error) {
+      console.error('Erreur lors du chargement des promotions:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les promotions",
@@ -145,6 +147,8 @@ const PromotionsManager = () => {
     }
 
     try {
+      console.log('Envoi des données de promotion:', formData);
+      
       if (editingPromotion) {
         await updatePromotion(editingPromotion.id, formData);
         toast({
@@ -163,6 +167,7 @@ const PromotionsManager = () => {
       resetForm();
       loadPromotions();
     } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder la promotion",
@@ -184,6 +189,7 @@ const PromotionsManager = () => {
       });
       loadPromotions();
     } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
       toast({
         title: "Erreur",
         description: "Impossible de supprimer la promotion",
@@ -210,8 +216,18 @@ const PromotionsManager = () => {
     }));
   };
 
+  const handleNewPromotionClick = () => {
+    console.log('Bouton nouvelle promotion cliqué');
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
   if (loading) {
-    return <div>Chargement des promotions...</div>;
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -220,7 +236,7 @@ const PromotionsManager = () => {
         <h2 className="text-2xl font-bold">Gestion des promotions</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={resetForm}>
+            <Button onClick={handleNewPromotionClick} className="bg-gold-600 hover:bg-gold-700">
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle promotion
             </Button>
@@ -352,7 +368,7 @@ const PromotionsManager = () => {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Annuler
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="bg-gold-600 hover:bg-gold-700">
                   {editingPromotion ? 'Mettre à jour' : 'Créer'}
                 </Button>
               </div>
@@ -414,7 +430,7 @@ const PromotionsManager = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={promotion.isActive ? "success" : "destructive"}>
+                      <Badge variant={promotion.isActive ? "default" : "destructive"}>
                         {promotion.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
