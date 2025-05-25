@@ -80,7 +80,7 @@ export const CartStep = ({
               price: 0, // Free dessert
               imageUrl: dessert.image_url,
               category: 'desserts',
-              originalPrice: dessert.price // Keep original price for reference
+              originalPrice: dessert.price // Store original price for reference
             }));
             
             setDesserts(formattedDesserts);
