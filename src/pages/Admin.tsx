@@ -185,15 +185,17 @@ const Admin = () => {
               </div>
             </div>
             
-            <div className="flex-1 p-6 overflow-auto">
-              <div className="container mx-auto max-w-7xl">
-                <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className={`flex-1 overflow-auto ${isMobile && activeTab === 'orders' ? '' : 'p-6'}`}>
+              <div className={`${isMobile && activeTab === 'orders' ? 'w-full' : 'container mx-auto max-w-7xl'}`}>
+                <div className={`${isMobile && activeTab === 'orders' ? '' : 'bg-white p-6 rounded-lg shadow-sm'}`}>
                   {/* Affichage du titre de la section active */}
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-bold">
-                      {menuItems.find(item => item.id === activeTab)?.label}
-                    </h2>
-                  </div>
+                  {!(isMobile && activeTab === 'orders') && (
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-bold">
+                        {menuItems.find(item => item.id === activeTab)?.label}
+                      </h2>
+                    </div>
+                  )}
                   {renderActiveContent()}
                 </div>
               </div>
