@@ -12,7 +12,8 @@ import {
   LayoutTemplate,
   Lock,
   Clock,
-  Phone
+  Phone,
+  Menu
 } from "lucide-react";
 import DashboardStats from "@/components/admin/DashboardStats";
 import OrderList from "@/components/OrderList";
@@ -26,6 +27,8 @@ import OrderingLockControl from "@/components/admin/OrderingLockControl";
 import PokeIngredientsManager from "@/components/admin/PokeIngredientsManager";
 import OpeningHoursManager from "@/components/admin/OpeningHoursManager";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -34,6 +37,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 const Admin = () => {
@@ -41,6 +45,7 @@ const Admin = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -141,7 +146,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <SidebarProvider defaultOpen={true}>
+      <SidebarProvider defaultOpen={!isMobile}>
         <div className="flex w-full min-h-screen pt-[72px]">
           <Sidebar collapsible="icon" side="left" variant="sidebar">
             <SidebarHeader className="p-4 border-b">
@@ -168,10 +173,33 @@ const Admin = () => {
             </ScrollArea>
           </Sidebar>
           
-          <div className="flex-1 p-6 overflow-auto">
-            <div className="container mx-auto">
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                {renderActiveContent()}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Header mobile avec bouton menu */}
+            {isMobile && (
+              <div className="flex items-center justify-between p-4 border-b bg-white">
+                <h1 className="text-xl font-bold">Administration</h1>
+                <SidebarTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Menu className="h-4 w-4" />
+                    <span className="ml-2">Menu</span>
+                  </Button>
+                </SidebarTrigger>
+              </div>
+            )}
+            
+            <div className="flex-1 p-6 overflow-auto">
+              <div className="container mx-auto">
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                  {/* Affichage du titre de la section active sur mobile */}
+                  {isMobile && (
+                    <div className="mb-4">
+                      <h2 className="text-2xl font-bold">
+                        {menuItems.find(item => item.id === activeTab)?.label}
+                      </h2>
+                    </div>
+                  )}
+                  {renderActiveContent()}
+                </div>
               </div>
             </div>
           </div>
