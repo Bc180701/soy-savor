@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -178,12 +177,12 @@ const Admin = () => {
             {isMobile && (
               <div className="flex items-center justify-between p-4 border-b bg-white">
                 <h1 className="text-xl font-bold">Administration</h1>
-                <SidebarTrigger asChild>
-                  <Button variant="outline" size="sm">
+                <div className="flex items-center gap-2">
+                  <SidebarTrigger className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
                     <Menu className="h-4 w-4" />
-                    <span className="ml-2">Menu</span>
-                  </Button>
-                </SidebarTrigger>
+                    <span>Menu</span>
+                  </SidebarTrigger>
+                </div>
               </div>
             )}
             
