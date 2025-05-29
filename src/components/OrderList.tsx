@@ -91,7 +91,7 @@ const OrderList = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className={`${isMobile ? 'w-full' : 'bg-white rounded-lg shadow-md'} overflow-hidden`}>
       {!isMobile && (
         <div className="p-6 border-b">
           <h2 className="text-xl font-bold">Gestion des Commandes</h2>
@@ -134,7 +134,7 @@ const OrderList = () => {
             </TabsTrigger>
           </TabsList>
           
-          <div className={isMobile ? "p-4" : "p-6"}>
+          <div className={isMobile ? "p-2" : "p-6"}>
             <TabsContent value="accounting" className="mt-0">
               <OrdersAccountingView 
                 orders={orders} 

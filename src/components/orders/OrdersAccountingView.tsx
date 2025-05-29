@@ -155,13 +155,13 @@ const OrdersAccountingView = ({
 
   if (isMobile) {
     return (
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold">Vue Comptable ({orders.length})</h2>
+      <div className="w-full">
+        <h2 className="text-xl font-bold mb-3 px-1">Vue Comptable ({orders.length})</h2>
         
-        <div className="space-y-3">
+        <div className="space-y-2">
           {orders.map((order) => (
-            <Card key={order.id} className="border">
-              <CardHeader className="pb-2">
+            <Card key={order.id} className="border mx-0">
+              <CardHeader className="pb-2 px-3 py-2">
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-sm">#{order.id.substring(0, 6)}</CardTitle>
@@ -174,7 +174,7 @@ const OrdersAccountingView = ({
                 </div>
               </CardHeader>
               
-              <CardContent className="pt-0">
+              <CardContent className="pt-0 px-3 pb-3">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs text-gray-600">
                     {order.orderType === 'delivery' ? 'Livraison' : 
@@ -186,14 +186,18 @@ const OrdersAccountingView = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="text-xs"
+                    className="text-xs flex-1"
                     onClick={() => onViewDetails(order)}
                   >
                     <Eye className="h-3 w-3 mr-1" />
                     Voir
                   </Button>
                   
-                  {getActionButton(order)}
+                  {getActionButton(order) && (
+                    <div className="flex-1">
+                      {getActionButton(order)}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
