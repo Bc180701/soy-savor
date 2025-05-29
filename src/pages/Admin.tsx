@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,7 +148,7 @@ const Admin = () => {
     <div className="min-h-screen flex flex-col">
       <SidebarProvider defaultOpen={!isMobile}>
         <div className="flex w-full min-h-screen pt-[72px]">
-          <Sidebar collapsible="icon" side="left" variant="sidebar">
+          <Sidebar collapsible="offcanvas" side="left" variant="sidebar">
             <SidebarHeader className="p-4 border-b">
               <h2 className="text-lg font-bold">Administration</h2>
             </SidebarHeader>
@@ -172,31 +173,27 @@ const Admin = () => {
             </ScrollArea>
           </Sidebar>
           
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Header mobile avec bouton menu */}
-            {isMobile && (
-              <div className="flex items-center justify-between p-4 border-b bg-white">
+          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+            {/* Header avec bouton menu */}
+            <div className="flex items-center justify-between p-4 border-b bg-white">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                  <Menu className="h-4 w-4" />
+                  <span className="hidden sm:inline">Menu</span>
+                </SidebarTrigger>
                 <h1 className="text-xl font-bold">Administration</h1>
-                <div className="flex items-center gap-2">
-                  <SidebarTrigger className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
-                    <Menu className="h-4 w-4" />
-                    <span>Menu</span>
-                  </SidebarTrigger>
-                </div>
               </div>
-            )}
+            </div>
             
             <div className="flex-1 p-6 overflow-auto">
-              <div className="container mx-auto">
+              <div className="container mx-auto max-w-7xl">
                 <div className="bg-white p-6 rounded-lg shadow-sm">
-                  {/* Affichage du titre de la section active sur mobile */}
-                  {isMobile && (
-                    <div className="mb-4">
-                      <h2 className="text-2xl font-bold">
-                        {menuItems.find(item => item.id === activeTab)?.label}
-                      </h2>
-                    </div>
-                  )}
+                  {/* Affichage du titre de la section active */}
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold">
+                      {menuItems.find(item => item.id === activeTab)?.label}
+                    </h2>
+                  </div>
                   {renderActiveContent()}
                 </div>
               </div>
