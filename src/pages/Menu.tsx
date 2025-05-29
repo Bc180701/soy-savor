@@ -165,12 +165,15 @@ const Menu = () => {
                               <CardContent className="p-0">
                                 <div className="flex flex-col md:flex-row">
                                   {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                                    <div className="w-full md:w-1/4 overflow-hidden">
+                                    <div 
+                                      className="w-full md:w-1/4 overflow-hidden"
+                                      style={{ backgroundColor: '#c7c8ca' }}
+                                    >
                                       <AspectRatio ratio={1/1} className="h-full">
                                         <img
                                           src={item.imageUrl}
                                           alt={item.name}
-                                          className="w-full h-full object-contain bg-[#f9fafb]"
+                                          className="w-full h-full object-contain"
                                         />
                                       </AspectRatio>
                                     </div>

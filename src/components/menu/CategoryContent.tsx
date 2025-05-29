@@ -1,3 +1,4 @@
+
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -101,7 +102,10 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                   <CardContent className="p-0">
                     <div className="flex flex-col md:flex-row">
                       {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                        <div className="w-full md:w-1/4 bg-[#f9fafb] flex items-center justify-center">
+                        <div 
+                          className="w-full md:w-1/4 flex items-center justify-center"
+                          style={{ backgroundColor: '#c7c8ca' }}
+                        >
                           <div className="w-full max-w-[120px] md:max-w-none mx-auto py-4 px-2">
                             <div className="aspect-square relative">
                               <img
@@ -225,7 +229,10 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
       <Dialog open={!!selectedImage} onOpenChange={handleCloseDialog}>
         <DialogContent className="sm:max-w-lg p-0 bg-transparent border-0 shadow-none">
           <DialogTitle className="sr-only">Image de {selectedImageAlt}</DialogTitle>
-          <div className="w-full bg-[#f9fafb] rounded-lg overflow-hidden">
+          <div 
+            className="w-full rounded-lg overflow-hidden"
+            style={{ backgroundColor: '#c7c8ca' }}
+          >
             <img
               src={selectedImage || ''}
               alt={selectedImageAlt}
