@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { getAllOrders, updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
@@ -9,6 +8,7 @@ import { FileText, ChefHat, Truck } from "lucide-react";
 import OrdersAccountingView from "./orders/OrdersAccountingView";
 import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const OrderList = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -16,6 +16,7 @@ const OrderList = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>("accounting");
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -90,8 +91,12 @@ const OrderList = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold mb-4">Gestion des Commandes</h2>
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      {!isMobile && (
+        <div className="p-6 border-b">
+          <h2 className="text-xl font-bold">Gestion des Commandes</h2>
+        </div>
+      )}
       
       {loading ? (
         <div className="flex justify-center py-8">
@@ -99,44 +104,61 @@ const OrderList = () => {
         </div>
       ) : (
         <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
-          <TabsList variant="horizontal" className="mb-6 w-full">
-            <TabsTrigger variant="horizontal" value="accounting" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>Comptable</span>
+          <TabsList 
+            variant={isMobile ? "horizontal" : "default"} 
+            className={`${isMobile ? 'w-full rounded-none border-b bg-white p-0 h-auto' : 'mb-6 w-full'}`}
+          >
+            <TabsTrigger 
+              variant={isMobile ? "horizontal" : "default"}
+              value="accounting" 
+              className={`flex items-center gap-2 ${isMobile ? 'flex-1 py-3 text-sm' : ''}`}
+            >
+              <FileText className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+              <span className={isMobile ? "text-xs" : ""}>Comptable</span>
             </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="kitchen" className="flex items-center gap-2">
-              <ChefHat className="h-4 w-4" />
-              <span>Cuisine</span>
+            <TabsTrigger 
+              variant={isMobile ? "horizontal" : "default"}
+              value="kitchen" 
+              className={`flex items-center gap-2 ${isMobile ? 'flex-1 py-3 text-sm' : ''}`}
+            >
+              <ChefHat className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+              <span className={isMobile ? "text-xs" : ""}>Cuisine</span>
             </TabsTrigger>
-            <TabsTrigger variant="horizontal" value="delivery" className="flex items-center gap-2">
-              <Truck className="h-4 w-4" />
-              <span>Livraison</span>
+            <TabsTrigger 
+              variant={isMobile ? "horizontal" : "default"}
+              value="delivery" 
+              className={`flex items-center gap-2 ${isMobile ? 'flex-1 py-3 text-sm' : ''}`}
+            >
+              <Truck className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+              <span className={isMobile ? "text-xs" : ""}>Livraison</span>
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="accounting">
-            <OrdersAccountingView 
-              orders={orders} 
-              onViewDetails={handleViewDetails} 
-              onUpdateStatus={handleUpdateStatus} 
-            />
-          </TabsContent>
-          
-          <TabsContent value="kitchen">
-            <OrdersKitchenView 
-              orders={orders} 
-              onViewDetails={handleViewDetails} 
-              onUpdateStatus={handleUpdateStatus} 
-            />
-          </TabsContent>
-          
-          <TabsContent value="delivery">
-            <OrdersDeliveryView 
-              orders={orders} 
-              onViewDetails={handleViewDetails} 
-              onUpdateStatus={handleUpdateStatus} 
-            />
-          </TabsContent>
+          <div className={isMobile ? "p-4" : "p-6"}>
+            <TabsContent value="accounting" className="mt-0">
+              <OrdersAccountingView 
+                orders={orders} 
+                onViewDetails={handleViewDetails} 
+                onUpdateStatus={handleUpdateStatus} 
+              />
+            </TabsContent>
+            
+            <TabsContent value="kitchen" className="mt-0">
+              <OrdersKitchenView 
+                orders={orders} 
+                onViewDetails={handleViewDetails} 
+                onUpdateStatus={handleUpdateStatus} 
+              />
+            </TabsContent>
+            
+            <TabsContent value="delivery" className="mt-0">
+              <OrdersDeliveryView 
+                orders={orders} 
+                onViewDetails={handleViewDetails} 
+                onUpdateStatus={handleUpdateStatus} 
+              />
+            </TabsContent>
+          </div>
         </Tabs>
       )}
       
