@@ -148,19 +148,19 @@ const Admin = () => {
     <div className="min-h-screen flex flex-col">
       <SidebarProvider defaultOpen={!isMobile}>
         <div className="flex w-full min-h-screen pt-[72px]">
-          <Sidebar collapsible="offcanvas" side="left" variant="sidebar">
-            <SidebarHeader className="p-4 border-b">
-              <h2 className="text-lg font-bold">Administration</h2>
+          <Sidebar collapsible="offcanvas" side="left" variant="sidebar" className="bg-white border-r">
+            <SidebarHeader className="p-4 border-b bg-white">
+              <h2 className="text-lg font-bold text-gray-900">Administration</h2>
             </SidebarHeader>
             <ScrollArea className="h-[calc(100vh-140px)]">
-              <SidebarContent>
+              <SidebarContent className="bg-white">
                 <SidebarMenu>
                   {menuItems.map((item) => (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton 
                         isActive={activeTab === item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className="w-full justify-start"
+                        className="w-full justify-start text-gray-700 hover:bg-gray-100 hover:text-gray-900 data-[active=true]:bg-blue-50 data-[active=true]:text-blue-600"
                         tooltip={item.label}
                       >
                         {item.icon}
