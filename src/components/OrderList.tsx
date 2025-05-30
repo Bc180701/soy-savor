@@ -135,7 +135,7 @@ const OrderList = () => {
             </TabsTrigger>
           </TabsList>
           
-          <div className={isMobile ? "p-0" : "p-6"}>
+          <div className={isMobile ? "px-2" : "p-6"}>
             <TabsContent value="accounting" className="mt-0">
               <OrdersAccountingView 
                 orders={orders} 
