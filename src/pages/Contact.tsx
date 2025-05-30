@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { z } from "zod";
@@ -102,7 +101,7 @@ const Contact = () => {
             Une question ou une réservation ? N'hésitez pas à nous contacter.
           </p>
 
-          <Tabs defaultValue="coordonnees" variant="horizontal" className="w-full">
+          <Tabs defaultValue="coordonnees" className="w-full">
             <TabsList variant="horizontal" className="grid w-full grid-cols-2">
               <TabsTrigger value="coordonnees" variant="horizontal">Coordonnées</TabsTrigger>
               <TabsTrigger value="message" variant="horizontal">Message</TabsTrigger>
