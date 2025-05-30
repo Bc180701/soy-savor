@@ -27,7 +27,7 @@ interface CartStepProps {
     isPercentage: boolean;
   } | null>>;
   handleNextStep: () => void;
-  userEmail?: string; // Optional user email
+  userEmail?: string;
 }
 
 export const CartStep = ({
@@ -43,9 +43,9 @@ export const CartStep = ({
   const { 
     removeItem, 
     updateQuantity, 
-    hasPlateauInCart, 
-    hasAddedFreeDessert,
-    setHasAddedFreeDessert,
+    plateauCount,
+    freeDessertCount,
+    getRemainingFreeDesserts,
     addItem
   } = useCart();
   
@@ -57,10 +57,12 @@ export const CartStep = ({
   const [desserts, setDesserts] = useState<MenuItem[]>([]);
   const [loadingDesserts, setLoadingDesserts] = useState(false);
   
-  // Check if a plateau has been added and offer a free dessert
+  const remainingFreeDesserts = getRemainingFreeDesserts();
+  
+  // Check if plateaux have been added and offer free desserts
   useEffect(() => {
     const checkForPromotion = async () => {
-      if (hasPlateauInCart && !hasAddedFreeDessert) {
+      if (plateauCount > 0 && remainingFreeDesserts > 0) {
         setLoadingDesserts(true);
         try {
           // Fetch desserts from Supabase
@@ -95,7 +97,7 @@ export const CartStep = ({
     };
     
     checkForPromotion();
-  }, [hasPlateauInCart, hasAddedFreeDessert]);
+  }, [plateauCount, remainingFreeDesserts]);
   
   // Handle dessert selection
   const handleSelectDessert = (dessert: MenuItem) => {
@@ -104,13 +106,40 @@ export const CartStep = ({
       price: 0 // Ensure it's free
     }, 1, "Dessert offert - Promotion 1 plateau acheté = 1 dessert offert");
     
-    setHasAddedFreeDessert(true);
-    setShowDessertDialog(false);
+    // Si on a encore des desserts gratuits disponibles, garder la boîte ouverte
+    // Sinon, la fermer
+    if (getRemainingFreeDesserts() <= 1) {
+      setShowDessertDialog(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Votre panier</h2>
+      
+      {/* Affichage du statut de la promotion plateaux/desserts */}
+      {plateauCount > 0 && (
+        <div className="bg-gold-50 border border-gold-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gold-800 font-medium">
+                🎉 Promotion active : {plateauCount} plateau{plateauCount > 1 ? 'x' : ''} = {plateauCount} dessert{plateauCount > 1 ? 's' : ''} offert{plateauCount > 1 ? 's' : ''} !
+              </p>
+              <p className="text-sm text-gold-600">
+                Desserts gratuits ajoutés : {freeDessertCount}/{plateauCount}
+              </p>
+            </div>
+            {remainingFreeDesserts > 0 && (
+              <Button 
+                onClick={() => setShowDessertDialog(true)}
+                className="bg-gold-500 hover:bg-gold-600 text-black text-sm"
+              >
+                Choisir {remainingFreeDesserts} dessert{remainingFreeDesserts > 1 ? 's' : ''}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
       
       {isCartEmpty ? (
         <div className="text-center py-12">
@@ -181,10 +210,10 @@ export const CartStep = ({
               <span className="text-2xl">🎁</span>
             </div>
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-gold-600 to-gold-800 bg-clip-text text-transparent">
-              Félicitations !
+              Choisissez vos desserts gratuits !
             </DialogTitle>
             <p className="text-lg text-gray-600">
-              Vous avez droit à un <span className="font-semibold text-gold-600">dessert offert</span> avec votre plateau
+              Vous avez droit à <span className="font-semibold text-gold-600">{remainingFreeDesserts} dessert{remainingFreeDesserts > 1 ? 's' : ''} offert{remainingFreeDesserts > 1 ? 's' : ''}</span> avec vos plateaux
             </p>
           </DialogHeader>
           
@@ -251,9 +280,23 @@ export const CartStep = ({
               
               <div className="mt-6 p-4 bg-gold-50 border border-gold-200 rounded-lg">
                 <p className="text-center text-sm text-gold-700">
-                  <span className="font-semibold">🎉 Offre spéciale :</span> 1 plateau acheté = 1 dessert offert !
+                  <span className="font-semibold">🎉 Offre spéciale :</span> {plateauCount} plateau{plateauCount > 1 ? 'x' : ''} acheté{plateauCount > 1 ? 's' : ''} = {plateauCount} dessert{plateauCount > 1 ? 's' : ''} offert{plateauCount > 1 ? 's' : ''} !
+                </p>
+                <p className="text-center text-xs text-gold-600 mt-1">
+                  Encore {remainingFreeDesserts} dessert{remainingFreeDesserts > 1 ? 's' : ''} à choisir
                 </p>
               </div>
+
+              {remainingFreeDesserts === 0 && (
+                <div className="text-center">
+                  <Button 
+                    onClick={() => setShowDessertDialog(false)}
+                    className="bg-gold-500 hover:bg-gold-600 text-black"
+                  >
+                    Terminer
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
