@@ -42,11 +42,6 @@ const ComposerSushi = () => {
 
   const { baseItem } = (location.state as ComposerSushiState) || { baseItem: null };
 
-  // If no base item is passed, redirect to the main page
-  if (!baseItem) {
-    navigate("/commander");
-  }
-
   const [step, setStep] = useState<number>(1);
   const [selectedBox, setSelectedBox] = useState<BoxOption | null>(null);
   const [selectedEnrobage, setSelectedEnrobage] = useState<SushiOption | null>(null);
@@ -247,6 +242,15 @@ const ComposerSushi = () => {
     }
   };
 
+  // Handle back navigation
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    } else {
+      navigate("/commander");
+    }
+  };
+
   // Get current step content
   const renderStepContent = () => {
     switch (step) {
@@ -430,7 +434,7 @@ const ComposerSushi = () => {
         <Button 
           variant="ghost" 
           className="mb-4"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/commander")}
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Retour au menu
         </Button>
@@ -486,7 +490,7 @@ const ComposerSushi = () => {
             <div className="mt-6 flex justify-between">
               <Button 
                 variant="outline" 
-                onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)}
+                onClick={handleBack}
               >
                 {step > 1 ? "Précédent" : "Annuler"}
               </Button>
