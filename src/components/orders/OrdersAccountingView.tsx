@@ -143,7 +143,7 @@ const OrdersAccountingView = ({
 
   if (orders.length === 0) {
     return (
-      <div className={isMobile ? "" : ""}>
+      <div className={isMobile ? "px-3" : ""}>
         <h2 className="text-2xl font-bold mb-4">Vue Comptable (0)</h2>
         <div className="text-center p-10 bg-gray-50 rounded-lg">
           <p className="text-gray-500">Aucune commande trouvée.</p>
@@ -156,9 +156,9 @@ const OrdersAccountingView = ({
   if (isMobile) {
     return (
       <div className="w-full">
-        <h2 className="text-xl font-bold mb-3">Vue Comptable ({orders.length})</h2>
+        <h2 className="text-xl font-bold mb-3 px-3">Vue Comptable ({orders.length})</h2>
         
-        <div className="space-y-2">
+        <div className="space-y-2 px-3">
           {orders.map((order) => (
             <Card key={order.id} className="border">
               <CardHeader className="pb-2 px-3 py-2">
