@@ -39,6 +39,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const [hasProfile, setHasProfile] = useState(false);
   const [hasAddress, setHasAddress] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [postalCodeValidationStatus, setPostalCodeValidationStatus] = useState<'valid' | 'invalid' | 'pending' | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,7 +75,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       
       const hasErrors = Object.keys(form.formState.errors).length > 0;
       
-      if (allFieldsFilled && !hasErrors && !isValidating) {
+      // Ne pas soumettre si le code postal est invalide
+      if (allFieldsFilled && !hasErrors && !isValidating && postalCodeValidationStatus === 'valid') {
         const data = form.getValues();
         await validatePostalCodeAndSubmit(data);
       }
@@ -83,7 +85,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     // Debounce the validation
     const timer = setTimeout(validateAndSubmit, 1000);
     return () => clearTimeout(timer);
-  }, [watchedFields, form.formState.errors, isSubmitted, isValidating]);
+  }, [watchedFields, form.formState.errors, isSubmitted, isValidating, postalCodeValidationStatus]);
 
   // Watch the postal code field to validate it whenever it changes
   const postalCode = form.watch("postalCode");
@@ -92,20 +94,36 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   useEffect(() => {
     const validatePostalCode = async () => {
       if (postalCode && postalCode.length === 5 && !isValidating) {
+        setPostalCodeValidationStatus('pending');
         try {
           const isValid = await checkPostalCodeDelivery(postalCode);
           
           if (!isValid) {
+            setPostalCodeValidationStatus('invalid');
             form.setError("postalCode", {
               type: "manual",
               message: "Code postal hors zone de livraison"
             });
+            toast({
+              variant: "destructive",
+              title: "Zone non desservie",
+              description: `Nous ne livrons pas dans la zone ${postalCode}. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.`,
+            });
           } else {
+            setPostalCodeValidationStatus('valid');
             form.clearErrors("postalCode");
           }
         } catch (error) {
           console.error("Error validating postal code:", error);
+          setPostalCodeValidationStatus('invalid');
+          form.setError("postalCode", {
+            type: "manual",
+            message: "Erreur lors de la validation du code postal"
+          });
         }
+      } else if (postalCode && postalCode.length < 5) {
+        setPostalCodeValidationStatus(null);
+        form.clearErrors("postalCode");
       }
     };
     
@@ -318,17 +336,17 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     setIsValidating(true);
     
     try {
-      // Check if postal code is in delivery range
+      // Vérifier une dernière fois le code postal avant soumission
       const isValidPostalCode = await checkPostalCodeDelivery(data.postalCode);
       
       if (!isValidPostalCode) {
         toast({
           variant: "destructive",
           title: "Zone non desservie",
-          description: `Nous ne livrons pas dans la zone ${data.postalCode}. Veuillez choisir un autre mode de livraison.`,
+          description: `Nous ne livrons pas dans la zone ${data.postalCode}. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.`,
         });
         
-        // Set error on postal code field
+        setPostalCodeValidationStatus('invalid');
         form.setError("postalCode", {
           type: "manual",
           message: "Code postal hors zone de livraison"
@@ -338,7 +356,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // If valid, mark as submitted and continue
+      // Si valide, marquer comme soumis et continuer
       setIsSubmitted(true);
       onComplete(data);
     } catch (error) {
@@ -449,7 +467,18 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                 <FormItem>
                   <FormLabel>Code postal</FormLabel>
                   <FormControl>
-                    <Input placeholder="75000" {...field} />
+                    <div className="relative">
+                      <Input placeholder="75000" {...field} />
+                      {postalCodeValidationStatus === 'pending' && (
+                        <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                      )}
+                      {postalCodeValidationStatus === 'valid' && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 bg-green-500 rounded-full" />
+                      )}
+                      {postalCodeValidationStatus === 'invalid' && (
+                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 bg-red-500 rounded-full" />
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500" />
                 </FormItem>
