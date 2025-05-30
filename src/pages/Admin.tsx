@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,7 +115,7 @@ const Admin = () => {
         return <AdminManager />;
       case "settings":
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`grid grid-cols-1 gap-6 ${isMobile ? '' : 'md:grid-cols-2'}`}>
             <OrderingLockControl />
           </div>
         );
@@ -148,8 +149,8 @@ const Admin = () => {
       <SidebarProvider defaultOpen={!isMobile}>
         <div className="flex w-full min-h-screen pt-[72px]">
           <Sidebar collapsible="offcanvas" side="left" variant="sidebar" className="bg-white border-r">
-            <SidebarHeader className="p-4 border-b bg-white">
-              <h2 className="text-lg font-bold text-gray-900">Administration</h2>
+            <SidebarHeader className={`border-b bg-white ${isMobile ? 'p-2' : 'p-4'}`}>
+              <h2 className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-gray-900`}>Administration</h2>
             </SidebarHeader>
             <ScrollArea className="h-[calc(100vh-140px)]">
               <SidebarContent className="bg-white">
@@ -159,7 +160,7 @@ const Admin = () => {
                       <SidebarMenuButton 
                         isActive={activeTab === item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className="w-full justify-start text-gray-700 hover:bg-gray-100 hover:text-gray-900 data-[active=true]:bg-blue-50 data-[active=true]:text-blue-600"
+                        className={`w-full justify-start text-gray-700 hover:bg-gray-100 hover:text-gray-900 data-[active=true]:bg-blue-50 data-[active=true]:text-blue-600 ${isMobile ? 'text-sm py-2' : ''}`}
                         tooltip={item.label}
                       >
                         {item.icon}
@@ -174,21 +175,30 @@ const Admin = () => {
           
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             {/* Header avec bouton menu */}
-            <div className="flex items-center justify-between p-4 border-b bg-white">
+            <div className={`flex items-center justify-between border-b bg-white ${isMobile ? 'p-2' : 'p-4'}`}>
               <div className="flex items-center gap-3">
-                <SidebarTrigger className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                <SidebarTrigger className={`flex items-center gap-2 border border-gray-300 rounded-md hover:bg-gray-50 ${isMobile ? 'px-2 py-1' : 'px-3 py-2'}`}>
                   <Menu className="h-4 w-4" />
-                  <span className="hidden sm:inline">Menu</span>
+                  {!isMobile && <span className="hidden sm:inline">Menu</span>}
                 </SidebarTrigger>
-                <h1 className="text-xl font-bold">Administration</h1>
+                <h1 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold`}>Administration</h1>
               </div>
             </div>
             
-            <div className={`flex-1 overflow-auto ${isMobile && activeTab === 'orders' ? 'p-0' : 'p-6'}`}>
-              <div className={`${isMobile && activeTab === 'orders' ? 'w-full max-w-full' : 'container mx-auto max-w-7xl'}`}>
-                <div className={`${isMobile && activeTab === 'orders' ? '' : 'bg-white p-6 rounded-lg shadow-sm'}`}>
+            <div className={`flex-1 overflow-auto ${
+              isMobile && activeTab === 'orders' ? 'p-0' : 
+              isMobile ? 'p-2' : 'p-6'
+            }`}>
+              <div className={`${
+                isMobile && activeTab === 'orders' ? 'w-full max-w-full' : 
+                isMobile ? 'w-full' : 'container mx-auto max-w-7xl'
+              }`}>
+                <div className={`${
+                  isMobile && activeTab === 'orders' ? '' : 
+                  isMobile ? '' : 'bg-white p-6 rounded-lg shadow-sm'
+                }`}>
                   {/* Affichage du titre de la section active */}
-                  {!(isMobile && activeTab === 'orders') && (
+                  {!(isMobile && activeTab === 'orders') && !isMobile && (
                     <div className="mb-6">
                       <h2 className="text-2xl font-bold">
                         {menuItems.find(item => item.id === activeTab)?.label}

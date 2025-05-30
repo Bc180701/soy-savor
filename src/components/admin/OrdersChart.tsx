@@ -5,10 +5,12 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { getOrderAnalytics, OrderAnalytics } from "@/services/analyticsService";
 import { TrendingUp, ChartBar } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const OrdersChart = () => {
   const [data, setData] = useState<OrderAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,24 +56,26 @@ const OrdersChart = () => {
   };
 
   return (
-    <Card className="w-full mb-8">
+    <Card className={`w-full mb-8 ${isMobile ? 'mx-2' : ''}`}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center space-x-2">
-          <ChartBar className="h-5 w-5 text-primary" />
-          <CardTitle className="text-lg">Évolution des commandes et revenus (7 derniers jours)</CardTitle>
+          <ChartBar className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-primary`} />
+          <CardTitle className={`${isMobile ? 'text-sm' : 'text-lg'}`}>
+            {isMobile ? 'Évolution (7j)' : 'Évolution des commandes et revenus (7 derniers jours)'}
+          </CardTitle>
         </div>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex h-[300px] items-center justify-center">
+          <div className={`flex ${isMobile ? 'h-[200px]' : 'h-[300px]'} items-center justify-center`}>
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
           </div>
         ) : data.length === 0 ? (
-          <div className="flex h-[300px] items-center justify-center">
+          <div className={`flex ${isMobile ? 'h-[200px]' : 'h-[300px]'} items-center justify-center`}>
             <p className="text-muted-foreground">Aucune donnée disponible</p>
           </div>
         ) : (
-          <div className="h-[300px]">
+          <div className={isMobile ? 'h-[200px]' : 'h-[300px]'}>
             <ResponsiveContainer width="100%" height="100%">
               <ChartContainer 
                 config={{
@@ -87,13 +91,18 @@ const OrdersChart = () => {
               >
                 <BarChart
                   data={formatData(data)}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  margin={{ 
+                    top: 20, 
+                    right: isMobile ? 10 : 30, 
+                    left: isMobile ? 10 : 20, 
+                    bottom: 20 
+                  }}
                 >
                   <XAxis
                     dataKey="date"
                     axisLine={{ strokeWidth: 1 }}
                     tickLine={false}
-                    fontSize={12}
+                    fontSize={isMobile ? 10 : 12}
                     dy={10}
                   />
                   {/* Primary Y-axis for orders */}
@@ -104,8 +113,8 @@ const OrdersChart = () => {
                     domain={getOrdersYAxisDomain()}
                     axisLine={{ strokeWidth: 1 }}
                     tickLine={false}
-                    fontSize={12}
-                    width={40}
+                    fontSize={isMobile ? 8 : 12}
+                    width={isMobile ? 25 : 40}
                   />
                   {/* Secondary Y-axis for revenue */}
                   <YAxis
@@ -115,8 +124,8 @@ const OrdersChart = () => {
                     domain={getRevenueYAxisDomain()}
                     axisLine={{ strokeWidth: 1 }}
                     tickLine={false}
-                    fontSize={12}
-                    width={60}
+                    fontSize={isMobile ? 8 : 12}
+                    width={isMobile ? 35 : 60}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar
@@ -126,7 +135,7 @@ const OrdersChart = () => {
                     stroke="#1E40AF"
                     strokeWidth={1}
                     name="orders"
-                    barSize={20}
+                    barSize={isMobile ? 15 : 20}
                   />
                   <Bar
                     dataKey="total_revenue"
@@ -135,7 +144,7 @@ const OrdersChart = () => {
                     stroke="#047857"
                     strokeWidth={1}
                     name="revenue"
-                    barSize={20}
+                    barSize={isMobile ? 15 : 20}
                   />
                 </BarChart>
               </ChartContainer>

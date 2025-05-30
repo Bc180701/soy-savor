@@ -4,12 +4,14 @@ import { CreditCard, Package, ShoppingBag, TrendingUp } from "lucide-react";
 import StatisticsCard from "./StatisticsCard";
 import { getTotalRevenue } from "@/services/analyticsService";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const DashboardStats = () => {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
   const [pendingOrders, setPendingOrders] = useState(0);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -48,7 +50,7 @@ const DashboardStats = () => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
         {[...Array(4)].map((_, i) => (
           <div key={i} className="h-24 rounded-lg bg-gray-100 animate-pulse"></div>
         ))}
@@ -57,7 +59,7 @@ const DashboardStats = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className={`grid gap-4 ${isMobile ? 'grid-cols-1 px-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'}`}>
       <StatisticsCard
         title="Revenu Total"
         value={`${totalRevenue.toFixed(2)} €`}
