@@ -22,11 +22,12 @@ export const isRestaurantOpenNow = async (): Promise<boolean> => {
       .from('homepage_sections')
       .select('section_data')
       .eq('section_name', 'opening_hours')
-      .single();
+      .maybeSingle();
     
     if (error || !data) {
-      console.error("Error checking opening hours:", error);
-      return false;
+      console.log("Aucune donnée d'horaires trouvée, restaurant considéré comme ouvert");
+      // Si pas de données d'horaires, considérer le restaurant comme ouvert par défaut
+      return true;
     }
     
     // Cast the section_data to DayOpeningHours[] type with proper type checking
@@ -40,7 +41,8 @@ export const isRestaurantOpenNow = async (): Promise<boolean> => {
     return currentTime >= todayHours.open_time && currentTime <= todayHours.close_time;
   } catch (error) {
     console.error("Exception when checking opening hours:", error);
-    return false;
+    // En cas d'erreur, considérer le restaurant comme ouvert par défaut
+    return true;
   }
 };
 
@@ -50,18 +52,36 @@ export const getWeekOpeningHours = async (): Promise<DayOpeningHours[]> => {
       .from('homepage_sections')
       .select('section_data')
       .eq('section_name', 'opening_hours')
-      .single();
+      .maybeSingle();
     
-    if (error) {
-      console.error("Error fetching opening hours:", error);
-      return [];
+    if (error || !data) {
+      console.log("Aucune donnée d'horaires trouvée, utilisation d'horaires par défaut");
+      // Retourner des horaires par défaut si pas de données
+      return [
+        { day: "monday", is_open: false, open_time: "11:00", close_time: "22:00", day_order: 1 },
+        { day: "tuesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 2 },
+        { day: "wednesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 3 },
+        { day: "thursday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 4 },
+        { day: "friday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 5 },
+        { day: "saturday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 6 },
+        { day: "sunday", is_open: false, open_time: "11:00", close_time: "22:00", day_order: 0 }
+      ];
     }
     
     // Use proper type casting to ensure TypeScript understands the data structure
     return (data?.section_data as unknown as DayOpeningHours[]) || [];
   } catch (error) {
     console.error("Exception when fetching opening hours:", error);
-    return [];
+    // Retourner des horaires par défaut en cas d'erreur
+    return [
+      { day: "monday", is_open: false, open_time: "11:00", close_time: "22:00", day_order: 1 },
+      { day: "tuesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 2 },
+      { day: "wednesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 3 },
+      { day: "thursday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 4 },
+      { day: "friday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 5 },
+      { day: "saturday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 6 },
+      { day: "sunday", is_open: false, open_time: "11:00", close_time: "22:00", day_order: 0 }
+    ];
   }
 };
 
@@ -75,11 +95,12 @@ export const getNextOpenDay = async (): Promise<DayOpeningHours | null> => {
       .from('homepage_sections')
       .select('section_data')
       .eq('section_name', 'opening_hours')
-      .single();
+      .maybeSingle();
     
     if (error || !data) {
-      console.error("Error fetching next open day:", error);
-      return null;
+      console.log("Aucune donnée d'horaires trouvée pour le prochain jour ouvert");
+      // Retourner mardi comme prochain jour ouvert par défaut
+      return { day: "tuesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 2 };
     }
     
     // Cast the section_data to DayOpeningHours[] with proper type checking
@@ -99,6 +120,7 @@ export const getNextOpenDay = async (): Promise<DayOpeningHours | null> => {
     return null;
   } catch (error) {
     console.error("Exception when fetching next open day:", error);
-    return null;
+    // Retourner mardi comme prochain jour ouvert par défaut en cas d'erreur
+    return { day: "tuesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 2 };
   }
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -39,7 +38,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [hasAddress, setHasAddress] = useState(false);
-  const [formComplete, setFormComplete] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -57,37 +56,34 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   // Watch all the required fields to check if form is complete
   const watchedFields = form.watch();
   
-  // Check if all required fields are filled
-  useEffect(() => {
-    const { name, street, city, postalCode, phone, email } = watchedFields;
-    
-    // Check if all required fields have values and are valid
-    const allFieldsFilled = 
-      name && name.length >= 2 && 
-      street && street.length >= 5 && 
-      city && city.length >= 2 && 
-      postalCode && postalCode.length >= 5 && 
-      phone && phone.length >= 10 && 
-      email && email.includes('@');
-    
-    setFormComplete(allFieldsFilled && Object.keys(form.formState.errors).length === 0);
-  }, [watchedFields, form.formState.errors]);
-  
-  // Auto-submit when form is complete and there are no errors
+  // Auto-submit when form is complete and valid
   useEffect(() => {
     const validateAndSubmit = async () => {
-      if (formComplete && !isValidating && !form.formState.isSubmitting && Object.keys(form.formState.errors).length === 0) {
-        const postalCodeError = form.getFieldState('postalCode').error;
-        // Only proceed if there's no postal code error
-        if (!postalCodeError) {
-          const data = form.getValues();
-          await validatePostalCodeAndSubmit(data);
-        }
+      if (isSubmitted || isValidating) return;
+      
+      const { name, street, city, postalCode, phone, email } = watchedFields;
+      
+      // Check if all required fields have values and are valid
+      const allFieldsFilled = 
+        name && name.length >= 2 && 
+        street && street.length >= 5 && 
+        city && city.length >= 2 && 
+        postalCode && postalCode.length >= 5 && 
+        phone && phone.length >= 10 && 
+        email && email.includes('@');
+      
+      const hasErrors = Object.keys(form.formState.errors).length > 0;
+      
+      if (allFieldsFilled && !hasErrors && !isValidating) {
+        const data = form.getValues();
+        await validatePostalCodeAndSubmit(data);
       }
     };
     
-    validateAndSubmit();
-  }, [formComplete, form.formState.errors, isValidating, form.formState.isSubmitting]);
+    // Debounce the validation
+    const timer = setTimeout(validateAndSubmit, 1000);
+    return () => clearTimeout(timer);
+  }, [watchedFields, form.formState.errors, isSubmitted, isValidating]);
 
   // Watch the postal code field to validate it whenever it changes
   const postalCode = form.watch("postalCode");
@@ -95,24 +91,16 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   // Validate postal code whenever it changes and has 5 characters
   useEffect(() => {
     const validatePostalCode = async () => {
-      if (postalCode && postalCode.length === 5) {
+      if (postalCode && postalCode.length === 5 && !isValidating) {
         try {
           const isValid = await checkPostalCodeDelivery(postalCode);
           
           if (!isValid) {
-            toast({
-              variant: "destructive",
-              title: "Zone non desservie",
-              description: `Nous ne livrons pas dans la zone ${postalCode}. Veuillez vérifier ou choisir un autre mode de livraison.`,
-            });
-            
-            // Mark the field as having an error
             form.setError("postalCode", {
               type: "manual",
               message: "Code postal hors zone de livraison"
             });
           } else {
-            // Clear any error on the postal code field
             form.clearErrors("postalCode");
           }
         } catch (error) {
@@ -121,7 +109,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       }
     };
     
-    // Debounce the validation a bit to avoid too many API calls
+    // Debounce the validation
     const timer = setTimeout(() => {
       if (postalCode && postalCode.length === 5) {
         validatePostalCode();
@@ -129,9 +117,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     }, 500);
     
     return () => clearTimeout(timer);
-  }, [postalCode, toast, form]);
+  }, [postalCode, form, isValidating]);
 
-  // Vérifier si l'utilisateur est connecté et récupérer son profil
   useEffect(() => {
     const checkUserProfile = async () => {
       setIsLoadingProfile(true);
@@ -326,6 +313,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   };
 
   const validatePostalCodeAndSubmit = async (data: z.infer<typeof formSchema>) => {
+    if (isSubmitted || isValidating) return;
+    
     setIsValidating(true);
     
     try {
@@ -349,7 +338,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // If valid, continue
+      // If valid, mark as submitted and continue
+      setIsSubmitted(true);
       onComplete(data);
     } catch (error) {
       console.error("Error validating address:", error);

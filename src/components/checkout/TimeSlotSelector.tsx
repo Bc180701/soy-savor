@@ -52,11 +52,32 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
               open_time: todayHours.open_time,
               close_time: todayHours.close_time
             });
+          } else {
+            // Si aucune donnée n'est trouvée, utiliser des horaires par défaut
+            console.log("Aucune donnée d'horaires trouvée, utilisation des horaires par défaut");
+            setTodayOpeningHours({
+              is_open: true,
+              open_time: "11:00",
+              close_time: "22:00"
+            });
           }
+        } else {
+          // Si aucune donnée d'horaires n'existe, utiliser des horaires par défaut
+          console.log("Aucune donnée d'horaires en base, utilisation des horaires par défaut");
+          setTodayOpeningHours({
+            is_open: true,
+            open_time: "11:00",
+            close_time: "22:00"
+          });
         }
       } catch (error) {
         console.error("Error checking opening status:", error);
-        setTodayOpeningHours(null);
+        // En cas d'erreur, utiliser des horaires par défaut pour ne pas bloquer l'utilisateur
+        setTodayOpeningHours({
+          is_open: true,
+          open_time: "11:00",
+          close_time: "22:00"
+        });
       } finally {
         setIsLoading(false);
       }
@@ -66,17 +87,19 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
   }, []);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && todayOpeningHours) {
       generateTimeSlots();
     }
   }, [orderType, isLoading, todayOpeningHours]);
 
   const generateTimeSlots = () => {
+    if (!todayOpeningHours) return;
+    
     const now = new Date();
     const slots: TimeOption[] = [];
 
-    // Si nous sommes fermés aujourd'hui ou pas d'horaires trouvés
-    if (!todayOpeningHours || !todayOpeningHours.is_open) {
+    // Si nous sommes fermés aujourd'hui
+    if (!todayOpeningHours.is_open) {
       setTimeSlots([]);
       return;
     }
