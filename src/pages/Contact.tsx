@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -37,6 +39,7 @@ const formSchema = z.object({
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,6 +88,130 @@ const Contact = () => {
     },
   ];
 
+  if (isMobile) {
+    return (
+      <div className="container mx-auto py-24 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-4xl mx-auto"
+        >
+          <h1 className="text-3xl font-bold text-center mb-2">Contactez-nous</h1>
+          <p className="text-gray-600 text-center mb-8">
+            Une question ou une réservation ? N'hésitez pas à nous contacter.
+          </p>
+
+          <Tabs defaultValue="coordonnees" variant="horizontal" className="w-full">
+            <TabsList variant="horizontal" className="grid w-full grid-cols-2">
+              <TabsTrigger value="coordonnees" variant="horizontal">Coordonnées</TabsTrigger>
+              <TabsTrigger value="message" variant="horizontal">Message</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="coordonnees" className="mt-6">
+              <div className="space-y-6">
+                {contactInfo.map((info, index) => (
+                  <div key={index} className="flex items-start">
+                    <div className="mt-1 mr-4 bg-gold-100 p-2 rounded-full text-gold-600">
+                      <info.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{info.title}</h3>
+                      {info.details.map((detail, i) => (
+                        <p key={i} className="text-gray-600">{detail}</p>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="mt-8 rounded-lg overflow-hidden h-64">
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <p className="text-gray-600">Carte interactive</p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="message" className="mt-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <h2 className="text-xl font-bold mb-6">Envoyez-nous un message</h2>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nom</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Votre nom" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="votre.email@exemple.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="subject"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sujet</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Sujet de votre message" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="message"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Message</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Votre message..." 
+                                className="min-h-32" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-gold-600 hover:bg-gold-700"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-24 px-4">
       <motion.div
@@ -118,7 +245,6 @@ const Contact = () => {
             </div>
 
             <div className="mt-8 rounded-lg overflow-hidden h-64">
-              {/* Placeholder pour une carte - dans un vrai projet, on utiliserait Google Maps ou équivalent */}
               <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                 <p className="text-gray-600">Carte interactive</p>
               </div>
