@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { getAllOrders, updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
@@ -135,7 +134,7 @@ const OrderList = () => {
             </TabsTrigger>
           </TabsList>
           
-          <div className={isMobile ? "px-2" : "p-6"}>
+          <div className={isMobile ? "px-1" : "p-6"}>
             <TabsContent value="accounting" className="mt-0">
               <OrdersAccountingView 
                 orders={orders} 
