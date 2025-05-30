@@ -90,13 +90,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     return () => clearTimeout(timer);
   }, [watchedFields, form.formState.errors, isSubmitted, isValidating, postalCodeValidationStatus]);
 
-  // Watch the postal code field to validate it whenever it changes
+  // CORRECTION PRINCIPALE: Observer directement la valeur du champ postal code
   const postalCode = form.watch("postalCode");
   
-  // CORRECTION: Améliorer la logique de validation pour éviter les boucles
+  // CORRECTION: Valider le code postal à chaque changement de la valeur réelle du champ
   useEffect(() => {
     const validatePostalCode = async () => {
-      console.log("Postal code changed:", postalCode);
+      console.log("Postal code field changed to:", postalCode);
       
       // Reset validation status when postal code changes
       if (!postalCode || postalCode.length < 5) {
@@ -108,12 +108,12 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       
       // Ne valider que si le code postal a exactement 5 caractères
       if (postalCode.length === 5) {
-        console.log("Starting postal code validation for:", postalCode);
+        console.log("Starting postal code validation for current field value:", postalCode);
         setPostalCodeValidationStatus('pending');
         
         try {
           const isValid = await checkPostalCodeDelivery(postalCode);
-          console.log("Postal code validation result:", isValid);
+          console.log("Postal code validation result for", postalCode, ":", isValid);
           
           if (!isValid) {
             setPostalCodeValidationStatus('invalid');
@@ -359,9 +359,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const validatePostalCodeAndSubmit = async (data: z.infer<typeof formSchema>) => {
     if (isSubmitted || isValidating) return;
     
+    // CORRECTION: Utiliser la valeur actuelle du champ plutôt que les données pré-remplies
+    const currentPostalCode = form.getValues("postalCode");
+    console.log("Validating submission with current postal code:", currentPostalCode);
+    
     // Vérifier le statut de validation du code postal avant de continuer
     if (postalCodeValidationStatus !== 'valid') {
-      console.log("Cannot submit: postal code is not valid");
+      console.log("Cannot submit: postal code is not valid, current status:", postalCodeValidationStatus);
       toast({
         variant: "destructive",
         title: "Code postal invalide",
@@ -373,14 +377,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     setIsValidating(true);
     
     try {
-      // Vérification finale du code postal
-      const isValidPostalCode = await checkPostalCodeDelivery(data.postalCode);
+      // Vérification finale du code postal avec la valeur actuelle
+      const isValidPostalCode = await checkPostalCodeDelivery(currentPostalCode);
       
       if (!isValidPostalCode) {
         toast({
           variant: "destructive",
           title: "Zone non desservie",
-          description: `Nous ne livrons pas dans la zone ${data.postalCode}. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.`,
+          description: `Nous ne livrons pas dans la zone ${currentPostalCode}. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.`,
         });
         
         setPostalCodeValidationStatus('invalid');
