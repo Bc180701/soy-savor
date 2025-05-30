@@ -90,13 +90,26 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   // Watch the postal code field to validate it whenever it changes
   const postalCode = form.watch("postalCode");
   
-  // Validate postal code whenever it changes and has 5 characters
+  // Validate postal code whenever it changes - removed length restriction and isValidating check
   useEffect(() => {
     const validatePostalCode = async () => {
-      if (postalCode && postalCode.length === 5 && !isValidating) {
+      console.log("Postal code changed:", postalCode);
+      
+      // Reset validation status when postal code changes
+      if (!postalCode || postalCode.length < 5) {
+        console.log("Postal code too short, clearing validation status");
+        setPostalCodeValidationStatus(null);
+        form.clearErrors("postalCode");
+        return;
+      }
+      
+      if (postalCode.length === 5) {
+        console.log("Starting postal code validation for:", postalCode);
         setPostalCodeValidationStatus('pending');
+        
         try {
           const isValid = await checkPostalCodeDelivery(postalCode);
+          console.log("Postal code validation result:", isValid);
           
           if (!isValid) {
             setPostalCodeValidationStatus('invalid');
@@ -121,21 +134,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
             message: "Erreur lors de la validation du code postal"
           });
         }
-      } else if (postalCode && postalCode.length < 5) {
-        setPostalCodeValidationStatus(null);
-        form.clearErrors("postalCode");
       }
     };
     
-    // Debounce the validation
-    const timer = setTimeout(() => {
-      if (postalCode && postalCode.length === 5) {
-        validatePostalCode();
-      }
-    }, 500);
+    // Debounce the validation but trigger it immediately on change
+    const timer = setTimeout(validatePostalCode, 300);
     
     return () => clearTimeout(timer);
-  }, [postalCode, form, isValidating]);
+  }, [postalCode, form, toast]); // Removed isValidating dependency
 
   useEffect(() => {
     const checkUserProfile = async () => {
@@ -275,6 +281,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       if (addressData) {
         form.setValue("street", addressData.street);
         form.setValue("city", addressData.city);
+        // Reset postal code validation when setting from profile
+        setPostalCodeValidationStatus(null);
         form.setValue("postalCode", addressData.postal_code);
         if (addressData.additional_info) {
           form.setValue("instructions", addressData.additional_info);
@@ -325,6 +333,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       // Réinitialiser le formulaire pour les champs d'adresse uniquement
       form.setValue("street", "");
       form.setValue("city", "");
+      // Reset validation status when clearing postal code
+      setPostalCodeValidationStatus(null);
       form.setValue("postalCode", "");
       form.setValue("instructions", "");
     }
