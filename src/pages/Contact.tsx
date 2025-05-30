@@ -103,18 +103,18 @@ const Contact = () => {
           </p>
 
           <Tabs defaultValue="coordonnees" className="w-full">
-            <div className="w-full border-b border-gray-200 mb-6">
-              <div className="flex w-full">
-                <TabsList className="w-full h-auto p-0 bg-transparent">
+            <div className="w-full border-b border-gray-200 mb-6 overflow-hidden">
+              <div className="overflow-x-auto scrollbar-hide">
+                <TabsList className="flex w-max min-w-full h-auto p-0 bg-transparent">
                   <TabsTrigger 
                     value="coordonnees" 
-                    className="flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-gold-600 data-[state=active]:text-gold-600 data-[state=active]:bg-transparent rounded-none"
+                    className="flex-1 min-w-[50%] py-3 px-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-gold-600 data-[state=active]:text-gold-600 data-[state=active]:bg-transparent rounded-none whitespace-nowrap"
                   >
                     Coordonnées
                   </TabsTrigger>
                   <TabsTrigger 
                     value="message" 
-                    className="flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-gold-600 data-[state=active]:text-gold-600 data-[state=active]:bg-transparent rounded-none"
+                    className="flex-1 min-w-[50%] py-3 px-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-gold-600 data-[state=active]:text-gold-600 data-[state=active]:bg-transparent rounded-none whitespace-nowrap"
                   >
                     Message
                   </TabsTrigger>
