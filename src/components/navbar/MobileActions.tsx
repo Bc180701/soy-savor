@@ -13,8 +13,9 @@ const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
   const cart = useCart();
   
   return (
-    <div className="md:hidden flex items-center">
-      <Link to="/panier" className="mr-2">
+    <div className="md:hidden flex items-center justify-between w-full">
+      {/* Panier à gauche */}
+      <Link to="/panier">
         <Button
           variant="ghost"
           size="icon"
@@ -26,6 +27,15 @@ const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
           </span>
         </Button>
       </Link>
+
+      {/* Bouton Commander au centre */}
+      <Link to="/commander">
+        <Button className="bg-gold-500 hover:bg-gold-600 text-black px-4 py-2 text-sm font-medium">
+          Commander
+        </Button>
+      </Link>
+
+      {/* Menu hamburger à droite */}
       <Button
         variant="ghost"
         size="icon"
