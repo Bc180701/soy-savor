@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { z } from "zod";
@@ -102,9 +103,13 @@ const Contact = () => {
           </p>
 
           <Tabs defaultValue="coordonnees" className="w-full">
-            <TabsList variant="horizontal" className="grid w-full grid-cols-2">
-              <TabsTrigger value="coordonnees" variant="horizontal">Coordonnées</TabsTrigger>
-              <TabsTrigger value="message" variant="horizontal">Message</TabsTrigger>
+            <TabsList variant="horizontal" className="w-full overflow-x-auto border-b space-x-0 pb-0 h-auto">
+              <TabsTrigger value="coordonnees" variant="horizontal" className="flex-1 min-w-0 text-sm px-2 py-3">
+                Coordonnées
+              </TabsTrigger>
+              <TabsTrigger value="message" variant="horizontal" className="flex-1 min-w-0 text-sm px-2 py-3">
+                Message
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="coordonnees" className="mt-6">
