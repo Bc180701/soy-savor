@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { getAllOrders, updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
@@ -92,7 +91,7 @@ const OrderList = () => {
   };
 
   return (
-    <div className={`${isMobile ? 'w-screen -ml-6 -mr-6' : 'bg-white rounded-lg shadow-md'} overflow-hidden`}>
+    <div className={`${isMobile ? 'w-full px-2' : 'bg-white rounded-lg shadow-md'} overflow-hidden`}>
       {!isMobile && (
         <div className="p-6 border-b">
           <h2 className="text-xl font-bold">Gestion des Commandes</h2>

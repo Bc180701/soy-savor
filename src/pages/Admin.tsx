@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -185,8 +184,8 @@ const Admin = () => {
               </div>
             </div>
             
-            <div className={`flex-1 overflow-auto ${isMobile && activeTab === 'orders' ? '' : 'p-6'}`}>
-              <div className={`${isMobile && activeTab === 'orders' ? 'w-full' : 'container mx-auto max-w-7xl'}`}>
+            <div className={`flex-1 overflow-auto ${isMobile && activeTab === 'orders' ? 'p-0' : 'p-6'}`}>
+              <div className={`${isMobile && activeTab === 'orders' ? 'w-full max-w-full' : 'container mx-auto max-w-7xl'}`}>
                 <div className={`${isMobile && activeTab === 'orders' ? '' : 'bg-white p-6 rounded-lg shadow-sm'}`}>
                   {/* Affichage du titre de la section active */}
                   {!(isMobile && activeTab === 'orders') && (
