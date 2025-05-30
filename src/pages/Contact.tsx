@@ -103,14 +103,24 @@ const Contact = () => {
           </p>
 
           <Tabs defaultValue="coordonnees" className="w-full">
-            <TabsList variant="horizontal" className="w-full overflow-x-auto border-b space-x-0 pb-0 h-auto">
-              <TabsTrigger value="coordonnees" variant="horizontal" className="flex-1 min-w-0 text-sm px-2 py-3">
-                Coordonnées
-              </TabsTrigger>
-              <TabsTrigger value="message" variant="horizontal" className="flex-1 min-w-0 text-sm px-2 py-3">
-                Message
-              </TabsTrigger>
-            </TabsList>
+            <div className="w-full border-b border-gray-200 mb-6">
+              <div className="flex w-full">
+                <TabsList className="w-full h-auto p-0 bg-transparent">
+                  <TabsTrigger 
+                    value="coordonnees" 
+                    className="flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-gold-600 data-[state=active]:text-gold-600 data-[state=active]:bg-transparent rounded-none"
+                  >
+                    Coordonnées
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="message" 
+                    className="flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-gold-600 data-[state=active]:text-gold-600 data-[state=active]:bg-transparent rounded-none"
+                  >
+                    Message
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            </div>
             
             <TabsContent value="coordonnees" className="mt-6">
               <div className="space-y-6">
