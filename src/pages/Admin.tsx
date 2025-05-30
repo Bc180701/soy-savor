@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +25,7 @@ import UsersList from "@/components/admin/UsersList";
 import OrderingLockControl from "@/components/admin/OrderingLockControl";
 import PokeIngredientsManager from "@/components/admin/PokeIngredientsManager";
 import OpeningHoursManager from "@/components/admin/OpeningHoursManager";
+import SushiIngredientsManager from "@/components/admin/SushiIngredientsManager";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -123,6 +123,8 @@ const Admin = () => {
         return <OpeningHoursManager />;
       case "poke-ingredients":
         return <PokeIngredientsManager />;
+      case "sushi-ingredients":
+        return <SushiIngredientsManager />;
       default:
         return <DashboardStats />;
     }
@@ -142,6 +144,7 @@ const Admin = () => {
     { id: "settings", label: "Paramètres", icon: <Lock className="h-4 w-4" /> },
     { id: "opening-hours", label: "Horaires", icon: <Clock className="h-4 w-4" /> },
     { id: "poke-ingredients", label: "Ingrédients Poké", icon: <ShoppingBag className="h-4 w-4" /> },
+    { id: "sushi-ingredients", label: "Ingrédients Sushi", icon: <ShoppingBag className="h-4 w-4" /> },
   ];
 
   return (
