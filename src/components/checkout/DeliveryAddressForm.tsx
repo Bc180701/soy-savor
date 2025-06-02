@@ -54,10 +54,78 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     },
   });
 
+  // CORRECTION PRINCIPALE: Observer directement la valeur du champ postal code
+  const postalCodeValue = form.watch("postalCode");
+  
+  // CORRECTION: Valider le code postal à chaque changement de la valeur réelle du champ
+  useEffect(() => {
+    const validatePostalCode = async () => {
+      console.log("Postal code field changed to:", postalCodeValue);
+      
+      // Reset validation status when postal code changes
+      if (!postalCodeValue || postalCodeValue.length < 5) {
+        console.log("Postal code too short, clearing validation status");
+        setPostalCodeValidationStatus(null);
+        form.clearErrors("postalCode");
+        return;
+      }
+      
+      // Ne valider que si le code postal a exactement 5 caractères
+      if (postalCodeValue.length === 5) {
+        console.log("Starting postal code validation for current field value:", postalCodeValue);
+        setPostalCodeValidationStatus('pending');
+        
+        try {
+          const isValid = await checkPostalCodeDelivery(postalCodeValue);
+          console.log("Postal code validation result for", postalCodeValue, ":", isValid);
+          
+          if (!isValid) {
+            setPostalCodeValidationStatus('invalid');
+            form.setError("postalCode", {
+              type: "manual",
+              message: "Code postal hors zone de livraison"
+            });
+            toast({
+              variant: "destructive",
+              title: "Zone non desservie",
+              description: `Nous ne livrons pas dans la zone ${postalCodeValue}. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.`,
+            });
+          } else {
+            setPostalCodeValidationStatus('valid');
+            form.clearErrors("postalCode");
+            toast({
+              title: "Code postal valide",
+              description: "Ce code postal est dans notre zone de livraison.",
+            });
+          }
+        } catch (error) {
+          console.error("Error validating postal code:", error);
+          setPostalCodeValidationStatus('invalid');
+          form.setError("postalCode", {
+            type: "manual",
+            message: "Erreur lors de la validation du code postal"
+          });
+        }
+      } else if (postalCodeValue.length > 5) {
+        // Si plus de 5 caractères, marquer comme invalide
+        setPostalCodeValidationStatus('invalid');
+        form.setError("postalCode", {
+          type: "manual",
+          message: "Le code postal doit contenir exactement 5 caractères"
+        });
+      }
+    };
+    
+    // Réduire le délai de debounce pour une meilleure réactivité
+    const timer = setTimeout(validatePostalCode, 300);
+    
+    return () => clearTimeout(timer);
+  }, [postalCodeValue, form, toast]);
+
   // Watch all the required fields to check if form is complete
   const watchedFields = form.watch();
   
-  // Auto-submit when form is complete and valid - FIXED: Ne pas soumettre si code postal invalide
+  // Auto-submit when form is complete and valid
   useEffect(() => {
     const validateAndSubmit = async () => {
       if (isSubmitted || isValidating) return;
@@ -90,73 +158,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     return () => clearTimeout(timer);
   }, [watchedFields, form.formState.errors, isSubmitted, isValidating, postalCodeValidationStatus]);
 
-  // CORRECTION PRINCIPALE: Observer directement la valeur du champ postal code
-  const postalCode = form.watch("postalCode");
-  
-  // CORRECTION: Valider le code postal à chaque changement de la valeur réelle du champ
-  useEffect(() => {
-    const validatePostalCode = async () => {
-      console.log("Postal code field changed to:", postalCode);
-      
-      // Reset validation status when postal code changes
-      if (!postalCode || postalCode.length < 5) {
-        console.log("Postal code too short, clearing validation status");
-        setPostalCodeValidationStatus(null);
-        form.clearErrors("postalCode");
-        return;
-      }
-      
-      // Ne valider que si le code postal a exactement 5 caractères
-      if (postalCode.length === 5) {
-        console.log("Starting postal code validation for current field value:", postalCode);
-        setPostalCodeValidationStatus('pending');
-        
-        try {
-          const isValid = await checkPostalCodeDelivery(postalCode);
-          console.log("Postal code validation result for", postalCode, ":", isValid);
-          
-          if (!isValid) {
-            setPostalCodeValidationStatus('invalid');
-            form.setError("postalCode", {
-              type: "manual",
-              message: "Code postal hors zone de livraison"
-            });
-            toast({
-              variant: "destructive",
-              title: "Zone non desservie",
-              description: `Nous ne livrons pas dans la zone ${postalCode}. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.`,
-            });
-          } else {
-            setPostalCodeValidationStatus('valid');
-            form.clearErrors("postalCode");
-            toast({
-              title: "Code postal valide",
-              description: "Ce code postal est dans notre zone de livraison.",
-            });
-          }
-        } catch (error) {
-          console.error("Error validating postal code:", error);
-          setPostalCodeValidationStatus('invalid');
-          form.setError("postalCode", {
-            type: "manual",
-            message: "Erreur lors de la validation du code postal"
-          });
-        }
-      } else if (postalCode.length > 5) {
-        // Si plus de 5 caractères, marquer comme invalide
-        setPostalCodeValidationStatus('invalid');
-        form.setError("postalCode", {
-          type: "manual",
-          message: "Le code postal doit contenir exactement 5 caractères"
-        });
-      }
-    };
-    
-    // CORRECTION: Réduire le délai de debounce pour une meilleure réactivité
-    const timer = setTimeout(validatePostalCode, 300);
-    
-    return () => clearTimeout(timer);
-  }, [postalCode, form, toast]);
+  // ... keep existing code (useEffect for checking user profile, loadUserContact, loadUserAddress, handleProfileContactToggle, handleProfileAddressToggle functions)
 
   useEffect(() => {
     const checkUserProfile = async () => {
@@ -355,11 +357,11 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     }
   };
 
-  // CORRECTION: Empêcher la soumission si le code postal est invalide
+  // CORRECTION: Utiliser TOUJOURS la valeur actuelle du champ pour la validation finale
   const validatePostalCodeAndSubmit = async (data: z.infer<typeof formSchema>) => {
     if (isSubmitted || isValidating) return;
     
-    // CORRECTION: Utiliser la valeur actuelle du champ plutôt que les données pré-remplies
+    // CORRECTION: Utiliser la valeur actuelle du champ plutôt que les données du formulaire
     const currentPostalCode = form.getValues("postalCode");
     console.log("Validating submission with current postal code:", currentPostalCode);
     
@@ -400,7 +402,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       // Si valide, marquer comme soumis et continuer
       console.log("Postal code validated successfully, proceeding with submission");
       setIsSubmitted(true);
-      onComplete(data);
+      
+      // CORRECTION: Utiliser les données actuelles du formulaire
+      const finalData = {
+        ...data,
+        postalCode: currentPostalCode
+      };
+      
+      onComplete(finalData);
     } catch (error) {
       console.error("Error validating address:", error);
       toast({
