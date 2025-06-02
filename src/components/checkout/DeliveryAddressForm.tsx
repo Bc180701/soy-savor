@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -637,13 +636,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           </div>
         </form>
       </Form>
-      
-      {isValidating && (
-        <div className="flex items-center justify-center">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          <span className="text-sm text-gray-500">Validation en cours...</span>
-        </div>
-      )}
     </div>
   );
 };
