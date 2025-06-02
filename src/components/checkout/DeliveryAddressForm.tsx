@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -38,8 +39,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [hasAddress, setHasAddress] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [postalCodeValidationStatus, setPostalCodeValidationStatus] = useState<'valid' | 'invalid' | 'pending' | null>(null);
+  const [isPrefilledData, setIsPrefilledData] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,15 +55,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     },
   });
 
-  // CORRECTION PRINCIPALE: Observer directement la valeur du champ postal code
   const postalCodeValue = form.watch("postalCode");
   
-  // CORRECTION: Valider le code postal à chaque changement de la valeur réelle du champ
+  // Validation du code postal à chaque changement
   useEffect(() => {
     const validatePostalCode = async () => {
       console.log("Postal code field changed to:", postalCodeValue);
       
-      // Reset validation status when postal code changes
       if (!postalCodeValue || postalCodeValue.length < 5) {
         console.log("Postal code too short, clearing validation status");
         setPostalCodeValidationStatus(null);
@@ -70,7 +69,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // Ne valider que si le code postal a exactement 5 caractères
       if (postalCodeValue.length === 5) {
         console.log("Starting postal code validation for current field value:", postalCodeValue);
         setPostalCodeValidationStatus('pending');
@@ -107,7 +105,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           });
         }
       } else if (postalCodeValue.length > 5) {
-        // Si plus de 5 caractères, marquer comme invalide
         setPostalCodeValidationStatus('invalid');
         form.setError("postalCode", {
           type: "manual",
@@ -116,49 +113,11 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       }
     };
     
-    // Réduire le délai de debounce pour une meilleure réactivité
     const timer = setTimeout(validatePostalCode, 300);
-    
     return () => clearTimeout(timer);
   }, [postalCodeValue, form, toast]);
 
-  // Watch all the required fields to check if form is complete
-  const watchedFields = form.watch();
-  
-  // Auto-submit when form is complete and valid
-  useEffect(() => {
-    const validateAndSubmit = async () => {
-      if (isSubmitted || isValidating) return;
-      
-      const { name, street, city, postalCode, phone, email } = watchedFields;
-      
-      // Check if all required fields have values and are valid
-      const allFieldsFilled = 
-        name && name.length >= 2 && 
-        street && street.length >= 5 && 
-        city && city.length >= 2 && 
-        postalCode && postalCode.length >= 5 && 
-        phone && phone.length >= 10 && 
-        email && email.includes('@');
-      
-      const hasErrors = Object.keys(form.formState.errors).length > 0;
-      
-      // CORRECTION: Ne soumettre que si le code postal est explicitement valide
-      if (allFieldsFilled && !hasErrors && postalCodeValidationStatus === 'valid') {
-        console.log("Form is complete and postal code is valid, submitting...");
-        const data = form.getValues();
-        await validatePostalCodeAndSubmit(data);
-      } else if (allFieldsFilled && postalCodeValidationStatus === 'invalid') {
-        console.log("Form is complete but postal code is invalid, not submitting");
-      }
-    };
-    
-    // Debounce the validation
-    const timer = setTimeout(validateAndSubmit, 1000);
-    return () => clearTimeout(timer);
-  }, [watchedFields, form.formState.errors, isSubmitted, isValidating, postalCodeValidationStatus]);
-
-  // ... keep existing code (useEffect for checking user profile, loadUserContact, loadUserAddress, handleProfileContactToggle, handleProfileAddressToggle functions)
+  // SUPPRESSION de l'auto-submit - le formulaire ne se soumet plus automatiquement
 
   useEffect(() => {
     const checkUserProfile = async () => {
@@ -173,7 +132,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         
         setIsLoggedIn(true);
         
-        // Récupérer les informations de profil
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
@@ -185,7 +143,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           return;
         }
         
-        // Récupérer l'adresse par défaut
         const { data: addressData, error: addressError } = await supabase
           .from("user_addresses")
           .select("*")
@@ -226,7 +183,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // Récupérer les informations de profil
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
@@ -244,15 +200,15 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       }
       
       if (profileData) {
-        // Récupérer l'email depuis la session
         const userEmail = session.user.email || "";
-        
-        // Construire le nom complet
         const fullName = `${profileData.first_name || ""} ${profileData.last_name || ""}`.trim();
         
         form.setValue("name", fullName);
         form.setValue("phone", profileData.phone || "");
         form.setValue("email", userEmail);
+        
+        // Marquer comme données pré-remplies
+        setIsPrefilledData(true);
       }
     } catch (error) {
       console.error("Erreur lors du chargement des données:", error);
@@ -277,7 +233,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // Récupérer l'adresse par défaut
       const { data: addressData, error: addressError } = await supabase
         .from("user_addresses")
         .select("*")
@@ -298,12 +253,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       if (addressData) {
         form.setValue("street", addressData.street);
         form.setValue("city", addressData.city);
-        // CORRECTION: Reset postal code validation when setting from profile
         setPostalCodeValidationStatus(null);
         form.setValue("postalCode", addressData.postal_code);
         if (addressData.additional_info) {
           form.setValue("instructions", addressData.additional_info);
         }
+        
+        // Marquer comme données pré-remplies
+        setIsPrefilledData(true);
         
         toast({
           title: "Adresse récupérée",
@@ -334,10 +291,10 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     if (checked) {
       await loadUserContact();
     } else {
-      // Réinitialiser le formulaire pour les champs de contact uniquement
       form.setValue("name", "");
       form.setValue("phone", "");
       form.setValue("email", "");
+      setIsPrefilledData(false);
     }
   };
 
@@ -347,25 +304,23 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     if (checked) {
       await loadUserAddress();
     } else {
-      // Réinitialiser le formulaire pour les champs d'adresse uniquement
       form.setValue("street", "");
       form.setValue("city", "");
-      // Reset validation status when clearing postal code
       setPostalCodeValidationStatus(null);
       form.setValue("postalCode", "");
       form.setValue("instructions", "");
+      setIsPrefilledData(false);
     }
   };
 
-  // CORRECTION: Utiliser TOUJOURS la valeur actuelle du champ pour la validation finale
+  // Fonction de validation et soumission manuelle uniquement
   const validatePostalCodeAndSubmit = async (data: z.infer<typeof formSchema>) => {
-    if (isSubmitted || isValidating) return;
+    if (isValidating) return;
     
-    // CORRECTION: Utiliser la valeur actuelle du champ plutôt que les données du formulaire
     const currentPostalCode = form.getValues("postalCode");
-    console.log("Validating submission with current postal code:", currentPostalCode);
+    console.log("Manual submission with current postal code:", currentPostalCode);
     
-    // Vérifier le statut de validation du code postal avant de continuer
+    // Vérifier le statut de validation du code postal
     if (postalCodeValidationStatus !== 'valid') {
       console.log("Cannot submit: postal code is not valid, current status:", postalCodeValidationStatus);
       toast({
@@ -379,7 +334,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     setIsValidating(true);
     
     try {
-      // Vérification finale du code postal avec la valeur actuelle
+      // Vérification finale du code postal
       const isValidPostalCode = await checkPostalCodeDelivery(currentPostalCode);
       
       if (!isValidPostalCode) {
@@ -399,11 +354,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         return;
       }
       
-      // Si valide, marquer comme soumis et continuer
       console.log("Postal code validated successfully, proceeding with submission");
-      setIsSubmitted(true);
       
-      // CORRECTION: Utiliser les données actuelles du formulaire
       const finalData = {
         ...data,
         postalCode: currentPostalCode
@@ -421,6 +373,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     }
   };
 
+  // Reset prefilled data flag when user manually changes fields
+  const handleFieldChange = () => {
+    if (isPrefilledData) {
+      setIsPrefilledData(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -430,7 +389,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         </p>
       </div>
 
-      {/* AJOUT: Affichage du statut de validation du code postal */}
       {postalCodeValidationStatus === 'invalid' && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800 font-medium">
@@ -487,7 +445,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
               <FormItem>
                 <FormLabel>Nom complet</FormLabel>
                 <FormControl>
-                  <Input placeholder="Jean Dupont" {...field} />
+                  <Input 
+                    placeholder="Jean Dupont" 
+                    {...field} 
+                    onChange={(e) => {
+                      field.onChange(e);
+                      handleFieldChange();
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -501,7 +466,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
               <FormItem>
                 <FormLabel>Adresse</FormLabel>
                 <FormControl>
-                  <Input placeholder="123 rue de Paris" {...field} />
+                  <Input 
+                    placeholder="123 rue de Paris" 
+                    {...field} 
+                    onChange={(e) => {
+                      field.onChange(e);
+                      handleFieldChange();
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -516,7 +488,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                 <FormItem>
                   <FormLabel>Ville</FormLabel>
                   <FormControl>
-                    <Input placeholder="Paris" {...field} />
+                    <Input 
+                      placeholder="Paris" 
+                      {...field} 
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleFieldChange();
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -531,7 +510,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                   <FormLabel>Code postal</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input placeholder="75000" {...field} />
+                      <Input 
+                        placeholder="75000" 
+                        {...field} 
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleFieldChange();
+                        }}
+                      />
                       {postalCodeValidationStatus === 'pending' && (
                         <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
                       )}
@@ -557,7 +543,14 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                 <FormItem>
                   <FormLabel>Téléphone</FormLabel>
                   <FormControl>
-                    <Input placeholder="06 12 34 56 78" {...field} />
+                    <Input 
+                      placeholder="06 12 34 56 78" 
+                      {...field} 
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleFieldChange();
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -571,7 +564,15 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                 <FormItem>
                   <FormLabel>Adresse e-mail</FormLabel>
                   <FormControl>
-                    <Input placeholder="exemple@email.com" type="email" {...field} />
+                    <Input 
+                      placeholder="exemple@email.com" 
+                      type="email" 
+                      {...field} 
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleFieldChange();
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -590,6 +591,10 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                     placeholder="Digicode, étage, indications pour le livreur..." 
                     className="resize-none" 
                     {...field} 
+                    onChange={(e) => {
+                      field.onChange(e);
+                      handleFieldChange();
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -606,7 +611,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
             >
               Annuler
             </Button>
-            {/* CORRECTION: Désactiver le bouton si le code postal est invalide */}
             <Button 
               type="button"
               onClick={() => {
