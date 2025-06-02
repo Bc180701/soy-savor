@@ -360,6 +360,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         postalCode: currentPostalCode
       };
       
+      // Réinitialiser isValidating avant d'appeler onComplete
+      setIsValidating(false);
       onComplete(finalData);
     } catch (error) {
       console.error("Error validating address:", error);
