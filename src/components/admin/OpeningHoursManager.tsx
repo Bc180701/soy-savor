@@ -40,14 +40,9 @@ const OpeningHoursManager = () => {
         .from('homepage_sections')
         .select('section_data')
         .eq('section_name', 'opening_hours')
-        .single();
+        .maybeSingle();
       
-      if (error) {
-        // If record doesn't exist, we'll use the default values
-        if (error.code === 'PGRST116') {
-          console.log("Opening hours not found, using default values");
-          return;
-        }
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
       
@@ -112,6 +107,7 @@ const OpeningHoursManager = () => {
   const saveOpeningHours = async () => {
     try {
       setSaving(true);
+      console.log("Début de la sauvegarde des horaires d'ouverture");
       
       // Convert our state format to database format
       const dbData = openingHours.map((item, index) => ({
@@ -122,18 +118,47 @@ const OpeningHoursManager = () => {
         close_time: item.closeTime
       }));
       
-      // Using the homepage_sections table to store opening hours
-      const { error } = await supabase
-        .from('homepage_sections')
-        .upsert({ 
-          section_name: 'opening_hours',
-          section_data: dbData,
-          updated_at: new Date().toISOString()
-        }, { 
-          onConflict: 'section_name' 
-        });
+      console.log("Données à sauvegarder:", dbData);
       
-      if (error) throw error;
+      // Première tentative : vérifier si l'enregistrement existe
+      const { data: existingData, error: selectError } = await supabase
+        .from('homepage_sections')
+        .select('id')
+        .eq('section_name', 'opening_hours')
+        .maybeSingle();
+      
+      if (selectError && selectError.code !== 'PGRST116') {
+        throw selectError;
+      }
+      
+      let result;
+      
+      if (existingData) {
+        // Mise à jour de l'enregistrement existant
+        console.log("Mise à jour de l'enregistrement existant");
+        result = await supabase
+          .from('homepage_sections')
+          .update({ 
+            section_data: dbData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('section_name', 'opening_hours');
+      } else {
+        // Création d'un nouvel enregistrement
+        console.log("Création d'un nouvel enregistrement");
+        result = await supabase
+          .from('homepage_sections')
+          .insert({ 
+            section_name: 'opening_hours',
+            section_data: dbData
+          });
+      }
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      console.log("Horaires sauvegardés avec succès");
       
       toast({
         title: "Horaires sauvegardés",
