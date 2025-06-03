@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +21,8 @@ import { toast } from "@/components/ui/use-toast";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
+import { ContactInfo } from "@/hooks/useHomepageData";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -39,7 +41,37 @@ const formSchema = z.object({
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactInfo, setContactInfo] = useState<ContactInfo>({
+    address: "16 cours Carnot, 13160 Châteaurenard",
+    phone: "04 90 00 00 00",
+    email: "contact@sushieats.fr"
+  });
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    const fetchContactInfo = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('section_data')
+          .eq('section_name', 'contact_info')
+          .single();
+        
+        if (error) {
+          console.error("Erreur lors de la récupération des coordonnées de contact:", error);
+          return;
+        }
+        
+        if (data && data.section_data) {
+          setContactInfo(data.section_data as unknown as ContactInfo);
+        }
+      } catch (error) {
+        console.error("Exception lors de la récupération des coordonnées de contact:", error);
+      }
+    };
+    
+    fetchContactInfo();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,21 +97,21 @@ const Contact = () => {
     }, 1500);
   }
 
-  const contactInfo = [
+  const contactInfoList = [
     {
       icon: MapPin,
       title: "Adresse",
-      details: ["123 Rue du Sushi", "75001 Paris, France"],
+      details: [contactInfo.address],
     },
     {
       icon: Phone,
       title: "Téléphone",
-      details: ["+33 1 23 45 67 89"],
+      details: [contactInfo.phone],
     },
     {
       icon: Mail,
       title: "Email",
-      details: ["contact@sushieats.fr"],
+      details: [contactInfo.email],
     },
     {
       icon: Clock,
@@ -124,7 +156,7 @@ const Contact = () => {
             
             <TabsContent value="coordonnees" className="mt-6">
               <div className="space-y-6">
-                {contactInfo.map((info, index) => (
+                {contactInfoList.map((info, index) => (
                   <div key={index} className="flex items-start">
                     <div className="mt-1 mr-4 bg-gold-100 p-2 rounded-full text-gold-600">
                       <info.icon className="h-5 w-5" />
@@ -243,7 +275,7 @@ const Contact = () => {
           <div>
             <h2 className="text-2xl font-bold mb-6">Nos Coordonnées</h2>
             <div className="space-y-6">
-              {contactInfo.map((info, index) => (
+              {contactInfoList.map((info, index) => (
                 <div key={index} className="flex items-start">
                   <div className="mt-1 mr-4 bg-gold-100 p-2 rounded-full text-gold-600">
                     <info.icon className="h-5 w-5" />
