@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -82,11 +83,6 @@ const ComposerSushi = () => {
 
       const ingredients = data || [];
 
-      // Categorize ingredients by type
-      const proteins = ingredients.filter(ing => ing.ingredient_type === 'protein');
-      const regularIngredients = ingredients.filter(ing => ing.ingredient_type === 'ingredient');
-      const sauces = ingredients.filter(ing => ing.ingredient_type === 'sauce');
-
       // Map to SushiOption format
       const mapToSushiOption = (ingredient: any): SushiOption => ({
         id: ingredient.id,
@@ -96,36 +92,19 @@ const ComposerSushi = () => {
         category: ingredient.ingredient_type
       });
 
-      // Set base options (proteins)
+      // Categorize ingredients by type
+      const enrobages = ingredients.filter(ing => ing.ingredient_type === 'enrobage');
+      const proteins = ingredients.filter(ing => ing.ingredient_type === 'protein');
+      const regularIngredients = ingredients.filter(ing => ing.ingredient_type === 'ingredient');
+      const toppings = ingredients.filter(ing => ing.ingredient_type === 'topping');
+      const sauces = ingredients.filter(ing => ing.ingredient_type === 'sauce');
+
+      // Set options from database
+      setEnrobageOptions(enrobages.map(mapToSushiOption));
       setBaseOptions(proteins.map(mapToSushiOption));
-
-      // Set garnitures options (regular ingredients)
       setGarnituresOptions(regularIngredients.map(mapToSushiOption));
-
-      // Set sauce options
+      setToppingOptions(toppings.map(mapToSushiOption));
       setSauceOptions(sauces.map(mapToSushiOption));
-
-      // For now, keep static enrobage and topping options
-      // You can add these as ingredient_type in your database if needed
-      setEnrobageOptions([
-        { id: "nori", name: "Feuille d'algue nori (Maki)", price: 0, included: true, category: "classique" },
-        { id: "tapioca", name: "Feuille de tapioca salade (Spring)", price: 0, included: true, category: "classique" },
-        { id: "riz", name: "Riz (California)", price: 0, included: true, category: "classique" },
-        { id: "salmon", name: "Salmon (tranche de saumon)", price: 1, included: false, category: "premium" },
-        { id: "salmon-tataki", name: "Salmon tataki (tranche de saumon snacke)", price: 1, included: false, category: "premium" },
-        { id: "avocado", name: "Avocado (tranche d'avocat)", price: 1, included: false, category: "premium" },
-        { id: "mango", name: "Mango (tranche de mangue)", price: 1, included: false, category: "premium" },
-        { id: "cheddar", name: "Cheddar (tranche de cheddar snacke)", price: 1, included: false, category: "premium" },
-      ]);
-
-      setToppingOptions([
-        { id: "sesame", name: "Graines de sésame", price: 0, included: true, category: "topping" },
-        { id: "oignons", name: "Oignons frits crispy", price: 0, included: true, category: "topping" },
-        { id: "tobiko", name: "Œufs de tobiko", price: 0, included: true, category: "topping" },
-        { id: "saumon-oeufs", name: "Œufs de saumon", price: 0, included: true, category: "topping" },
-        { id: "noix", name: "Cerneaux de noix", price: 0, included: true, category: "topping" },
-        { id: "herbes", name: "Herbes fraiches", price: 0, included: true, category: "topping" },
-      ]);
 
     } catch (error) {
       console.error('Erreur lors du chargement des ingrédients sushi:', error);
@@ -238,7 +217,7 @@ const ComposerSushi = () => {
       }
       
       // For topping, check if enrobage is not nori, otherwise topping is optional
-      if (step === 5 && selectedEnrobage?.id === "nori" && selectedTopping) {
+      if (step === 5 && selectedEnrobage?.name?.toLowerCase().includes("nori") && selectedTopping) {
         toast({
           title: "Information",
           description: "Les toppings ne sont pas disponibles avec l'enrobage feuille d'algue nori",
@@ -330,30 +309,29 @@ const ComposerSushi = () => {
           <div>
             <h3 className="text-xl font-bold mb-4">1 - Choisis ton enrobage extérieur</h3>
             
-            <h4 className="font-semibold mb-2">Enrobage classique (inclus) :</h4>
             <RadioGroup value={selectedEnrobage?.id || ""} onValueChange={(value) => {
               const option = enrobageOptions.find(opt => opt.id === value);
               setSelectedEnrobage(option || null);
             }}>
-              {enrobageOptions.filter(opt => opt.category === "classique").map((option) => (
-                <div key={option.id} className="flex items-center space-x-2 mb-2">
-                  <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
-                  <Label htmlFor={`enrobage-${option.id}`}>{option.name}</Label>
-                </div>
-              ))}
-            
-              <h4 className="font-semibold mt-4 mb-2">Enrobage premium (+1€) :</h4>
-              {enrobageOptions.filter(opt => opt.category === "premium").map((option) => (
-                <div key={option.id} className="flex items-center space-x-2 mb-2">
-                  <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
-                  <Label htmlFor={`enrobage-${option.id}`}>
-                    <div className="flex justify-between">
-                      <span>{option.name}</span>
-                      <span className="font-semibold">+{option.price}€</span>
+              {enrobageOptions.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2">
+                  {enrobageOptions.map((option) => (
+                    <div key={option.id} className="flex items-center space-x-2 mb-2">
+                      <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
+                      <Label htmlFor={`enrobage-${option.id}`}>
+                        <div className="flex justify-between">
+                          <span>{option.name}</span>
+                          {!option.included && (
+                            <span className="font-semibold text-gold-600">+{option.price}€</span>
+                          )}
+                        </div>
+                      </Label>
                     </div>
-                  </Label>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <p className="text-gray-500">Aucun enrobage disponible. Veuillez ajouter des enrobages dans l'administration.</p>
+              )}
             </RadioGroup>
           </div>
         );
@@ -366,21 +344,25 @@ const ComposerSushi = () => {
               const option = baseOptions.find(opt => opt.id === value);
               setSelectedBase(option || null);
             }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {baseOptions.map((option) => (
-                  <div key={option.id} className="flex items-center space-x-2 mb-2">
-                    <RadioGroupItem value={option.id} id={`base-${option.id}`} />
-                    <Label htmlFor={`base-${option.id}`}>
-                      <div className="flex justify-between">
-                        <span>{option.name}</span>
-                        {!option.included && (
-                          <span className="font-semibold text-gold-600">+{option.price}€</span>
-                        )}
-                      </div>
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              {baseOptions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {baseOptions.map((option) => (
+                    <div key={option.id} className="flex items-center space-x-2 mb-2">
+                      <RadioGroupItem value={option.id} id={`base-${option.id}`} />
+                      <Label htmlFor={`base-${option.id}`}>
+                        <div className="flex justify-between">
+                          <span>{option.name}</span>
+                          {!option.included && (
+                            <span className="font-semibold text-gold-600">+{option.price}€</span>
+                          )}
+                        </div>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Aucune protéine disponible. Veuillez ajouter des protéines dans l'administration.</p>
+              )}
             </RadioGroup>
           </div>
         );
@@ -392,25 +374,29 @@ const ComposerSushi = () => {
             <p className="text-sm text-gray-500 mb-4">
               Les 2 premiers choix inclus sont gratuits, chaque garniture supplémentaire ou payante: prix affiché
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {garnituresOptions.map((option) => (
-                <div key={option.id} className="flex items-center space-x-2 mb-2">
-                  <Checkbox 
-                    id={`garniture-${option.id}`} 
-                    checked={selectedGarnitures.some(item => item.id === option.id)}
-                    onCheckedChange={() => handleGarnitureSelect(option)}
-                  />
-                  <Label htmlFor={`garniture-${option.id}`}>
-                    <div className="flex justify-between">
-                      <span>{option.name}</span>
-                      {!option.included && (
-                        <span className="font-semibold text-gold-600">+{option.price}€</span>
-                      )}
-                    </div>
-                  </Label>
-                </div>
-              ))}
-            </div>
+            {garnituresOptions.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {garnituresOptions.map((option) => (
+                  <div key={option.id} className="flex items-center space-x-2 mb-2">
+                    <Checkbox 
+                      id={`garniture-${option.id}`} 
+                      checked={selectedGarnitures.some(item => item.id === option.id)}
+                      onCheckedChange={() => handleGarnitureSelect(option)}
+                    />
+                    <Label htmlFor={`garniture-${option.id}`}>
+                      <div className="flex justify-between">
+                        <span>{option.name}</span>
+                        {!option.included && (
+                          <span className="font-semibold text-gold-600">+{option.price}€</span>
+                        )}
+                      </div>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">Aucune garniture disponible. Veuillez ajouter des ingrédients dans l'administration.</p>
+            )}
             {selectedGarnitures.length > 2 && (
               <p className="text-sm text-gold-600 mt-2">
                 +{Math.max(0, selectedGarnitures.filter(g => g.included).length - 2)}€ pour garniture(s) supplémentaire(s)
@@ -423,7 +409,7 @@ const ComposerSushi = () => {
         return (
           <div>
             <h3 className="text-xl font-bold mb-4">4 - Choisis ton topping (1 choix inclus)</h3>
-            {selectedEnrobage?.id === "nori" && (
+            {selectedEnrobage?.name?.toLowerCase().includes("nori") && (
               <p className="text-sm text-red-500 mb-4">
                 Les toppings ne sont pas disponibles avec l'enrobage "feuille d'algue nori (maki)"
               </p>
@@ -432,35 +418,39 @@ const ComposerSushi = () => {
               value={selectedTopping?.id || ""}
               onValueChange={(value) => {
                 // Only allow topping selection if enrobage is not nori
-                if (selectedEnrobage?.id !== "nori") {
+                if (!selectedEnrobage?.name?.toLowerCase().includes("nori")) {
                   const option = toppingOptions.find(opt => opt.id === value);
                   setSelectedTopping(option || null);
                 }
               }}
-              disabled={selectedEnrobage?.id === "nori"}
+              disabled={selectedEnrobage?.name?.toLowerCase().includes("nori")}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {toppingOptions.map((option) => (
-                  <div key={option.id} className="flex items-center space-x-2 mb-2">
-                    <RadioGroupItem 
-                      value={option.id} 
-                      id={`topping-${option.id}`} 
-                      disabled={selectedEnrobage?.id === "nori"}
-                    />
-                    <Label 
-                      htmlFor={`topping-${option.id}`}
-                      className={selectedEnrobage?.id === "nori" ? "text-gray-400" : ""}
-                    >
-                      <div className="flex justify-between">
-                        <span>{option.name}</span>
-                        {!option.included && (
-                          <span className="font-semibold text-gold-600">+{option.price}€</span>
-                        )}
-                      </div>
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              {toppingOptions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {toppingOptions.map((option) => (
+                    <div key={option.id} className="flex items-center space-x-2 mb-2">
+                      <RadioGroupItem 
+                        value={option.id} 
+                        id={`topping-${option.id}`} 
+                        disabled={selectedEnrobage?.name?.toLowerCase().includes("nori")}
+                      />
+                      <Label 
+                        htmlFor={`topping-${option.id}`}
+                        className={selectedEnrobage?.name?.toLowerCase().includes("nori") ? "text-gray-400" : ""}
+                      >
+                        <div className="flex justify-between">
+                          <span>{option.name}</span>
+                          {!option.included && (
+                            <span className="font-semibold text-gold-600">+{option.price}€</span>
+                          )}
+                        </div>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Aucun topping disponible. Veuillez ajouter des toppings dans l'administration.</p>
+              )}
             </RadioGroup>
           </div>
         );
@@ -473,21 +463,25 @@ const ComposerSushi = () => {
               const option = sauceOptions.find(opt => opt.id === value);
               setSelectedSauce(option || null);
             }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {sauceOptions.map((option) => (
-                  <div key={option.id} className="flex items-center space-x-2 mb-2">
-                    <RadioGroupItem value={option.id} id={`sauce-${option.id}`} />
-                    <Label htmlFor={`sauce-${option.id}`}>
-                      <div className="flex justify-between">
-                        <span>{option.name}</span>
-                        {!option.included && (
-                          <span className="font-semibold text-gold-600">+{option.price}€</span>
-                        )}
-                      </div>
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              {sauceOptions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {sauceOptions.map((option) => (
+                    <div key={option.id} className="flex items-center space-x-2 mb-2">
+                      <RadioGroupItem value={option.id} id={`sauce-${option.id}`} />
+                      <Label htmlFor={`sauce-${option.id}`}>
+                        <div className="flex justify-between">
+                          <span>{option.name}</span>
+                          {!option.included && (
+                            <span className="font-semibold text-gold-600">+{option.price}€</span>
+                          )}
+                        </div>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">Aucune sauce disponible. Veuillez ajouter des sauces dans l'administration.</p>
+              )}
             </RadioGroup>
           </div>
         );
@@ -604,7 +598,7 @@ const ComposerSushi = () => {
                       )}
                     </span>
                   </div>
-                  {(selectedTopping && selectedEnrobage?.id !== "nori") && (
+                  {(selectedTopping && !selectedEnrobage?.name?.toLowerCase().includes("nori")) && (
                     <div className="flex justify-between">
                       <span className="font-semibold">Topping:</span>
                       <span>{selectedTopping.name} {!selectedTopping.included && `(+${selectedTopping.price}€)`}</span>
