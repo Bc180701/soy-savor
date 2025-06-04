@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
 import { ArrowLeft, Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ComposerSushiState {
   baseItem: MenuItem;
@@ -50,77 +51,75 @@ const ComposerSushi = () => {
   const [selectedTopping, setSelectedTopping] = useState<SushiOption | null>(null);
   const [selectedSauce, setSelectedSauce] = useState<SushiOption | null>(null);
 
-  // Box options
+  // States for ingredients from database
+  const [enrobageOptions, setEnrobageOptions] = useState<SushiOption[]>([]);
+  const [baseOptions, setBaseOptions] = useState<SushiOption[]>([]);
+  const [garnituresOptions, setGarnituresOptions] = useState<SushiOption[]>([]);
+  const [toppingOptions, setToppingOptions] = useState<SushiOption[]>([]);
+  const [sauceOptions, setSauceOptions] = useState<SushiOption[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Box options (these remain static)
   const boxOptions: BoxOption[] = [
     { id: "box-12", name: "Box 12 pièces", pieces: 12, creations: 2, price: 15 },
     { id: "box-18", name: "Box 18 pièces", pieces: 18, creations: 3, price: 22 },
     { id: "box-24", name: "Box 24 pièces", pieces: 24, creations: 4, price: 25 },
   ];
 
-  // Enrobage options
-  const enrobageOptions: SushiOption[] = [
-    { id: "nori", name: "Feuille d'algue nori (Maki)", price: 0, included: true, category: "classique" },
-    { id: "tapioca", name: "Feuille de tapioca salade (Spring)", price: 0, included: true, category: "classique" },
-    { id: "riz", name: "Riz (California)", price: 0, included: true, category: "classique" },
-    { id: "salmon", name: "Salmon (tranche de saumon)", price: 1, included: false, category: "premium" },
-    { id: "salmon-tataki", name: "Salmon tataki (tranche de saumon snacke)", price: 1, included: false, category: "premium" },
-    { id: "avocado", name: "Avocado (tranche d'avocat)", price: 1, included: false, category: "premium" },
-    { id: "mango", name: "Mango (tranche de mangue)", price: 1, included: false, category: "premium" },
-    { id: "cheddar", name: "Cheddar (tranche de cheddar snacke)", price: 1, included: false, category: "premium" },
-  ];
+  // Fetch ingredients from database
+  useEffect(() => {
+    const fetchIngredients = async () => {
+      try {
+        setLoading(true);
+        console.log("Fetching sushi ingredients from database...");
+        
+        const { data: ingredients, error } = await supabase
+          .from('sushi_ingredients')
+          .select('*')
+          .order('name');
 
-  // Base options
-  const baseOptions: SushiOption[] = [
-    { id: "saumon", name: "Saumon", price: 0, included: true, category: "base" },
-    { id: "thon", name: "Thon", price: 0, included: true, category: "base" },
-    { id: "thon-cuit", name: "Thon cuit", price: 0, included: true, category: "base" },
-    { id: "daurade", name: "Daurade", price: 0, included: true, category: "base" },
-    { id: "crevette", name: "Crevette", price: 0, included: true, category: "base" },
-    { id: "crevette-tempura", name: "Crevette tempura", price: 0, included: true, category: "base" },
-    { id: "crabe", name: "Chair de crabe", price: 0, included: true, category: "base" },
-    { id: "poulet", name: "Poulet tempura", price: 0, included: true, category: "base" },
-    { id: "chevre", name: "Chèvre", price: 0, included: true, category: "base" },
-    { id: "foie-gras", name: "Foie gras", price: 0, included: true, category: "base" },
-    { id: "brie", name: "Brie truffée", price: 0, included: true, category: "base" },
-    { id: "tofu", name: "Tofu frit", price: 0, included: true, category: "base" },
-  ];
+        if (error) {
+          console.error('Error fetching sushi ingredients:', error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les ingrédients",
+            variant: "destructive",
+          });
+          return;
+        }
 
-  // Garnitures options
-  const garnituresOptions: SushiOption[] = [
-    { id: "avocat", name: "Avocat", price: 0, included: true, category: "garniture" },
-    { id: "concombre", name: "Concombre", price: 0, included: true, category: "garniture" },
-    { id: "chou", name: "Chou rouge", price: 0, included: true, category: "garniture" },
-    { id: "mangue", name: "Mangue", price: 0, included: true, category: "garniture" },
-    { id: "ananas", name: "Ananas", price: 0, included: true, category: "garniture" },
-    { id: "wakame", name: "Algue wakame", price: 0, included: true, category: "garniture" },
-    { id: "carotte", name: "Carotte", price: 0, included: true, category: "garniture" },
-    { id: "figue", name: "Confiture de figue", price: 0, included: true, category: "garniture" },
-    { id: "cream-cheese", name: "Cream cheese", price: 0, included: true, category: "garniture" },
-    { id: "menthe", name: "Menthe", price: 0, included: true, category: "garniture" },
-    { id: "coriandre", name: "Coriandre", price: 0, included: true, category: "garniture" },
-    { id: "ciboulette", name: "Ciboulette", price: 0, included: true, category: "garniture" },
-  ];
+        console.log("Sushi ingredients fetched:", ingredients);
 
-  // Topping options
-  const toppingOptions: SushiOption[] = [
-    { id: "sesame", name: "Graines de sésame", price: 0, included: true, category: "topping" },
-    { id: "oignons", name: "Oignons frits crispy", price: 0, included: true, category: "topping" },
-    { id: "tobiko", name: "Œufs de tobiko", price: 0, included: true, category: "topping" },
-    { id: "saumon-oeufs", name: "Œufs de saumon", price: 0, included: true, category: "topping" },
-    { id: "noix", name: "Cerneaux de noix", price: 0, included: true, category: "topping" },
-    { id: "herbes", name: "Herbes fraiches", price: 0, included: true, category: "topping" },
-  ];
+        // Transform ingredients to SushiOption format and group by type
+        const transformedIngredients = ingredients.map(ingredient => ({
+          id: ingredient.id,
+          name: ingredient.name,
+          price: ingredient.price,
+          included: ingredient.included,
+          category: ingredient.ingredient_type
+        }));
 
-  // Sauce options
-  const sauceOptions: SushiOption[] = [
-    { id: "spicy-mayo", name: "Spicy mayo", price: 0, included: true, category: "sauce" },
-    { id: "mayo", name: "Mayo", price: 0, included: true, category: "sauce" },
-    { id: "curry", name: "Curry", price: 0, included: true, category: "sauce" },
-    { id: "teriyaki", name: "Teriyaki", price: 0, included: true, category: "sauce" },
-    { id: "cream-cheese-sauce", name: "Cream cheese", price: 0, included: true, category: "sauce" },
-    { id: "miel", name: "Miel", price: 0, included: true, category: "sauce" },
-    { id: "wasabi", name: "Wasabi", price: 0, included: true, category: "sauce" },
-  ];
+        // Group ingredients by type
+        setEnrobageOptions(transformedIngredients.filter(ing => ing.category === 'enrobage'));
+        setBaseOptions(transformedIngredients.filter(ing => ing.category === 'protein'));
+        setGarnituresOptions(transformedIngredients.filter(ing => ing.category === 'ingredient'));
+        setToppingOptions(transformedIngredients.filter(ing => ing.category === 'topping'));
+        setSauceOptions(transformedIngredients.filter(ing => ing.category === 'sauce'));
+
+      } catch (error) {
+        console.error('Error in fetchIngredients:', error);
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors du chargement des ingrédients",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIngredients();
+  }, [toast]);
 
   // Handle garniture selection (max 2 included)
   const handleGarnitureSelect = (option: SushiOption) => {
@@ -200,7 +199,7 @@ const ComposerSushi = () => {
       }
       
       // For topping, check if enrobage is not nori, otherwise topping is optional
-      if (step === 5 && selectedEnrobage?.id === "nori" && selectedTopping) {
+      if (step === 5 && selectedEnrobage?.name === "Feuille d'algue nori (Maki)" && selectedTopping) {
         toast({
           title: "Information",
           description: "Les toppings ne sont pas disponibles avec l'enrobage feuille d'algue nori",
@@ -251,6 +250,18 @@ const ComposerSushi = () => {
     }
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto py-24 px-4">
+        <div className="max-w-3xl mx-auto flex items-center justify-center">
+          <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
+          <span className="ml-2">Chargement des ingrédients...</span>
+        </div>
+      </div>
+    );
+  }
+
   // Get current step content
   const renderStepContent = () => {
     switch (step) {
@@ -287,7 +298,7 @@ const ComposerSushi = () => {
               const option = enrobageOptions.find(opt => opt.id === value);
               setSelectedEnrobage(option || null);
             }}>
-              {enrobageOptions.filter(opt => opt.category === "classique").map((option) => (
+              {enrobageOptions.filter(opt => opt.included).map((option) => (
                 <div key={option.id} className="flex items-center space-x-2 mb-2">
                   <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
                   <Label htmlFor={`enrobage-${option.id}`}>{option.name}</Label>
@@ -295,7 +306,7 @@ const ComposerSushi = () => {
               ))}
             
               <h4 className="font-semibold mt-4 mb-2">Enrobage premium (+1€) :</h4>
-              {enrobageOptions.filter(opt => opt.category === "premium").map((option) => (
+              {enrobageOptions.filter(opt => !opt.included).map((option) => (
                 <div key={option.id} className="flex items-center space-x-2 mb-2">
                   <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
                   <Label htmlFor={`enrobage-${option.id}`}>
@@ -361,7 +372,7 @@ const ComposerSushi = () => {
         return (
           <div>
             <h3 className="text-xl font-bold mb-4">4 - Choisis ton topping (1 choix inclus)</h3>
-            {selectedEnrobage?.id === "nori" && (
+            {selectedEnrobage?.name === "Feuille d'algue nori (Maki)" && (
               <p className="text-sm text-red-500 mb-4">
                 Les toppings ne sont pas disponibles avec l'enrobage "feuille d'algue nori (maki)"
               </p>
@@ -370,12 +381,12 @@ const ComposerSushi = () => {
               value={selectedTopping?.id || ""}
               onValueChange={(value) => {
                 // Only allow topping selection if enrobage is not nori
-                if (selectedEnrobage?.id !== "nori") {
+                if (selectedEnrobage?.name !== "Feuille d'algue nori (Maki)") {
                   const option = toppingOptions.find(opt => opt.id === value);
                   setSelectedTopping(option || null);
                 }
               }}
-              disabled={selectedEnrobage?.id === "nori"}
+              disabled={selectedEnrobage?.name === "Feuille d'algue nori (Maki)"}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {toppingOptions.map((option) => (
@@ -383,11 +394,11 @@ const ComposerSushi = () => {
                     <RadioGroupItem 
                       value={option.id} 
                       id={`topping-${option.id}`} 
-                      disabled={selectedEnrobage?.id === "nori"}
+                      disabled={selectedEnrobage?.name === "Feuille d'algue nori (Maki)"}
                     />
                     <Label 
                       htmlFor={`topping-${option.id}`}
-                      className={selectedEnrobage?.id === "nori" ? "text-gray-400" : ""}
+                      className={selectedEnrobage?.name === "Feuille d'algue nori (Maki)" ? "text-gray-400" : ""}
                     >
                       {option.name}
                     </Label>
@@ -530,7 +541,7 @@ const ComposerSushi = () => {
                       )}
                     </span>
                   </div>
-                  {(selectedTopping && selectedEnrobage?.id !== "nori") && (
+                  {(selectedTopping && selectedEnrobage?.name !== "Feuille d'algue nori (Maki)") && (
                     <div className="flex justify-between">
                       <span className="font-semibold">Topping:</span>
                       <span>{selectedTopping.name}</span>
