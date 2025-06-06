@@ -86,6 +86,20 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Better Times Golden Text Utilities */
+  .better-times-gold {
+    font-family: 'Better Times', serif;
+    color: #FABE00;
+  }
+  
+  .better-times-gold-gradient {
+    font-family: 'Better Times', serif;
+    background: linear-gradient(135deg, #FABE00, #E6AB00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
 /* Styles pour les onglets d'administration de type WordPress */
