@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +23,7 @@ const Commander = () => {
   const [isInitializing, setIsInitializing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isRestaurantOpen, setIsRestaurantOpen] = useState<boolean>(true);
+  const [nextOpenDay, setNextOpenDay] = useState<any>(null);
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
   const [visibleSections, setVisibleSections] = useState<{[key: string]: boolean}>({});
   const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
@@ -41,6 +41,11 @@ const Commander = () => {
     const checkOpeningHours = async () => {
       const isOpen = await isRestaurantOpenNow();
       setIsRestaurantOpen(isOpen);
+      
+      if (!isOpen) {
+        const nextDay = await getNextOpenDay();
+        setNextOpenDay(nextDay);
+      }
     };
     
     checkOpeningHours();
@@ -127,8 +132,8 @@ const Commander = () => {
   }
   
   // Si le restaurant est fermé aujourd'hui
-  if (!isRestaurantOpen) {
-    return <RestaurantClosedMessage />;
+  if (!isRestaurantOpen && nextOpenDay) {
+    return <RestaurantClosedMessage nextOpenDay={nextOpenDay} />;
   }
 
   // Afficher uniquement le chargement initial, pas lors des changements de catégorie
