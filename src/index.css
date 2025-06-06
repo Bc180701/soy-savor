@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -87,15 +86,15 @@
     display: none;
   }
   
-  /* Better Times Golden Text Utilities */
-  .better-times-gold {
-    font-family: 'Times', serif;
+  /* Morning Waves Golden Text Utilities */
+  .morning-waves-gold {
+    font-family: 'Dancing Script', cursive;
     color: #FABE00;
     font-weight: 400;
   }
   
-  .better-times-gold-gradient {
-    font-family: 'Times', serif;
+  .morning-waves-gold-gradient {
+    font-family: 'Dancing Script', cursive;
     font-weight: 400;
     background: linear-gradient(135deg, #FABE00, #E6AB00);
     -webkit-background-clip: text;
