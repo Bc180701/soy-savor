@@ -46,7 +46,7 @@ export const openingHoursService = {
     try {
       const openingHours = await this.getOpeningHours();
       const now = new Date();
-      const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+      const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       const currentTime = now.toTimeString().slice(0, 5); // Format HH:MM
       
       const todayHours = openingHours.find(hours => hours.day === currentDay);
@@ -66,7 +66,7 @@ export const openingHoursService = {
     try {
       const openingHours = await this.getOpeningHours();
       const now = new Date();
-      const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+      const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       
       const todayHours = openingHours.find(hours => hours.day === currentDay);
       
@@ -79,5 +79,37 @@ export const openingHoursService = {
       console.error("Error getting today's hours:", error);
       return "Horaires non disponibles";
     }
+  }
+};
+
+// Export des fonctions individuelles pour compatibilité
+export const isRestaurantOpenNow = openingHoursService.isRestaurantOpen;
+export const getWeekOpeningHours = openingHoursService.getOpeningHours;
+
+export const getNextOpenDay = async () => {
+  try {
+    const openingHours = await openingHoursService.getOpeningHours();
+    const today = new Date();
+    
+    // Chercher le prochain jour ouvert
+    for (let i = 1; i <= 7; i++) {
+      const nextDate = new Date(today);
+      nextDate.setDate(today.getDate() + i);
+      const dayName = nextDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      
+      const dayHours = openingHours.find(hours => hours.day === dayName);
+      if (dayHours && dayHours.is_open) {
+        return {
+          day: dayName,
+          date: nextDate,
+          hours: `${dayHours.open_time} - ${dayHours.close_time}`
+        };
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error getting next open day:", error);
+    return null;
   }
 };

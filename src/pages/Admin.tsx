@@ -28,18 +28,18 @@ const Admin = () => {
 
         setUser(session.user);
 
-        const { data: profile, error } = await supabase
-          .from('profiles')
+        const { data: userRole, error } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('id', session.user.id)
+          .eq('user_id', session.user.id)
           .single();
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Erreur lors de la récupération du profil:', error);
+          console.error('Erreur lors de la récupération du rôle:', error);
           throw error;
         }
 
-        if (profile?.role === 'admin') {
+        if (userRole?.role === 'admin') {
           setIsAdmin(true);
         } else {
           toast({
