@@ -113,8 +113,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                     {isMobile ? (
                       // Mobile layout - Vertical card
                       <div className="flex flex-col h-full">
-                        {/* Image */}
-                        <div className="w-full h-32 flex-shrink-0 relative overflow-hidden rounded-t-xl">
+                        {/* Image - Augmentée de h-32 à h-40 */}
+                        <div className="w-full h-40 flex-shrink-0 relative overflow-hidden rounded-t-xl">
                           {item.imageUrl && item.imageUrl !== "/placeholder.svg" ? (
                             <img
                               src={item.imageUrl}
@@ -257,8 +257,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                     ) : (
                       // Desktop layout - Horizontal card
                       <div className="flex items-center">
-                        {/* Image */}
-                        <div className="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-l-xl">
+                        {/* Image - Augmentée de w-32 h-32 à w-40 h-40 */}
+                        <div className="w-40 h-40 flex-shrink-0 relative overflow-hidden rounded-l-xl">
                           {item.imageUrl && item.imageUrl !== "/placeholder.svg" ? (
                             <img
                               src={item.imageUrl}
