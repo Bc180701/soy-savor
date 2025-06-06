@@ -57,7 +57,7 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
             }`}
           >
             <Button asChild size="lg" className="bg-gold-600 hover:bg-gold-700 text-white">
-              <Link to="/menu">Découvrir notre carte</Link>
+              <Link to="/commander">Commander maintenant</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white/10">
               <Link to="/commander" className="flex items-center">
