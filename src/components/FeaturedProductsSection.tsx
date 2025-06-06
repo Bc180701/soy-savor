@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -11,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { Loader2, Plus, Pencil, Heart, Eye } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MenuItem } from "@/types";
+import { MenuItem, SushiCategory } from "@/types";
 import { AnimatePresence } from "framer-motion";
 
 interface Product {
@@ -39,7 +38,7 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
     description: product.description,
     price: product.price,
     imageUrl: product.image_url,
-    category: product.categories?.name || '',
+    category: (product.categories?.name || 'custom') as SushiCategory,
     allergens: [],
     isVegetarian: false,
     isSpicy: false,
