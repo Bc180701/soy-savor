@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -115,7 +116,7 @@ export default {
 				serif: ['Playfair Display', 'serif'],
 				display: ['Montserrat', 'sans-serif'],
 				japanese: ['"Noto Sans JP"', 'sans-serif'],
-				'better-times': ['"Better Times"', 'serif'],
+				'better-times': ['Times', 'serif'],
 			},
 			keyframes: {
 				'accordion-down': {

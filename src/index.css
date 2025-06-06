@@ -89,12 +89,14 @@
   
   /* Better Times Golden Text Utilities */
   .better-times-gold {
-    font-family: 'Better Times', serif;
+    font-family: 'Times', serif;
     color: #FABE00;
+    font-weight: 400;
   }
   
   .better-times-gold-gradient {
-    font-family: 'Better Times', serif;
+    font-family: 'Times', serif;
+    font-weight: 400;
     background: linear-gradient(135deg, #FABE00, #E6AB00);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
