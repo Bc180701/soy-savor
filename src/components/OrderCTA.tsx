@@ -24,7 +24,7 @@ export const OrderCTA = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 text-center">
-      <h2 className="text-3xl font-bold mb-4">Envie de sushi?</h2>
+      <h2 className="text-3xl font-bold mb-4 better-times-gold">Envie de sushi?</h2>
       <p className="text-gray-600 mb-8 max-w-xl mx-auto">
         Commandez en ligne et dégustez nos délicieux plats préparés avec soin par nos chefs.
         Livraison à domicile ou à emporter.

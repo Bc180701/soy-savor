@@ -37,7 +37,7 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
       <div className="container mx-auto px-4 z-10">
         <div className="max-w-2xl">
           <h1 
-            className={`text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+            className={`text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 transition-all duration-700 better-times-gold-gradient ${
               isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             }`}
             dangerouslySetInnerHTML={{ __html: title }}

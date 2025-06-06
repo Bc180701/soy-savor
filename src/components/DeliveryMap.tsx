@@ -21,7 +21,7 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Zones de livraison</h2>
+          <h2 className="text-3xl font-bold mb-4 better-times-gold">Zones de livraison</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Nous livrons dans les communes suivantes autour de Châteaurenard. Commandez en ligne et recevez vos sushis directement chez vous !
           </p>
@@ -42,7 +42,7 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
               >
                 <div className="bg-white bg-opacity-80 p-6 rounded-lg shadow-md text-center">
                   <MapPin className="mx-auto h-10 w-10 text-gold-600 mb-2" />
-                  <h3 className="text-xl font-bold mb-2">SushiEats Châteaurenard</h3>
+                  <h3 className="text-xl font-bold mb-2 better-times-gold">SushiEats Châteaurenard</h3>
                   <p className="text-gray-600 mb-2">16 cours Carnot, 13160 Châteaurenard</p>
                   <p className="text-sm text-gold-600 font-medium">Point de départ des livraisons</p>
                 </div>

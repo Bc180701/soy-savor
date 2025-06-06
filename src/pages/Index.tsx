@@ -116,7 +116,7 @@ const Index = () => {
       {/* Promotions */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-6">Nos Promotions du Moment</h2>
+          <h2 className="text-2xl font-bold mb-6 better-times-gold">Nos Promotions du Moment</h2>
           {activePromotions.length > 0 && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <h3 className="text-lg font-semibold text-red-800 mb-2">🎉 Promotions actives aujourd'hui :</h3>
