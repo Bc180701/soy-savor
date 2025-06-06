@@ -1,28 +1,26 @@
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
-import { getMenuData } from "@/services/productService";
-import { MenuCategory } from "@/types";
+import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { MenuCategory } from "@/types";
+import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
 import { supabase } from "@/integrations/supabase/client";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { cn } from "@/lib/utils";
+import LoadingSpinner from "@/components/menu/LoadingSpinner";
+import PromotionalBanner from "@/components/menu/PromotionalBanner";
+import CategorySection from "@/components/menu/CategorySection";
+import MenuProductsDisplay from "@/components/menu/MenuProductsDisplay";
 
 const Menu = () => {
+  const { toast } = useToast();
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const { toast } = useToast();
-  
+  const [isCategoryChanging, setIsCategoryChanging] = useState(false);
+  const [visibleSections, setVisibleSections] = useState<{[key: string]: boolean}>({});
+  const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
     const checkAuth = async () => {
@@ -32,13 +30,45 @@ const Menu = () => {
     
     checkAuth();
     
-    const fetchMenuData = async () => {
+    const loadMenuData = async () => {
       setIsLoading(true);
       try {
         console.time('Loading Menu Data');
         // Utiliser la fonction optimisée qui charge tout en une seule requête
-        const menuData = await getMenuData();
+        let menuData = await getMenuData();
         console.timeEnd('Loading Menu Data');
+        
+        // Si aucune donnée n'existe, initialiser automatiquement
+        if (menuData.length === 0) {
+          console.log("Aucune donnée de menu trouvée, initialisation automatique...");
+          setIsInitializing(true);
+          
+          // D'abord initialiser les catégories
+          console.log("Initialisation des catégories...");
+          const categoriesInitialized = await initializeCategories();
+          if (!categoriesInitialized) {
+            throw new Error("Échec de l'initialisation des catégories");
+          }
+          console.log("Catégories initialisées avec succès");
+          
+          // Ensuite, initialiser les produits complets
+          console.log("Initialisation des produits...");
+          const productsInitialized = await initializeFullMenu();
+          if (!productsInitialized) {
+            throw new Error("Échec de l'initialisation des produits");
+          }
+          console.log("Produits initialisés avec succès");
+          
+          // Récupérer les données du menu après l'initialisation
+          menuData = await getMenuData();
+          
+          toast({
+            title: "Menu initialisé",
+            description: "Les catégories et produits ont été chargés avec succès.",
+          });
+          
+          setIsInitializing(false);
+        }
         
         // Filtrer les produits actifs dans chaque catégorie
         const filteredCategories = menuData.map(category => ({
@@ -56,7 +86,7 @@ const Menu = () => {
         console.error("Error loading menu data:", error);
         toast({
           title: "Erreur",
-          description: "Impossible de charger les données du menu.",
+          description: "Impossible de charger les données du menu. Vérifiez les autorisations de la base de données.",
           variant: "destructive"
         });
       } finally {
@@ -64,17 +94,20 @@ const Menu = () => {
       }
     };
 
-    fetchMenuData();
+    loadMenuData();
   }, [toast, activeCategory]);
 
-  if (isLoading) {
+  // Afficher uniquement le chargement initial, pas lors des changements de catégorie
+  if ((isLoading && categories.length === 0) || isInitializing) {
     return (
-      <div className="container mx-auto py-24 px-4 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gold-600" />
-        <span className="ml-2">Chargement du menu...</span>
-      </div>
+      <LoadingSpinner 
+        message={isInitializing ? "Initialisation du menu..." : "Chargement du menu..."}
+      />
     );
   }
+
+  // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
+  const nonEmptyCategories = categories.filter(cat => cat.items.length > 0);
 
   return (
     <div className="container mx-auto py-24 px-4">
@@ -85,133 +118,35 @@ const Menu = () => {
         className="max-w-6xl mx-auto"
       >
         <h1 className="text-4xl font-bold text-center mb-2">Notre Menu</h1>
-        <p className="text-gray-600 text-center mb-12">
+        <p className="text-gray-600 text-center mb-8">
           Découvrez nos spécialités japonaises préparées avec soin
         </p>
 
-        {!isAuthenticated && (
-          <motion.div 
-            className="mb-8 bg-gradient-to-r from-gold-500 to-gold-300 p-6 rounded-lg shadow-lg text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-          >
-            <Badge className="bg-white text-gold-600 mb-2">OFFRE SPÉCIALE</Badge>
-            <h3 className="text-white text-xl font-bold mb-2">-10% sur votre première commande</h3>
-            <p className="text-white/90 mb-4">Créez un compte maintenant pour profiter de cette promotion exclusive</p>
-            <Button asChild className="bg-white hover:bg-gray-100 text-gold-600">
-              <Link to="/register">Créer un compte</Link>
-            </Button>
-          </motion.div>
+        {!isAuthenticated && <PromotionalBanner />}
+
+        {nonEmptyCategories.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-600">Aucun produit disponible actuellement.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col md:flex-row gap-6">
+            <CategorySection
+              categories={nonEmptyCategories}
+              activeCategory={activeCategory}
+              onCategoryChange={setActiveCategory}
+              isCategoryChanging={isCategoryChanging}
+              setIsCategoryChanging={setIsCategoryChanging}
+              setActiveCategory={setActiveCategory}
+              setVisibleSections={setVisibleSections}
+              categoryRefs={categoryRefs}
+            />
+            
+            <MenuProductsDisplay
+              categories={nonEmptyCategories}
+              categoryRefs={categoryRefs}
+            />
+          </div>
         )}
-
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="md:w-1/4">
-            <div className="sticky top-24">
-              <h2 className="text-xl font-bold mb-4">Catégories</h2>
-              <ScrollArea className="h-[70vh] pr-4">
-                <ul className="space-y-2">
-                  {categories
-                    .filter(category => category.items.length > 0) // Afficher uniquement les catégories avec des produits actifs
-                    .map((category) => (
-                    <li key={category.id}>
-                      <button
-                        onClick={() => setActiveCategory(category.id)}
-                        className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
-                          activeCategory === category.id
-                            ? "bg-gold-600 text-white"
-                            : "hover:bg-gray-100"
-                        }`}
-                      >
-                        {category.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-            </div>
-          </div>
-
-          <div className="md:w-3/4">
-            <AnimatePresence mode="wait">
-              {categories.map((category) => (
-                activeCategory === category.id && category.items.length > 0 && (
-                  <motion.div 
-                    key={category.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="mb-8">
-                      <h2 className="text-2xl font-bold">{category.name}</h2>
-                      {category.description && (
-                        <p className="text-gray-600 italic mt-1">{category.description}</p>
-                      )}
-                      <Separator className="my-4" />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6">
-                      <AnimatePresence>
-                        {category.items.map((item, index) => (
-                          <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.2, delay: index * 0.05 }}
-                          >
-                            <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                              <CardContent className="p-0">
-                                <div className="flex flex-col md:flex-row">
-                                  {item.imageUrl && item.imageUrl !== "/placeholder.svg" && (
-                                    <div 
-                                      className="w-full md:w-1/4 overflow-hidden"
-                                      style={{ backgroundColor: '#c7c8ca' }}
-                                    >
-                                      <AspectRatio ratio={1/1} className="h-full">
-                                        <img
-                                          src={item.imageUrl}
-                                          alt={item.name}
-                                          className="w-full h-full object-contain"
-                                        />
-                                      </AspectRatio>
-                                    </div>
-                                  )}
-                                  <div className={`w-full ${item.imageUrl && item.imageUrl !== "/placeholder.svg" ? "md:w-3/4" : ""} p-6`}>
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div>
-                                        <h3 className="text-lg font-bold">{item.name}</h3>
-                                        {item.description && (
-                                          <p className="text-gray-600 text-sm mt-1">{item.description}</p>
-                                        )}
-                                      </div>
-                                      <div className="flex flex-col items-end">
-                                        <span className="font-semibold text-gold-600">
-                                          {item.price.toFixed(2)} €
-                                        </span>
-                                        {item.isBestSeller && (
-                                          <Badge className="bg-orange-500 text-white mt-2">Exclusivité</Badge>
-                                        )}
-                                        {item.isNew && (
-                                          <Badge className="bg-purple-600 text-white mt-2 ml-2">Nouveauté</Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  </motion.div>
-                )
-              ))}
-            </AnimatePresence>
-          </div>
-        </div>
       </motion.div>
     </div>
   );
