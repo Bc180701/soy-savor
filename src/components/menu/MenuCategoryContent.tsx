@@ -118,7 +118,7 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                             <h3 className="text-sm font-semibold text-gray-900 leading-tight flex-1">
                               {item.name}
                             </h3>
-                            {item.description && (
+                            {(item.description || item.allergens || item.isVegetarian || item.isSpicy || item.pieces) && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -130,18 +130,59 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                             )}
                           </div>
                           
-                          {/* Description (conditionnellement affichée) */}
+                          {/* Détails étendus */}
                           <AnimatePresence>
-                            {item.description && expandedItems[item.id] && (
+                            {expandedItems[item.id] && (
                               <motion.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.2 }}
+                                className="mb-2"
                               >
-                                <p className="text-gray-600 text-xs leading-relaxed mb-2">
-                                  {item.description}
-                                </p>
+                                {/* Description */}
+                                {item.description && (
+                                  <p className="text-gray-600 text-xs leading-relaxed mb-2">
+                                    {item.description}
+                                  </p>
+                                )}
+
+                                {/* Tags supplémentaires */}
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {item.isVegetarian && (
+                                    <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
+                                      Végétarien
+                                    </Badge>
+                                  )}
+                                  {item.isSpicy && (
+                                    <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                                      Épicé
+                                    </Badge>
+                                  )}
+                                  {item.pieces && (
+                                    <Badge variant="outline" className="border-blue-500 text-blue-700 text-xs">
+                                      {item.pieces} pièces
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* Allergènes */}
+                                {item.allergens && item.allergens.length > 0 && (
+                                  <div className="mb-2">
+                                    <p className="text-xs text-gray-500 mb-1">Allergènes:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {item.allergens.map((allergen, idx) => (
+                                        <Badge 
+                                          key={idx}
+                                          variant="outline" 
+                                          className="border-orange-500 text-orange-700 text-xs"
+                                        >
+                                          {allergen}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -200,16 +241,6 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                                      item.category}
                                   </Badge>
                                 )}
-                                {item.isBestSeller && (
-                                  <Badge className="bg-gold-600 text-white text-xs">
-                                    Populaire
-                                  </Badge>
-                                )}
-                                {item.isVegetarian && (
-                                  <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
-                                    Végétarien
-                                  </Badge>
-                                )}
                               </div>
 
                               {/* Titre et bouton œil */}
@@ -217,7 +248,7 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                                 <h3 className="text-lg font-semibold text-gray-900">
                                   {item.name}
                                 </h3>
-                                {item.description && (
+                                {(item.description || item.allergens || item.isVegetarian || item.isSpicy || item.pieces) && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -229,28 +260,62 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                                 )}
                               </div>
                               
-                              {/* Description (conditionnellement affichée) */}
+                              {/* Détails étendus */}
                               <AnimatePresence>
-                                {item.description && expandedItems[item.id] && (
+                                {expandedItems[item.id] && (
                                   <motion.div
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: "auto" }}
                                     exit={{ opacity: 0, height: 0 }}
                                     transition={{ duration: 0.2 }}
+                                    className="mb-2"
                                   >
-                                    <p className="text-gray-600 text-sm leading-relaxed mb-2">
-                                      {item.description}
-                                    </p>
+                                    {/* Description */}
+                                    {item.description && (
+                                      <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                                        {item.description}
+                                      </p>
+                                    )}
+
+                                    {/* Tags supplémentaires */}
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                      {item.isVegetarian && (
+                                        <Badge variant="outline" className="border-green-500 text-green-700 text-sm">
+                                          Végétarien
+                                        </Badge>
+                                      )}
+                                      {item.isSpicy && (
+                                        <Badge variant="outline" className="border-red-500 text-red-700 text-sm">
+                                          Épicé
+                                        </Badge>
+                                      )}
+                                      {item.pieces && (
+                                        <Badge variant="outline" className="border-blue-500 text-blue-700 text-sm">
+                                          {item.pieces} pièces
+                                        </Badge>
+                                      )}
+                                    </div>
+
+                                    {/* Allergènes */}
+                                    {item.allergens && item.allergens.length > 0 && (
+                                      <div>
+                                        <p className="text-sm text-gray-500 mb-2">Allergènes:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {item.allergens.map((allergen, idx) => (
+                                            <Badge 
+                                              key={idx}
+                                              variant="outline" 
+                                              className="border-orange-500 text-orange-700 text-sm"
+                                            >
+                                              {allergen}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </motion.div>
                                 )}
                               </AnimatePresence>
-                              
-                              {/* Allergènes */}
-                              {item.allergens && expandedItems[item.id] && (
-                                <p className="text-xs text-gray-500 mt-2">
-                                  Allergènes: {item.allergens}
-                                </p>
-                              )}
                             </div>
 
                             {/* Prix */}
