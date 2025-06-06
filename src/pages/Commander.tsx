@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -157,8 +156,8 @@ const Commander = () => {
         transition={{ duration: 0.5 }}
         className="max-w-6xl mx-auto"
       >
-        <h1 className="text-4xl font-bold text-center mb-2 morning-waves-gold">Commander</h1>
-        <p className="text-gray-600 text-center mb-8 font-morning-waves text-lg">
+        <h1 className="text-4xl font-bold text-center mb-2">Commander</h1>
+        <p className="text-gray-600 text-center mb-8">
           Commandez en ligne et récupérez votre repas dans notre restaurant
         </p>
 
