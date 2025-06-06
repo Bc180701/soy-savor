@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
@@ -29,6 +30,7 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
   const cart = useCart();
   const { toast } = useToast();
   const [clickedButton, setClickedButton] = useState<string | null>(null);
+  const [selectedProductDetails, setSelectedProductDetails] = useState<Product | null>(null);
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
 
   // Convert Product to MenuItem for cart compatibility
@@ -61,6 +63,14 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
     }, 600);
   };
 
+  const handleShowDetails = (product: Product) => {
+    setSelectedProductDetails(product);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedProductDetails(null);
+  };
+
   const toggleItemDetails = (itemId: string) => {
     setExpandedItems(prev => ({
       ...prev,
@@ -69,263 +79,328 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
   };
   
   return (
-    <motion.div
-      className="w-full"
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-0 bg-white rounded-xl h-full">
-        <CardContent className="p-0 h-full">
-          {isMobile ? (
-            // Mobile layout - Vertical card
-            <div className="flex flex-col h-full">
-              {/* Image */}
-              <div className="w-full h-40 flex-shrink-0 relative overflow-hidden rounded-t-xl">
-                {product.image_url && product.image_url !== "/placeholder.svg" ? (
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">Pas d'image</span>
+    <>
+      <motion.div
+        className="w-full"
+        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.2 }}
+      >
+        <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-0 bg-white rounded-xl h-full">
+          <CardContent className="p-0 h-full">
+            {isMobile ? (
+              // Mobile layout - Vertical card
+              <div className="flex flex-col h-full">
+                {/* Image */}
+                <div className="w-full h-40 flex-shrink-0 relative overflow-hidden rounded-t-xl">
+                  {product.image_url && product.image_url !== "/placeholder.svg" ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <span className="text-gray-400 text-xs">Pas d'image</span>
+                    </div>
+                  )}
+                  
+                  {/* Badge en overlay */}
+                  <div className="absolute top-2 left-2">
+                    <Badge 
+                      variant={badgeVariant === "new" ? "default" : badgeVariant === "exclusive" ? "destructive" : "secondary"}
+                      className="text-xs font-medium"
+                    >
+                      {badgeVariant === "new" ? "NOUVEAU" : 
+                       badgeVariant === "exclusive" ? "EXCLUSIF" :
+                       "POPULAIRE"}
+                    </Badge>
                   </div>
-                )}
-                
-                {/* Badge en overlay */}
-                <div className="absolute top-2 left-2">
-                  <Badge 
-                    variant={badgeVariant === "new" ? "default" : badgeVariant === "exclusive" ? "destructive" : "secondary"}
-                    className="text-xs font-medium"
-                  >
-                    {badgeVariant === "new" ? "NOUVEAU" : 
-                     badgeVariant === "exclusive" ? "EXCLUSIF" :
-                     "POPULAIRE"}
-                  </Badge>
+
+                  {/* Icône cœur en overlay */}
+                  <div className="absolute top-2 right-2">
+                    <div className="w-6 h-6 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+                      <Heart className="w-3 h-3 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Icône cœur en overlay */}
-                <div className="absolute top-2 right-2">
-                  <div className="w-6 h-6 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
-                    <Heart className="w-3 h-3 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Contenu */}
-              <div className="p-3 flex flex-col flex-1">
-                {/* Titre et bouton œil */}
-                <div className="flex items-start gap-1 mb-2">
-                  <h3 className="text-sm font-semibold text-gray-900 leading-tight flex-1">
-                    {product.name}
-                  </h3>
-                  {product.description && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleItemDetails(product.id)}
-                      className="h-5 w-5 p-0 hover:bg-gray-100 flex-shrink-0"
-                    >
-                      <Eye className="h-3 w-3 text-gray-500" />
-                    </Button>
-                  )}
-                </div>
-                
-                {/* Description (conditionnellement affichée) */}
-                <AnimatePresence>
-                  {product.description && expandedItems[product.id] && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <p className="text-gray-600 text-xs leading-relaxed mb-2">
-                        {product.description}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                
-                {/* Prix et bouton - En bas de la carte */}
-                <div className="mt-auto">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-gray-900">
-                      {product.price.toFixed(2)}€
-                    </span>
-                    
-                    <div className="relative">
-                      <motion.div
-                        animate={clickedButton === product.id ? {
-                          scale: [1, 0.95, 1.05, 1],
-                          transition: { duration: 0.3, ease: "easeInOut" }
-                        } : {}}
+                {/* Contenu */}
+                <div className="p-3 flex flex-col flex-1">
+                  {/* Titre et bouton œil */}
+                  <div className="flex items-start gap-1 mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900 leading-tight flex-1">
+                      {product.name}
+                    </h3>
+                    {product.description && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleShowDetails(product)}
+                        className="h-5 w-5 p-0 hover:bg-gray-100 flex-shrink-0"
                       >
-                        <Button
-                          onClick={() => handleAddToCart(menuItem)}
-                          className="bg-gold-500 hover:bg-gold-600 text-black rounded-full px-3 text-xs h-7"
-                          size="sm"
-                        >
-                          <Plus className="mr-1 h-3 w-3" /> Ajouter
-                        </Button>
+                        <Eye className="h-3 w-3 text-gray-500" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Description (conditionnellement affichée) */}
+                  <AnimatePresence>
+                    {product.description && expandedItems[product.id] && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <p className="text-gray-600 text-xs leading-relaxed mb-2">
+                          {product.description}
+                        </p>
                       </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  {/* Prix et bouton - En bas de la carte */}
+                  <div className="mt-auto">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-gray-900">
+                        {product.price.toFixed(2)}€
+                      </span>
                       
-                      {/* +1 Message Animation */}
-                      <AnimatePresence>
-                        {clickedButton === product.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 0, scale: 0.8 }}
-                            animate={{ 
-                              opacity: 1, 
-                              y: -20, 
-                              scale: 1,
-                              transition: { duration: 0.2, ease: "easeOut" }
-                            }}
-                            exit={{ 
-                              opacity: 0, 
-                              y: -30,
-                              transition: { duration: 0.3, ease: "easeIn" }
-                            }}
-                            className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gold-500 text-black px-2 py-1 rounded-full text-xs font-bold shadow-lg z-10"
-                          >
-                            +1
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            // Desktop layout - Horizontal card
-            <div className="flex items-center">
-              {/* Image */}
-              <div className="w-40 h-40 flex-shrink-0 relative overflow-hidden rounded-l-xl">
-                {product.image_url && product.image_url !== "/placeholder.svg" ? (
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">Pas d'image</span>
-                  </div>
-                )}
-                
-                {/* Badge en overlay */}
-                <div className="absolute top-3 left-3">
-                  <Badge 
-                    variant={badgeVariant === "new" ? "default" : badgeVariant === "exclusive" ? "destructive" : "secondary"}
-                    className="text-xs font-medium"
-                  >
-                    {badgeVariant === "new" ? "NOUVEAU" : 
-                     badgeVariant === "exclusive" ? "EXCLUSIF" :
-                     "POPULAIRE"}
-                  </Badge>
-                </div>
-
-                {/* Icône cœur en overlay */}
-                <div className="absolute top-3 right-3">
-                  <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
-                    <Heart className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Contenu principal */}
-              <div className="flex-1 p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    {/* Titre et bouton œil */}
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {product.name}
-                      </h3>
-                      {product.description && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleItemDetails(product.id)}
-                          className="h-6 w-6 p-0 hover:bg-gray-100"
-                        >
-                          <Eye className="h-4 w-4 text-gray-500" />
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {/* Description (conditionnellement affichée) */}
-                    <AnimatePresence>
-                      {product.description && expandedItems[product.id] && (
+                      <div className="relative">
                         <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
+                          animate={clickedButton === product.id ? {
+                            scale: [1, 0.95, 1.05, 1],
+                            transition: { duration: 0.3, ease: "easeInOut" }
+                          } : {}}
                         >
-                          <p className="text-gray-600 text-sm leading-relaxed mb-2">
-                            {product.description}
-                          </p>
+                          <Button
+                            onClick={() => handleAddToCart(menuItem)}
+                            className="bg-gold-500 hover:bg-gold-600 text-black rounded-full px-3 text-xs h-7"
+                            size="sm"
+                          >
+                            <Plus className="mr-1 h-3 w-3" /> Ajouter
+                          </Button>
                         </motion.div>
-                      )}
-                    </AnimatePresence>
+                        
+                        {/* +1 Message Animation */}
+                        <AnimatePresence>
+                          {clickedButton === product.id && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 0, scale: 0.8 }}
+                              animate={{ 
+                                opacity: 1, 
+                                y: -20, 
+                                scale: 1,
+                                transition: { duration: 0.2, ease: "easeOut" }
+                              }}
+                              exit={{ 
+                                opacity: 0, 
+                                y: -30,
+                                transition: { duration: 0.3, ease: "easeIn" }
+                              }}
+                              className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gold-500 text-black px-2 py-1 rounded-full text-xs font-bold shadow-lg z-10"
+                            >
+                              +1
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Desktop layout - Horizontal card
+              <div className="flex items-center">
+                {/* Image */}
+                <div className="w-40 h-40 flex-shrink-0 relative overflow-hidden rounded-l-xl">
+                  {product.image_url && product.image_url !== "/placeholder.svg" ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <span className="text-gray-400 text-xs">Pas d'image</span>
+                    </div>
+                  )}
+                  
+                  {/* Badge en overlay */}
+                  <div className="absolute top-3 left-3">
+                    <Badge 
+                      variant={badgeVariant === "new" ? "default" : badgeVariant === "exclusive" ? "destructive" : "secondary"}
+                      className="text-xs font-medium"
+                    >
+                      {badgeVariant === "new" ? "NOUVEAU" : 
+                       badgeVariant === "exclusive" ? "EXCLUSIF" :
+                       "POPULAIRE"}
+                    </Badge>
                   </div>
 
-                  {/* Prix et bouton */}
-                  <div className="flex flex-col items-end ml-6">
-                    <span className="text-lg font-bold text-gray-900 mb-4">
-                      {product.price.toFixed(2)}€
-                    </span>
-                    
-                    <div className="relative">
-                      <motion.div
-                        animate={clickedButton === product.id ? {
-                          scale: [1, 0.95, 1.05, 1],
-                          transition: { duration: 0.3, ease: "easeInOut" }
-                        } : {}}
-                      >
-                        <Button
-                          onClick={() => handleAddToCart(menuItem)}
-                          className="bg-gold-500 hover:bg-gold-600 text-black rounded-full px-6"
-                          size="sm"
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Ajouter
-                        </Button>
-                      </motion.div>
-                      
-                      {/* +1 Message Animation */}
-                      <AnimatePresence>
-                        {clickedButton === product.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 0, scale: 0.8 }}
-                            animate={{ 
-                              opacity: 1, 
-                              y: -20, 
-                              scale: 1,
-                              transition: { duration: 0.2, ease: "easeOut" }
-                            }}
-                            exit={{ 
-                              opacity: 0, 
-                              y: -30,
-                              transition: { duration: 0.3, ease: "easeIn" }
-                            }}
-                            className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gold-500 text-black px-2 py-1 rounded-full text-sm font-bold shadow-lg z-10"
+                  {/* Icône cœur en overlay */}
+                  <div className="absolute top-3 right-3">
+                    <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+                      <Heart className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contenu principal */}
+                <div className="flex-1 p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      {/* Titre et bouton œil */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {product.name}
+                        </h3>
+                        {product.description && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleShowDetails(product)}
+                            className="h-6 w-6 p-0 hover:bg-gray-100"
                           >
-                            +1
+                            <Eye className="h-4 w-4 text-gray-500" />
+                          </Button>
+                        )}
+                      </div>
+                    
+                      {/* Description (conditionnellement affichée) */}
+                      <AnimatePresence>
+                        {product.description && expandedItems[product.id] && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <p className="text-gray-600 text-sm leading-relaxed mb-2">
+                              {product.description}
+                            </p>
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
+
+                    {/* Prix et bouton */}
+                    <div className="flex flex-col items-end ml-6">
+                      <span className="text-lg font-bold text-gray-900 mb-4">
+                        {product.price.toFixed(2)}€
+                      </span>
+                      
+                      <div className="relative">
+                        <motion.div
+                          animate={clickedButton === product.id ? {
+                            scale: [1, 0.95, 1.05, 1],
+                            transition: { duration: 0.3, ease: "easeInOut" }
+                          } : {}}
+                        >
+                          <Button
+                            onClick={() => handleAddToCart(menuItem)}
+                            className="bg-gold-500 hover:bg-gold-600 text-black rounded-full px-6"
+                            size="sm"
+                          >
+                            <Plus className="mr-2 h-4 w-4" /> Ajouter
+                          </Button>
+                        </motion.div>
+                        
+                        {/* +1 Message Animation */}
+                        <AnimatePresence>
+                          {clickedButton === product.id && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 0, scale: 0.8 }}
+                              animate={{ 
+                                opacity: 1, 
+                                y: -20, 
+                                scale: 1,
+                                transition: { duration: 0.2, ease: "easeOut" }
+                              }}
+                              exit={{ 
+                                opacity: 0, 
+                                y: -30,
+                                transition: { duration: 0.3, ease: "easeIn" }
+                              }}
+                              className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gold-500 text-black px-2 py-1 rounded-full text-sm font-bold shadow-lg z-10"
+                            >
+                              +1
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Modal de détails du produit */}
+      <Dialog open={!!selectedProductDetails} onOpenChange={handleCloseDetails}>
+        <DialogContent className="sm:max-w-2xl p-0 bg-transparent border-0 shadow-none">
+          <DialogTitle className="sr-only">Détails de {selectedProductDetails?.name}</DialogTitle>
+          {selectedProductDetails && (
+            <div className="bg-white rounded-xl overflow-hidden">
+              {/* Détails du produit au-dessus */}
+              <div className="p-6 bg-white">
+                <div className="mb-4">
+                  <Badge 
+                    variant={badgeVariant === "new" ? "default" : badgeVariant === "exclusive" ? "destructive" : "secondary"}
+                    className="text-sm font-medium mb-2"
+                  >
+                    {badgeVariant === "new" ? "NOUVEAU" : 
+                     badgeVariant === "exclusive" ? "EXCLUSIF" :
+                     "POPULAIRE"}
+                  </Badge>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {selectedProductDetails.name}
+                  </h2>
+                  <div className="text-xl font-bold text-gold-600 mb-4">
+                    {selectedProductDetails.price.toFixed(2)}€
+                  </div>
+                </div>
+                
+                {selectedProductDetails.description && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
+                    <p className="text-gray-700 leading-relaxed text-base">
+                      {selectedProductDetails.description}
+                    </p>
+                  </div>
+                )}
+                
+                {selectedProductDetails.categories?.name && (
+                  <div className="mb-4">
+                    <span className="text-sm text-gray-500">Catégorie: </span>
+                    <span className="text-sm font-medium text-gray-700">
+                      {selectedProductDetails.categories.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Image agrandie */}
+              <div className="w-full">
+                {selectedProductDetails.image_url && selectedProductDetails.image_url !== "/placeholder.svg" ? (
+                  <img
+                    src={selectedProductDetails.image_url}
+                    alt={selectedProductDetails.name}
+                    className="w-full h-auto object-contain max-h-[60vh]"
+                  />
+                ) : (
+                  <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
+                    <span className="text-gray-400">Pas d'image disponible</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </motion.div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
