@@ -1,9 +1,8 @@
-
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Heart } from "lucide-react";
+import { Plus, Pencil, Heart, Eye } from "lucide-react";
 import { MenuItem, MenuCategory } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -20,6 +19,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedImageAlt, setSelectedImageAlt] = useState<string>("");
   const [clickedButton, setClickedButton] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);
@@ -69,6 +69,13 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     setTimeout(() => {
       setClickedButton(null);
     }, 600);
+  };
+
+  const toggleItemDetails = (itemId: string) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
   };
 
   return (
@@ -154,20 +161,41 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                               )}
                             </div>
 
-                            {/* Titre */}
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                              {item.name}
-                            </h3>
+                            {/* Titre et bouton œil */}
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                {item.name}
+                              </h3>
+                              {item.description && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleItemDetails(item.id)}
+                                  className="h-6 w-6 p-0 hover:bg-gray-100"
+                                >
+                                  <Eye className="h-4 w-4 text-gray-500" />
+                                </Button>
+                              )}
+                            </div>
                             
-                            {/* Description */}
-                            {item.description && (
-                              <p className="text-gray-600 text-sm leading-relaxed">
-                                {item.description}
-                              </p>
-                            )}
+                            {/* Description (conditionnellement affichée) */}
+                            <AnimatePresence>
+                              {item.description && expandedItems[item.id] && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  <p className="text-gray-600 text-sm leading-relaxed mb-2">
+                                    {item.description}
+                                  </p>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                             
                             {/* Allergènes */}
-                            {item.allergens && (
+                            {item.allergens && expandedItems[item.id] && (
                               <p className="text-xs text-gray-500 mt-2">
                                 Allergènes: {item.allergens}
                               </p>
