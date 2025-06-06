@@ -33,6 +33,7 @@ interface BoxOption {
   creations: number;
   price: number;
   name: string;
+  description?: string;
 }
 
 const ComposerSushi = () => {
@@ -59,11 +60,40 @@ const ComposerSushi = () => {
   const [sauceOptions, setSauceOptions] = useState<SushiOption[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Box options (these remain static)
+  // Box options updated with descriptions
   const boxOptions: BoxOption[] = [
-    { id: "box-12", name: "Box 12 pièces", pieces: 12, creations: 2, price: 15 },
-    { id: "box-18", name: "Box 18 pièces", pieces: 18, creations: 3, price: 22 },
-    { id: "box-24", name: "Box 24 pièces", pieces: 24, creations: 4, price: 25 },
+    { 
+      id: "box-6", 
+      name: "6 pièces", 
+      pieces: 6, 
+      creations: 1, 
+      price: 8.5,
+      description: "1 création"
+    },
+    { 
+      id: "box-12", 
+      name: "12 pièces", 
+      pieces: 12, 
+      creations: 2, 
+      price: 17,
+      description: "2 créations"
+    },
+    { 
+      id: "box-18", 
+      name: "18 pièces", 
+      pieces: 18, 
+      creations: 3, 
+      price: 25,
+      description: "3 créations"
+    },
+    { 
+      id: "box-24", 
+      name: "24 pièces", 
+      pieces: 24, 
+      creations: 4, 
+      price: 25,
+      description: "4 créations (La 4e création est OFFERTE !)"
+    },
   ];
 
   // Fetch ingredients from database
@@ -123,14 +153,11 @@ const ComposerSushi = () => {
 
   // Handle garniture selection (max 2 included)
   const handleGarnitureSelect = (option: SushiOption) => {
-    // Check if this option is already selected
     const isAlreadySelected = selectedGarnitures.some(item => item.id === option.id);
     
     if (isAlreadySelected) {
-      // If selected, remove it
       setSelectedGarnitures(selectedGarnitures.filter(item => item.id !== option.id));
     } else {
-      // If not selected, add it
       setSelectedGarnitures([...selectedGarnitures, option]);
     }
   };
@@ -199,7 +226,7 @@ const ComposerSushi = () => {
       }
       
       // For topping, check if enrobage is not nori, otherwise topping is optional
-      if (step === 5 && selectedEnrobage?.name === "Feuille d'algue nori (Maki)" && selectedTopping) {
+      if (step === 5 && selectedEnrobage?.name.toLowerCase().includes("nori") && selectedTopping) {
         toast({
           title: "Information",
           description: "Les toppings ne sont pas disponibles avec l'enrobage feuille d'algue nori",
@@ -269,6 +296,10 @@ const ComposerSushi = () => {
         return (
           <div>
             <h3 className="text-xl font-bold mb-4">Choisis ta box</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              1 création = 6 pièces personnalisées<br/>
+              Formule: 3 créations achetées = 1 création offerte
+            </p>
             <RadioGroup value={selectedBox?.id || ""} onValueChange={(value) => {
               const box = boxOptions.find(box => box.id === value);
               setSelectedBox(box || null);
@@ -278,20 +309,23 @@ const ComposerSushi = () => {
                   <RadioGroupItem value={box.id} id={box.id} />
                   <Label htmlFor={box.id} className="flex-1">
                     <div className="flex justify-between">
-                      <span>{box.pieces} pièces ({box.creations} créations)</span>
+                      <span>{box.name} ({box.description})</span>
                       <span className="font-semibold">{box.price}€</span>
                     </div>
                   </Label>
                 </div>
               ))}
             </RadioGroup>
+            <p className="text-xs text-gray-500 mt-4">
+              Tout supplément au-delà des choix inclus: +1€
+            </p>
           </div>
         );
       
       case 2:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">1 - Choisis ton enrobage extérieur</h3>
+            <h3 className="text-xl font-bold mb-4">Choisis ton enrobage extérieur</h3>
             
             <h4 className="font-semibold mb-2">Enrobage classique (inclus) :</h4>
             <RadioGroup value={selectedEnrobage?.id || ""} onValueChange={(value) => {
@@ -324,7 +358,7 @@ const ComposerSushi = () => {
       case 3:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">2 - Choisis ta base (1 choix inclus)</h3>
+            <h3 className="text-xl font-bold mb-4">Choisis ta base (1 choix inclus)</h3>
             <RadioGroup value={selectedBase?.id || ""} onValueChange={(value) => {
               const option = baseOptions.find(opt => opt.id === value);
               setSelectedBase(option || null);
@@ -344,7 +378,7 @@ const ComposerSushi = () => {
       case 4:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">3 - Choisis tes garnitures (2 choix inclus)</h3>
+            <h3 className="text-xl font-bold mb-4">Choisis tes garnitures (2 choix inclus)</h3>
             <p className="text-sm text-gray-500 mb-4">
               Les 2 premiers choix sont inclus, chaque garniture supplémentaire: +1€
             </p>
@@ -371,22 +405,21 @@ const ComposerSushi = () => {
       case 5:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">4 - Choisis ton topping (1 choix inclus)</h3>
-            {selectedEnrobage?.name === "Feuille d'algue nori (Maki)" && (
+            <h3 className="text-xl font-bold mb-4">Choisis ton topping (1 choix inclus)</h3>
+            {selectedEnrobage?.name.toLowerCase().includes("nori") && (
               <p className="text-sm text-red-500 mb-4">
-                Les toppings ne sont pas disponibles avec l'enrobage "feuille d'algue nori (maki)"
+                Toppings non disponibles avec l'enrobage "Maki"
               </p>
             )}
             <RadioGroup 
               value={selectedTopping?.id || ""}
               onValueChange={(value) => {
-                // Only allow topping selection if enrobage is not nori
-                if (selectedEnrobage?.name !== "Feuille d'algue nori (Maki)") {
+                if (!selectedEnrobage?.name.toLowerCase().includes("nori")) {
                   const option = toppingOptions.find(opt => opt.id === value);
                   setSelectedTopping(option || null);
                 }
               }}
-              disabled={selectedEnrobage?.name === "Feuille d'algue nori (Maki)"}
+              disabled={selectedEnrobage?.name.toLowerCase().includes("nori")}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {toppingOptions.map((option) => (
@@ -394,11 +427,11 @@ const ComposerSushi = () => {
                     <RadioGroupItem 
                       value={option.id} 
                       id={`topping-${option.id}`} 
-                      disabled={selectedEnrobage?.name === "Feuille d'algue nori (Maki)"}
+                      disabled={selectedEnrobage?.name.toLowerCase().includes("nori")}
                     />
                     <Label 
                       htmlFor={`topping-${option.id}`}
-                      className={selectedEnrobage?.name === "Feuille d'algue nori (Maki)" ? "text-gray-400" : ""}
+                      className={selectedEnrobage?.name.toLowerCase().includes("nori") ? "text-gray-400" : ""}
                     >
                       {option.name}
                     </Label>
@@ -412,7 +445,7 @@ const ComposerSushi = () => {
       case 6:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">5 - Choisis ta sauce (1 choix inclus)</h3>
+            <h3 className="text-xl font-bold mb-4">Choisis ta sauce (1 choix inclus)</h3>
             <RadioGroup value={selectedSauce?.id || ""} onValueChange={(value) => {
               const option = sauceOptions.find(opt => opt.id === value);
               setSelectedSauce(option || null);
@@ -541,7 +574,7 @@ const ComposerSushi = () => {
                       )}
                     </span>
                   </div>
-                  {(selectedTopping && selectedEnrobage?.name !== "Feuille d'algue nori (Maki)") && (
+                  {(selectedTopping && !selectedEnrobage?.name.toLowerCase().includes("nori")) && (
                     <div className="flex justify-between">
                       <span className="font-semibold">Topping:</span>
                       <span>{selectedTopping.name}</span>
