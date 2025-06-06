@@ -102,6 +102,22 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+  
+  /* Alias pour better-times classes */
+  .better-times-gold {
+    font-family: 'Morning Waves', 'Dancing Script', cursive;
+    color: #FABE00;
+    font-weight: 400;
+  }
+  
+  .better-times-gold-gradient {
+    font-family: 'Morning Waves', 'Dancing Script', cursive;
+    font-weight: 400;
+    background: linear-gradient(135deg, #FABE00, #E6AB00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
 /* Styles pour les onglets d'administration de type WordPress */
