@@ -5,9 +5,8 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
@@ -35,8 +34,8 @@ const ComposerPoke = () => {
   
   const [step, setStep] = useState<number>(1);
   const [selectedIngredients, setSelectedIngredients] = useState<IngredientOption[]>([]);
-  const [selectedProtein, setSelectedProtein] = useState<IngredientOption | null>(null);
-  const [selectedSauce, setSelectedSauce] = useState<IngredientOption | null>(null);
+  const [selectedProteins, setSelectedProteins] = useState<IngredientOption[]>([]);
+  const [selectedSauces, setSelectedSauces] = useState<IngredientOption[]>([]);
 
   // Ingredient options from database
   const [ingredientOptions, setIngredientOptions] = useState<IngredientOption[]>([]);
@@ -96,22 +95,26 @@ const ComposerPoke = () => {
     fetchIngredients();
   }, [toast]);
 
-  // Handle ingredient selection (max 5 included)
-  const handleIngredientSelect = (option: IngredientOption) => {
-    // Check if this option is already selected
-    const isAlreadySelected = selectedIngredients.some(item => item.id === option.id);
+  // Handle ingredient selection (max 5 for each category)
+  const handleSelectionToggle = (
+    option: IngredientOption, 
+    selectedList: IngredientOption[], 
+    setSelectedList: React.Dispatch<React.SetStateAction<IngredientOption[]>>,
+    categoryName: string
+  ) => {
+    const isAlreadySelected = selectedList.some(item => item.id === option.id);
     
     if (isAlreadySelected) {
-      // If selected, remove it
-      setSelectedIngredients(selectedIngredients.filter(item => item.id !== option.id));
+      // Remove if already selected
+      setSelectedList(selectedList.filter(item => item.id !== option.id));
     } else {
-      // If not selected and less than 5 ingredients are selected, add it
-      if (selectedIngredients.length < 5) {
-        setSelectedIngredients([...selectedIngredients, option]);
+      // Add if not selected and less than 5 items are selected
+      if (selectedList.length < 5) {
+        setSelectedList([...selectedList, option]);
       } else {
         toast({
-          title: "Maximum 5 ingrédients",
-          description: "Vous avez atteint le maximum de 5 ingrédients. Veuillez en retirer un pour ajouter un nouveau.",
+          title: `Maximum 5 ${categoryName}`,
+          description: `Vous avez atteint le maximum de 5 ${categoryName}. Veuillez en retirer un pour ajouter un nouveau.`,
           variant: "destructive",
         });
       }
@@ -122,27 +125,12 @@ const ComposerPoke = () => {
   const calculateExtraCost = () => {
     let extraCost = 0;
 
-    // Extra cost for ingredients beyond 5
-    if (selectedIngredients.length > 5) {
-      extraCost += (selectedIngredients.length - 5) * 1; // +1€ per extra ingredient
-    }
-
-    // Add extra cost for any non-included ingredients
-    selectedIngredients.forEach(ingredient => {
-      if (!ingredient.included) {
-        extraCost += ingredient.price;
+    // Add extra cost for any non-included items
+    [...selectedIngredients, ...selectedProteins, ...selectedSauces].forEach(item => {
+      if (!item.included) {
+        extraCost += item.price;
       }
     });
-
-    // Add extra cost for non-included protein
-    if (selectedProtein && !selectedProtein.included) {
-      extraCost += selectedProtein.price;
-    }
-
-    // Add extra cost for non-included sauce
-    if (selectedSauce && !selectedSauce.included) {
-      extraCost += selectedSauce.price;
-    }
 
     return extraCost;
   };
@@ -165,10 +153,10 @@ const ComposerPoke = () => {
         return;
       }
       
-      if (step === 2 && !selectedProtein) {
+      if (step === 2 && selectedProteins.length === 0) {
         toast({
           title: "Sélection requise",
-          description: "Veuillez sélectionner une protéine",
+          description: "Veuillez sélectionner au moins une protéine",
           variant: "destructive",
         });
         return;
@@ -177,10 +165,10 @@ const ComposerPoke = () => {
       setStep(step + 1);
     } else {
       // Step 3 (sauce) - add to cart and complete
-      if (!selectedSauce) {
+      if (selectedSauces.length === 0) {
         toast({
           title: "Sélection requise",
-          description: "Veuillez sélectionner une sauce",
+          description: "Veuillez sélectionner au moins une sauce",
           variant: "destructive",
         });
         return;
@@ -190,7 +178,7 @@ const ComposerPoke = () => {
       const customPokeItem: MenuItem = {
         id: `custom-poke-${Date.now()}`,
         name: `Poké Créa`,
-        description: `Ingrédients: ${selectedIngredients.map(g => g.name).join(', ')}, Protéine: ${selectedProtein?.name}, Sauce: ${selectedSauce.name}`,
+        description: `Ingrédients: ${selectedIngredients.map(g => g.name).join(', ')}, Protéines: ${selectedProteins.map(p => p.name).join(', ')}, Sauces: ${selectedSauces.map(s => s.name).join(', ')}`,
         price: calculateTotalPrice(),
         category: "poke_custom",
       };
@@ -229,7 +217,7 @@ const ComposerPoke = () => {
                   <Checkbox 
                     id={`ingredient-${option.id}`} 
                     checked={selectedIngredients.some(item => item.id === option.id)}
-                    onCheckedChange={() => handleIngredientSelect(option)}
+                    onCheckedChange={() => handleSelectionToggle(option, selectedIngredients, setSelectedIngredients, "ingrédients")}
                     disabled={selectedIngredients.length >= 5 && !selectedIngredients.some(item => item.id === option.id)}
                   />
                   <Label htmlFor={`ingredient-${option.id}`}>
@@ -252,50 +240,60 @@ const ComposerPoke = () => {
       case 2:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">2 : Protéine (1 choix)</h3>
-            <RadioGroup value={selectedProtein?.id || ""} onValueChange={(value) => {
-              const option = proteinOptions.find(opt => opt.id === value);
-              setSelectedProtein(option || null);
-            }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {proteinOptions.map((option) => (
-                  <div key={option.id} className="flex items-center space-x-2 mb-2">
-                    <RadioGroupItem value={option.id} id={`protein-${option.id}`} />
-                    <Label htmlFor={`protein-${option.id}`}>
-                      {option.name}
-                      {!option.included && option.price > 0 && (
-                        <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
-                      )}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </RadioGroup>
+            <h3 className="text-xl font-bold mb-4">2 : Protéines (5 choix maximum)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {proteinOptions.map((option) => (
+                <div key={option.id} className="flex items-center space-x-2 mb-2">
+                  <Checkbox 
+                    id={`protein-${option.id}`} 
+                    checked={selectedProteins.some(item => item.id === option.id)}
+                    onCheckedChange={() => handleSelectionToggle(option, selectedProteins, setSelectedProteins, "protéines")}
+                    disabled={selectedProteins.length >= 5 && !selectedProteins.some(item => item.id === option.id)}
+                  />
+                  <Label htmlFor={`protein-${option.id}`}>
+                    {option.name}
+                    {!option.included && option.price > 0 && (
+                      <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
+                    )}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            {selectedProteins.length === 5 && (
+              <p className="text-sm text-gold-600 mt-2">
+                Vous avez sélectionné le maximum de 5 protéines.
+              </p>
+            )}
           </div>
         );
       
       case 3:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">3 : Sauce</h3>
-            <RadioGroup value={selectedSauce?.id || ""} onValueChange={(value) => {
-              const option = sauceOptions.find(opt => opt.id === value);
-              setSelectedSauce(option || null);
-            }}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {sauceOptions.map((option) => (
-                  <div key={option.id} className="flex items-center space-x-2 mb-2">
-                    <RadioGroupItem value={option.id} id={`sauce-${option.id}`} />
-                    <Label htmlFor={`sauce-${option.id}`}>
-                      {option.name}
-                      {!option.included && option.price > 0 && (
-                        <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
-                      )}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </RadioGroup>
+            <h3 className="text-xl font-bold mb-4">3 : Sauces (5 choix maximum)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {sauceOptions.map((option) => (
+                <div key={option.id} className="flex items-center space-x-2 mb-2">
+                  <Checkbox 
+                    id={`sauce-${option.id}`} 
+                    checked={selectedSauces.some(item => item.id === option.id)}
+                    onCheckedChange={() => handleSelectionToggle(option, selectedSauces, setSelectedSauces, "sauces")}
+                    disabled={selectedSauces.length >= 5 && !selectedSauces.some(item => item.id === option.id)}
+                  />
+                  <Label htmlFor={`sauce-${option.id}`}>
+                    {option.name}
+                    {!option.included && option.price > 0 && (
+                      <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
+                    )}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            {selectedSauces.length === 5 && (
+              <p className="text-sm text-gold-600 mt-2">
+                Vous avez sélectionné le maximum de 5 sauces.
+              </p>
+            )}
           </div>
         );
       
@@ -321,7 +319,7 @@ const ComposerPoke = () => {
         </Button>
 
         <h1 className="text-3xl font-bold mb-2">POKÉ CRÉA</h1>
-        <p className="text-gray-600 mb-6">Composez votre Poké bowl sur mesure selon vos envies !</p>
+        <p className="text-gray-600 mb-6">Composez votre Poké bowl sur mesure selon vos envies ! (5 choix maximum par catégorie)</p>
 
         <div className="flex mb-6 overflow-x-auto">
           {[1, 2, 3].map((stepNumber) => (
@@ -387,16 +385,20 @@ const ComposerPoke = () => {
                       {selectedIngredients.map(i => i.name).join(', ')}
                     </span>
                   </div>
-                  {selectedProtein && (
-                    <div className="flex justify-between">
-                      <span className="font-semibold">Protéine:</span>
-                      <span>{selectedProtein.name}</span>
+                  {selectedProteins.length > 0 && (
+                    <div className="flex justify-between items-start">
+                      <span className="font-semibold">Protéines:</span>
+                      <span className="text-right">
+                        {selectedProteins.map(p => p.name).join(', ')}
+                      </span>
                     </div>
                   )}
-                  {selectedSauce && (
-                    <div className="flex justify-between">
-                      <span className="font-semibold">Sauce:</span>
-                      <span>{selectedSauce.name}</span>
+                  {selectedSauces.length > 0 && (
+                    <div className="flex justify-between items-start">
+                      <span className="font-semibold">Sauces:</span>
+                      <span className="text-right">
+                        {selectedSauces.map(s => s.name).join(', ')}
+                      </span>
                     </div>
                   )}
                   <Separator className="my-2" />
