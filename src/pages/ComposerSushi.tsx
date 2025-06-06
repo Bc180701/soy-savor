@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -36,6 +35,14 @@ interface BoxOption {
   description?: string;
 }
 
+interface SushiCreation {
+  enrobage: SushiOption | null;
+  base: SushiOption | null;
+  garnitures: SushiOption[];
+  topping: SushiOption | null;
+  sauce: SushiOption | null;
+}
+
 const ComposerSushi = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -46,11 +53,17 @@ const ComposerSushi = () => {
 
   const [step, setStep] = useState<number>(1);
   const [selectedBox, setSelectedBox] = useState<BoxOption | null>(null);
+  
+  // Current creation being built
+  const [currentCreationIndex, setCurrentCreationIndex] = useState<number>(0);
   const [selectedEnrobage, setSelectedEnrobage] = useState<SushiOption | null>(null);
   const [selectedBase, setSelectedBase] = useState<SushiOption | null>(null);
   const [selectedGarnitures, setSelectedGarnitures] = useState<SushiOption[]>([]);
   const [selectedTopping, setSelectedTopping] = useState<SushiOption | null>(null);
   const [selectedSauce, setSelectedSauce] = useState<SushiOption | null>(null);
+  
+  // Store all completed creations
+  const [completedCreations, setCompletedCreations] = useState<SushiCreation[]>([]);
 
   // States for ingredients from database
   const [enrobageOptions, setEnrobageOptions] = useState<SushiOption[]>([]);
@@ -60,7 +73,7 @@ const ComposerSushi = () => {
   const [sauceOptions, setSauceOptions] = useState<SushiOption[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Box options updated with descriptions
+  // Box options
   const boxOptions: BoxOption[] = [
     { 
       id: "box-6", 
@@ -95,6 +108,15 @@ const ComposerSushi = () => {
       description: "4 créations (La 4e création est OFFERTE !)"
     },
   ];
+
+  // Reset current creation when starting a new one
+  const resetCurrentCreation = () => {
+    setSelectedEnrobage(null);
+    setSelectedBase(null);
+    setSelectedGarnitures([]);
+    setSelectedTopping(null);
+    setSelectedSauce(null);
+  };
 
   // Fetch ingredients from database
   useEffect(() => {
@@ -162,8 +184,8 @@ const ComposerSushi = () => {
     }
   };
 
-  // Calculate extra costs
-  const calculateExtraCost = () => {
+  // Calculate extra costs for current creation
+  const calculateCreationExtraCost = () => {
     let extraCost = 0;
 
     // Extra cost for enrobage
@@ -179,10 +201,30 @@ const ComposerSushi = () => {
     return extraCost;
   };
 
+  // Calculate total extra cost for all creations
+  const calculateTotalExtraCost = () => {
+    let totalExtraCost = 0;
+    
+    // Add extra costs from completed creations
+    completedCreations.forEach(creation => {
+      if (creation.enrobage && !creation.enrobage.included) {
+        totalExtraCost += creation.enrobage.price;
+      }
+      if (creation.garnitures.length > 2) {
+        totalExtraCost += (creation.garnitures.length - 2) * 1;
+      }
+    });
+    
+    // Add current creation extra cost
+    totalExtraCost += calculateCreationExtraCost();
+    
+    return totalExtraCost;
+  };
+
   // Calculate total price
   const calculateTotalPrice = () => {
     if (!selectedBox) return 0;
-    return selectedBox.price + calculateExtraCost();
+    return selectedBox.price + calculateTotalExtraCost();
   };
 
   // Navigate to next step or complete order
@@ -236,7 +278,7 @@ const ComposerSushi = () => {
 
       setStep(step + 1);
     } else {
-      // Step 6 (sauce) - add to cart and complete
+      // Step 6 (sauce) - complete current creation
       if (!selectedSauce) {
         toast({
           title: "Sélection requise",
@@ -246,25 +288,52 @@ const ComposerSushi = () => {
         return;
       }
       
-      // Create custom sushi item
-      const customSushiItem: MenuItem = {
-        id: `custom-sushi-${Date.now()}`,
-        name: `Sushi Créa ${selectedBox?.pieces} pièces`,
-        description: `Enrobage: ${selectedEnrobage?.name}, Base: ${selectedBase?.name}, Garnitures: ${selectedGarnitures.map(g => g.name).join(', ')}, ${selectedTopping ? `Topping: ${selectedTopping.name}, ` : ''}Sauce: ${selectedSauce.name}`,
-        price: calculateTotalPrice(),
-        category: "custom",
+      // Save current creation
+      const currentCreation: SushiCreation = {
+        enrobage: selectedEnrobage,
+        base: selectedBase,
+        garnitures: [...selectedGarnitures],
+        topping: selectedTopping,
+        sauce: selectedSauce
       };
       
-      // Add to cart
-      cart.addItem(customSushiItem, 1);
+      const updatedCompletedCreations = [...completedCreations, currentCreation];
+      setCompletedCreations(updatedCompletedCreations);
       
-      toast({
-        title: "Personnalisation réussie !",
-        description: "Vos sushis personnalisés ont été ajoutés au panier",
-      });
-      
-      // Navigate back to menu
-      navigate("/commander");
+      // Check if we need more creations
+      if (updatedCompletedCreations.length < (selectedBox?.creations || 0)) {
+        // More creations needed - reset and go back to step 2
+        setCurrentCreationIndex(updatedCompletedCreations.length);
+        resetCurrentCreation();
+        setStep(2);
+        
+        toast({
+          title: "Création terminée !",
+          description: `Création ${updatedCompletedCreations.length}/${selectedBox?.creations} terminée. Passez à la création suivante.`,
+        });
+      } else {
+        // All creations completed - add to cart
+        const customSushiItem: MenuItem = {
+          id: `custom-sushi-${Date.now()}`,
+          name: `Sushi Créa ${selectedBox?.pieces} pièces`,
+          description: updatedCompletedCreations.map((creation, index) => 
+            `Création ${index + 1}: Enrobage: ${creation.enrobage?.name}, Base: ${creation.base?.name}, Garnitures: ${creation.garnitures.map(g => g.name).join(', ')}, ${creation.topping ? `Topping: ${creation.topping.name}, ` : ''}Sauce: ${creation.sauce?.name}`
+          ).join(' | '),
+          price: calculateTotalPrice(),
+          category: "custom",
+        };
+        
+        // Add to cart
+        cart.addItem(customSushiItem, 1);
+        
+        toast({
+          title: "Personnalisation réussie !",
+          description: "Vos sushis personnalisés ont été ajoutés au panier",
+        });
+        
+        // Navigate back to menu
+        navigate("/commander");
+      }
     }
   };
 
@@ -303,6 +372,10 @@ const ComposerSushi = () => {
             <RadioGroup value={selectedBox?.id || ""} onValueChange={(value) => {
               const box = boxOptions.find(box => box.id === value);
               setSelectedBox(box || null);
+              // Reset all creations when changing box
+              setCompletedCreations([]);
+              setCurrentCreationIndex(0);
+              resetCurrentCreation();
             }}>
               {boxOptions.map((box) => (
                 <div key={box.id} className="flex items-center space-x-2 mb-4">
@@ -486,6 +559,18 @@ const ComposerSushi = () => {
         <h1 className="text-3xl font-bold mb-2">SUSHI CRÉA</h1>
         <p className="text-gray-600 mb-6">Compose tes propres sushis !</p>
 
+        {/* Show progress for multiple creations */}
+        {selectedBox && selectedBox.creations > 1 && step > 1 && (
+          <div className="mb-4 p-4 bg-gold-50 border border-gold-200 rounded-lg">
+            <p className="text-center font-semibold text-gold-800">
+              Création {currentCreationIndex + 1} sur {selectedBox.creations}
+            </p>
+            <p className="text-center text-sm text-gold-600">
+              Créations terminées: {completedCreations.length}/{selectedBox.creations}
+            </p>
+          </div>
+        )}
+
         <div className="flex mb-6 overflow-x-auto">
           {[1, 2, 3, 4, 5, 6].map((stepNumber) => (
             <div 
@@ -519,9 +604,9 @@ const ComposerSushi = () => {
                   <p className="text-xl font-bold text-gold-600">
                     {calculateTotalPrice().toFixed(2)}€
                   </p>
-                  {calculateExtraCost() > 0 && (
+                  {calculateTotalExtraCost() > 0 && (
                     <p className="text-xs text-gray-500">
-                      (+{calculateExtraCost().toFixed(2)}€ suppléments)
+                      (+{calculateTotalExtraCost().toFixed(2)}€ suppléments)
                     </p>
                   )}
                 </div>
@@ -539,22 +624,45 @@ const ComposerSushi = () => {
                 {step > 1 ? "Précédent" : "Annuler"}
               </Button>
               <Button onClick={handleNext}>
-                {step < 6 ? "Continuer" : "Ajouter au panier"}
+                {step < 6 
+                  ? "Continuer" 
+                  : completedCreations.length + 1 < (selectedBox?.creations || 0)
+                  ? "Création suivante"
+                  : "Ajouter au panier"}
               </Button>
             </div>
           </CardContent>
         </Card>
         
+        {/* Show completed creations summary */}
+        {completedCreations.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-xl font-bold mb-4">Créations terminées ({completedCreations.length}/{selectedBox?.creations})</h3>
+            <div className="space-y-4">
+              {completedCreations.map((creation, index) => (
+                <Card key={index}>
+                  <CardContent className="mt-4">
+                    <h4 className="font-semibold mb-2">Création {index + 1}</h4>
+                    <div className="space-y-1 text-sm">
+                      <div><span className="font-medium">Enrobage:</span> {creation.enrobage?.name}</div>
+                      <div><span className="font-medium">Base:</span> {creation.base?.name}</div>
+                      <div><span className="font-medium">Garnitures:</span> {creation.garnitures.map(g => g.name).join(', ')}</div>
+                      {creation.topping && <div><span className="font-medium">Topping:</span> {creation.topping.name}</div>}
+                      <div><span className="font-medium">Sauce:</span> {creation.sauce?.name}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+        
         {step === 6 && (
           <div className="mt-6">
-            <h3 className="text-xl font-bold mb-4">Récapitulatif de votre création</h3>
+            <h3 className="text-xl font-bold mb-4">Récapitulatif de la création actuelle</h3>
             <Card>
               <CardContent className="mt-4">
                 <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="font-semibold">Box:</span>
-                    <span>{selectedBox?.pieces} pièces ({selectedBox?.creations} créations)</span>
-                  </div>
                   <div className="flex justify-between">
                     <span className="font-semibold">Enrobage:</span>
                     <span>{selectedEnrobage?.name} {!selectedEnrobage?.included && `(+${selectedEnrobage?.price}€)`}</span>
@@ -588,7 +696,7 @@ const ComposerSushi = () => {
                   )}
                   <Separator className="my-2" />
                   <div className="flex justify-between font-bold">
-                    <span>Total:</span>
+                    <span>Total final:</span>
                     <span className="text-gold-600">{calculateTotalPrice().toFixed(2)}€</span>
                   </div>
                 </div>
