@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -216,23 +215,28 @@ const ComposerSushi = () => {
           description: `Création ${updatedCompletedCreations.length}/${selectedBox?.creations} terminée. Passez à la création suivante.`,
         });
       } else {
-        // All creations completed - add to cart
-        const customSushiItem: MenuItem = {
-          id: `custom-sushi-${Date.now()}`,
-          name: `Sushi Créa ${selectedBox?.pieces} pièces`,
-          description: updatedCompletedCreations.map((creation, index) => 
-            `Création ${index + 1}: Enrobage: ${creation.enrobage?.name}, Base: ${creation.base?.name}, Garnitures: ${creation.garnitures.map(g => g.name).join(', ')}, ${creation.topping ? `Topping: ${creation.topping.name}, ` : ''}Sauce: ${creation.sauce?.name}`
-          ).join(' | '),
-          price: totalPrice,
-          category: "custom",
-        };
-        
-        // Add to cart
-        cart.addItem(customSushiItem, 1);
+        // All creations completed - add each creation as separate item to cart
+        updatedCompletedCreations.forEach((creation, index) => {
+          const creationExtraCost = calculateCreationExtraCost(creation.enrobage, creation.garnitures);
+          const basePrice = (selectedBox?.price || 0) / (selectedBox?.creations || 1);
+          const finalPrice = basePrice + creationExtraCost;
+          
+          const customSushiItem: MenuItem = {
+            id: `custom-sushi-creation-${Date.now()}-${index}`,
+            name: `Sushi Créa - Création ${index + 1}`,
+            description: `Enrobage: ${creation.enrobage?.name} | Base: ${creation.base?.name} | Garnitures: ${creation.garnitures.map(g => g.name).join(', ')}${creation.topping ? ` | Topping: ${creation.topping.name}` : ''} | Sauce: ${creation.sauce?.name}`,
+            price: finalPrice,
+            category: "custom",
+            pieces: 6
+          };
+          
+          // Add each creation to cart separately
+          cart.addItem(customSushiItem, 1);
+        });
         
         toast({
           title: "Personnalisation réussie !",
-          description: "Vos sushis personnalisés ont été ajoutés au panier",
+          description: `${updatedCompletedCreations.length} créations de sushi ajoutées au panier`,
         });
         
         // Navigate back to menu
