@@ -1,4 +1,5 @@
 
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Clock } from "lucide-react";
@@ -123,14 +124,35 @@ const Footer = () => {
             <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">Horaires d'ouverture</h4>
             <div className="flex items-start space-x-2 text-gray-400">
               <Clock size={18} className="mt-1 flex-shrink-0" />
-              <div className="text-sm space-y-1">
-                <p>vendredi: 11:00–14:00, 18:00–22:00</p>
-                <p>samedi: 11:00–14:00, 18:00–22:00</p>
-                <p>dimanche: Fermé</p>
-                <p>lundi (Lundi de Pentecôte): Fermé</p>
-                <p>mardi: 11:00–14:00, 18:00–22:00</p>
-                <p>mercredi: 11:00–14:00, 18:00–22:00</p>
-                <p>jeudi: 11:00–14:00, 18:00–22:00</p>
+              <div className="text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium text-red-400">Lundi:</span>
+                  <span className="ml-2">Fermé</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Mardi:</span>
+                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Mercredi:</span>
+                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Jeudi:</span>
+                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Vendredi:</span>
+                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Samedi:</span>
+                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-red-400">Dimanche:</span>
+                  <span className="ml-2">Fermé</span>
+                </div>
               </div>
             </div>
           </div>
@@ -193,3 +215,4 @@ const Footer = () => {
 };
 
 export default Footer;
+
