@@ -39,7 +39,7 @@ const Admin = () => {
           throw error;
         }
 
-        if (userRole?.role === 'admin') {
+        if (userRole?.role === 'administrateur') {
           setIsAdmin(true);
         } else {
           toast({

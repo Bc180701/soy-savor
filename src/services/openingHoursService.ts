@@ -23,7 +23,7 @@ export const openingHoursService = {
       }
       
       if (data && data.section_data) {
-        return data.section_data as DayOpeningHours[];
+        return data.section_data as unknown as DayOpeningHours[];
       }
       
       // Valeurs par défaut si aucune donnée n'existe
