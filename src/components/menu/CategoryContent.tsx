@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -20,6 +21,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [selectedImageAlt, setSelectedImageAlt] = useState<string>("");
   const [clickedButton, setClickedButton] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
+  const isMobile = useIsMobile();
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);
@@ -107,9 +109,9 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
               >
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow border-0 bg-white rounded-xl">
                   <CardContent className="p-0">
-                    <div className="flex items-center">
-                      {/* Image à gauche */}
-                      <div className="w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-l-xl">
+                    <div className={`flex ${isMobile ? 'flex-col' : 'items-center'}`}>
+                      {/* Image */}
+                      <div className={`${isMobile ? 'w-full h-48' : 'w-32 h-32'} flex-shrink-0 relative overflow-hidden ${isMobile ? 'rounded-t-xl' : 'rounded-l-xl'}`}>
                         {item.imageUrl && item.imageUrl !== "/placeholder.svg" ? (
                           <img
                             src={item.imageUrl}
@@ -133,7 +135,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                       {/* Contenu principal */}
                       <div className="flex-1 p-6">
-                        <div className="flex justify-between items-start">
+                        <div className={`flex ${isMobile ? 'flex-col gap-4' : 'justify-between items-start'}`}>
                           <div className="flex-1">
                             {/* Badges */}
                             <div className="flex gap-2 mb-2">
@@ -202,9 +204,9 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                             )}
                           </div>
 
-                          {/* Prix et bouton à droite */}
-                          <div className="flex flex-col items-end ml-6">
-                            <span className="text-lg font-bold text-gray-900 mb-4">
+                          {/* Prix et bouton */}
+                          <div className={`flex ${isMobile ? 'justify-between items-center w-full' : 'flex-col items-end ml-6'}`}>
+                            <span className={`text-lg font-bold text-gray-900 ${isMobile ? '' : 'mb-4'}`}>
                               {item.price.toFixed(2)}€
                             </span>
                             
