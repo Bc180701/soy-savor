@@ -1,186 +1,115 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Clock } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { ContactInfo } from "@/hooks/useHomepageData";
+
+import { useState, useEffect } from "react";
+import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { useHomepageData } from "@/hooks/useHomepageData";
+import { openingHoursService, DayOpeningHours } from "@/services/openingHoursService";
 
 const Footer = () => {
-  const [contactInfo, setContactInfo] = useState<ContactInfo>({
+  const { data: homepageData } = useHomepageData();
+  const [openingHours, setOpeningHours] = useState<DayOpeningHours[]>([]);
+  const [todayHours, setTodayHours] = useState<string>("");
+
+  useEffect(() => {
+    const fetchOpeningHours = async () => {
+      try {
+        const hours = await openingHoursService.getOpeningHours();
+        setOpeningHours(hours);
+        
+        const today = await openingHoursService.getTodayHours();
+        setTodayHours(today);
+      } catch (error) {
+        console.error("Error loading opening hours:", error);
+      }
+    };
+
+    fetchOpeningHours();
+  }, []);
+
+  const getDayName = (day: string): string => {
+    const dayNames: {[key: string]: string} = {
+      "monday": "Lundi",
+      "tuesday": "Mardi", 
+      "wednesday": "Mercredi",
+      "thursday": "Jeudi",
+      "friday": "Vendredi",
+      "saturday": "Samedi",
+      "sunday": "Dimanche"
+    };
+    return dayNames[day] || day;
+  };
+
+  const formatHours = (hours: DayOpeningHours): string => {
+    if (!hours.is_open) {
+      return "Fermé";
+    }
+    return `${hours.open_time} - ${hours.close_time}`;
+  };
+
+  const contactInfo = homepageData?.contact_info || {
     address: "16 cours Carnot, 13160 Châteaurenard",
     phone: "04 90 00 00 00",
     email: "contact@sushieats.fr"
-  });
-
-  useEffect(() => {
-    const fetchContactInfo = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('homepage_sections')
-          .select('section_data')
-          .eq('section_name', 'contact_info')
-          .single();
-        
-        if (error) {
-          console.error("Erreur lors de la récupération des coordonnées de contact:", error);
-          return;
-        }
-        
-        if (data && data.section_data) {
-          setContactInfo(data.section_data as unknown as ContactInfo);
-        }
-      } catch (error) {
-        console.error("Exception lors de la récupération des coordonnées de contact:", error);
-      }
-    };
-    
-    fetchContactInfo();
-  }, []);
+  };
 
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="container mx-auto py-12 px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Logo et informations */}
-          <div className="space-y-4">
-            <Link to="/" className="inline-block">
-              <div className="flex items-center">
-                <img 
-                  src="/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png" 
-                  alt="SushiEats Logo" 
-                  className="h-12 w-auto"
-                />
-              </div>
-            </Link>
-            <p className="text-gray-400 text-sm mt-2">
-              Découvrez l'art du sushi à Châteaurenard. Des produits frais préparés avec soin pour une expérience gourmande unique.
-            </p>
-            <div className="flex space-x-4 mt-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gold-500 transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook size={20} />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gold-500 transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram size={20} />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gold-500 transition-colors"
-                aria-label="LinkedIn"
-              >
-                <Linkedin size={20} />
-              </a>
-            </div>
-          </div>
-
-          {/* Navigation */}
+    <footer className="bg-black text-white py-12">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Coordonnées */}
           <div>
-            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">Navigation</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/" className="text-gray-400 hover:text-white transition-colors">
-                  Accueil
-                </Link>
-              </li>
-              <li>
-                <Link to="/menu" className="text-gray-400 hover:text-white transition-colors">
-                  Notre Menu
-                </Link>
-              </li>
-              <li>
-                <Link to="/commander" className="text-gray-400 hover:text-white transition-colors">
-                  Commander en ligne
-                </Link>
-              </li>
-              <li>
-                <Link to="/a-propos" className="text-gray-400 hover:text-white transition-colors">
-                  À propos
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Horaires */}
-          <div>
-            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">Horaires d'ouverture</h4>
-            <div className="flex items-start space-x-2 text-gray-400">
-              <Clock size={18} className="mt-1 flex-shrink-0" />
-              <div>
-                <p className="mb-1">Mardi - Samedi</p>
-                <p className="mb-1">11h - 14h | 18h - 22h</p>
-                <p className="text-gold-400">Fermé le dimanche et lundi</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">Contact</h4>
+            <h3 className="text-xl font-bold mb-4 text-gold-500">Contact</h3>
             <div className="space-y-3">
-              <div className="flex items-start space-x-2 text-gray-400">
-                <MapPin size={18} className="mt-1 flex-shrink-0" />
-                <a
-                  href={`https://maps.google.com/?q=${encodeURIComponent(contactInfo.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
-                >
-                  {contactInfo.address.split(',').map((part, index) => (
-                    <span key={index}>
-                      {part}
-                      {index < contactInfo.address.split(',').length - 1 && <br />}
-                    </span>
-                  ))}
-                </a>
+              <div className="flex items-center gap-3">
+                <MapPin className="w-5 h-5 text-gold-500" />
+                <span className="text-sm">{contactInfo.address}</span>
               </div>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Phone size={18} className="flex-shrink-0" />
-                <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="hover:text-white transition-colors">
-                  {contactInfo.phone}
-                </a>
+              <div className="flex items-center gap-3">
+                <Phone className="w-5 h-5 text-gold-500" />
+                <span className="text-sm">{contactInfo.phone}</span>
               </div>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Mail size={18} className="flex-shrink-0" />
-                <a href={`mailto:${contactInfo.email}`} className="hover:text-white transition-colors">
-                  {contactInfo.email}
-                </a>
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-gold-500" />
+                <span className="text-sm">{contactInfo.email}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Horaires d'ouverture */}
+          <div>
+            <h3 className="text-xl font-bold mb-4 text-gold-500">Horaires d'ouverture</h3>
+            <div className="space-y-2">
+              {todayHours && (
+                <div className="flex items-center gap-3 mb-3 p-2 bg-gold-500/10 rounded">
+                  <Clock className="w-5 h-5 text-gold-500" />
+                  <span className="text-sm font-semibold">Aujourd'hui: {todayHours}</span>
+                </div>
+              )}
+              {openingHours.map((hours) => (
+                <div key={hours.day} className="flex justify-between text-sm">
+                  <span>{getDayName(hours.day)}</span>
+                  <span>{formatHours(hours)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* À propos */}
+          <div>
+            <h3 className="text-xl font-bold mb-4 text-gold-500">Sushi Eats</h3>
+            <p className="text-sm text-gray-300 mb-4">
+              Restaurant japonais authentique à Châteaurenard. Découvrez nos sushis frais, 
+              nos pokés colorés et nos spécialités japonaises préparées avec passion.
+            </p>
+            <div className="flex space-x-4">
+              {/* Réseaux sociaux - à ajouter si nécessaire */}
             </div>
           </div>
         </div>
-
-        <div className="border-t border-gray-800 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-500 text-sm">
-            &copy; {new Date().getFullYear()} SushiEats. Tous droits réservés.
+        
+        <div className="border-t border-gray-700 mt-8 pt-8 text-center">
+          <p className="text-sm text-gray-400">
+            © 2024 Sushi Eats. Tous droits réservés.
           </p>
-          <div className="flex space-x-4 mt-4 md:mt-0">
-            <Link to="/mentions-legales" className="text-gray-500 text-sm hover:text-white transition-colors">
-              Mentions légales
-            </Link>
-            <Link to="/cgv" className="text-gray-500 text-sm hover:text-white transition-colors">
-              CGV
-            </Link>
-            <Link to="/confidentialite" className="text-gray-500 text-sm hover:text-white transition-colors">
-              Politique de confidentialité
-            </Link>
-          </div>
         </div>
       </div>
     </footer>
