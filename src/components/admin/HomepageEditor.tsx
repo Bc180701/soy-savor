@@ -13,6 +13,7 @@ import DeliveryZonesEditor from "./homepage-editor/DeliveryZonesEditor";
 import OrderOptionsEditor from "./homepage-editor/OrderOptionsEditor";
 import CustomCreationSectionEditor from "./homepage-editor/CustomCreationSectionEditor";
 import ContactInfoEditor from "./homepage-editor/ContactInfoEditor";
+import GoogleReviewsEditor from "./homepage-editor/GoogleReviewsEditor";
 import { HomepageData, useHomepageData } from "@/hooks/useHomepageData";
 
 const HomepageEditor = () => {
@@ -128,6 +129,7 @@ const HomepageEditor = () => {
           <TabsTrigger value="hero">Section Principale</TabsTrigger>
           <TabsTrigger value="custom_creation">Création Personnalisée</TabsTrigger>
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
+          <TabsTrigger value="google_reviews">Avis Google</TabsTrigger>
           <TabsTrigger value="delivery">Zones de livraison</TabsTrigger>
           <TabsTrigger value="order">Options de commande</TabsTrigger>
           <TabsTrigger value="contact">Coordonnées</TabsTrigger>
@@ -179,6 +181,23 @@ const HomepageEditor = () => {
               <PromotionsEditor 
                 data={homepageData.promotions} 
                 onSave={(data) => saveHomepageData('promotions', data)} 
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="google_reviews">
+          <Card>
+            <CardHeader>
+              <CardTitle>Avis Google</CardTitle>
+              <CardDescription>
+                Configurez les liens vers votre profil Google Business et les informations d'avis.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GoogleReviewsEditor 
+                data={homepageData.google_reviews_section} 
+                onSave={(data) => saveHomepageData('google_reviews_section', data)} 
               />
             </CardContent>
           </Card>

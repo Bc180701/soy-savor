@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
@@ -43,6 +44,16 @@ export interface ContactInfo {
   email: string;
 }
 
+export interface GoogleReviewsSection {
+  title: string;
+  description: string;
+  google_business_url: string;
+  average_rating: number;
+  total_reviews: number;
+  button_text: string;
+  review_button_text: string;
+}
+
 export interface HomepageData {
   id?: number;
   hero_section: HeroSection;
@@ -51,6 +62,7 @@ export interface HomepageData {
   order_options: OrderOption[];
   custom_creation_section?: CustomCreationSection;
   contact_info?: ContactInfo;
+  google_reviews_section?: GoogleReviewsSection;
 }
 
 // Default data to use as fallback
@@ -121,6 +133,15 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
     address: "16 cours Carnot, 13160 Châteaurenard",
     phone: "04 90 00 00 00",
     email: "contact@sushieats.fr"
+  },
+  google_reviews_section: {
+    title: "Nos avis clients",
+    description: "Découvrez ce que nos clients pensent de notre restaurant",
+    google_business_url: "",
+    average_rating: 4.5,
+    total_reviews: 0,
+    button_text: "Voir tous nos avis Google",
+    review_button_text: "Laisser un avis"
   }
 };
 
@@ -207,6 +228,8 @@ export const useHomepageData = () => {
             homepageData.custom_creation_section = safeCast<CustomCreationSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.custom_creation_section);
           } else if (section.section_name === 'contact_info') {
             homepageData.contact_info = safeCast<ContactInfo>(section.section_data, DEFAULT_HOMEPAGE_DATA.contact_info);
+          } else if (section.section_name === 'google_reviews_section') {
+            homepageData.google_reviews_section = safeCast<GoogleReviewsSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.google_reviews_section);
           }
         }
         
@@ -217,7 +240,8 @@ export const useHomepageData = () => {
           delivery_zones: homepageData.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones,
           order_options: homepageData.order_options || DEFAULT_HOMEPAGE_DATA.order_options,
           custom_creation_section: homepageData.custom_creation_section || DEFAULT_HOMEPAGE_DATA.custom_creation_section,
-          contact_info: homepageData.contact_info || DEFAULT_HOMEPAGE_DATA.contact_info
+          contact_info: homepageData.contact_info || DEFAULT_HOMEPAGE_DATA.contact_info,
+          google_reviews_section: homepageData.google_reviews_section || DEFAULT_HOMEPAGE_DATA.google_reviews_section
         };
         
         console.log("Données validées pour la page d'accueil:", validatedData);
