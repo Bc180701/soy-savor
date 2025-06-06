@@ -40,13 +40,13 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
         return "poke";
       } else if (item.category === "custom" || 
                 item.name.toLowerCase().includes("sushi")) {
-        return "sushi";
+        return "custom"; // Changed from "sushi" to "custom"
       }
     }
     
     // Also check by category for custom products
     if (item.category === "custom" || item.category === "poke_custom") {
-      return item.category === "poke_custom" ? "poke" : "sushi";
+      return item.category === "poke_custom" ? "poke" : "custom"; // Changed from "sushi" to "custom"
     }
     
     return false;
@@ -136,7 +136,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                                   className="bg-pink-100 text-pink-600 border-0 text-xs font-medium uppercase tracking-wider"
                                 >
                                   {item.category === "poke" ? "POKE BOWL" : 
-                                   item.category === "sushi" ? "SUSHI" :
+                                   item.category === "custom" ? "SUSHI" :
                                    item.category === "maki" ? "MAKI" :
                                    item.category === "plateaux" ? "PLATEAU" :
                                    item.category}
