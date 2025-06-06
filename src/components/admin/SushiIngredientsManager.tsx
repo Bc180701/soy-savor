@@ -32,8 +32,10 @@ const SushiIngredientsManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const ingredientTypes = [
+    { value: "enrobage", label: "Enrobage" },
     { value: "protein", label: "Protéine" },
     { value: "ingredient", label: "Ingrédient" },
+    { value: "topping", label: "Topping" },
     { value: "sauce", label: "Sauce" }
   ];
 
@@ -101,6 +103,7 @@ const SushiIngredientsManager = () => {
   };
 
   const handleEdit = (ingredient: SushiIngredient) => {
+    console.log("Editing ingredient:", ingredient);
     setFormData({
       name: ingredient.name,
       price: ingredient.price,
@@ -108,6 +111,7 @@ const SushiIngredientsManager = () => {
       ingredient_type: ingredient.ingredient_type
     });
     setEditingId(ingredient.id);
+    toast.success("Ingrédient chargé pour modification");
   };
 
   const handleDelete = async (id: string) => {
@@ -138,6 +142,7 @@ const SushiIngredientsManager = () => {
       ingredient_type: "ingredient"
     });
     setEditingId(null);
+    toast.info("Modification annulée");
   };
 
   const getTypeLabel = (type: string) => {
@@ -254,6 +259,7 @@ const SushiIngredientsManager = () => {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleEdit(ingredient)}
+                      className="hover:bg-blue-50"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -261,7 +267,7 @@ const SushiIngredientsManager = () => {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleDelete(ingredient.id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 hover:text-red-800 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
