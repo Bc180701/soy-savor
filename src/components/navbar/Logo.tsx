@@ -12,7 +12,7 @@ const Logo = () => {
         className="flex items-center"
       >
         <img 
-          src="/lovable-uploads/80663134-a018-4c55-8a81-5ee048c700e3.png" 
+          src="/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png" 
           alt="SushiEats Logo" 
           className="h-12 w-auto"
         />
