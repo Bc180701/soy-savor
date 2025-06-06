@@ -205,7 +205,7 @@ const FeaturedProductsSection = () => {
 
         <div className="mt-12 text-center">
           <Button asChild className="bg-gold-600 hover:bg-gold-700 text-white">
-            <Link to="/menu">Voir toute notre carte</Link>
+            <Link to="/commander">Commander maintenant</Link>
           </Button>
         </div>
       </div>
