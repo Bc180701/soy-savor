@@ -7,6 +7,7 @@ import { DeliveryMap } from "@/components/DeliveryMap";
 import { PromotionCard } from "@/components/PromotionCard";
 import { CustomCreationSection } from "@/components/CustomCreationSection";
 import FeaturedProductsSection from "@/components/FeaturedProductsSection";
+import GoogleReviewsSection from "@/components/GoogleReviewsSection";
 import { useHomepageData, HomepageData } from "@/hooks/useHomepageData";
 import { usePromotions } from "@/hooks/usePromotions";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,6 +110,9 @@ const Index = () => {
 
       {/* Featured Products Section */}
       <FeaturedProductsSection />
+
+      {/* Google Reviews Section */}
+      <GoogleReviewsSection />
 
       {/* Delivery Map */}
       <DeliveryMap deliveryZones={homepageData?.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones} />
