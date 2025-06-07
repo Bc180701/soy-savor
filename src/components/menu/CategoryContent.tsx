@@ -123,7 +123,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                       {isMobile ? (
                         // Mobile layout - Vertical card
                         <div className="flex flex-col h-full">
-                          {/* Image - Augmentée de h-32 à h-40 */}
+                          {/* Image */}
                           <div className="w-full h-40 flex-shrink-0 relative overflow-hidden rounded-t-xl">
                             {item.imageUrl && item.imageUrl !== "/placeholder.svg" ? (
                               <img
@@ -166,7 +166,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                             {/* Titre et bouton œil */}
                             <div className="flex items-start gap-1 mb-2">
-                              <h3 className="text-sm font-semibold text-gray-900 leading-tight flex-1">
+                              <h3 className="text-sm font-semibold text-black leading-tight flex-1 morning-waves-gold" style={{ fontFamily: '"Morning Waves", "Dancing Script", cursive', color: 'black' }}>
                                 {item.name}
                               </h3>
                               {item.description && (
@@ -267,7 +267,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                       ) : (
                         // Desktop layout - Horizontal card
                         <div className="flex items-center">
-                          {/* Image - Augmentée de w-32 h-32 à w-40 h-40 */}
+                          {/* Image */}
                           <div className="w-40 h-40 flex-shrink-0 relative overflow-hidden rounded-l-xl">
                             {item.imageUrl && item.imageUrl !== "/placeholder.svg" ? (
                               <img
@@ -322,7 +322,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                                 {/* Titre et bouton œil */}
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="text-lg font-semibold text-gray-900">
+                                  <h3 className="text-lg font-semibold text-black" style={{ fontFamily: '"Morning Waves", "Dancing Script", cursive', color: 'black' }}>
                                     {item.name}
                                   </h3>
                                   {item.description && (
@@ -479,7 +479,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                        selectedProductDetails.category}
                     </Badge>
                   )}
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-2xl font-bold text-black mb-2" style={{ fontFamily: '"Morning Waves", "Dancing Script", cursive', color: 'black' }}>
                     {selectedProductDetails.name}
                   </h2>
                   <div className="text-xl font-bold text-gold-600 mb-4">
