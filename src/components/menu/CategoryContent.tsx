@@ -166,7 +166,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                             {/* Titre et bouton œil */}
                             <div className="flex items-start gap-1 mb-2">
-                              <h3 className="text-sm font-semibold text-black leading-tight flex-1 morning-waves-gold" style={{ fontFamily: '"Morning Waves", "Dancing Script", cursive', color: 'black' }}>
+                              <h3 className="text-sm font-semibold text-gray-900 leading-tight flex-1">
                                 {item.name}
                               </h3>
                               {item.description && (
@@ -322,7 +322,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                                 {/* Titre et bouton œil */}
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="text-lg font-semibold text-black" style={{ fontFamily: '"Morning Waves", "Dancing Script", cursive', color: 'black' }}>
+                                  <h3 className="text-lg font-semibold text-gray-900">
                                     {item.name}
                                   </h3>
                                   {item.description && (
@@ -479,7 +479,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                        selectedProductDetails.category}
                     </Badge>
                   )}
-                  <h2 className="text-2xl font-bold text-black mb-2" style={{ fontFamily: '"Morning Waves", "Dancing Script", cursive', color: 'black' }}>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     {selectedProductDetails.name}
                   </h2>
                   <div className="text-xl font-bold text-gold-600 mb-4">
