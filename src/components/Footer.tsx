@@ -1,5 +1,3 @@
-
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Clock } from "lucide-react";
@@ -107,11 +105,6 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/a-propos" className="text-gray-400 hover:text-white transition-colors">
-                  À propos
-                </Link>
-              </li>
-              <li>
                 <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">
                   Contact
                 </Link>
@@ -215,4 +208,3 @@ const Footer = () => {
 };
 
 export default Footer;
-
