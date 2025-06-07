@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,6 +109,7 @@ const Navbar = () => {
     { name: "Accueil", path: "/" },
     { name: "Menu", path: "/menu" },
     { name: "Commander", path: "/commander" },
+    { name: "À propos", path: "/a-propos" },
     { name: "Contact", path: "/contact" },
   ];
 

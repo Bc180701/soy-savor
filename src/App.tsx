@@ -11,6 +11,7 @@ import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Menu from "./pages/Menu";
 import Commander from "./pages/Commander";
+import APropos from "./pages/APropos";
 import Contact from "./pages/Contact";
 import Panier from "./pages/Panier";
 import Compte from "./pages/Compte";
@@ -49,6 +50,7 @@ function App() {
               <Route path="commander" element={<Commander />} />
               <Route path="composer-sushi" element={<ComposerSushi />} />
               <Route path="composer-poke" element={<ComposerPoke />} />
+              <Route path="a-propos" element={<APropos />} />
               <Route path="contact" element={<Contact />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />

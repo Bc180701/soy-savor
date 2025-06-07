@@ -16,6 +16,9 @@ const NavItems = () => {
         <Link to="/commander">Commander</Link>
       </Button>
       <Button variant="ghost" size="sm" asChild>
+        <Link to="/a-propos">À propos</Link>
+      </Button>
+      <Button variant="ghost" size="sm" asChild>
         <Link to="/contact">Contact</Link>
       </Button>
       <AdminLink />
