@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export const checkPostalCodeDelivery = async (postalCode: string): Promise<boolean> => {
@@ -36,8 +35,8 @@ export const getDeliveryLocations = async (): Promise<{city: string, postalCode:
 };
 
 export const calculateDeliveryFee = (subtotal: number): number => {
-  // Free delivery for orders >= 30€, otherwise 3€ delivery fee
-  return subtotal >= 30 ? 0 : 3;
+  // Free delivery for orders >= 35€, otherwise 5€ delivery fee
+  return subtotal >= 35 ? 0 : 5;
 };
 
 // Enhanced promo code validation with single-use per email check

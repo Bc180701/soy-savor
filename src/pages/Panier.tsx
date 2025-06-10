@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useCart } from "@/hooks/use-cart";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserContactInfo } from "@/services/profileService";
-import { checkPostalCodeDelivery } from "@/services/deliveryService";
+import { checkPostalCodeDelivery, calculateDeliveryFee } from "@/services/deliveryService";
 import { CartStep } from "@/components/cart/CartStep";
 import { DeliveryStep } from "@/components/cart/DeliveryStep";
 import { PaymentStep } from "@/components/cart/PaymentStep";
@@ -33,7 +32,6 @@ const Panier = () => {
   const { items, total, clearCart } = useCart();
   const { toast } = useToast();
   const TAX_RATE = 0.1; // 10% TVA
-  const DELIVERY_FEE = 3.5; // 3.50€ frais de livraison
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
   const [loading, setLoading] = useState(false);
@@ -97,7 +95,7 @@ const Panier = () => {
   
   const subtotal = total; // Utiliser total de useCart
   const tax = subtotal * TAX_RATE;
-  const deliveryFee = deliveryInfo.orderType === "delivery" ? DELIVERY_FEE : 0;
+  const deliveryFee = deliveryInfo.orderType === "delivery" ? calculateDeliveryFee(subtotal) : 0;
   
   // Calculate discount if promo code is applied
   const discount = appliedPromoCode 
