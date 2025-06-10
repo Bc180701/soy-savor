@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { OrderCTA } from "@/components/OrderCTA";
-import { OrderOptions } from "@/components/OrderOptions";
 import { DeliveryMap } from "@/components/DeliveryMap";
 import { PromotionCard } from "@/components/PromotionCard";
 import { CustomCreationSection } from "@/components/CustomCreationSection";
@@ -99,9 +98,6 @@ const Index = () => {
 
       {/* Order Call-to-Action */}
       <OrderCTA />
-
-      {/* Order Options */}
-      <OrderOptions options={homepageData?.order_options || DEFAULT_HOMEPAGE_DATA.order_options} />
 
       {/* Custom Creation Section */}
       {homepageData?.custom_creation_section && (
