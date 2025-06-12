@@ -55,7 +55,7 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
               isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             }`}
           >
-            <Button asChild size="lg" className="bg-gold-500 hover:bg-gold-600 text-black border-2 border-gold-400 font-semibold">
+            <Button asChild size="lg" className="bg-gold-500 hover:bg-gold-600 text-white border-2 border-gold-400 font-semibold">
               <Link to="/commander">Commander maintenant</Link>
             </Button>
           </div>
