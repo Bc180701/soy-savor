@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -51,12 +52,17 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
           </p>
           
           <div 
-            className={`transition-all duration-700 delay-500 ${
+            className={`flex flex-col sm:flex-row gap-4 transition-all duration-700 delay-500 ${
               isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             }`}
           >
-            <Button asChild size="lg" className="bg-gold-500 hover:bg-gold-600 text-black border-2 border-gold-400 font-semibold">
+            <Button asChild size="lg" className="bg-gold-600 hover:bg-gold-700 text-white">
               <Link to="/commander">Commander maintenant</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white/10">
+              <Link to="/commander" className="flex items-center">
+                Commander en ligne <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </div>
         </div>
