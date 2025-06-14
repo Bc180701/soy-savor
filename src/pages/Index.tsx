@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { OrderCTA } from "@/components/OrderCTA";
@@ -17,6 +16,18 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
     background_image: "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png",
     title: "L'art du sushi à <span class=\"text-gold-500\">Châteaurenard</span>",
     subtitle: "Des produits frais, des saveurs authentiques, une expérience japonaise unique à déguster sur place ou à emporter."
+  },
+  custom_creation_section: {
+    title: "Créez votre propre sushi ou poké",
+    description: "Laissez libre cours à votre imagination et créez le sushi ou le poké parfait.",
+    subtitle: "Laissez libre cours à votre créativité avec nos options de personnalisation",
+    background_image: "",
+    sushi_image: "",
+    poke_image: "",
+    sushi_button_text: "Créer mes sushis",
+    sushi_button_link: "/composer-sushi",
+    poke_button_text: "Créer mon poké",
+    poke_button_link: "/composer-poke"
   },
   promotions: [
     {
@@ -45,11 +56,30 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       buttonLink: "/commander",
     }
   ],
+  google_reviews_section: {
+    title: "Nos avis Google",
+    description: "Découvrez ce que nos clients pensent de notre restaurant",
+    google_business_url: "https://www.google.com/maps/place/SushiEats/@43.8828,4.8535,15z",
+    total_reviews: 150,
+    average_rating: 4.8,
+    button_text: "Voir tous nos avis Google",
+    review_button_text: "Laisser un avis"
+  },
   delivery_zones: [
     "Châteaurenard", "Eyragues", "Barbentane", "Rognonas", 
     "Graveson", "Maillane", "Noves", "Cabanes", 
     "Avignon", "Saint-Rémy de Provence", "Boulbon"
   ],
+  delivery_map_section: {
+    title: "Zones de livraison",
+    subtitle: "Nous livrons dans les communes suivantes autour de Châteaurenard. Commandez en ligne et recevez vos sushis directement chez vous !",
+    restaurant_info: {
+      name: "SushiEats Châteaurenard",
+      address: "16 cours Carnot, 13160 Châteaurenard",
+      subtitle: "Point de départ des livraisons",
+    },
+    no_zones_message: "Aucune zone de livraison n'est actuellement définie.",
+  },
   order_options: [
     {
       title: "Livraison",
@@ -66,7 +96,52 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       description: "Profitez de votre repas dans notre restaurant",
       icon: "Users"
     }
-  ]
+  ],
+  contact_info: {
+    address: "16 cours Carnot, 13160 Châteaurenard",
+    phone: "04 90 00 00 00",
+    email: "contact@sushieats.fr",
+  },
+  header_section: {
+    logo_alt: "SushiEats Logo",
+    nav_links: {
+      home: "Accueil",
+      menu: "Menu",
+      order: "Commander",
+      contact: "Contact",
+    },
+    buttons: {
+      login: "Se connecter",
+      order: "Commander",
+    },
+  },
+  footer_section: {
+    company_description:
+      "Découvrez l'art du sushi à Châteaurenard. Des produits frais préparés avec soin pour une expérience gourmande unique.",
+    navigation_title: "Navigation",
+    hours_title: "Horaires d'ouverture",
+    contact_title: "Contact",
+    opening_hours: {
+      monday: "Fermé",
+      tuesday: "11:00–14:00, 18:00–22:00",
+      wednesday: "11:00–14:00, 18:00–22:00",
+      thursday: "11:00–14:00, 18:00–22:00",
+      friday: "11:00–14:00, 18:00–22:00",
+      saturday: "11:00–14:00, 18:00–22:00",
+      sunday: "Fermé",
+    },
+    copyright_text: "SushiEats. Tous droits réservés.",
+    legal_links: {
+      mentions_legales: "Mentions légales",
+      cgv: "CGV",
+      confidentialite: "Politique de confidentialité",
+    },
+    social_links: {
+      facebook_aria: "Facebook",
+      instagram_aria: "Instagram",
+      linkedin_aria: "LinkedIn",
+    },
+  },
 };
 
 const Index = () => {
