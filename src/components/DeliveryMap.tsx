@@ -11,7 +11,8 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
   const [activeZone, setActiveZone] = useState<string | null>(null);
   const { data: homepageData } = useHomepageData();
   
-  // Récupérer l'image de superposition depuis les données de la page d'accueil
+  // Récupérer les données de la section de carte de livraison
+  const deliveryMapSection = homepageData?.delivery_map_section;
   const overlayImage = homepageData?.hero_section?.overlay_image || "";
 
   // Vérifier si les zones de livraison sont disponibles et non vides
@@ -21,9 +22,11 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4 better-times-gold">Zones de livraison</h2>
+          <h2 className="text-3xl font-bold mb-4 better-times-gold">
+            {deliveryMapSection?.title || "Zones de livraison"}
+          </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Nous livrons dans les communes suivantes autour de Châteaurenard. Commandez en ligne et recevez vos sushis directement chez vous !
+            {deliveryMapSection?.subtitle || "Nous livrons dans les communes suivantes autour de Châteaurenard. Commandez en ligne et recevez vos sushis directement chez vous !"}
           </p>
         </div>
         
@@ -42,9 +45,15 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
               >
                 <div className="bg-white bg-opacity-80 p-6 rounded-lg shadow-md text-center">
                   <MapPin className="mx-auto h-10 w-10 text-gold-600 mb-2" />
-                  <h3 className="text-xl font-bold mb-2 better-times-gold">SushiEats Châteaurenard</h3>
-                  <p className="text-gray-600 mb-2">16 cours Carnot, 13160 Châteaurenard</p>
-                  <p className="text-sm text-gold-600 font-medium">Point de départ des livraisons</p>
+                  <h3 className="text-xl font-bold mb-2 better-times-gold">
+                    {deliveryMapSection?.restaurant_info?.name || "SushiEats Châteaurenard"}
+                  </h3>
+                  <p className="text-gray-600 mb-2">
+                    {deliveryMapSection?.restaurant_info?.address || "16 cours Carnot, 13160 Châteaurenard"}
+                  </p>
+                  <p className="text-sm text-gold-600 font-medium">
+                    {deliveryMapSection?.restaurant_info?.subtitle || "Point de départ des livraisons"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -72,7 +81,9 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
             </div>
           ) : (
             <div className="text-center p-6 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Aucune zone de livraison n'est actuellement définie.</p>
+              <p className="text-gray-500">
+                {deliveryMapSection?.no_zones_message || "Aucune zone de livraison n'est actuellement définie."}
+              </p>
             </div>
           )}
         </div>

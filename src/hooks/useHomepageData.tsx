@@ -54,6 +54,17 @@ export interface GoogleReviewsSection {
   review_button_text: string;
 }
 
+export interface DeliveryMapSection {
+  title: string;
+  subtitle: string;
+  restaurant_info: {
+    name: string;
+    address: string;
+    subtitle: string;
+  };
+  no_zones_message: string;
+}
+
 export interface HomepageData {
   id?: number;
   hero_section: HeroSection;
@@ -63,6 +74,7 @@ export interface HomepageData {
   custom_creation_section?: CustomCreationSection;
   contact_info?: ContactInfo;
   google_reviews_section?: GoogleReviewsSection;
+  delivery_map_section?: DeliveryMapSection;
 }
 
 // Default data to use as fallback
@@ -142,6 +154,16 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
     total_reviews: 0,
     button_text: "Voir tous nos avis Google",
     review_button_text: "Laisser un avis"
+  },
+  delivery_map_section: {
+    title: "Zones de livraison",
+    subtitle: "Nous livrons dans les communes suivantes autour de Châteaurenard. Commandez en ligne et recevez vos sushis directement chez vous !",
+    restaurant_info: {
+      name: "SushiEats Châteaurenard",
+      address: "16 cours Carnot, 13160 Châteaurenard",
+      subtitle: "Point de départ des livraisons"
+    },
+    no_zones_message: "Aucune zone de livraison n'est actuellement définie."
   }
 };
 
@@ -230,6 +252,8 @@ export const useHomepageData = () => {
             homepageData.contact_info = safeCast<ContactInfo>(section.section_data, DEFAULT_HOMEPAGE_DATA.contact_info);
           } else if (section.section_name === 'google_reviews_section') {
             homepageData.google_reviews_section = safeCast<GoogleReviewsSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.google_reviews_section);
+          } else if (section.section_name === 'delivery_map_section') {
+            homepageData.delivery_map_section = safeCast<DeliveryMapSection>(section.section_data, DEFAULT_HOMEPAGE_DATA.delivery_map_section);
           }
         }
         
@@ -241,7 +265,8 @@ export const useHomepageData = () => {
           order_options: homepageData.order_options || DEFAULT_HOMEPAGE_DATA.order_options,
           custom_creation_section: homepageData.custom_creation_section || DEFAULT_HOMEPAGE_DATA.custom_creation_section,
           contact_info: homepageData.contact_info || DEFAULT_HOMEPAGE_DATA.contact_info,
-          google_reviews_section: homepageData.google_reviews_section || DEFAULT_HOMEPAGE_DATA.google_reviews_section
+          google_reviews_section: homepageData.google_reviews_section || DEFAULT_HOMEPAGE_DATA.google_reviews_section,
+          delivery_map_section: homepageData.delivery_map_section || DEFAULT_HOMEPAGE_DATA.delivery_map_section
         };
         
         console.log("Données validées pour la page d'accueil:", validatedData);

@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import HeroSectionEditor from "./homepage-editor/HeroSectionEditor";
 import PromotionsEditor from "./homepage-editor/PromotionsEditor";
 import DeliveryZonesEditor from "./homepage-editor/DeliveryZonesEditor";
+import DeliveryMapSectionEditor from "./homepage-editor/DeliveryMapSectionEditor";
 import OrderOptionsEditor from "./homepage-editor/OrderOptionsEditor";
 import CustomCreationSectionEditor from "./homepage-editor/CustomCreationSectionEditor";
 import ContactInfoEditor from "./homepage-editor/ContactInfoEditor";
@@ -131,6 +132,7 @@ const HomepageEditor = () => {
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="google_reviews">Avis Google</TabsTrigger>
           <TabsTrigger value="delivery">Zones de livraison</TabsTrigger>
+          <TabsTrigger value="delivery_map">Textes Carte Livraison</TabsTrigger>
           <TabsTrigger value="order">Options de commande</TabsTrigger>
           <TabsTrigger value="contact">Coordonnées</TabsTrigger>
         </TabsList>
@@ -215,6 +217,23 @@ const HomepageEditor = () => {
               <DeliveryZonesEditor 
                 data={homepageData.delivery_zones} 
                 onSave={(data) => saveHomepageData('delivery_zones', data)} 
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="delivery_map">
+          <Card>
+            <CardHeader>
+              <CardTitle>Textes de la carte de livraison</CardTitle>
+              <CardDescription>
+                Personnalisez les textes affichés dans la section de la carte de livraison.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeliveryMapSectionEditor 
+                data={homepageData.delivery_map_section} 
+                onSave={(data) => saveHomepageData('delivery_map_section', data)} 
               />
             </CardContent>
           </Card>
