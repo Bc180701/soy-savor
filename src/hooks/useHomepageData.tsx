@@ -1,31 +1,51 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface HeroSection {
   title: string;
   subtitle: string;
-  image_url: string;
-  overlay_image: string;
+  image_url?: string;
+  overlay_image?: string;
+  background_image: string;
 }
 
 export interface CustomCreationSection {
   title: string;
-  description: string;
-  image_url: string;
+  description?: string;
+  subtitle: string;
+  image_url?: string;
+  background_image: string;
+  sushi_image: string;
+  poke_image: string;
+  sushi_button_text: string;
+  sushi_button_link: string;
+  poke_button_text: string;
+  poke_button_link: string;
 }
 
 export interface Promotion {
+  id: number;
   title: string;
   description: string;
-  image_url: string;
-  link: string;
+  imageUrl: string;
+  buttonText: string;
+  buttonLink: string;
+  image_url?: string;
+  link?: string;
+  isActive?: boolean;
 }
 
 export interface GoogleReviewsSection {
   title: string;
-  google_business_profile_link: string;
-  number_of_reviews: number;
+  description: string;
+  google_business_profile_link?: string;
+  google_business_url: string;
+  number_of_reviews?: number;
+  total_reviews: number;
   average_rating: number;
+  button_text: string;
+  review_button_text: string;
 }
 
 export interface DeliveryMapSection {
@@ -42,8 +62,9 @@ export interface DeliveryMapSection {
 export interface OrderOption {
   title: string;
   description: string;
-  image_url: string;
-  link: string;
+  image_url?: string;
+  link?: string;
+  icon: string;
 }
 
 export interface ContactInfo {
@@ -118,20 +139,30 @@ export const useHomepageData = (): UseHomepageDataResult => {
     hero_section: {
       title: "SushiEats",
       subtitle: "Les meilleurs sushis de Châteaurenard",
-      image_url: "/placeholder-hero.webp",
+      background_image: "/placeholder-hero.webp",
       overlay_image: "/map-overlay.svg",
     },
     custom_creation_section: {
       title: "Créez votre propre sushi ou poké",
       description: "Laissez libre cours à votre imagination et créez le sushi ou le poké parfait.",
-      image_url: "/placeholder-custom.webp",
+      subtitle: "Laissez libre cours à votre créativité avec nos options de personnalisation",
+      background_image: "",
+      sushi_image: "",
+      poke_image: "",
+      sushi_button_text: "Créer mes sushis",
+      sushi_button_link: "/composer-sushi",
+      poke_button_text: "Créer mon poké",
+      poke_button_link: "/composer-poke"
     },
     promotions: [],
     google_reviews_section: {
       title: "Nos avis Google",
-      google_business_profile_link: "https://www.google.com/maps/place/SushiEats/@43.8828,4.8535,15z",
-      number_of_reviews: 150,
+      description: "Découvrez ce que nos clients pensent de notre restaurant",
+      google_business_url: "https://www.google.com/maps/place/SushiEats/@43.8828,4.8535,15z",
+      total_reviews: 150,
       average_rating: 4.8,
+      button_text: "Voir tous nos avis Google",
+      review_button_text: "Laisser un avis"
     },
     delivery_zones: [],
     delivery_map_section: {
@@ -221,25 +252,25 @@ export const useHomepageData = (): UseHomepageDataResult => {
 
         sections.forEach((section) => {
           if (section.section_name === 'hero_section') {
-            homepageData.hero_section = section.section_data as HeroSection;
+            homepageData.hero_section = section.section_data as unknown as HeroSection;
           } else if (section.section_name === 'custom_creation_section') {
-            homepageData.custom_creation_section = section.section_data as CustomCreationSection;
+            homepageData.custom_creation_section = section.section_data as unknown as CustomCreationSection;
           } else if (section.section_name === 'promotions') {
-            homepageData.promotions = section.section_data as Promotion[];
+            homepageData.promotions = section.section_data as unknown as Promotion[];
           } else if (section.section_name === 'google_reviews_section') {
-            homepageData.google_reviews_section = section.section_data as GoogleReviewsSection;
+            homepageData.google_reviews_section = section.section_data as unknown as GoogleReviewsSection;
           } else if (section.section_name === 'delivery_zones') {
-            homepageData.delivery_zones = section.section_data as string[];
+            homepageData.delivery_zones = section.section_data as unknown as string[];
           } else if (section.section_name === 'delivery_map_section') {
-            homepageData.delivery_map_section = section.section_data as DeliveryMapSection;
+            homepageData.delivery_map_section = section.section_data as unknown as DeliveryMapSection;
           } else if (section.section_name === 'order_options') {
-            homepageData.order_options = section.section_data as OrderOption[];
+            homepageData.order_options = section.section_data as unknown as OrderOption[];
           } else if (section.section_name === 'contact_info') {
-            homepageData.contact_info = section.section_data as ContactInfo;
+            homepageData.contact_info = section.section_data as unknown as ContactInfo;
           } else if (section.section_name === 'header_section') {
-            homepageData.header_section = section.section_data as HeaderSection;
+            homepageData.header_section = section.section_data as unknown as HeaderSection;
           } else if (section.section_name === 'footer_section') {
-            homepageData.footer_section = section.section_data as FooterSection;
+            homepageData.footer_section = section.section_data as unknown as FooterSection;
           }
         });
 

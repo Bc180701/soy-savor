@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -184,7 +185,12 @@ const HomepageEditor = () => {
             </CardHeader>
             <CardContent>
               <HeroSectionEditor 
-                data={homepageData.hero_section} 
+                data={{
+                  background_image: homepageData.hero_section.background_image || "",
+                  title: homepageData.hero_section.title || "",
+                  subtitle: homepageData.hero_section.subtitle || "",
+                  overlay_image: homepageData.hero_section.overlay_image || ""
+                }} 
                 onSave={(data) => saveHomepageData('hero_section', data)} 
               />
             </CardContent>
@@ -218,7 +224,14 @@ const HomepageEditor = () => {
             </CardHeader>
             <CardContent>
               <PromotionsEditor 
-                data={homepageData.promotions} 
+                data={homepageData.promotions.map(promo => ({
+                  id: promo.id,
+                  title: promo.title,
+                  description: promo.description,
+                  imageUrl: promo.imageUrl || promo.image_url || "",
+                  buttonText: promo.buttonText,
+                  buttonLink: promo.buttonLink || promo.link || ""
+                }))} 
                 onSave={(data) => saveHomepageData('promotions', data)} 
               />
             </CardContent>
@@ -286,7 +299,10 @@ const HomepageEditor = () => {
             </CardHeader>
             <CardContent>
               <OrderOptionsEditor 
-                data={homepageData.order_options} 
+                data={homepageData.order_options.map(option => ({
+                  ...option,
+                  icon: option.icon || "Truck"
+                }))} 
                 onSave={(data) => saveHomepageData('order_options', data)} 
               />
             </CardContent>
