@@ -86,6 +86,9 @@ const Index = () => {
     );
     return { ...promo, isActive: hasActivePromotion };
   });
+
+  // Check if there are any promotions to display (active promotions or promotions with isActive flag)
+  const hasPromotionsToDisplay = activePromotions.length > 0 || promotionsWithActive.some(promo => promo.isActive);
   
   return (
     <>
@@ -113,29 +116,31 @@ const Index = () => {
       {/* Delivery Map */}
       <DeliveryMap deliveryZones={homepageData?.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones} />
 
-      {/* Promotions */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-6 better-times-gold">Nos Promotions du Moment</h2>
-          {activePromotions.length > 0 && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <h3 className="text-lg font-semibold text-red-800 mb-2">🎉 Promotions actives aujourd'hui :</h3>
-              <ul className="space-y-1">
-                {activePromotions.map(promo => (
-                  <li key={promo.id} className="text-red-700">
-                    • {promo.title} - {promo.description}
-                  </li>
-                ))}
-              </ul>
+      {/* Promotions - Only show if there are promotions to display */}
+      {hasPromotionsToDisplay && (
+        <section className="py-12">
+          <div className="container mx-auto px-4">
+            <h2 className="text-2xl font-bold mb-6 better-times-gold">Nos Promotions du Moment</h2>
+            {activePromotions.length > 0 && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h3 className="text-lg font-semibold text-red-800 mb-2">🎉 Promotions actives aujourd'hui :</h3>
+                <ul className="space-y-1">
+                  {activePromotions.map(promo => (
+                    <li key={promo.id} className="text-red-700">
+                      • {promo.title} - {promo.description}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {promotionsWithActive.map((promotion) => (
+                <PromotionCard key={promotion.id} promotion={promotion} />
+              ))}
             </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {promotionsWithActive.map((promotion) => (
-              <PromotionCard key={promotion.id} promotion={promotion} />
-            ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </>
   );
 };
