@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { ContactInfo } from "@/hooks/useHomepageData";
+import { ContactInfo, useHomepageData } from "@/hooks/useHomepageData";
 
 const Footer = () => {
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
@@ -10,6 +11,7 @@ const Footer = () => {
     phone: "04 90 00 00 00",
     email: "contact@sushieats.fr"
   });
+  const { data: homepageData } = useHomepageData();
 
   useEffect(() => {
     const fetchContactInfo = async () => {
@@ -36,6 +38,8 @@ const Footer = () => {
     fetchContactInfo();
   }, []);
 
+  const footerData = homepageData?.footer_section;
+
   return (
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto py-12 px-4">
@@ -46,13 +50,13 @@ const Footer = () => {
               <div className="flex items-center">
                 <img 
                   src="/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png" 
-                  alt="SushiEats Logo" 
+                  alt={homepageData?.header_section?.logo_alt || "SushiEats Logo"} 
                   className="h-12 w-auto"
                 />
               </div>
             </Link>
             <p className="text-gray-400 text-sm mt-2">
-              Découvrez l'art du sushi à Châteaurenard. Des produits frais préparés avec soin pour une expérience gourmande unique.
+              {footerData?.company_description || "Découvrez l'art du sushi à Châteaurenard. Des produits frais préparés avec soin pour une expérience gourmande unique."}
             </p>
             <div className="flex space-x-4 mt-4">
               <a
@@ -60,7 +64,7 @@ const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-gold-500 transition-colors"
-                aria-label="Facebook"
+                aria-label={footerData?.social_links?.facebook_aria || "Facebook"}
               >
                 <Facebook size={20} />
               </a>
@@ -69,7 +73,7 @@ const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-gold-500 transition-colors"
-                aria-label="Instagram"
+                aria-label={footerData?.social_links?.instagram_aria || "Instagram"}
               >
                 <Instagram size={20} />
               </a>
@@ -78,7 +82,7 @@ const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-gold-500 transition-colors"
-                aria-label="LinkedIn"
+                aria-label={footerData?.social_links?.linkedin_aria || "LinkedIn"}
               >
                 <Linkedin size={20} />
               </a>
@@ -87,26 +91,28 @@ const Footer = () => {
 
           {/* Navigation */}
           <div>
-            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">Navigation</h4>
+            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">
+              {footerData?.navigation_title || "Navigation"}
+            </h4>
             <ul className="space-y-2">
               <li>
                 <Link to="/" className="text-gray-400 hover:text-white transition-colors">
-                  Accueil
+                  {homepageData?.header_section?.nav_links?.home || "Accueil"}
                 </Link>
               </li>
               <li>
                 <Link to="/menu" className="text-gray-400 hover:text-white transition-colors">
-                  Notre Menu
+                  {homepageData?.header_section?.nav_links?.menu || "Notre Menu"}
                 </Link>
               </li>
               <li>
                 <Link to="/commander" className="text-gray-400 hover:text-white transition-colors">
-                  Commander en ligne
+                  {homepageData?.header_section?.nav_links?.order || "Commander en ligne"}
                 </Link>
               </li>
               <li>
                 <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">
-                  Contact
+                  {homepageData?.header_section?.nav_links?.contact || "Contact"}
                 </Link>
               </li>
             </ul>
@@ -114,37 +120,39 @@ const Footer = () => {
 
           {/* Horaires */}
           <div>
-            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">Horaires d'ouverture</h4>
+            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">
+              {footerData?.hours_title || "Horaires d'ouverture"}
+            </h4>
             <div className="flex items-start space-x-2 text-gray-400">
               <Clock size={18} className="mt-1 flex-shrink-0" />
               <div className="text-sm space-y-2">
                 <div className="flex justify-between">
                   <span className="font-medium text-red-400">Lundi:</span>
-                  <span className="ml-2">Fermé</span>
+                  <span className="ml-2">{footerData?.opening_hours?.monday || "Fermé"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Mardi:</span>
-                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                  <span className="ml-2">{footerData?.opening_hours?.tuesday || "11:00–14:00, 18:00–22:00"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Mercredi:</span>
-                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                  <span className="ml-2">{footerData?.opening_hours?.wednesday || "11:00–14:00, 18:00–22:00"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Jeudi:</span>
-                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                  <span className="ml-2">{footerData?.opening_hours?.thursday || "11:00–14:00, 18:00–22:00"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Vendredi:</span>
-                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                  <span className="ml-2">{footerData?.opening_hours?.friday || "11:00–14:00, 18:00–22:00"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Samedi:</span>
-                  <span className="ml-2">11:00–14:00, 18:00–22:00</span>
+                  <span className="ml-2">{footerData?.opening_hours?.saturday || "11:00–14:00, 18:00–22:00"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium text-red-400">Dimanche:</span>
-                  <span className="ml-2">Fermé</span>
+                  <span className="ml-2">{footerData?.opening_hours?.sunday || "Fermé"}</span>
                 </div>
               </div>
             </div>
@@ -152,7 +160,9 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">Contact</h4>
+            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">
+              {footerData?.contact_title || "Contact"}
+            </h4>
             <div className="space-y-3">
               <div className="flex items-start space-x-2 text-gray-400">
                 <MapPin size={18} className="mt-1 flex-shrink-0" />
@@ -188,17 +198,17 @@ const Footer = () => {
 
         <div className="border-t border-gray-800 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-500 text-sm">
-            &copy; {new Date().getFullYear()} SushiEats. Tous droits réservés.
+            &copy; {new Date().getFullYear()} {footerData?.copyright_text || "SushiEats. Tous droits réservés."}
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <Link to="/mentions-legales" className="text-gray-500 text-sm hover:text-white transition-colors">
-              Mentions légales
+              {footerData?.legal_links?.mentions_legales || "Mentions légales"}
             </Link>
             <Link to="/cgv" className="text-gray-500 text-sm hover:text-white transition-colors">
-              CGV
+              {footerData?.legal_links?.cgv || "CGV"}
             </Link>
             <Link to="/confidentialite" className="text-gray-500 text-sm hover:text-white transition-colors">
-              Politique de confidentialité
+              {footerData?.legal_links?.confidentialite || "Politique de confidentialité"}
             </Link>
           </div>
         </div>

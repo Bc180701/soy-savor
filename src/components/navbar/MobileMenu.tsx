@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield } from "lucide-react";
+import { useHomepageData } from "@/hooks/useHomepageData";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -19,6 +19,7 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMen
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isAdmin, setIsAdmin] = useState(false);
+  const { data: homepageData } = useHomepageData();
   
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -43,6 +44,24 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMen
     
     checkAdminStatus();
   }, [user]);
+  
+  // Use configured texts or fall back to defaults
+  const getNavLinkText = (path: string, defaultText: string) => {
+    if (!homepageData?.header_section) return defaultText;
+    
+    switch (path) {
+      case "/":
+        return homepageData.header_section.nav_links.home;
+      case "/menu":
+        return homepageData.header_section.nav_links.menu;
+      case "/commander":
+        return homepageData.header_section.nav_links.order;
+      case "/contact":
+        return homepageData.header_section.nav_links.contact;
+      default:
+        return defaultText;
+    }
+  };
   
   if (!isOpen || !isMobile) return null;
   
@@ -81,7 +100,7 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMen
                 }`}
                 onClick={handleLinkClick}
               >
-                {link.name}
+                {getNavLinkText(link.path, link.name)}
               </Link>
             ))}
             {user ? (
@@ -116,12 +135,12 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMen
                 className="text-xl py-3 border-b border-gray-100 text-gray-800"
                 onClick={handleLinkClick}
               >
-                Se connecter
+                {homepageData?.header_section?.buttons?.login || "Se connecter"}
               </Link>
             )}
             <Link to="/commander" className="pt-4" onClick={handleLinkClick}>
               <Button className="bg-gold-500 hover:bg-gold-600 text-black w-full py-6 text-lg">
-                Commander maintenant
+                {homepageData?.header_section?.buttons?.order || "Commander maintenant"}
               </Button>
             </Link>
           </nav>

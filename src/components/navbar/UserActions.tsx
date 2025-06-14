@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, User, LogOut, Shield } from "lucide-react";
@@ -6,6 +5,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useHomepageData } from "@/hooks/useHomepageData";
 
 interface UserActionsProps {
   user: any;
@@ -16,6 +16,7 @@ const UserActions = ({ user, handleLogout }: UserActionsProps) => {
   const cart = useCart();
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
+  const { data: homepageData } = useHomepageData();
   
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -77,7 +78,7 @@ const UserActions = ({ user, handleLogout }: UserActionsProps) => {
       ) : (
         <Link to="/login">
           <Button className="bg-white text-black border border-gold-200 hover:bg-gray-50">
-            Se connecter
+            {homepageData?.header_section?.buttons?.login || "Se connecter"}
           </Button>
         </Link>
       )}
@@ -95,7 +96,7 @@ const UserActions = ({ user, handleLogout }: UserActionsProps) => {
       </Link>
       <Link to="/commander">
         <Button className="bg-gold-500 hover:bg-gold-600 text-black">
-          Commander
+          {homepageData?.header_section?.buttons?.order || "Commander"}
         </Button>
       </Link>
     </div>

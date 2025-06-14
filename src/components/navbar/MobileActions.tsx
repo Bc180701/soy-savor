@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
+import { useHomepageData } from "@/hooks/useHomepageData";
 
 interface MobileActionsProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface MobileActionsProps {
 
 const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
   const cart = useCart();
+  const { data: homepageData } = useHomepageData();
   
   return (
     <div className="md:hidden flex items-center justify-between w-full">
@@ -31,7 +33,7 @@ const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
       {/* Bouton Commander au centre */}
       <Link to="/commander">
         <Button className="bg-gold-500 hover:bg-gold-600 text-black px-4 py-2 text-sm font-medium">
-          Commander
+          {homepageData?.header_section?.buttons?.order || "Commander"}
         </Button>
       </Link>
 

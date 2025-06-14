@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +14,8 @@ import OrderOptionsEditor from "./homepage-editor/OrderOptionsEditor";
 import CustomCreationSectionEditor from "./homepage-editor/CustomCreationSectionEditor";
 import ContactInfoEditor from "./homepage-editor/ContactInfoEditor";
 import GoogleReviewsEditor from "./homepage-editor/GoogleReviewsEditor";
+import HeaderSectionEditor from "./homepage-editor/HeaderSectionEditor";
+import FooterSectionEditor from "./homepage-editor/FooterSectionEditor";
 import { HomepageData, useHomepageData } from "@/hooks/useHomepageData";
 
 const HomepageEditor = () => {
@@ -127,6 +128,8 @@ const HomepageEditor = () => {
         className="w-full"
       >
         <TabsList className="mb-4">
+          <TabsTrigger value="header">Header</TabsTrigger>
+          <TabsTrigger value="footer">Footer</TabsTrigger>
           <TabsTrigger value="hero">Section Principale</TabsTrigger>
           <TabsTrigger value="custom_creation">Création Personnalisée</TabsTrigger>
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
@@ -136,6 +139,40 @@ const HomepageEditor = () => {
           <TabsTrigger value="order">Options de commande</TabsTrigger>
           <TabsTrigger value="contact">Coordonnées</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="header">
+          <Card>
+            <CardHeader>
+              <CardTitle>Header du site</CardTitle>
+              <CardDescription>
+                Personnalisez les textes du header (navigation, boutons, logo).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HeaderSectionEditor 
+                data={homepageData.header_section} 
+                onSave={(data) => saveHomepageData('header_section', data)} 
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="footer">
+          <Card>
+            <CardHeader>
+              <CardTitle>Footer du site</CardTitle>
+              <CardDescription>
+                Personnalisez les textes du footer (horaires, liens, descriptions).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FooterSectionEditor 
+                data={homepageData.footer_section} 
+                onSave={(data) => saveHomepageData('footer_section', data)} 
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="hero">
           <Card>
