@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,11 +59,33 @@ const Navbar = () => {
     try {
       console.log("Tentative de déconnexion...");
       
-      // Utilisation de l'option scope: 'global' pour assurer une déconnexion complète
+      // Tenter une déconnexion normale d'abord
       const { error } = await supabase.auth.signOut({
         scope: 'global'
       });
       
+      // Si l'erreur indique que l'utilisateur n'existe pas, on force la déconnexion locale
+      if (error && (error.message.includes("User from sub claim in JWT does not exist") || error.status === 403)) {
+        console.log("Utilisateur inexistant côté serveur, forçage de la déconnexion locale...");
+        
+        // Supprimer manuellement les données de session locale
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.removeItem('supabase.auth.token');
+        
+        // Forcer la mise à jour de l'état
+        setUser(null);
+        
+        toast({
+          title: "Déconnexion réussie",
+          description: "Vous avez été déconnecté avec succès",
+        });
+        
+        // Rediriger vers la page d'accueil
+        navigate("/");
+        return;
+      }
+      
+      // Si une autre erreur survient, la signaler
       if (error) {
         console.error("Erreur lors de la déconnexion:", error);
         toast({
@@ -75,7 +98,7 @@ const Navbar = () => {
       
       console.log("Déconnexion réussie");
       
-      // Si la déconnexion réussit, on affiche un toast
+      // Si la déconnexion réussit normalement
       toast({
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté avec succès",
@@ -88,11 +111,18 @@ const Navbar = () => {
       navigate("/");
     } catch (err) {
       console.error("Exception lors de la déconnexion:", err);
+      
+      // En cas d'exception, forcer la déconnexion locale
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.removeItem('supabase.auth.token');
+      setUser(null);
+      
       toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur inattendue est survenue lors de la déconnexion",
+        title: "Déconnexion forcée",
+        description: "Vous avez été déconnecté localement",
       });
+      
+      navigate("/");
     }
   };
 
