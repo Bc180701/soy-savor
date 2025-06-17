@@ -33,35 +33,32 @@ const AdminManager = () => {
   const fetchAdminUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      const { data: roles, error: rolesError } = await supabase
+      // Récupérer les utilisateurs avec le rôle administrateur depuis la table user_roles
+      const { data: adminRoles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id")
         .eq("role", "administrateur");
 
       if (rolesError) throw rolesError;
 
-      if (roles && roles.length > 0) {
-        // Instead of trying to use userIds parameter, we'll fetch users individually
-        const adminUsersData: AdminUser[] = [];
-        
-        for (const role of roles) {
-          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(role.user_id);
-          
-          if (userError) {
-            console.error(`Error fetching user ${role.user_id}:`, userError);
-            continue;
-          }
-          
-          if (userData && userData.user) {
-            adminUsersData.push({
-              id: userData.user.id,
-              email: userData.user.email || "",
-              created_at: userData.user.created_at,
-            });
-          }
+      if (adminRoles && adminRoles.length > 0) {
+        // Pour chaque rôle d'admin, récupérer les informations depuis auth_users_view
+        const { data: authUsers, error: usersError } = await supabase
+          .from("auth_users_view")
+          .select("id, email, created_at")
+          .in("id", adminRoles.map(role => role.user_id));
+
+        if (usersError) {
+          console.error("Erreur lors de la récupération des utilisateurs:", usersError);
+          setAdminUsers([]);
+        } else {
+          const adminUsersData: AdminUser[] = (authUsers || []).map(user => ({
+            id: user.id!,
+            email: user.email!,
+            created_at: user.created_at!
+          }));
+          setAdminUsers(adminUsersData);
         }
-        
-        setAdminUsers(adminUsersData);
       } else {
         setAdminUsers([]);
       }
@@ -72,6 +69,7 @@ const AdminManager = () => {
         title: "Erreur",
         description: "Impossible de récupérer la liste des administrateurs.",
       });
+      setAdminUsers([]);
     } finally {
       setIsLoadingUsers(false);
     }
@@ -87,51 +85,53 @@ const AdminManager = () => {
     setIsLoading(true);
     
     try {
-      // Form validation
+      // Validation
       if (!email || !password) {
         throw new Error("L'email et le mot de passe sont requis");
       }
       
-      if (password.length < 8) {
-        throw new Error("Le mot de passe doit contenir au moins 8 caractères");
+      if (password.length < 6) {
+        throw new Error("Le mot de passe doit contenir au moins 6 caractères");
       }
 
-      console.log("Creating admin user with email:", email);
+      console.log("Création d'un nouvel administrateur:", email);
 
-      // 1. Créer l'utilisateur avec l'API d'administration de Supabase
-      const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+      // 1. Créer l'utilisateur avec signUp
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: email,
         password: password,
-        email_confirm: true // Confirmer automatiquement l'email
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
 
-      if (userError) {
-        console.error("Error creating user:", userError);
-        throw new Error(`Erreur lors de la création du compte: ${userError.message}`);
+      if (signUpError) {
+        console.error("Erreur lors de la création:", signUpError);
+        throw new Error(`Erreur lors de la création du compte: ${signUpError.message}`);
       }
 
-      if (!userData?.user?.id) {
-        throw new Error("Aucun ID utilisateur retourné après la création");
+      if (!signUpData.user?.id) {
+        throw new Error("Aucun utilisateur créé");
       }
 
-      console.log("User created successfully:", userData.user.id);
+      console.log("Utilisateur créé avec succès:", signUpData.user.id);
 
       // 2. Assigner le rôle d'administrateur
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
-          user_id: userData.user.id,
+          user_id: signUpData.user.id,
           role: "administrateur"
         });
 
       if (roleError) {
-        console.error("Error assigning admin role:", roleError);
+        console.error("Erreur lors de l'assignation du rôle:", roleError);
         throw new Error(`Erreur lors de l'assignation du rôle: ${roleError.message}`);
       }
 
-      console.log("Admin role assigned successfully");
+      console.log("Rôle administrateur assigné avec succès");
 
-      // 3. Envoyer l'email de bienvenue (optionnel, ne bloque pas si ça échoue)
+      // 3. Envoyer l'email de bienvenue (optionnel)
       try {
         const { data: authData } = await supabase.auth.getSession();
         const accessToken = authData?.session?.access_token;
@@ -150,20 +150,20 @@ const AdminManager = () => {
           });
 
           if (!emailResponse.ok) {
-            console.warn("Warning: Failed to send welcome email");
+            console.warn("Attention: L'envoi de l'email de bienvenue a échoué");
           } else {
-            console.log("Welcome email sent successfully");
+            console.log("Email de bienvenue envoyé avec succès");
           }
         }
       } catch (emailError) {
-        console.warn("Warning: Email sending failed:", emailError);
-        // Continue without failing the whole process
+        console.warn("Attention: Échec de l'envoi de l'email:", emailError);
+        // Ne pas faire échouer le processus pour l'email
       }
 
-      // 4. Afficher le message de succès et actualiser la liste
+      // 4. Succès
       toast({
         title: "Administrateur créé",
-        description: `${email} a été ajouté comme administrateur avec succès.`,
+        description: `${email} a été ajouté comme administrateur avec succès. Un email de confirmation a été envoyé.`,
       });
       
       // Reset form
@@ -188,7 +188,7 @@ const AdminManager = () => {
   // Handle delete admin
   const handleDeleteAdmin = async (userId: string, userEmail: string) => {
     try {
-      // 1. Remove admin role
+      // Supprimer le rôle admin
       const { error: roleError } = await supabase
         .from("user_roles")
         .delete()
@@ -197,7 +197,7 @@ const AdminManager = () => {
 
       if (roleError) throw roleError;
 
-      // 2. Update the UI
+      // Mettre à jour l'interface
       toast({
         title: "Droits admin révoqués",
         description: `Les droits d'administrateur ont été retirés pour ${userEmail}.`,
@@ -236,11 +236,11 @@ const AdminManager = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="Minimum 8 caractères"
+                placeholder="Minimum 6 caractères"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={8}
+                minLength={6}
               />
             </div>
             
