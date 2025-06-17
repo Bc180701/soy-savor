@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -127,11 +126,9 @@ const Register = () => {
         // Envoyer l'email de bienvenue avec le code promo
         await sendWelcomeEmail(email, promoCode);
         
-        let successMessage = "Vérifiez votre email pour confirmer votre compte et profitez de 10% de réduction sur votre prochaine commande!";
-        
         toast({
           title: "Inscription réussie",
-          description: successMessage,
+          description: "Votre compte a été créé avec succès! Vous pouvez maintenant vous connecter et profitez de 10% de réduction sur votre prochaine commande!",
         });
         navigate("/login");
       }

@@ -96,13 +96,10 @@ const AdminManager = () => {
 
       console.log("Création d'un nouvel administrateur:", email);
 
-      // 1. Créer l'utilisateur avec signUp
+      // 1. Créer l'utilisateur avec signUp (confirmation email désactivée)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: email,
-        password: password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
+        password: password
       });
 
       if (signUpError) {
@@ -163,7 +160,7 @@ const AdminManager = () => {
       // 4. Succès
       toast({
         title: "Administrateur créé",
-        description: `${email} a été ajouté comme administrateur avec succès. Un email de confirmation a été envoyé.`,
+        description: `${email} a été ajouté comme administrateur avec succès. Le compte est directement utilisable.`,
       });
       
       // Reset form
@@ -257,6 +254,10 @@ const AdminManager = () => {
                 </span>
               )}
             </Button>
+            
+            <div className="text-sm text-gray-600 bg-green-50 p-3 rounded">
+              <strong>Info:</strong> La confirmation par email est désactivée. Le compte sera directement utilisable après création.
+            </div>
           </div>
         </form>
       </div>

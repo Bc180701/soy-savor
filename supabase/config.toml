@@ -1,6 +1,9 @@
 
 project_id = "tdykegnmomyyucbhslok"
 
+[auth]
+enable_confirmations = false
+
 [functions.send-order-notification]
 verify_jwt = false
 
