@@ -218,6 +218,7 @@ const ProductsTable = () => {
             <TableHead>Nom</TableHead>
             <TableHead>Prix</TableHead>
             <TableHead>Catégorie</TableHead>
+            <TableHead>Badges</TableHead>
             <TableHead>Temps (min)</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead>Actions</TableHead>
@@ -245,6 +246,30 @@ const ProductsTable = () => {
                 <TableCell>
                   {categories.find(c => c.id === product.category_id)?.name || "Non catégorisé"}
                 </TableCell>
+                <TableCell>
+                  <div className="flex gap-1 flex-wrap">
+                    {product.is_vegetarian && (
+                      <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
+                        Végétarien
+                      </Badge>
+                    )}
+                    {product.is_spicy && (
+                      <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                        Épicé
+                      </Badge>
+                    )}
+                    {product.is_gluten_free && (
+                      <Badge variant="glutenfree" className="text-xs">
+                        Sans gluten
+                      </Badge>
+                    )}
+                    {product.is_best_seller && (
+                      <Badge className="bg-gold-600 text-white text-xs">
+                        Best-seller
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{product.prep_time || 10}</TableCell>
                 <TableCell>
                   <Badge variant={product.is_new ? "default" : "secondary"}>
@@ -268,7 +293,7 @@ const ProductsTable = () => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
+              <TableCell colSpan={8} className="h-24 text-center">
                 {searchQuery || categoryFilter !== "all" || !showInactive ? (
                   <div className="text-muted-foreground">Aucun produit ne correspond aux critères de recherche</div>
                 ) : (

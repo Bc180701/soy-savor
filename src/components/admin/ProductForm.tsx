@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -48,6 +47,7 @@ const productFormSchema = z.object({
   is_spicy: z.boolean().default(false),
   is_new: z.boolean().default(false),
   is_best_seller: z.boolean().default(false),
+  is_gluten_free: z.boolean().default(false),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -77,6 +77,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     is_spicy: product?.is_spicy || false,
     is_new: product?.is_new || false,
     is_best_seller: product?.is_best_seller || false,
+    is_gluten_free: product?.is_gluten_free || false,
   };
 
   const form = useForm<ProductFormValues>({
@@ -151,6 +152,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_spicy: data.is_spicy,
             is_new: data.is_new,
             is_best_seller: data.is_best_seller,
+            is_gluten_free: data.is_gluten_free,
             updated_at: new Date().toISOString(),
           })
           .eq("id", product.id)
@@ -187,6 +189,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_spicy: data.is_spicy,
             is_new: data.is_new,
             is_best_seller: data.is_best_seller,
+            is_gluten_free: data.is_gluten_free,
           })
           .select();
 
@@ -401,7 +404,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
           />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <FormField
             control={form.control}
             name="is_vegetarian"
@@ -433,6 +436,24 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
                 </FormControl>
                 <div className="space-y-1 leading-none">
                   <FormLabel>Épicé</FormLabel>
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="is_gluten_free"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Sans gluten</FormLabel>
                 </div>
               </FormItem>
             )}
