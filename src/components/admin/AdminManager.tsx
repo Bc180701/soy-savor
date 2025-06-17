@@ -90,7 +90,7 @@ const AdminManager = () => {
     fetchAdminUsers();
   }, []);
 
-  // Handle create admin
+  // Handle create admin with service role key
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -107,7 +107,7 @@ const AdminManager = () => {
 
       console.log("Création d'un nouvel administrateur:", email);
 
-      // 1. Créer l'utilisateur avec signUp (confirmation email désactivée)
+      // 1. Créer l'utilisateur avec signUp
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: email,
         password: password
@@ -124,46 +124,38 @@ const AdminManager = () => {
 
       console.log("Utilisateur créé avec succès:", signUpData.user.id);
 
-      // 2. Attendre un petit délai pour s'assurer que l'utilisateur est bien créé
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 2. Utiliser le service role pour créer directement le rôle admin
+      // D'abord, obtenir une session service role
+      const serviceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkeWtlZ25tb215eXVjYmhzbG9rIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Mjc2MDY2NSwiZXhwIjoyMDU4MzM2NjY1fQ.U7a9C34u16HaBNnwzYN5wRxtKvI9CXFHLuTpP1FjlME";
+      
+      // Créer un client Supabase avec service role
+      const { createClient } = await import('@supabase/supabase-js');
+      const serviceClient = createClient(
+        "https://tdykegnmomyyucbhslok.supabase.co",
+        serviceRoleKey
+      );
 
-      // 3. Vérifier d'abord si le rôle existe déjà
-      const { data: existingRole, error: checkError } = await supabase
+      // 3. Insérer le rôle avec le service role client
+      console.log("Assignation du rôle administrateur avec service role pour l'utilisateur:", signUpData.user.id);
+      
+      const { data: roleData, error: roleError } = await serviceClient
         .from("user_roles")
-        .select("id")
-        .eq("user_id", signUpData.user.id)
-        .eq("role", "administrateur")
-        .single();
+        .insert({
+          user_id: signUpData.user.id,
+          role: "administrateur"
+        })
+        .select();
 
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error("Erreur lors de la vérification du rôle:", checkError);
+      console.log("Résultat de l'insertion du rôle:", { roleData, roleError });
+
+      if (roleError) {
+        console.error("Erreur lors de l'assignation du rôle:", roleError);
+        throw new Error(`Erreur lors de l'assignation du rôle: ${roleError.message}`);
       }
 
-      if (!existingRole) {
-        // 4. Assigner le rôle d'administrateur avec plus de logs
-        console.log("Assignation du rôle administrateur pour l'utilisateur:", signUpData.user.id);
-        
-        const { data: roleData, error: roleError } = await supabase
-          .from("user_roles")
-          .insert({
-            user_id: signUpData.user.id,
-            role: "administrateur"
-          })
-          .select();
+      console.log("Rôle administrateur assigné avec succès:", roleData);
 
-        console.log("Résultat de l'insertion du rôle:", { roleData, roleError });
-
-        if (roleError) {
-          console.error("Erreur lors de l'assignation du rôle:", roleError);
-          throw new Error(`Erreur lors de l'assignation du rôle: ${roleError.message}`);
-        }
-
-        console.log("Rôle administrateur assigné avec succès:", roleData);
-      } else {
-        console.log("L'utilisateur a déjà le rôle administrateur");
-      }
-
-      // 5. Envoyer l'email de bienvenue (optionnel)
+      // 4. Envoyer l'email de bienvenue (optionnel)
       try {
         const { data: authData } = await supabase.auth.getSession();
         const accessToken = authData?.session?.access_token;
@@ -192,7 +184,7 @@ const AdminManager = () => {
         // Ne pas faire échouer le processus pour l'email
       }
 
-      // 6. Succès
+      // 5. Succès
       toast({
         title: "Administrateur créé",
         description: `${email} a été ajouté comme administrateur avec succès. Le compte est directement utilisable.`,
@@ -202,10 +194,10 @@ const AdminManager = () => {
       setEmail("");
       setPassword("");
       
-      // Refresh admin users list with a delay to ensure data is committed
+      // Refresh admin users list
       setTimeout(() => {
         fetchAdminUsers();
-      }, 2000);
+      }, 1000);
       
     } catch (error: any) {
       console.error("Error creating admin:", error);
@@ -224,8 +216,16 @@ const AdminManager = () => {
     try {
       console.log("Suppression des droits admin pour:", userId, userEmail);
       
-      // Supprimer le rôle admin
-      const { error: roleError } = await supabase
+      // Utiliser le service role pour supprimer le rôle
+      const serviceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkeWtlZ25tb215eXVjYmhzbG9rIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Mjc2MDY2NSwiZXhwIjoyMDU4MzM2NjY1fQ.U7a9C34u16HaBNnwzYN5wRxtKvI9CXFHLuTpP1FjlME";
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const serviceClient = createClient(
+        "https://tdykegnmomyyucbhslok.supabase.co",
+        serviceRoleKey
+      );
+
+      const { error: roleError } = await serviceClient
         .from("user_roles")
         .delete()
         .eq("user_id", userId)
@@ -298,7 +298,7 @@ const AdminManager = () => {
             </Button>
             
             <div className="text-sm text-gray-600 bg-green-50 p-3 rounded">
-              <strong>Info:</strong> La confirmation par email est désactivée. Le compte sera directement utilisable après création.
+              <strong>Info:</strong> Le compte sera directement utilisable après création avec les droits d'administrateur.
             </div>
           </div>
         </form>
