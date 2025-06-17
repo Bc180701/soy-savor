@@ -22,6 +22,8 @@ const badgeVariants = cva(
           "border-transparent bg-purple-600 text-white hover:bg-purple-700",
         exclusive:
           "border-transparent bg-orange-500 text-white hover:bg-orange-600",
+        glutenfree:
+          "border-transparent bg-blue-500 text-white hover:bg-blue-600",
       },
     },
     defaultVariants: {

@@ -107,7 +107,7 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                           {/* Contenu */}
                           <div className="p-3 flex flex-col flex-1">
                             {/* Badges */}
-                            <div className="flex gap-1 mb-2">
+                            <div className="flex gap-1 mb-2 flex-wrap">
                               {item.category && (
                                 <Badge 
                                   variant="secondary" 
@@ -118,6 +118,21 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                                    item.category === "maki" ? "MAKI" :
                                    item.category === "plateaux" ? "PLATEAU" :
                                    item.category}
+                                </Badge>
+                              )}
+                              {item.isVegetarian && (
+                                <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
+                                  Végétarien
+                                </Badge>
+                              )}
+                              {item.isSpicy && (
+                                <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                                  Épicé
+                                </Badge>
+                              )}
+                              {item.isGlutenFree && (
+                                <Badge variant="glutenfree" className="text-xs">
+                                  Sans gluten
                                 </Badge>
                               )}
                             </div>
@@ -194,7 +209,7 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 {/* Badges */}
-                                <div className="flex gap-2 mb-2">
+                                <div className="flex gap-2 mb-2 flex-wrap">
                                   {item.category && (
                                     <Badge 
                                       variant="secondary" 
@@ -215,6 +230,16 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                                   {item.isVegetarian && (
                                     <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
                                       Végétarien
+                                    </Badge>
+                                  )}
+                                  {item.isSpicy && (
+                                    <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                                      Épicé
+                                    </Badge>
+                                  )}
+                                  {item.isGlutenFree && (
+                                    <Badge variant="glutenfree" className="text-xs">
+                                      Sans gluten
                                     </Badge>
                                   )}
                                 </div>

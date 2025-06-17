@@ -1,3 +1,4 @@
+
 export type SushiCategory = 
   | "box" 
   | "plateaux" 
@@ -34,6 +35,7 @@ export interface MenuItem {
   isSpicy?: boolean;
   isNew?: boolean;
   isBestSeller?: boolean;
+  isGlutenFree?: boolean;
   allergens?: string[];
   pieces?: number;
   prepTime?: number;

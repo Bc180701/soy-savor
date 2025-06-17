@@ -45,7 +45,8 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
     isVegetarian: false,
     isSpicy: false,
     isNew: product.is_new,
-    isBestSeller: badgeVariant === "exclusive"
+    isBestSeller: badgeVariant === "exclusive",
+    isGlutenFree: false // Default to false, could be extended to read from product data
   };
 
   const handleAddToCart = (item: MenuItem) => {
@@ -126,6 +127,25 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
 
                 {/* Contenu */}
                 <div className="p-3 flex flex-col flex-1">
+                  {/* Badges supplémentaires */}
+                  <div className="flex gap-1 mb-2 flex-wrap">
+                    {menuItem.isVegetarian && (
+                      <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
+                        Végétarien
+                      </Badge>
+                    )}
+                    {menuItem.isSpicy && (
+                      <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                        Épicé
+                      </Badge>
+                    )}
+                    {menuItem.isGlutenFree && (
+                      <Badge variant="glutenfree" className="text-xs">
+                        Sans gluten
+                      </Badge>
+                    )}
+                  </div>
+
                   {/* Titre et bouton œil */}
                   <div className="flex items-start gap-1 mb-2">
                     <h3 className="text-sm font-semibold text-gray-900 leading-tight flex-1">
@@ -250,6 +270,25 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
                 <div className="flex-1 p-6">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
+                      {/* Badges supplémentaires */}
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        {menuItem.isVegetarian && (
+                          <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
+                            Végétarien
+                          </Badge>
+                        )}
+                        {menuItem.isSpicy && (
+                          <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                            Épicé
+                          </Badge>
+                        )}
+                        {menuItem.isGlutenFree && (
+                          <Badge variant="glutenfree" className="text-xs">
+                            Sans gluten
+                          </Badge>
+                        )}
+                      </div>
+
                       {/* Titre et bouton œil */}
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="text-lg font-semibold text-gray-900">
