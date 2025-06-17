@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { MenuItem, MenuCategory } from "@/types";
-import { menuData } from "@/data/menuData";
 
 export const getMenuData = async (): Promise<MenuCategory[]> => {
   try {
@@ -23,7 +22,6 @@ export const getMenuData = async (): Promise<MenuCategory[]> => {
         *,
         categories!inner(name)
       `)
-      .eq('is_new', true)
       .order('name');
 
     if (productsError) {
@@ -86,48 +84,38 @@ export const initializeCategories = async (): Promise<boolean> => {
       return true;
     }
 
-    // Extraire les catégories uniques du menu de données
-    const categories = Array.from(new Set(menuData.map(item => item.category)))
-      .map((categoryId, index) => {
-        const categoryNames: { [key: string]: string } = {
-          'box': 'Box',
-          'plateaux': 'Plateaux',
-          'yakitori': 'Yakitori',
-          'accompagnements': 'Accompagnements',
-          'desserts': 'Desserts',
-          'gunkan': 'Gunkan',
-          'sashimi': 'Sashimi',
-          'poke': 'Poke Bowl',
-          'chirashi': 'Chirashi',
-          'green': 'Green',
-          'nigiri': 'Nigiri',
-          'signature': 'Signature',
-          'temaki': 'Temaki',
-          'maki_wrap': 'Maki Wrap',
-          'maki': 'Maki',
-          'california': 'California',
-          'crispy': 'Crispy',
-          'spring': 'Spring',
-          'salmon': 'Salmon',
-          'boissons': 'Boissons',
-          'box_du_midi': 'Box du Midi',
-          'custom': 'Personnalisé',
-          'poke_custom': 'Poke Personnalisé'
-        };
+    // Créer les catégories par défaut
+    const defaultCategories = [
+      { id: 'box', name: 'Box', description: null, display_order: 0 },
+      { id: 'plateaux', name: 'Plateaux', description: null, display_order: 1 },
+      { id: 'yakitori', name: 'Yakitori', description: null, display_order: 2 },
+      { id: 'accompagnements', name: 'Accompagnements', description: null, display_order: 3 },
+      { id: 'desserts', name: 'Desserts', description: null, display_order: 4 },
+      { id: 'gunkan', name: 'Gunkan', description: null, display_order: 5 },
+      { id: 'sashimi', name: 'Sashimi', description: null, display_order: 6 },
+      { id: 'poke', name: 'Poke Bowl', description: null, display_order: 7 },
+      { id: 'chirashi', name: 'Chirashi', description: null, display_order: 8 },
+      { id: 'green', name: 'Green', description: null, display_order: 9 },
+      { id: 'nigiri', name: 'Nigiri', description: null, display_order: 10 },
+      { id: 'signature', name: 'Signature', description: null, display_order: 11 },
+      { id: 'temaki', name: 'Temaki', description: null, display_order: 12 },
+      { id: 'maki_wrap', name: 'Maki Wrap', description: null, display_order: 13 },
+      { id: 'maki', name: 'Maki', description: null, display_order: 14 },
+      { id: 'california', name: 'California', description: null, display_order: 15 },
+      { id: 'crispy', name: 'Crispy', description: null, display_order: 16 },
+      { id: 'spring', name: 'Spring', description: null, display_order: 17 },
+      { id: 'salmon', name: 'Salmon', description: null, display_order: 18 },
+      { id: 'boissons', name: 'Boissons', description: null, display_order: 19 },
+      { id: 'box_du_midi', name: 'Box du Midi', description: null, display_order: 20 },
+      { id: 'custom', name: 'Personnalisé', description: null, display_order: 21 },
+      { id: 'poke_custom', name: 'Poke Personnalisé', description: null, display_order: 22 }
+    ];
 
-        return {
-          id: categoryId,
-          name: categoryNames[categoryId] || categoryId,
-          description: null,
-          display_order: index
-        };
-      });
-
-    console.log(`Insertion de ${categories.length} catégories...`);
+    console.log(`Insertion de ${defaultCategories.length} catégories...`);
     
     const { error: insertError } = await supabase
       .from('categories')
-      .insert(categories);
+      .insert(defaultCategories);
 
     if (insertError) {
       console.error('Erreur lors de l\'insertion des catégories:', insertError);
@@ -161,43 +149,7 @@ export const initializeFullMenu = async (): Promise<boolean> => {
       return true;
     }
 
-    // Transformer les données du menu en format pour la base de données
-    const products = menuData.map(item => ({
-      id: item.id,
-      name: item.name,
-      description: item.description || '',
-      price: item.price,
-      image_url: item.imageUrl || null,
-      category_id: item.category,
-      is_vegetarian: item.isVegetarian || false,
-      is_spicy: item.isSpicy || false,
-      is_new: item.isNew !== false, // Par défaut true, sauf si explicitement false
-      is_best_seller: item.isBestSeller || false,
-      is_gluten_free: item.isGlutenFree || false,
-      allergens: item.allergens || [],
-      pieces: item.pieces || null,
-      prep_time: item.prepTime || 10
-    }));
-
-    console.log(`Insertion de ${products.length} produits...`);
-    
-    // Insérer par lots pour éviter les erreurs de timeout
-    const batchSize = 50;
-    for (let i = 0; i < products.length; i += batchSize) {
-      const batch = products.slice(i, i + batchSize);
-      const { error: insertError } = await supabase
-        .from('products')
-        .insert(batch);
-
-      if (insertError) {
-        console.error(`Erreur lors de l'insertion du lot ${i / batchSize + 1}:`, insertError);
-        return false;
-      }
-      
-      console.log(`Lot ${i / batchSize + 1}/${Math.ceil(products.length / batchSize)} inséré avec succès`);
-    }
-
-    console.log('Menu complet initialisé avec succès');
+    console.log('Aucun produit trouvé, l\'initialisation peut être faite via l\'interface admin');
     return true;
   } catch (error) {
     console.error('Erreur lors de l\'initialisation du menu complet:', error);
