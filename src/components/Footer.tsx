@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Mail, Phone, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ContactInfo, useHomepageData } from "@/hooks/useHomepageData";
 
@@ -164,22 +164,6 @@ const Footer = () => {
               {footerData?.contact_title || "Contact"}
             </h4>
             <div className="space-y-3">
-              <div className="flex items-start space-x-2 text-gray-400">
-                <MapPin size={18} className="mt-1 flex-shrink-0" />
-                <a
-                  href={`https://maps.google.com/?q=${encodeURIComponent(contactInfo.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
-                >
-                  {contactInfo.address.split(',').map((part, index) => (
-                    <span key={index}>
-                      {part}
-                      {index < contactInfo.address.split(',').length - 1 && <br />}
-                    </span>
-                  ))}
-                </a>
-              </div>
               <div className="flex items-center space-x-2 text-gray-400">
                 <Phone size={18} className="flex-shrink-0" />
                 <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="hover:text-white transition-colors">
