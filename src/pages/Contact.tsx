@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { Phone, Mail, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,11 +99,6 @@ const Contact = () => {
 
   const contactInfoList = [
     {
-      icon: MapPin,
-      title: "Adresse",
-      details: [contactInfo.address],
-    },
-    {
       icon: Phone,
       title: "Téléphone",
       details: [contactInfo.phone],
@@ -169,12 +164,6 @@ const Contact = () => {
                     </div>
                   </div>
                 ))}
-
-                <div className="mt-8 rounded-lg overflow-hidden h-64">
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <p className="text-gray-600">Carte interactive</p>
-                  </div>
-                </div>
               </div>
             </TabsContent>
             
@@ -288,12 +277,6 @@ const Contact = () => {
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-8 rounded-lg overflow-hidden h-64">
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <p className="text-gray-600">Carte interactive</p>
-              </div>
             </div>
           </div>
 
