@@ -90,6 +90,31 @@ const AdminManager = () => {
     fetchAdminUsers();
   }, []);
 
+  // Fonction pour envoyer l'email de bienvenue admin
+  const sendAdminWelcomeEmail = async (email: string, password: string) => {
+    try {
+      console.log("Envoi de l'email de bienvenue admin à:", email);
+      
+      const { data, error } = await supabase.functions.invoke('send-admin-welcome', {
+        body: {
+          email: email,
+          password: password
+        }
+      });
+
+      if (error) {
+        console.error("Erreur lors de l'envoi de l'email:", error);
+        throw new Error(`Erreur d'envoi d'email: ${error.message}`);
+      }
+
+      console.log("Email de bienvenue admin envoyé avec succès:", data);
+      return data;
+    } catch (error: any) {
+      console.error("Erreur dans sendAdminWelcomeEmail:", error);
+      throw error;
+    }
+  };
+
   // Handle create admin using the database function
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,11 +145,24 @@ const AdminManager = () => {
 
       console.log("Administrateur créé avec succès:", data);
 
-      // Succès
-      toast({
-        title: "Administrateur créé",
-        description: `${email} a été ajouté comme administrateur avec succès.`,
-      });
+      // Envoyer l'email de bienvenue admin
+      try {
+        await sendAdminWelcomeEmail(email, password);
+        
+        toast({
+          title: "Administrateur créé avec succès",
+          description: `${email} a été ajouté comme administrateur et a reçu un email avec ses identifiants.`,
+        });
+      } catch (emailError: any) {
+        console.error("Erreur lors de l'envoi de l'email:", emailError);
+        
+        // L'admin a été créé mais l'email n'a pas pu être envoyé
+        toast({
+          title: "Administrateur créé",
+          description: `${email} a été ajouté comme administrateur, mais l'email de bienvenue n'a pas pu être envoyé. Veuillez lui communiquer ses identifiants manuellement.`,
+          variant: "default"
+        });
+      }
       
       // Reset form
       setEmail("");
@@ -225,7 +263,7 @@ const AdminManager = () => {
             </Button>
             
             <div className="text-sm text-gray-600 bg-green-50 p-3 rounded">
-              <strong>Info:</strong> Le compte sera directement utilisable après création avec les droits d'administrateur.
+              <strong>Info:</strong> Le compte sera directement utilisable après création avec les droits d'administrateur complets. Un email avec les identifiants sera automatiquement envoyé.
             </div>
           </div>
         </form>
