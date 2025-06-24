@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -228,11 +227,12 @@ const AdminManager = () => {
     }
   };
 
-  // Handle delete admin
+  // Handle delete admin - nouvelle version avec suppression complète
   const handleDeleteAdmin = async (userId: string, userEmail: string) => {
     try {
-      console.log("Suppression des droits admin pour:", userId, userEmail);
+      console.log("Suppression complète de l'admin:", userId, userEmail);
       
+      // 1. Supprimer le rôle administrateur
       const { error: roleError } = await supabase
         .from("user_roles")
         .delete()
@@ -244,14 +244,44 @@ const AdminManager = () => {
         throw roleError;
       }
 
-      // Mettre à jour l'interface
-      toast({
-        title: "Droits admin révoqués",
-        description: `Les droits d'administrateur ont été retirés pour ${userEmail}.`,
+      // 2. Supprimer le profil
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      if (profileError) {
+        console.error("Erreur lors de la suppression du profil:", profileError);
+      }
+
+      // 3. Supprimer les adresses
+      const { error: addressError } = await supabase
+        .from("user_addresses")
+        .delete()
+        .eq("user_id", userId);
+
+      if (addressError) {
+        console.error("Erreur lors de la suppression des adresses:", addressError);
+      }
+
+      // 4. Appeler la fonction edge pour supprimer le compte auth
+      const { error: deleteError } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
       });
+
+      if (deleteError) {
+        console.error("Erreur lors de la suppression du compte:", deleteError);
+        throw new Error(`Impossible de supprimer le compte: ${deleteError.message}`);
+      }
+
+      toast({
+        title: "Administrateur supprimé",
+        description: `L'administrateur ${userEmail} a été complètement supprimé.`,
+      });
+
       fetchAdminUsers();
     } catch (error: any) {
-      console.error("Error removing admin role:", error);
+      console.error("Error removing admin:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -354,7 +384,8 @@ const AdminManager = () => {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir retirer les droits d'administrateur pour {admin.email} ? Cette action ne supprime pas le compte utilisateur, seulement ses droits.
+                            Êtes-vous sûr de vouloir supprimer définitivement l'administrateur {admin.email} ? 
+                            Cette action supprimera complètement le compte et toutes ses données. Cette action ne peut pas être annulée.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -363,7 +394,7 @@ const AdminManager = () => {
                             onClick={() => handleDeleteAdmin(admin.id, admin.email)}
                             className="bg-red-600 hover:bg-red-700 text-white"
                           >
-                            Supprimer
+                            Supprimer définitivement
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download, Search, Loader2, ChevronDown, ChevronUp, Phone, Mail, MapPin, FileText, ShoppingBag } from "lucide-react";
+import { Download, Search, Loader2, ChevronDown, ChevronUp, Phone, Mail, MapPin, FileText, ShoppingBag, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -13,6 +13,7 @@ import {
   CollapsibleTrigger
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { getAllUsers, getUserDetails, exportUsersData } from "@/services/authService";
 
 type AuthUser = {
@@ -345,6 +346,67 @@ const UsersList = () => {
     ));
   };
 
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    try {
+      console.log("Suppression de l'utilisateur:", userId, userEmail);
+      
+      // 1. Supprimer les données utilisateur liées
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      if (profileError) {
+        console.error("Erreur lors de la suppression du profil:", profileError);
+      }
+
+      // 2. Supprimer les adresses
+      const { error: addressError } = await supabase
+        .from("user_addresses")
+        .delete()
+        .eq("user_id", userId);
+
+      if (addressError) {
+        console.error("Erreur lors de la suppression des adresses:", addressError);
+      }
+
+      // 3. Supprimer les rôles
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
+      if (roleError) {
+        console.error("Erreur lors de la suppression des rôles:", roleError);
+      }
+
+      // 4. Appeler la fonction edge pour supprimer le compte auth
+      const { error: deleteError } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
+
+      if (deleteError) {
+        console.error("Erreur lors de la suppression du compte:", deleteError);
+        throw new Error(`Impossible de supprimer le compte: ${deleteError.message}`);
+      }
+
+      toast({
+        title: "Utilisateur supprimé",
+        description: `L'utilisateur ${userEmail} a été complètement supprimé.`,
+      });
+
+      // Rafraîchir la liste
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Erreur lors de la suppression:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer l'utilisateur.",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -381,6 +443,7 @@ const UsersList = () => {
               <TableHead>Dernière connexion</TableHead>
               <TableHead>Points</TableHead>
               <TableHead>Commandes</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -420,6 +483,33 @@ const UsersList = () => {
                       <Badge variant="secondary">
                         {user.totalOrders || 0}
                       </Badge>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur {user.email} ? 
+                              Cette action supprimera toutes ses données (profil, adresses, commandes) et ne peut pas être annulée.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteUser(user.id, user.email)}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              Supprimer définitivement
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                   <CollapsibleContent>
@@ -515,7 +605,7 @@ const UsersList = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-6 text-muted-foreground">
                   {searchQuery ? "Aucun utilisateur ne correspond à votre recherche" : "Aucun utilisateur trouvé"}
                 </TableCell>
               </TableRow>
