@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,36 +117,61 @@ const AdminManager = () => {
   // Handle create admin using the database function
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log("=== DÉBUT CRÉATION ADMIN ===");
+    console.log("Email:", email);
+    console.log("Password length:", password?.length);
+    
     setIsLoading(true);
     
     try {
       // Validation
       if (!email || !password) {
+        console.error("Email ou mot de passe manquant");
         throw new Error("L'email et le mot de passe sont requis");
       }
       
       if (password.length < 6) {
+        console.error("Mot de passe trop court");
         throw new Error("Le mot de passe doit contenir au moins 6 caractères");
       }
 
-      console.log("Création d'un nouvel administrateur:", email);
+      console.log("Validation OK, appel de la fonction RPC...");
 
       // Utiliser la fonction RPC pour créer l'admin directement
-      const { data, error } = await supabase.rpc('create_admin_user', {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_admin_user', {
         admin_email: email,
         admin_password: password
       });
 
-      if (error) {
-        console.error("Erreur lors de la création de l'admin:", error);
-        throw new Error(`Erreur lors de la création du compte: ${error.message}`);
+      console.log("Résultat RPC:", { rpcData, rpcError });
+
+      if (rpcError) {
+        console.error("Erreur RPC:", rpcError);
+        throw new Error(`Erreur lors de la création du compte: ${rpcError.message}`);
       }
 
-      console.log("Administrateur créé avec succès:", data);
+      console.log("Administrateur créé avec succès, envoi de l'email...");
 
       // Envoyer l'email de bienvenue admin
       try {
-        await sendAdminWelcomeEmail(email, password);
+        console.log("Invocation de la fonction send-admin-welcome...");
+        
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-admin-welcome', {
+          body: {
+            email: email,
+            password: password
+          }
+        });
+
+        console.log("Résultat email:", { emailData, emailError });
+
+        if (emailError) {
+          console.error("Erreur lors de l'envoi de l'email:", emailError);
+          throw new Error(`Erreur d'envoi d'email: ${emailError.message}`);
+        }
+
+        console.log("Email envoyé avec succès");
         
         toast({
           title: "Administrateur créé avec succès",
@@ -169,18 +193,20 @@ const AdminManager = () => {
       setPassword("");
       
       // Refresh admin users list
+      console.log("Rafraîchissement de la liste des admins...");
       setTimeout(() => {
         fetchAdminUsers();
       }, 1000);
       
     } catch (error: any) {
-      console.error("Error creating admin:", error);
+      console.error("=== ERREUR CRÉATION ADMIN ===", error);
       toast({
         variant: "destructive",
         title: "Erreur",
         description: error.message || "Une erreur s'est produite lors de la création de l'administrateur.",
       });
     } finally {
+      console.log("=== FIN CRÉATION ADMIN ===");
       setIsLoading(false);
     }
   };
