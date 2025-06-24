@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -136,20 +137,38 @@ const AdminManager = () => {
 
       console.log("Utilisateur créé avec succès, ID:", authData.user.id);
 
-      // Ajouter le rôle administrateur
-      const { error: roleError } = await supabase
+      // Ajouter le rôle administrateur avec plus de logs
+      console.log("Ajout du rôle administrateur pour l'utilisateur:", authData.user.id);
+      const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .insert({
           user_id: authData.user.id,
           role: "administrateur"
-        });
+        })
+        .select(); // Ajouter select pour avoir une confirmation
+
+      console.log("Résultat insertion rôle:", { roleData, roleError });
 
       if (roleError) {
         console.error("Erreur lors de l'ajout du rôle:", roleError);
         throw new Error(`Erreur lors de l'ajout du rôle administrateur: ${roleError.message}`);
       }
 
-      console.log("Rôle administrateur ajouté avec succès");
+      console.log("Rôle administrateur ajouté avec succès:", roleData);
+
+      // Vérification supplémentaire : vérifier que le rôle a bien été ajouté
+      const { data: verifyRole, error: verifyError } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("user_id", authData.user.id)
+        .eq("role", "administrateur");
+
+      console.log("Vérification du rôle ajouté:", { verifyRole, verifyError });
+
+      if (verifyError || !verifyRole || verifyRole.length === 0) {
+        console.error("Le rôle n'a pas été correctement ajouté");
+        throw new Error("Le rôle administrateur n'a pas été correctement ajouté");
+      }
 
       // Envoyer l'email de bienvenue admin
       try {
