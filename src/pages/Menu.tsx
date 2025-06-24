@@ -70,17 +70,11 @@ const Menu = () => {
           setIsInitializing(false);
         }
         
-        // Filtrer les produits actifs dans chaque catégorie
-        const filteredCategories = menuData.map(category => ({
-          ...category,
-          items: category.items.filter(item => item.isNew !== false)
-        }));
-        
-        setCategories(filteredCategories);
+        setCategories(menuData);
         
         // Set the active category to the first one if available
-        if (filteredCategories.length > 0 && !activeCategory) {
-          setActiveCategory(filteredCategories[0].id);
+        if (menuData.length > 0 && !activeCategory) {
+          setActiveCategory(menuData[0].id);
         }
       } catch (error) {
         console.error("Error loading menu data:", error);
@@ -127,6 +121,9 @@ const Menu = () => {
         {nonEmptyCategories.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-lg text-gray-600">Aucun produit disponible actuellement.</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Vérifiez que vos produits ont le statut "Actif" dans l'administration.
+            </p>
           </div>
         ) : (
           <div className="flex flex-col md:flex-row gap-6">

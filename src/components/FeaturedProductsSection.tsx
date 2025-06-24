@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -456,11 +457,11 @@ const FeaturedProductsSection = () => {
       try {
         setLoading(true);
         
-        // Fetch new products
+        // Fetch new products - inclure les produits où is_new = true OU is_new = null
         const { data: newProductsData, error: newError } = await supabase
           .from('products')
           .select('*, categories(name)')
-          .eq('is_new', true)
+          .or('is_new.eq.true,is_new.is.null')
           .limit(3);
         
         if (newError) throw newError;
@@ -471,22 +472,29 @@ const FeaturedProductsSection = () => {
           .from('products')
           .select('*, categories(name)')
           .eq('is_best_seller', true)
-          .eq('is_new', true)
+          .or('is_new.eq.true,is_new.is.null')
           .limit(3);
         
         if (bestError) throw bestError;
         setBestSellerProducts(bestSellerData || []);
         
-        // Fetch most popular products
+        // Fetch most popular products - basé sur les prix les plus élevés parmi les produits actifs
         const { data: popularData, error: popularError } = await supabase
           .from('products')
           .select('*, categories(name)')
-          .eq('is_new', true)
+          .or('is_new.eq.true,is_new.is.null')
           .order('price', { ascending: false })
           .limit(4);
         
         if (popularError) throw popularError;
         setPopularProducts(popularData || []);
+
+        console.log('📦 Produits récupérés:', {
+          nouveautes: newProductsData?.length || 0,
+          bestsellers: bestSellerData?.length || 0,
+          populaires: popularData?.length || 0
+        });
+
       } catch (error) {
         console.error("Error fetching featured products:", error);
         toast({

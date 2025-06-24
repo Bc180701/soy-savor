@@ -15,19 +15,22 @@ export const getMenuData = async (): Promise<MenuCategory[]> => {
       throw categoriesError;
     }
 
-    // Récupérer les produits avec leurs catégories
+    // Récupérer TOUS les produits actifs (is_new = true OR is_new = null)
     const { data: productsData, error: productsError } = await supabase
       .from('products')
       .select(`
         *,
         categories!inner(name)
       `)
+      .or('is_new.eq.true,is_new.is.null')
       .order('name');
 
     if (productsError) {
       console.error('Erreur lors de la récupération des produits:', productsError);
       throw productsError;
     }
+
+    console.log('📦 Produits récupérés:', productsData?.length || 0);
 
     // Transformer les données
     const categories: MenuCategory[] = categoriesData.map(category => {
@@ -42,13 +45,15 @@ export const getMenuData = async (): Promise<MenuCategory[]> => {
           category: product.category_id as any,
           isVegetarian: product.is_vegetarian || false,
           isSpicy: product.is_spicy || false,
-          isNew: product.is_new || false,
+          isNew: product.is_new !== false, // Considérer comme nouveau si true ou null
           isBestSeller: product.is_best_seller || false,
           isGlutenFree: product.is_gluten_free || false,
           allergens: product.allergens || [],
           pieces: product.pieces,
           prepTime: product.prep_time || 10
         })) as MenuItem[];
+
+      console.log(`📂 Catégorie ${category.name}: ${categoryProducts.length} produits`);
 
       return {
         id: category.id as any,
