@@ -288,27 +288,18 @@ export const updateProduct = async (productId: string, productData: any) => {
 export const deleteProduct = async (productId: string) => {
   console.log(`Deleting product with ID: ${productId}`);
   try {
-    // Make sure the delete operation completes and actually succeeds
-    const { error, count } = await supabase
+    // Simple delete operation without trying to count in RETURNING
+    const { error } = await supabase
       .from('products')
       .delete()
-      .eq('id', productId)
-      .select('count');
+      .eq('id', productId);
       
     if (error) {
       console.error("Error deleting product:", error);
       throw error;
     }
     
-    // Log the count of deleted items to verify deletion happened
-    const deletedCount = count || 0;
-    console.log(`Successfully deleted ${deletedCount} product(s) with ID: ${productId}`);
-    
-    if (deletedCount === 0) {
-      console.warn(`No products were deleted with ID: ${productId}`);
-      return false;
-    }
-    
+    console.log(`Successfully deleted product with ID: ${productId}`);
     return true;
   } catch (error) {
     console.error("Error in deleteProduct function:", error);
