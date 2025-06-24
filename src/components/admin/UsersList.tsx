@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -15,14 +14,6 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { getAllUsers, getUserDetails, exportUsersData } from "@/services/authService";
-
-type AuthUser = {
-  id: string;
-  email: string;
-  created_at: string;
-  last_sign_in_at?: string;
-};
 
 type UserProfile = {
   id: string;
@@ -102,71 +93,121 @@ const UsersList = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      console.log("Récupération de tous les utilisateurs...");
+      console.log("🔍 DÉBUT - Récupération de tous les utilisateurs...");
       
-      // Nouvelle méthode : récupérer directement depuis auth_users_view + profiles
+      // 1. Récupération depuis auth_users_view
+      console.log("🔍 Étape 1: Récupération auth_users_view...");
       const { data: authUsers, error: authError } = await supabase
         .from("auth_users_view")
         .select("*");
 
-      console.log("Utilisateurs auth trouvés:", authUsers, "Erreur:", authError);
+      console.log("✅ auth_users_view résultats:", {
+        count: authUsers?.length || 0,
+        users: authUsers,
+        error: authError
+      });
 
-      let allUserIds: string[] = [];
-      let authUsersMap = new Map();
-
-      // Si on a accès à auth_users_view, l'utiliser
-      if (authUsers && !authError) {
-        authUsers.forEach(user => {
-          authUsersMap.set(user.id, user);
-          allUserIds.push(user.id);
-        });
-      }
-
-      // Récupérer tous les profils pour avoir une liste complète des IDs utilisateurs
+      // 2. Récupération de tous les profils
+      console.log("🔍 Étape 2: Récupération profiles...");
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*");
       
-      if (profilesError) {
-        console.error("Erreur lors de la récupération des profils:", profilesError);
+      console.log("✅ profiles résultats:", {
+        count: profiles?.length || 0,
+        profiles: profiles,
+        error: profilesError
+      });
+
+      // 3. Récupération des rôles utilisateurs
+      console.log("🔍 Étape 3: Récupération user_roles...");
+      const { data: userRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id");
+
+      console.log("✅ user_roles résultats:", {
+        count: userRoles?.length || 0,
+        roles: userRoles,
+        error: rolesError
+      });
+
+      // 4. Récupération des commandes pour avoir les emails clients
+      console.log("🔍 Étape 4: Récupération orders pour emails...");
+      const { data: ordersWithEmails, error: ordersError } = await supabase
+        .from("orders")
+        .select("user_id, client_email")
+        .not("client_email", "is", null);
+
+      console.log("✅ orders avec emails résultats:", {
+        count: ordersWithEmails?.length || 0,
+        orders: ordersWithEmails,
+        error: ordersError
+      });
+
+      // Collecter tous les IDs utilisateurs uniques
+      let allUserIds: string[] = [];
+      
+      if (authUsers && !authError) {
+        authUsers.forEach(user => {
+          if (user.id && !allUserIds.includes(user.id)) {
+            allUserIds.push(user.id);
+          }
+        });
       }
 
-      // Ajouter les IDs des profils qui ne sont pas dans auth_users_view
       if (profiles) {
         profiles.forEach(profile => {
-          if (!allUserIds.includes(profile.id)) {
+          if (profile.id && !allUserIds.includes(profile.id)) {
             allUserIds.push(profile.id);
           }
         });
       }
 
-      // Récupérer tous les utilisateurs avec rôles pour avoir une liste encore plus complète
-      const { data: userRoles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id");
-
-      if (!rolesError && userRoles) {
+      if (userRoles) {
         userRoles.forEach(role => {
-          if (!allUserIds.includes(role.user_id)) {
+          if (role.user_id && !allUserIds.includes(role.user_id)) {
             allUserIds.push(role.user_id);
           }
         });
       }
 
-      console.log("Tous les IDs utilisateurs trouvés:", allUserIds);
+      if (ordersWithEmails) {
+        ordersWithEmails.forEach(order => {
+          if (order.user_id && !allUserIds.includes(order.user_id)) {
+            allUserIds.push(order.user_id);
+          }
+        });
+      }
+
+      console.log("🔍 Tous les IDs utilisateurs collectés:", allUserIds);
 
       if (allUserIds.length === 0) {
+        console.log("❌ Aucun ID utilisateur trouvé");
         setUsers([]);
         setFilteredUsers([]);
         setLoading(false);
         return;
       }
+
+      // Recherche spécifique pour baptiste@firten.com
+      console.log("🔍 RECHERCHE SPÉCIFIQUE pour baptiste@firten.com...");
       
+      // Vérifier dans auth_users_view
+      const baptisteInAuth = authUsers?.find(u => u.email === "baptiste@firten.com");
+      console.log("👤 baptiste@firten.com dans auth_users_view:", baptisteInAuth);
+
+      // Vérifier dans les commandes
+      const baptisteInOrders = ordersWithEmails?.find(o => o.client_email === "baptiste@firten.com");
+      console.log("👤 baptiste@firten.com dans orders:", baptisteInOrders);
+
       // Pour chaque utilisateur, récupérer toutes ses informations
+      console.log("🔍 Étape 5: Enrichissement des données utilisateurs...");
       const enrichedUsers = await Promise.all(
         allUserIds.map(async (userId) => {
-          // Informations auth (si disponibles)
-          const authUser = authUsersMap.get(userId);
+          console.log(`🔍 Traitement utilisateur ID: ${userId}`);
+          
+          // Informations auth
+          const authUser = authUsers?.find(u => u.id === userId);
           
           // Informations profil
           const { data: profile } = await supabase
@@ -184,7 +225,7 @@ const UsersList = () => {
           // Commandes avec statistiques
           const { data: orders } = await supabase
             .from("orders")
-            .select("id, created_at, total, status, payment_status")
+            .select("id, created_at, total, status, payment_status, client_email")
             .eq("user_id", userId)
             .order("created_at", { ascending: false })
             .limit(10);
@@ -193,21 +234,14 @@ const UsersList = () => {
           const totalSpent = orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
           const totalOrders = orders?.length || 0;
 
-          // Email de fallback depuis les commandes si pas d'authUser
+          // Email de fallback
           let email = authUser?.email || "";
           if (!email && orders && orders.length > 0) {
-            const { data: orderWithEmail } = await supabase
-              .from("orders")
-              .select("client_email")
-              .eq("user_id", userId)
-              .not("client_email", "is", null)
-              .limit(1)
-              .single();
-            
+            const orderWithEmail = orders.find(o => o.client_email);
             email = orderWithEmail?.client_email || "";
           }
-          
-          return {
+
+          const userResult = {
             id: userId,
             email: email,
             first_name: profile?.first_name || "",
@@ -221,6 +255,9 @@ const UsersList = () => {
             totalSpent,
             totalOrders
           };
+
+          console.log(`✅ Utilisateur ${userId} enrichi:`, userResult);
+          return userResult;
         })
       );
       
@@ -229,13 +266,18 @@ const UsersList = () => {
         user.email || user.first_name || user.last_name || user.phone || user.addresses.length > 0
       );
       
-      console.log("Utilisateurs enrichis trouvés:", validUsers.length, validUsers);
+      console.log("🎯 RÉSULTAT FINAL:", {
+        totalEnriched: enrichedUsers.length,
+        validUsers: validUsers.length,
+        users: validUsers,
+        baptisteFound: validUsers.find(u => u.email === "baptiste@firten.com") ? "✅ TROUVÉ" : "❌ PAS TROUVÉ"
+      });
       
       setUsers(validUsers);
       setFilteredUsers(validUsers);
       
     } catch (error) {
-      console.error("Erreur lors de la récupération des utilisateurs:", error);
+      console.error("❌ ERREUR lors de la récupération des utilisateurs:", error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -251,7 +293,6 @@ const UsersList = () => {
   const exportToCsv = async () => {
     setIsExporting(true);
     try {
-      // Utiliser les données déjà chargées au lieu de refaire un appel
       const usersToExport = users;
       
       if (!usersToExport || usersToExport.length === 0) {
@@ -263,7 +304,6 @@ const UsersList = () => {
         return;
       }
 
-      // Définir les en-têtes du CSV avec colonnes additionnelles
       const headers = [
         "ID", 
         "Email", 
@@ -282,9 +322,7 @@ const UsersList = () => {
         "Montant total des achats"
       ];
       
-      // Convertir les données en lignes CSV
       const csvRows = usersToExport.map(user => {
-        // Adresse par défaut (utiliser la première si disponible)
         const defaultAddress = user.addresses.find(addr => addr.is_default) || user.addresses[0] || null;
         
         return [
@@ -306,23 +344,19 @@ const UsersList = () => {
         ].map(value => `"${value}"`).join(",");
       });
       
-      // Combiner en-têtes et lignes
       const csvContent = [
         headers.join(","),
         ...csvRows
       ].join("\n");
       
-      // Créer un Blob et un URL pour le téléchargement
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       
-      // Créer un élément <a> pour le téléchargement
       const link = document.createElement("a");
       link.setAttribute("href", url);
       link.setAttribute("download", `utilisateurs-${new Date().toISOString().slice(0, 10)}.csv`);
       document.body.appendChild(link);
       
-      // Déclencher le téléchargement
       link.click();
       document.body.removeChild(link);
       
@@ -383,7 +417,6 @@ const UsersList = () => {
     try {
       console.log("Suppression de l'utilisateur:", userId, userEmail);
       
-      // 1. Supprimer les données utilisateur liées
       const { error: profileError } = await supabase
         .from("profiles")
         .delete()
@@ -393,7 +426,6 @@ const UsersList = () => {
         console.error("Erreur lors de la suppression du profil:", profileError);
       }
 
-      // 2. Supprimer les adresses
       const { error: addressError } = await supabase
         .from("user_addresses")
         .delete()
@@ -403,7 +435,6 @@ const UsersList = () => {
         console.error("Erreur lors de la suppression des adresses:", addressError);
       }
 
-      // 3. Supprimer les rôles
       const { error: roleError } = await supabase
         .from("user_roles")
         .delete()
@@ -413,7 +444,6 @@ const UsersList = () => {
         console.error("Erreur lors de la suppression des rôles:", roleError);
       }
 
-      // 4. Appeler la fonction edge pour supprimer le compte auth
       const { error: deleteError } = await supabase.functions.invoke('delete-user', {
         body: { userId }
       });
@@ -428,7 +458,6 @@ const UsersList = () => {
         description: `L'utilisateur ${userEmail || userId} a été complètement supprimé.`,
       });
 
-      // Rafraîchir la liste
       fetchUsers();
     } catch (error: any) {
       console.error("Erreur lors de la suppression:", error);
@@ -553,7 +582,6 @@ const UsersList = () => {
                             <p><strong>ID utilisateur:</strong> {user.id}</p>
                           </div>
                           
-                          {/* Affichage des adresses */}
                           {user.addresses && user.addresses.length > 0 ? (
                             <div className="space-y-3">
                               <h4 className="font-medium text-sm flex items-center gap-1">
@@ -583,7 +611,6 @@ const UsersList = () => {
                             </p>
                           )}
                           
-                          {/* Affichage des commandes récentes */}
                           {user.orders && user.orders.length > 0 ? (
                             <div className="space-y-3">
                               <h4 className="font-medium text-sm flex items-center gap-1">
