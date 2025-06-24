@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import DeliveryMethod from "../checkout/DeliveryMethod";
@@ -46,32 +45,6 @@ export const DeliveryStep = ({
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const { toast } = useToast();
 
-  // Validate postal code when it changes
-  useEffect(() => {
-    const validatePostalCode = async () => {
-      if (
-        deliveryInfo.orderType === "delivery" &&
-        deliveryInfo.postalCode &&
-        deliveryInfo.postalCode.length >= 5
-      ) {
-        setIsValidatingPostalCode(true);
-        try {
-          const isValid = await checkPostalCodeDelivery(deliveryInfo.postalCode);
-          setDeliveryInfo(prev => ({
-            ...prev,
-            isPostalCodeValid: isValid
-          }));
-        } catch (error) {
-          console.error("Error validating postal code:", error);
-        } finally {
-          setIsValidatingPostalCode(false);
-        }
-      }
-    };
-
-    validatePostalCode();
-  }, [deliveryInfo.postalCode, deliveryInfo.orderType]);
-
   // Handle delivery method change
   const handleOrderTypeChange = (type: "delivery" | "pickup") => {
     setDeliveryInfo(prev => ({
@@ -97,7 +70,7 @@ export const DeliveryStep = ({
     }));
   };
 
-  // Modified for DeliveryAddressForm
+  // Modified for DeliveryAddressForm - now receives isPostalCodeValid
   const handleAddressComplete = (addressData: any) => {
     setDeliveryInfo(prev => ({
       ...prev,
@@ -108,7 +81,7 @@ export const DeliveryStep = ({
       phone: addressData.phone,
       email: addressData.email,
       deliveryInstructions: addressData.instructions,
-      isPostalCodeValid: true // Si le formulaire se valide, le code postal est valide
+      isPostalCodeValid: addressData.isPostalCodeValid // Utiliser la validation du composant enfant
     }));
   };
 
@@ -119,8 +92,10 @@ export const DeliveryStep = ({
 
   // Fonction pour valider avant de passer à l'étape suivante
   const handleContinueToPayment = () => {
+    console.log("Attempting to continue, postal code valid:", deliveryInfo.isPostalCodeValid);
+    
     // Vérifier si c'est une livraison et si le code postal est invalide
-    if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
+    if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid !== true) {
       toast({
         title: "Code postal non valide",
         description: "Veuillez corriger le code postal avant de continuer. Il doit être dans notre zone de livraison (pastille verte).",

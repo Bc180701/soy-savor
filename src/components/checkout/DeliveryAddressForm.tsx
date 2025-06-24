@@ -25,7 +25,7 @@ const formSchema = z.object({
 export type DeliveryAddressData = z.infer<typeof formSchema>;
 
 interface DeliveryAddressFormProps {
-  onComplete: (data: DeliveryAddressData) => void;
+  onComplete: (data: DeliveryAddressData & { isPostalCodeValid: boolean }) => void;
   onCancel: () => void;
 }
 
@@ -115,23 +115,38 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     return () => clearTimeout(timer);
   }, [postalCodeValue, form, toast]);
 
-  // Mettre à jour automatiquement les données du parent quand le formulaire change
+  // Mettre à jour automatiquement les données du parent quand le formulaire change OU quand la validation change
   useEffect(() => {
     const subscription = form.watch((data) => {
-      if (form.formState.isValid && postalCodeValidationStatus === 'valid') {
-        onComplete({
-          name: data.name || "",
-          street: data.street || "",
-          city: data.city || "",
-          postalCode: data.postalCode || "",
-          phone: data.phone || "",
-          email: data.email || "",
-          instructions: data.instructions || "",
-        });
-      }
+      // Toujours envoyer les données au parent, même si le formulaire n'est pas complètement valide
+      onComplete({
+        name: data.name || "",
+        street: data.street || "",
+        city: data.city || "",
+        postalCode: data.postalCode || "",
+        phone: data.phone || "",
+        email: data.email || "",
+        instructions: data.instructions || "",
+        isPostalCodeValid: postalCodeValidationStatus === 'valid'
+      });
     });
     return () => subscription.unsubscribe();
   }, [form, onComplete, postalCodeValidationStatus]);
+
+  // Aussi déclencher la mise à jour quand le statut de validation change
+  useEffect(() => {
+    const currentData = form.getValues();
+    onComplete({
+      name: currentData.name || "",
+      street: currentData.street || "",
+      city: currentData.city || "",
+      postalCode: currentData.postalCode || "",
+      phone: currentData.phone || "",
+      email: currentData.email || "",
+      instructions: currentData.instructions || "",
+      isPostalCodeValid: postalCodeValidationStatus === 'valid'
+    });
+  }, [postalCodeValidationStatus, form, onComplete]);
 
   useEffect(() => {
     const checkUserProfile = async () => {
