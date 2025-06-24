@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -101,102 +102,138 @@ const UsersList = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      // Get users with all additional data
-      const { data: enrichedUsers, error } = await exportUsersData();
+      console.log("Récupération de tous les utilisateurs...");
       
-      if (error) {
-        console.error("Error fetching users data:", error);
-        fallbackToProfiles();
-        return;
-      }
-      
-      if (!enrichedUsers || enrichedUsers.length === 0) {
-        setUsers([]);
-        setFilteredUsers([]);
-        setLoading(false);
-        return;
-      }
-      
-      setUsers(enrichedUsers);
-      setFilteredUsers(enrichedUsers);
-    } catch (error) {
-      console.error("Error in fetchUsers:", error);
-      // Fall back to using only profiles if there's an error
-      fallbackToProfiles();
-    } finally {
-      setLoading(false);
-    }
-  };
+      // Nouvelle méthode : récupérer directement depuis auth_users_view + profiles
+      const { data: authUsers, error: authError } = await supabase
+        .from("auth_users_view")
+        .select("*");
 
-  // Fallback method if we can't access auth.users
-  const fallbackToProfiles = async () => {
-    try {
-      // Récupérer tous les utilisateurs depuis les profils
-      // Cela nous donnera les IDs des utilisateurs
+      console.log("Utilisateurs auth trouvés:", authUsers, "Erreur:", authError);
+
+      let allUserIds: string[] = [];
+      let authUsersMap = new Map();
+
+      // Si on a accès à auth_users_view, l'utiliser
+      if (authUsers && !authError) {
+        authUsers.forEach(user => {
+          authUsersMap.set(user.id, user);
+          allUserIds.push(user.id);
+        });
+      }
+
+      // Récupérer tous les profils pour avoir une liste complète des IDs utilisateurs
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*");
       
-      if (profilesError) throw profilesError;
-      
-      if (!profiles || profiles.length === 0) {
+      if (profilesError) {
+        console.error("Erreur lors de la récupération des profils:", profilesError);
+      }
+
+      // Ajouter les IDs des profils qui ne sont pas dans auth_users_view
+      if (profiles) {
+        profiles.forEach(profile => {
+          if (!allUserIds.includes(profile.id)) {
+            allUserIds.push(profile.id);
+          }
+        });
+      }
+
+      // Récupérer tous les utilisateurs avec rôles pour avoir une liste encore plus complète
+      const { data: userRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id");
+
+      if (!rolesError && userRoles) {
+        userRoles.forEach(role => {
+          if (!allUserIds.includes(role.user_id)) {
+            allUserIds.push(role.user_id);
+          }
+        });
+      }
+
+      console.log("Tous les IDs utilisateurs trouvés:", allUserIds);
+
+      if (allUserIds.length === 0) {
         setUsers([]);
         setFilteredUsers([]);
         setLoading(false);
         return;
       }
       
-      // Pour chaque profil, récupérer les informations d'adresse
+      // Pour chaque utilisateur, récupérer toutes ses informations
       const enrichedUsers = await Promise.all(
-        profiles.map(async (profile) => {
-          // Récupérer les adresses
-          const { data: addresses, error: addressesError } = await supabase
+        allUserIds.map(async (userId) => {
+          // Informations auth (si disponibles)
+          const authUser = authUsersMap.get(userId);
+          
+          // Informations profil
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .single();
+          
+          // Adresses
+          const { data: addresses } = await supabase
             .from("user_addresses")
             .select("*")
-            .eq("user_id", profile.id);
-            
-          if (addressesError) {
-            console.error(`Erreur lors de la récupération des adresses pour ${profile.id}:`, addressesError);
-          }
+            .eq("user_id", userId);
           
-          // Récupérer l'email de l'utilisateur depuis la session s'il est connecté
-          let email = "";
-          
-          // Chercher l'email dans les commandes existantes comme fallback
-          if (!email) {
-            const { data: orders } = await supabase
+          // Commandes avec statistiques
+          const { data: orders } = await supabase
+            .from("orders")
+            .select("id, created_at, total, status, payment_status")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          // Calculer les statistiques
+          const totalSpent = orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+          const totalOrders = orders?.length || 0;
+
+          // Email de fallback depuis les commandes si pas d'authUser
+          let email = authUser?.email || "";
+          if (!email && orders && orders.length > 0) {
+            const { data: orderWithEmail } = await supabase
               .from("orders")
               .select("client_email")
-              .eq("user_id", profile.id)
-              .limit(1);
-              
-            if (orders && orders.length > 0) {
-              email = orders[0].client_email || "";
-            }
+              .eq("user_id", userId)
+              .not("client_email", "is", null)
+              .limit(1)
+              .single();
+            
+            email = orderWithEmail?.client_email || "";
           }
           
           return {
-            id: profile.id,
+            id: userId,
             email: email,
-            first_name: profile.first_name || "",
-            last_name: profile.last_name || "",
-            phone: profile.phone || "",
+            first_name: profile?.first_name || "",
+            last_name: profile?.last_name || "",
+            phone: profile?.phone || "",
             addresses: addresses || [],
-            created_at: profile.created_at || new Date().toISOString(),
-            loyalty_points: profile.loyalty_points || 0,
-            last_sign_in_at: null
+            orders: orders || [],
+            created_at: authUser?.created_at || profile?.created_at || new Date().toISOString(),
+            loyalty_points: profile?.loyalty_points || 0,
+            last_sign_in_at: authUser?.last_sign_in_at || null,
+            totalSpent,
+            totalOrders
           };
         })
       );
       
-      setUsers(enrichedUsers);
-      setFilteredUsers(enrichedUsers);
+      // Filtrer les utilisateurs qui ont au moins un email ou des données
+      const validUsers = enrichedUsers.filter(user => 
+        user.email || user.first_name || user.last_name || user.phone || user.addresses.length > 0
+      );
       
-      toast({
-        variant: "default",
-        title: "Mode limité",
-        description: "Impossible d'accéder à tous les utilisateurs. Affichage limité aux profils existants."
-      });
+      console.log("Utilisateurs enrichis trouvés:", validUsers.length, validUsers);
+      
+      setUsers(validUsers);
+      setFilteredUsers(validUsers);
+      
     } catch (error) {
       console.error("Erreur lors de la récupération des utilisateurs:", error);
       toast({
@@ -214,14 +251,10 @@ const UsersList = () => {
   const exportToCsv = async () => {
     setIsExporting(true);
     try {
-      // Get full enriched user data directly from the export function
-      const { data: enrichedUsers, error } = await exportUsersData();
+      // Utiliser les données déjà chargées au lieu de refaire un appel
+      const usersToExport = users;
       
-      if (error) {
-        throw error;
-      }
-      
-      if (!enrichedUsers || enrichedUsers.length === 0) {
+      if (!usersToExport || usersToExport.length === 0) {
         toast({
           variant: "destructive",
           title: "Export échoué",
@@ -250,9 +283,9 @@ const UsersList = () => {
       ];
       
       // Convertir les données en lignes CSV
-      const csvRows = enrichedUsers.map(user => {
+      const csvRows = usersToExport.map(user => {
         // Adresse par défaut (utiliser la première si disponible)
-        const defaultAddress = user.defaultAddress || null;
+        const defaultAddress = user.addresses.find(addr => addr.is_default) || user.addresses[0] || null;
         
         return [
           user.id,
@@ -295,7 +328,7 @@ const UsersList = () => {
       
       toast({
         title: "Export réussi",
-        description: `${enrichedUsers.length} utilisateurs exportés au format CSV`,
+        description: `${usersToExport.length} utilisateurs exportés au format CSV`,
       });
     } catch (error) {
       console.error("Erreur lors de l'export CSV:", error);
@@ -392,7 +425,7 @@ const UsersList = () => {
 
       toast({
         title: "Utilisateur supprimé",
-        description: `L'utilisateur ${userEmail} a été complètement supprimé.`,
+        description: `L'utilisateur ${userEmail || userId} a été complètement supprimé.`,
       });
 
       // Rafraîchir la liste
@@ -462,7 +495,7 @@ const UsersList = () => {
                         </div>
                       </CollapsibleTrigger>
                     </TableCell>
-                    <TableCell>{user.email || "-"}</TableCell>
+                    <TableCell>{user.email || user.id.substring(0, 8) + "..."}</TableCell>
                     <TableCell>
                       {user.first_name || user.last_name ? `${user.first_name} ${user.last_name}` : "-"}
                     </TableCell>
@@ -495,7 +528,7 @@ const UsersList = () => {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur {user.email} ? 
+                              Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur {user.email || user.id} ? 
                               Cette action supprimera toutes ses données (profil, adresses, commandes) et ne peut pas être annulée.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -514,8 +547,12 @@ const UsersList = () => {
                   </TableRow>
                   <CollapsibleContent>
                     <TableRow className="bg-muted/30">
-                      <TableCell colSpan={8} className="p-4">
+                      <TableCell colSpan={9} className="p-4">
                         <div className="space-y-4">
+                          <div className="text-sm">
+                            <p><strong>ID utilisateur:</strong> {user.id}</p>
+                          </div>
+                          
                           {/* Affichage des adresses */}
                           {user.addresses && user.addresses.length > 0 ? (
                             <div className="space-y-3">
@@ -571,13 +608,13 @@ const UsersList = () => {
                                         <td className="p-2">{formatDate(order.created_at)}</td>
                                         <td className="p-2">{formatCurrency(order.total)}</td>
                                         <td className="p-2">
-                                          <Badge variant={order.status === 'completed' ? 'success' : 
-                                                        order.status === 'cancelled' ? 'destructive' : 'default'}>
+                                          <Badge variant={order.status === 'completed' ? 'default' : 
+                                                        order.status === 'cancelled' ? 'destructive' : 'secondary'}>
                                             {order.status}
                                           </Badge>
                                         </td>
                                         <td className="p-2">
-                                          <Badge variant={order.payment_status === 'paid' ? 'success' : 
+                                          <Badge variant={order.payment_status === 'paid' ? 'default' : 
                                                         order.payment_status === 'failed' ? 'destructive' : 'outline'}>
                                             {order.payment_status}
                                           </Badge>
