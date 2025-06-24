@@ -163,6 +163,17 @@ export const DeliveryStep = ({
     handleNextStep();
   };
 
+  // Calculer si le bouton doit être désactivé
+  const isContinueButtonDisabled = () => {
+    // Pour la livraison, vérifier que le code postal est valide
+    if (deliveryInfo.orderType === "delivery") {
+      return deliveryInfo.isPostalCodeValid !== true;
+    }
+    
+    // Pour le retrait, pas de restriction liée au code postal
+    return false;
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Informations de livraison</h2>
@@ -265,10 +276,7 @@ export const DeliveryStep = ({
         <Button 
           onClick={handleContinueToPayment}
           className="bg-gold-500 hover:bg-gold-600 text-black"
-          disabled={
-            deliveryInfo.orderType === "delivery" && 
-            deliveryInfo.isPostalCodeValid === false
-          }
+          disabled={isContinueButtonDisabled()}
         >
           Continuer au paiement
         </Button>

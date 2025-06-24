@@ -31,7 +31,6 @@ interface DeliveryAddressFormProps {
 
 const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps) => {
   const { toast } = useToast();
-  const [isValidating, setIsValidating] = useState(false);
   const [useProfileAddress, setUseProfileAddress] = useState(false);
   const [useProfileContact, setUseProfileContact] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -89,7 +88,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           } else {
             setPostalCodeValidationStatus('valid');
             form.clearErrors("postalCode");
-            // Trigger form validation to update the form state
             await form.trigger();
             toast({
               title: "Code postal valide",
@@ -116,6 +114,24 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     const timer = setTimeout(validatePostalCode, 300);
     return () => clearTimeout(timer);
   }, [postalCodeValue, form, toast]);
+
+  // Mettre à jour automatiquement les données du parent quand le formulaire change
+  useEffect(() => {
+    const subscription = form.watch((data) => {
+      if (form.formState.isValid && postalCodeValidationStatus === 'valid') {
+        onComplete({
+          name: data.name || "",
+          street: data.street || "",
+          city: data.city || "",
+          postalCode: data.postalCode || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          instructions: data.instructions || "",
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onComplete, postalCodeValidationStatus]);
 
   useEffect(() => {
     const checkUserProfile = async () => {
@@ -205,7 +221,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         form.setValue("phone", profileData.phone || "");
         form.setValue("email", userEmail);
         
-        // Trigger form validation after setting values
         await form.trigger();
       }
     } catch (error) {
@@ -257,7 +272,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           form.setValue("instructions", addressData.additional_info);
         }
         
-        // Trigger form validation after setting values
         await form.trigger();
         
         toast({
@@ -307,95 +321,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       form.setValue("postalCode", "");
       form.setValue("instructions", "");
     }
-  };
-
-  // Fonction de validation et soumission manuelle uniquement
-  const validatePostalCodeAndSubmit = async (data: z.infer<typeof formSchema>) => {
-    if (isValidating) return;
-    
-    const currentPostalCode = form.getValues("postalCode");
-    console.log("Manual submission with current postal code:", currentPostalCode);
-    
-    // Vérifier le statut de validation du code postal
-    if (postalCodeValidationStatus !== 'valid') {
-      console.log("Cannot submit: postal code is not valid, current status:", postalCodeValidationStatus);
-      toast({
-        variant: "destructive",
-        title: "Code postal invalide",
-        description: "Veuillez entrer un code postal valide dans notre zone de livraison.",
-      });
-      return;
-    }
-    
-    setIsValidating(true);
-    
-    try {
-      // Vérification finale du code postal
-      const isValidPostalCode = await checkPostalCodeDelivery(currentPostalCode);
-      
-      if (!isValidPostalCode) {
-        toast({
-          variant: "destructive",
-          title: "Zone non desservie",
-          description: `Nous ne livrons pas dans la zone ${currentPostalCode}. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.`,
-        });
-        
-        setPostalCodeValidationStatus('invalid');
-        form.setError("postalCode", {
-          type: "manual",
-          message: "Code postal hors zone de livraison"
-        });
-        
-        setIsValidating(false);
-        return;
-      }
-      
-      console.log("Postal code validated successfully, proceeding with submission");
-      
-      const finalData = {
-        ...data,
-        postalCode: currentPostalCode
-      };
-      
-      // Réinitialiser isValidating avant d'appeler onComplete
-      setIsValidating(false);
-      onComplete(finalData);
-    } catch (error) {
-      console.error("Error validating address:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la validation de votre adresse.",
-      });
-      setIsValidating(false);
-    }
-  };
-
-  // Calculer si le bouton doit être désactivé - LOGIQUE SIMPLIFIÉE
-  const isButtonDisabled = () => {
-    // Le bouton est désactivé si:
-    // 1. On est en train de valider
-    // 2. Le code postal est invalide (pastille rouge)
-    // 3. Le code postal est en cours de validation (pastille en cours)
-    // 4. Le formulaire n'est pas valide
-    
-    const isFormValid = form.formState.isValid;
-    const hasValidPostalCode = postalCodeValidationStatus === 'valid';
-    
-    console.log("Button disabled check:", {
-      isValidating,
-      postalCodeValidationStatus,
-      isFormValid,
-      hasValidPostalCode
-    });
-    
-    return (
-      isValidating || 
-      postalCodeValidationStatus === 'invalid' || 
-      postalCodeValidationStatus === 'pending' ||
-      !isFormValid ||
-      !hasValidPostalCode
-    );
   };
 
   return (
@@ -572,35 +497,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
               </FormItem>
             )}
           />
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onCancel}
-              disabled={isValidating}
-            >
-              Annuler
-            </Button>
-            <Button 
-              type="button"
-              onClick={() => {
-                const data = form.getValues();
-                validatePostalCodeAndSubmit(data);
-              }}
-              disabled={isButtonDisabled()}
-              className="bg-gold-500 hover:bg-gold-600 text-black"
-            >
-              {isValidating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Validation...
-                </>
-              ) : (
-                "Commander"
-              )}
-            </Button>
-          </div>
         </form>
       </Form>
     </div>
