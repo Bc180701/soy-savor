@@ -89,32 +89,7 @@ const AdminManager = () => {
     fetchAdminUsers();
   }, []);
 
-  // Fonction pour envoyer l'email de bienvenue admin
-  const sendAdminWelcomeEmail = async (email: string, password: string) => {
-    try {
-      console.log("Envoi de l'email de bienvenue admin à:", email);
-      
-      const { data, error } = await supabase.functions.invoke('send-admin-welcome', {
-        body: {
-          email: email,
-          password: password
-        }
-      });
-
-      if (error) {
-        console.error("Erreur lors de l'envoi de l'email:", error);
-        throw new Error(`Erreur d'envoi d'email: ${error.message}`);
-      }
-
-      console.log("Email de bienvenue admin envoyé avec succès:", data);
-      return data;
-    } catch (error: any) {
-      console.error("Erreur dans sendAdminWelcomeEmail:", error);
-      throw error;
-    }
-  };
-
-  // Handle create admin using the database function
+  // Handle create admin using Supabase Auth API
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -136,22 +111,45 @@ const AdminManager = () => {
         throw new Error("Le mot de passe doit contenir au moins 6 caractères");
       }
 
-      console.log("Validation OK, appel de la fonction RPC...");
+      console.log("Validation OK, création du compte utilisateur...");
 
-      // Utiliser la fonction RPC pour créer l'admin directement
-      const { data: rpcData, error: rpcError } = await supabase.rpc('create_admin_user', {
-        admin_email: email,
-        admin_password: password
+      // Créer le compte utilisateur avec Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          emailRedirectTo: undefined // Pas de redirection automatique
+        }
       });
 
-      console.log("Résultat RPC:", { rpcData, rpcError });
+      console.log("Résultat création utilisateur:", { authData, authError });
 
-      if (rpcError) {
-        console.error("Erreur RPC:", rpcError);
-        throw new Error(`Erreur lors de la création du compte: ${rpcError.message}`);
+      if (authError) {
+        console.error("Erreur lors de la création du compte:", authError);
+        throw new Error(`Erreur lors de la création du compte: ${authError.message}`);
       }
 
-      console.log("Administrateur créé avec succès, envoi de l'email...");
+      if (!authData.user) {
+        console.error("Aucun utilisateur créé");
+        throw new Error("Aucun utilisateur n'a été créé");
+      }
+
+      console.log("Utilisateur créé avec succès, ID:", authData.user.id);
+
+      // Ajouter le rôle administrateur
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: authData.user.id,
+          role: "administrateur"
+        });
+
+      if (roleError) {
+        console.error("Erreur lors de l'ajout du rôle:", roleError);
+        throw new Error(`Erreur lors de l'ajout du rôle administrateur: ${roleError.message}`);
+      }
+
+      console.log("Rôle administrateur ajouté avec succès");
 
       // Envoyer l'email de bienvenue admin
       try {
