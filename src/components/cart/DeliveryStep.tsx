@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { checkPostalCodeDelivery } from "@/services/deliveryService";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DeliveryStepProps {
   deliveryInfo: {
@@ -43,6 +44,7 @@ export const DeliveryStep = ({
   isLoggedIn
 }: DeliveryStepProps) => {
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
+  const { toast } = useToast();
 
   // Validate postal code when it changes
   useEffect(() => {
@@ -105,13 +107,60 @@ export const DeliveryStep = ({
       name: addressData.name,
       phone: addressData.phone,
       email: addressData.email,
-      deliveryInstructions: addressData.instructions
+      deliveryInstructions: addressData.instructions,
+      isPostalCodeValid: true // Si le formulaire se valide, le code postal est valide
     }));
   };
 
   // Function to handle cancellation from DeliveryAddressForm
   const handleAddressCancel = () => {
     // Do nothing, just return to the current state
+  };
+
+  // Fonction pour valider avant de passer à l'étape suivante
+  const handleContinueToPayment = () => {
+    // Vérifier si c'est une livraison et si le code postal est invalide
+    if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
+      toast({
+        title: "Code postal non valide",
+        description: "Veuillez corriger le code postal avant de continuer. Il doit être dans notre zone de livraison (pastille verte).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Vérifications habituelles
+    if (!deliveryInfo.name || !deliveryInfo.email || !deliveryInfo.phone) {
+      toast({
+        title: "Informations manquantes",
+        description: "Veuillez remplir tous les champs obligatoires.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (deliveryInfo.orderType === "delivery") {
+      if (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode) {
+        toast({
+          title: "Adresse de livraison incomplète",
+          description: "Veuillez remplir tous les champs de l'adresse de livraison.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    if (!deliveryInfo.pickupTime) {
+      toast({
+        title: "Horaire manquant",
+        description: `Veuillez sélectionner un horaire de ${deliveryInfo.orderType === "delivery" ? "livraison" : "retrait"}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Si tout est OK, passer à l'étape suivante
+    handleNextStep();
   };
 
   return (
@@ -214,8 +263,12 @@ export const DeliveryStep = ({
           Retour au panier
         </Button>
         <Button 
-          onClick={handleNextStep}
+          onClick={handleContinueToPayment}
           className="bg-gold-500 hover:bg-gold-600 text-black"
+          disabled={
+            deliveryInfo.orderType === "delivery" && 
+            deliveryInfo.isPostalCodeValid === false
+          }
         >
           Continuer au paiement
         </Button>

@@ -116,6 +116,39 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     return () => clearTimeout(timer);
   }, [postalCodeValue, form, toast]);
 
+  // Effet pour déclencher la validation automatique quand les données sont pré-remplies
+  useEffect(() => {
+    const triggerValidationForPrefilledData = async () => {
+      if (isPrefilledData && postalCodeValue && postalCodeValue.length === 5) {
+        console.log("Triggering validation for prefilled postal code:", postalCodeValue);
+        setPostalCodeValidationStatus('pending');
+        
+        try {
+          const isValid = await checkPostalCodeDelivery(postalCodeValue);
+          console.log("Prefilled postal code validation result:", isValid);
+          
+          if (isValid) {
+            setPostalCodeValidationStatus('valid');
+            form.clearErrors("postalCode");
+          } else {
+            setPostalCodeValidationStatus('invalid');
+            form.setError("postalCode", {
+              type: "manual",
+              message: "Code postal hors zone de livraison"
+            });
+          }
+        } catch (error) {
+          console.error("Error validating prefilled postal code:", error);
+          setPostalCodeValidationStatus('invalid');
+        }
+      }
+    };
+
+    if (isPrefilledData) {
+      triggerValidationForPrefilledData();
+    }
+  }, [isPrefilledData, postalCodeValue, form]);
+
   // SUPPRESSION de l'auto-submit - le formulaire ne se soumet plus automatiquement
 
   useEffect(() => {
@@ -381,6 +414,17 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     }
   };
 
+  // Calculer si le bouton doit être désactivé
+  const isButtonDisabled = () => {
+    return (
+      isValidating || 
+      postalCodeValidationStatus === 'invalid' || 
+      postalCodeValidationStatus === 'pending' ||
+      !form.formState.isValid ||
+      postalCodeValidationStatus !== 'valid' // Le bouton n'est actif que si la pastille est verte
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -618,12 +662,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
                 const data = form.getValues();
                 validatePostalCodeAndSubmit(data);
               }}
-              disabled={
-                isValidating || 
-                postalCodeValidationStatus === 'invalid' || 
-                postalCodeValidationStatus === 'pending' ||
-                !form.formState.isValid
-              }
+              disabled={isButtonDisabled()}
               className="bg-gold-500 hover:bg-gold-600 text-black"
             >
               {isValidating ? (
