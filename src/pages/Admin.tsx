@@ -42,7 +42,7 @@ const Admin = () => {
         if (roleError) {
           console.error("Erreur lors de la vérification du rôle:", roleError);
           // Fallback: vérifier directement dans la table user_roles
-          const { data: roleData, error: fallbackError } = await supabase
+          const { data: fallbackRoleData, error: fallbackError } = await supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', session.user.id)
@@ -54,14 +54,14 @@ const Admin = () => {
             throw fallbackError;
           }
           
-          setIsAdmin(!!roleData);
+          setIsAdmin(!!fallbackRoleData);
+          console.log("Utilisateur admin (fallback):", !!fallbackRoleData);
         } else {
           setIsAdmin(!!hasAdminRole);
+          console.log("Utilisateur admin:", !!hasAdminRole);
         }
         
-        console.log("Utilisateur admin:", !!hasAdminRole || !!roleData);
-        
-        if (!hasAdminRole && !roleData) {
+        if (!hasAdminRole && !fallbackRoleData) {
           toast({
             title: "Accès refusé",
             description: "Vous n'avez pas les permissions pour accéder à cette page.",
