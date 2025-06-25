@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 // Schéma de validation pour le formulaire de catégorie
 const categoryFormSchema = z.object({
@@ -43,6 +44,7 @@ interface CategoryFormProps {
 const CategoryForm = ({ category, categories, onSave, onCancel }: CategoryFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
   
   // Déterminer l'ordre d'affichage pour une nouvelle catégorie
   const getNextDisplayOrder = () => {
@@ -66,6 +68,15 @@ const CategoryForm = ({ category, categories, onSave, onCancel }: CategoryFormPr
   const isIdEditable = !category;
 
   const onSubmit = async (data: CategoryFormValues) => {
+    if (!currentRestaurant) {
+      toast({
+        title: "Erreur",
+        description: "Aucun restaurant sélectionné",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -76,6 +87,7 @@ const CategoryForm = ({ category, categories, onSave, onCancel }: CategoryFormPr
             .from("categories")
             .select("id")
             .eq("id", data.id)
+            .eq("restaurant_id", currentRestaurant.id)
             .single();
 
           if (existingCategory) {
@@ -96,7 +108,8 @@ const CategoryForm = ({ category, categories, onSave, onCancel }: CategoryFormPr
             description: data.description,
             display_order: data.display_order,
           })
-          .eq("id", category.id);
+          .eq("id", category.id)
+          .eq("restaurant_id", currentRestaurant.id);
 
         if (error) throw error;
       } else {
@@ -105,6 +118,7 @@ const CategoryForm = ({ category, categories, onSave, onCancel }: CategoryFormPr
           .from("categories")
           .select("id")
           .eq("id", data.id)
+          .eq("restaurant_id", currentRestaurant.id)
           .single();
 
         if (existingCategory) {
@@ -122,15 +136,17 @@ const CategoryForm = ({ category, categories, onSave, onCancel }: CategoryFormPr
           name: data.name,
           description: data.description,
           display_order: data.display_order,
+          restaurant_id: currentRestaurant.id,
         });
 
         if (error) throw error;
       }
 
-      // Récupérer toutes les catégories mises à jour
+      // Récupérer toutes les catégories mises à jour pour ce restaurant
       const { data: updatedCategories } = await supabase
         .from("categories")
         .select("*")
+        .eq("restaurant_id", currentRestaurant.id)
         .order("display_order");
 
       onSave(updatedCategories || []);

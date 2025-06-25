@@ -14,6 +14,7 @@ import { fetchCategories } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import CategoryForm from "./CategoryForm";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const CategoriesTable = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -22,12 +23,15 @@ const CategoriesTable = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
 
   useEffect(() => {
     const loadData = async () => {
+      if (!currentRestaurant) return;
+      
       try {
         setIsLoading(true);
-        const categoriesData = await fetchCategories();
+        const categoriesData = await fetchCategories(currentRestaurant.id);
         setCategories(categoriesData);
       } catch (error) {
         console.error("Error loading categories:", error);
@@ -42,7 +46,7 @@ const CategoriesTable = () => {
     };
 
     loadData();
-  }, [toast]);
+  }, [toast, currentRestaurant]);
 
   const handleEdit = (category: any) => {
     setSelectedCategory(category);
@@ -60,13 +64,14 @@ const CategoriesTable = () => {
   };
 
   const confirmDelete = async () => {
-    if (!selectedCategory) return;
+    if (!selectedCategory || !currentRestaurant) return;
     
     try {
       const { error } = await supabase
         .from('categories')
         .delete()
-        .eq('id', selectedCategory.id);
+        .eq('id', selectedCategory.id)
+        .eq('restaurant_id', currentRestaurant.id);
 
       if (error) throw error;
 
@@ -93,6 +98,8 @@ const CategoriesTable = () => {
   };
 
   const moveCategory = async (category: any, direction: 'up' | 'down') => {
+    if (!currentRestaurant) return;
+    
     const index = categories.findIndex(c => c.id === category.id);
     if ((direction === 'up' && index === 0) || 
         (direction === 'down' && index === categories.length - 1)) {
@@ -107,7 +114,8 @@ const CategoriesTable = () => {
       const { error: error1 } = await supabase
         .from('categories')
         .update({ display_order: swapCategory.display_order })
-        .eq('id', category.id);
+        .eq('id', category.id)
+        .eq('restaurant_id', currentRestaurant.id);
         
       if (error1) throw error1;
       
@@ -115,12 +123,13 @@ const CategoriesTable = () => {
       const { error: error2 } = await supabase
         .from('categories')
         .update({ display_order: category.display_order })
-        .eq('id', swapCategory.id);
+        .eq('id', swapCategory.id)
+        .eq('restaurant_id', currentRestaurant.id);
         
       if (error2) throw error2;
       
       // Reload categories to get updated order
-      const newCategories = await fetchCategories();
+      const newCategories = await fetchCategories(currentRestaurant.id);
       setCategories(newCategories);
       
       toast({
@@ -137,6 +146,10 @@ const CategoriesTable = () => {
     }
   };
 
+  if (!currentRestaurant) {
+    return <div className="flex justify-center p-8"><span>Sélectionnez un restaurant</span></div>;
+  }
+
   if (isLoading) {
     return <div className="flex justify-center p-8"><span className="loading loading-spinner loading-lg"></span></div>;
   }
@@ -144,7 +157,7 @@ const CategoriesTable = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold">Liste des catégories</h3>
+        <h3 className="text-xl font-semibold">Liste des catégories - {currentRestaurant.name}</h3>
         <Button onClick={handleAdd} className="flex items-center gap-2">
           <Plus className="h-4 w-4" /> Ajouter une catégorie
         </Button>

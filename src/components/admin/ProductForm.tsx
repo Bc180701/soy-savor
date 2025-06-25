@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -24,7 +25,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Image as ImageIcon, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 // Schéma de validation pour le formulaire
 const productFormSchema = z.object({
@@ -64,6 +66,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(product?.image_url || null);
   const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
 
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
@@ -133,6 +136,15 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
   };
 
   const onSubmit = async (data: ProductFormValues) => {
+    if (!currentRestaurant) {
+      toast({
+        title: "Erreur",
+        description: "Aucun restaurant sélectionné",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -156,14 +168,16 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             updated_at: new Date().toISOString(),
           })
           .eq("id", product.id)
+          .eq("restaurant_id", currentRestaurant.id)
           .select();
 
         if (error) throw error;
         
-        // Récupérer tous les produits mis à jour
+        // Récupérer tous les produits mis à jour pour ce restaurant
         const { data: allProducts } = await supabase
           .from("products")
           .select("*")
+          .eq("restaurant_id", currentRestaurant.id)
           .order("name");
         
         onSave(allProducts || []);
@@ -190,15 +204,17 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_new: data.is_new,
             is_best_seller: data.is_best_seller,
             is_gluten_free: data.is_gluten_free,
+            restaurant_id: currentRestaurant.id,
           })
           .select();
 
         if (error) throw error;
         
-        // Récupérer tous les produits mis à jour
+        // Récupérer tous les produits mis à jour pour ce restaurant
         const { data: allProducts } = await supabase
           .from("products")
           .select("*")
+          .eq("restaurant_id", currentRestaurant.id)
           .order("name");
         
         onSave(allProducts || []);

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Table, TableBody, TableCell, TableHead, 
@@ -19,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import ProductForm from "./ProductForm";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const ProductsTable = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -33,13 +35,16 @@ const ProductsTable = () => {
   const [showInactive, setShowInactive] = useState(false);
   const productsPerPage = 10;
   const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
 
   useEffect(() => {
     const loadData = async () => {
+      if (!currentRestaurant) return;
+      
       try {
         setIsLoading(true);
-        const productsData = await fetchAllProducts();
-        const categoriesData = await fetchCategories();
+        const productsData = await fetchAllProducts(currentRestaurant.id);
+        const categoriesData = await fetchCategories(currentRestaurant.id);
         
         setProducts(productsData);
         setCategories(categoriesData);
@@ -56,7 +61,7 @@ const ProductsTable = () => {
     };
 
     loadData();
-  }, [toast]);
+  }, [toast, currentRestaurant]);
 
   const handleEdit = (product: any) => {
     setSelectedProduct(product);
@@ -74,11 +79,14 @@ const ProductsTable = () => {
   };
 
   const handleToggleActive = async (product: any) => {
+    if (!currentRestaurant) return;
+    
     try {
       const { data: updatedProduct, error } = await supabase
         .from('products')
         .update({ is_new: !product.is_new })
         .eq('id', product.id)
+        .eq('restaurant_id', currentRestaurant.id)
         .select()
         .single();
 
@@ -101,11 +109,11 @@ const ProductsTable = () => {
   };
 
   const confirmDelete = async () => {
-    if (!selectedProduct) return;
+    if (!selectedProduct || !currentRestaurant) return;
     
     try {
       setIsLoading(true);
-      const success = await deleteProduct(selectedProduct.id);
+      const success = await deleteProduct(selectedProduct.id, currentRestaurant.id);
 
       if (!success) {
         throw new Error("La suppression du produit a échoué");
@@ -153,6 +161,10 @@ const ProductsTable = () => {
     setIsDialogOpen(false);
   };
 
+  if (!currentRestaurant) {
+    return <div className="flex justify-center p-8"><span>Sélectionnez un restaurant</span></div>;
+  }
+
   if (isLoading) {
     return <div className="flex justify-center p-8"><span className="loading loading-spinner loading-lg"></span></div>;
   }
@@ -160,7 +172,7 @@ const ProductsTable = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold">Liste des produits</h3>
+        <h3 className="text-xl font-semibold">Liste des produits - {currentRestaurant.name}</h3>
         <Button onClick={handleAdd} className="flex items-center gap-2">
           <Plus className="h-4 w-4" /> Ajouter un produit
         </Button>

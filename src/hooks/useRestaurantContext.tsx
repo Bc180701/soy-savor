@@ -1,13 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Restaurant, RestaurantContext } from "@/types/restaurant";
+import { Restaurant, type RestaurantContext } from "@/types/restaurant";
 import { fetchRestaurants, RESTAURANTS } from "@/services/restaurantService";
 import { useToast } from "@/hooks/use-toast";
 
-const RestaurantContext = createContext<RestaurantContext | undefined>(undefined);
+const RestaurantContextValue = createContext<RestaurantContext | undefined>(undefined);
 
 export const useRestaurantContext = () => {
-  const context = useContext(RestaurantContext);
+  const context = useContext(RestaurantContextValue);
   if (!context) {
     throw new Error("useRestaurantContext must be used within a RestaurantProvider");
   }
@@ -61,8 +61,8 @@ export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children
   };
 
   return (
-    <RestaurantContext.Provider value={value}>
+    <RestaurantContextValue.Provider value={value}>
       {children}
-    </RestaurantContext.Provider>
+    </RestaurantContextValue.Provider>
   );
 };

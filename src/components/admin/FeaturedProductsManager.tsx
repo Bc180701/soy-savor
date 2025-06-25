@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,22 +20,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const FeaturedProductsManager = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [currentRestaurant]);
 
   const fetchProducts = async () => {
+    if (!currentRestaurant) return;
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select('*, categories(name)')
+        .eq('restaurant_id', currentRestaurant.id)
         .order('name');
 
       if (error) throw error;
@@ -54,12 +58,14 @@ const FeaturedProductsManager = () => {
   };
 
   const updateProductFlag = async (productId, flagName, value) => {
+    if (!currentRestaurant) return;
+    
     try {
-      const updateData = { [flagName]: value };
       const { error } = await supabase
         .from('products')
-        .update(updateData)
-        .eq('id', productId);
+        .update({ [flagName]: value })
+        .eq('id', productId)
+        .eq('restaurant_id', currentRestaurant.id);
 
       if (error) throw error;
 
@@ -96,10 +102,14 @@ const FeaturedProductsManager = () => {
     return false;
   };
 
+  if (!currentRestaurant) {
+    return <div className="flex justify-center p-8"><span>Sélectionnez un restaurant</span></div>;
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Produits mis en avant</h2>
+        <h2 className="text-2xl font-bold mb-2">Produits mis en avant - {currentRestaurant.name}</h2>
         <p className="text-muted-foreground mb-6">
           Gérez les produits affichés sur la page d'accueil dans les sections Nouveautés, Populaires et Exclusivités.
         </p>
