@@ -78,14 +78,18 @@ export const fetchOrderWithDetails = async (orderId: string) => {
 };
 
 // Helper function to fetch all products and categories in a single request
-export const fetchAllMenuData = async () => {
-  console.log("Fetching all menu data in a single request");
+export const fetchAllMenuData = async (restaurantId?: string) => {
+  console.log("Fetching all menu data for restaurant:", restaurantId);
   
   try {
-    // Fetch all categories first
+    // Utiliser Châteaurenard par défaut si pas de restaurant spécifié
+    const targetRestaurantId = restaurantId || '11111111-1111-1111-1111-111111111111';
+    
+    // Fetch categories for this restaurant
     const { data: categories, error: categoriesError } = await supabase
       .from('categories')
       .select('*')
+      .eq('restaurant_id', targetRestaurantId)
       .order('display_order', { ascending: true });
     
     if (categoriesError) {
@@ -93,10 +97,11 @@ export const fetchAllMenuData = async () => {
       return [];
     }
     
-    // Fetch all products in a single request
+    // Fetch products for this restaurant
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('*')
+      .eq('restaurant_id', targetRestaurantId)
       .order('name');
     
     if (productsError) {
@@ -125,14 +130,14 @@ export const fetchAllMenuData = async () => {
       }));
       
       return {
-        id: category.id as SushiCategory, // Cast l'ID de la catégorie en SushiCategory
+        id: category.id as SushiCategory,
         name: category.name,
         description: category.description,
         items: menuItems
       };
     });
     
-    console.log(`Loaded ${categories.length} categories and ${products.length} total products in a single request`);
+    console.log(`Loaded ${categories.length} categories and ${products.length} total products for restaurant ${targetRestaurantId}`);
     return menuData;
   } catch (error) {
     console.error("Error fetching all menu data:", error);
@@ -140,13 +145,16 @@ export const fetchAllMenuData = async () => {
   }
 };
 
-// Helper function to fetch products by category
-export const fetchProductsByCategory = async (categoryId: string) => {
-  console.log(`Fetching products for category: ${categoryId}`);
+// Helper function to fetch products by category for a specific restaurant
+export const fetchProductsByCategory = async (categoryId: string, restaurantId?: string) => {
+  const targetRestaurantId = restaurantId || '11111111-1111-1111-1111-111111111111';
+  console.log(`Fetching products for category: ${categoryId} in restaurant: ${targetRestaurantId}`);
+  
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .eq('category_id', categoryId)
+    .eq('restaurant_id', targetRestaurantId)
     .order('name');
   
   if (error) {
@@ -154,16 +162,19 @@ export const fetchProductsByCategory = async (categoryId: string) => {
     return [];
   }
   
-  console.log(`Found ${data?.length || 0} products for category ${categoryId}`);
+  console.log(`Found ${data?.length || 0} products for category ${categoryId} in restaurant ${targetRestaurantId}`);
   return data || [];
 };
 
-// Helper function to fetch all categories
-export const fetchCategories = async () => {
-  console.log("Fetching all categories");
+// Helper function to fetch categories for a specific restaurant
+export const fetchCategories = async (restaurantId?: string) => {
+  const targetRestaurantId = restaurantId || '11111111-1111-1111-1111-111111111111';
+  console.log("Fetching categories for restaurant:", targetRestaurantId);
+  
   const { data, error } = await supabase
     .from('categories')
     .select('*')
+    .eq('restaurant_id', targetRestaurantId)
     .order('display_order', { ascending: true });
   
   if (error) {
@@ -171,16 +182,19 @@ export const fetchCategories = async () => {
     return [];
   }
   
-  console.log(`Found ${data?.length || 0} categories`);
+  console.log(`Found ${data?.length || 0} categories for restaurant ${targetRestaurantId}`);
   return data || [];
 };
 
-// Helper function to fetch all products
-export const fetchAllProducts = async () => {
-  console.log("Fetching all products");
+// Helper function to fetch all products for a specific restaurant
+export const fetchAllProducts = async (restaurantId?: string) => {
+  const targetRestaurantId = restaurantId || '11111111-1111-1111-1111-111111111111';
+  console.log("Fetching all products for restaurant:", targetRestaurantId);
+  
   const { data, error } = await supabase
     .from('products')
     .select('*, categories(name)')
+    .eq('restaurant_id', targetRestaurantId)
     .order('name');
   
   if (error) {
@@ -188,7 +202,7 @@ export const fetchAllProducts = async () => {
     return [];
   }
   
-  console.log(`Found ${data?.length || 0} total products`);
+  console.log(`Found ${data?.length || 0} total products for restaurant ${targetRestaurantId}`);
   return data || [];
 };
 

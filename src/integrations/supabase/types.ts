@@ -15,20 +15,31 @@ export type Database = {
           display_order: number
           id: string
           name: string
+          restaurant_id: string
         }
         Insert: {
           description?: string | null
           display_order?: number
           id: string
           name: string
+          restaurant_id: string
         }
         Update: {
           description?: string | null
           display_order?: number
           id?: string
           name?: string
+          restaurant_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       day_based_promotions: {
         Row: {
@@ -41,6 +52,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_percentage: boolean
+          restaurant_id: string
           start_time: string | null
           title: string
           updated_at: string
@@ -55,6 +67,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_percentage?: boolean
+          restaurant_id: string
           start_time?: string | null
           title: string
           updated_at?: string
@@ -69,11 +82,20 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_percentage?: boolean
+          restaurant_id?: string
           start_time?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "day_based_promotions_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delivery_locations: {
         Row: {
@@ -82,6 +104,7 @@ export type Database = {
           id: number
           is_active: boolean | null
           postal_code: string
+          restaurant_id: string
         }
         Insert: {
           city: string
@@ -89,6 +112,7 @@ export type Database = {
           id?: number
           is_active?: boolean | null
           postal_code: string
+          restaurant_id: string
         }
         Update: {
           city?: string
@@ -96,8 +120,17 @@ export type Database = {
           id?: number
           is_active?: boolean | null
           postal_code?: string
+          restaurant_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "delivery_locations_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       delivery_zones: {
         Row: {
@@ -241,6 +274,7 @@ export type Database = {
           payment_status: string
           pickup_time: string | null
           promo_code: string | null
+          restaurant_id: string
           scheduled_for: string
           status: string
           subtotal: number
@@ -270,6 +304,7 @@ export type Database = {
           payment_status?: string
           pickup_time?: string | null
           promo_code?: string | null
+          restaurant_id: string
           scheduled_for: string
           status?: string
           subtotal: number
@@ -299,6 +334,7 @@ export type Database = {
           payment_status?: string
           pickup_time?: string | null
           promo_code?: string | null
+          restaurant_id?: string
           scheduled_for?: string
           status?: string
           subtotal?: number
@@ -313,6 +349,13 @@ export type Database = {
             columns: ["delivery_address_id"]
             isOneToOne: false
             referencedRelation: "user_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
           {
@@ -436,6 +479,7 @@ export type Database = {
           pieces: number | null
           prep_time: number | null
           price: number
+          restaurant_id: string
           updated_at: string | null
         }
         Insert: {
@@ -454,6 +498,7 @@ export type Database = {
           pieces?: number | null
           prep_time?: number | null
           price: number
+          restaurant_id: string
           updated_at?: string | null
         }
         Update: {
@@ -472,6 +517,7 @@ export type Database = {
           pieces?: number | null
           prep_time?: number | null
           price?: number
+          restaurant_id?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -480,6 +526,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
         ]
@@ -553,6 +606,7 @@ export type Database = {
           is_one_time_use: boolean | null
           is_percentage: boolean
           min_order: number | null
+          restaurant_id: string
           start_date: string
           title: string
         }
@@ -568,6 +622,7 @@ export type Database = {
           is_one_time_use?: boolean | null
           is_percentage?: boolean
           min_order?: number | null
+          restaurant_id: string
           start_date: string
           title: string
         }
@@ -583,8 +638,59 @@ export type Database = {
           is_one_time_use?: boolean | null
           is_percentage?: boolean
           min_order?: number | null
+          restaurant_id?: string
           start_date?: string
           title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurants: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          postal_code: string | null
+          settings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          postal_code?: string | null
+          settings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          postal_code?: string | null
+          settings?: Json | null
+          updated_at?: string | null
         }
         Relationships: []
       }
