@@ -1,9 +1,11 @@
+
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
 import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
+import { RESTAURANTS } from "@/services/restaurantService";
 import { isRestaurantOpenNow, getNextOpenDay } from "@/services/openingHoursService";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/menu/LoadingSpinner";

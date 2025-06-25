@@ -16,7 +16,12 @@ export const fetchRestaurants = async (): Promise<Restaurant[]> => {
   }
   
   console.log(`Found ${data?.length || 0} restaurants`);
-  return data || [];
+  
+  // Convertir les données Supabase vers notre type Restaurant
+  return (data || []).map(restaurant => ({
+    ...restaurant,
+    settings: restaurant.settings as Record<string, any> || {}
+  }));
 };
 
 export const getRestaurantById = async (id: string): Promise<Restaurant | null> => {
@@ -32,7 +37,11 @@ export const getRestaurantById = async (id: string): Promise<Restaurant | null> 
     return null;
   }
   
-  return data;
+  // Convertir les données Supabase vers notre type Restaurant
+  return {
+    ...data,
+    settings: data.settings as Record<string, any> || {}
+  };
 };
 
 // IDs par défaut des restaurants

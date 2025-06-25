@@ -38,11 +38,15 @@ export const createOrder = async (
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
 
+    // Utiliser le restaurant par défaut (Châteaurenard) pour maintenant
+    const defaultRestaurantId = "11111111-1111-1111-1111-111111111111";
+
     // Création de la commande dans la base de données
     const { data: newOrder, error: orderError } = await supabase
       .from("orders")
       .insert({
         user_id: userId, // null si pas connecté
+        restaurant_id: defaultRestaurantId,
         subtotal: orderInput.subtotal,
         tax: orderInput.tax,
         delivery_fee: orderInput.deliveryFee,

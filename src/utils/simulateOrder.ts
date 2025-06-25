@@ -18,10 +18,14 @@ export const simulateOrder = async (): Promise<{ success: boolean; orderId?: str
       return { success: false, error: "Vous devez être connecté pour simuler une commande." };
     }
 
-    // Récupérer des produits réels de la base de données
+    // Utiliser le restaurant par défaut
+    const defaultRestaurantId = "11111111-1111-1111-1111-111111111111";
+
+    // Récupérer des produits réels de la base de données pour ce restaurant
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('id, name, price')
+      .eq('restaurant_id', defaultRestaurantId)
       .limit(3);
 
     if (productsError || !products || products.length === 0) {
@@ -57,6 +61,7 @@ export const simulateOrder = async (): Promise<{ success: boolean; orderId?: str
       .from('orders')
       .insert({
         user_id: session.user.id,
+        restaurant_id: defaultRestaurantId,
         subtotal,
         tax,
         delivery_fee: deliveryFee,

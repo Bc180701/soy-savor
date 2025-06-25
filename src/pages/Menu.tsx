@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { MenuCategory } from "@/types";
 import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
+import { RESTAURANTS } from "@/services/restaurantService";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/menu/LoadingSpinner";
 import PromotionalBanner from "@/components/menu/PromotionalBanner";
@@ -43,9 +44,9 @@ const Menu = () => {
           console.log("Aucune donnée de menu trouvée, initialisation automatique...");
           setIsInitializing(true);
           
-          // D'abord initialiser les catégories
+          // D'abord initialiser les catégories avec l'ID du restaurant par défaut
           console.log("Initialisation des catégories...");
-          const categoriesInitialized = await initializeCategories();
+          const categoriesInitialized = await initializeCategories(RESTAURANTS.CHATEAURENARD);
           if (!categoriesInitialized) {
             throw new Error("Échec de l'initialisation des catégories");
           }
@@ -53,7 +54,7 @@ const Menu = () => {
           
           // Ensuite, initialiser les produits complets
           console.log("Initialisation des produits...");
-          const productsInitialized = await initializeFullMenu();
+          const productsInitialized = await initializeFullMenu(RESTAURANTS.CHATEAURENARD);
           if (!productsInitialized) {
             throw new Error("Échec de l'initialisation des produits");
           }

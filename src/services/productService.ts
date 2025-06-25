@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MenuItem, MenuCategory } from "@/types";
 
@@ -75,96 +74,231 @@ export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]
   }
 };
 
-export const initializeCategories = async (restaurantId: string): Promise<boolean> => {
+export const initializeCategories = async (restaurantId?: string): Promise<boolean> => {
+  const targetRestaurantId = restaurantId || RESTAURANTS.CHATEAURENARD;
+  console.log(`Initializing categories for restaurant: ${targetRestaurantId}`);
+  
   try {
-    console.log(`Début de l'initialisation des catégories pour restaurant ${restaurantId}...`);
-    
     // Vérifier si des catégories existent déjà pour ce restaurant
-    const { data: existingCategories, error: checkError } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('restaurant_id', restaurantId);
-
-    if (checkError) {
-      console.error('Erreur lors de la vérification des catégories:', checkError);
-      return false;
-    }
-
-    if (existingCategories && existingCategories.length > 0) {
-      console.log('Des catégories existent déjà pour ce restaurant, initialisation ignorée');
+    const existingCategories = await fetchCategories(targetRestaurantId);
+    if (existingCategories.length > 0) {
+      console.log(`Categories already exist for restaurant ${targetRestaurantId}, skipping initialization`);
       return true;
     }
 
     // Créer les catégories par défaut pour ce restaurant
-    const defaultCategories = [
-      { id: 'box', name: 'Box', description: null, display_order: 0, restaurant_id: restaurantId },
-      { id: 'plateaux', name: 'Plateaux', description: null, display_order: 1, restaurant_id: restaurantId },
-      { id: 'yakitori', name: 'Yakitori', description: null, display_order: 2, restaurant_id: restaurantId },
-      { id: 'accompagnements', name: 'Accompagnements', description: null, display_order: 3, restaurant_id: restaurantId },
-      { id: 'desserts', name: 'Desserts', description: null, display_order: 4, restaurant_id: restaurantId },
-      { id: 'gunkan', name: 'Gunkan', description: null, display_order: 5, restaurant_id: restaurantId },
-      { id: 'sashimi', name: 'Sashimi', description: null, display_order: 6, restaurant_id: restaurantId },
-      { id: 'poke', name: 'Poke Bowl', description: null, display_order: 7, restaurant_id: restaurantId },
-      { id: 'chirashi', name: 'Chirashi', description: null, display_order: 8, restaurant_id: restaurantId },
-      { id: 'green', name: 'Green', description: null, display_order: 9, restaurant_id: restaurantId },
-      { id: 'nigiri', name: 'Nigiri', description: null, display_order: 10, restaurant_id: restaurantId },
-      { id: 'signature', name: 'Signature', description: null, display_order: 11, restaurant_id: restaurantId },
-      { id: 'temaki', name: 'Temaki', description: null, display_order: 12, restaurant_id: restaurantId },
-      { id: 'maki_wrap', name: 'Maki Wrap', description: null, display_order: 13, restaurant_id: restaurantId },
-      { id: 'maki', name: 'Maki', description: null, display_order: 14, restaurant_id: restaurantId },
-      { id: 'california', name: 'California', description: null, display_order: 15, restaurant_id: restaurantId },
-      { id: 'crispy', name: 'Crispy', description: null, display_order: 16, restaurant_id: restaurantId },
-      { id: 'spring', name: 'Spring', description: null, display_order: 17, restaurant_id: restaurantId },
-      { id: 'salmon', name: 'Salmon', description: null, display_order: 18, restaurant_id: restaurantId },
-      { id: 'boissons', name: 'Boissons', description: null, display_order: 19, restaurant_id: restaurantId },
-      { id: 'box_du_midi', name: 'Box du Midi', description: null, display_order: 20, restaurant_id: restaurantId },
-      { id: 'custom', name: 'Personnalisé', description: null, display_order: 21, restaurant_id: restaurantId },
-      { id: 'poke_custom', name: 'Poke Personnalisé', description: null, display_order: 22, restaurant_id: restaurantId }
+    const categories = [
+      { id: "makis", name: "Makis", description: "Rouleaux de riz vinaigré", display_order: 0 },
+      { id: "sashimis", name: "Sashimis", description: "Poisson cru sans riz", display_order: 1 },
+      { id: "nigiris", name: "Nigiris", description: "Riz surmonté de poisson", display_order: 2 },
+      { id: "california", name: "California", description: "Makis inversés aux algues à l'extérieur", display_order: 3 },
+      { id: "plateaux", name: "Plateaux", description: "Assortiments de sushis", display_order: 4 },
+      { id: "chirashis", name: "Chirashis", description: "Bol de riz aux poissons variés", display_order: 5 },
+      { id: "soupes", name: "Soupes", description: "Soupes chaudes japonaises", display_order: 6 },
+      { id: "boissons", name: "Boissons", description: "Boissons fraîches et chaudes", display_order: 7 },
+      { id: "desserts", name: "Desserts", description: "Desserts japonais traditionnels", display_order: 8 }
     ];
 
-    console.log(`Insertion de ${defaultCategories.length} catégories pour restaurant ${restaurantId}...`);
+    console.log(`Inserting ${categories.length} categories for restaurant ${targetRestaurantId}`);
     
-    const { error: insertError } = await supabase
-      .from('categories')
-      .insert(defaultCategories);
-
-    if (insertError) {
-      console.error('Erreur lors de l\'insertion des catégories:', insertError);
-      return false;
+    for (const category of categories) {
+      await insertCategory({
+        ...category,
+        restaurant_id: targetRestaurantId
+      });
     }
 
-    console.log('Catégories initialisées avec succès');
+    console.log("Categories initialization completed successfully");
     return true;
   } catch (error) {
-    console.error('Erreur lors de l\'initialisation des catégories:', error);
+    console.error("Error initializing categories:", error);
     return false;
   }
 };
 
-export const initializeFullMenu = async (restaurantId: string): Promise<boolean> => {
+export const initializeFullMenu = async (restaurantId?: string): Promise<boolean> => {
+  const targetRestaurantId = restaurantId || RESTAURANTS.CHATEAURENARD;
+  console.log(`Initializing full menu for restaurant: ${targetRestaurantId}`);
+  
   try {
-    console.log(`Début de l'initialisation complète du menu pour restaurant ${restaurantId}...`);
-    
     // Vérifier si des produits existent déjà pour ce restaurant
-    const { data: existingProducts, error: checkError } = await supabase
-      .from('products')
-      .select('id')
-      .eq('restaurant_id', restaurantId);
-
-    if (checkError) {
-      console.error('Erreur lors de la vérification des produits:', checkError);
-      return false;
-    }
-
-    if (existingProducts && existingProducts.length > 0) {
-      console.log('Des produits existent déjà pour ce restaurant, initialisation ignorée');
+    const existingProducts = await fetchAllProducts(targetRestaurantId);
+    if (existingProducts.length > 0) {
+      console.log(`Products already exist for restaurant ${targetRestaurantId}, skipping initialization`);
       return true;
     }
 
-    console.log('Aucun produit trouvé pour ce restaurant, l\'initialisation peut être faite via l\'interface admin');
+    // Créer les produits par défaut pour ce restaurant
+    const makisProducts = [
+      {
+        name: "Maki Saumon",
+        description: "Riz vinaigré, saumon frais, algue nori",
+        price: 4.50,
+        category_id: "makis",
+        image_url: "/lovable-uploads/2443ae61-1e76-42ea-a1fd-0506bb67f970.png",
+        is_vegetarian: false,
+        is_spicy: false,
+        pieces: 6
+      },
+      {
+        name: "Maki Thon",
+        description: "Riz vinaigré, thon rouge, algue nori",
+        price: 5.00,
+        category_id: "makis",
+        image_url: "/lovable-uploads/410b6967-e49b-4913-9f13-24e5279ee4f5.png",
+        is_vegetarian: false,
+        is_spicy: false,
+        pieces: 6
+      },
+      {
+        name: "Maki Avocat",
+        description: "Riz vinaigré, avocat frais, algue nori",
+        price: 3.50,
+        category_id: "makis",
+        image_url: "/lovable-uploads/80663134-a018-4c55-8a81-5ee048c700e3.png",
+        is_vegetarian: true,
+        is_spicy: false,
+        pieces: 6
+      },
+      {
+        name: "Maki Concombre",
+        description: "Riz vinaigré, concombre croquant, algue nori",
+        price: 3.00,
+        category_id: "makis",
+        image_url: "/lovable-uploads/8d6a0ad3-bf3f-48f8-b427-7d4db8f4b26b.png",
+        is_vegetarian: true,
+        is_spicy: false,
+        pieces: 6
+      }
+    ];
+
+    const sashimisProducts = [
+      {
+        name: "Sashimi Saumon",
+        description: "Tranches fines de saumon frais",
+        price: 8.00,
+        category_id: "sashimis",
+        image_url: "/lovable-uploads/c2d085bb-4d47-41fc-b430-0ed97076ece3.png",
+        is_vegetarian: false,
+        is_spicy: false,
+        pieces: 5
+      },
+      {
+        name: "Sashimi Thon",
+        description: "Tranches fines de thon rouge",
+        price: 9.00,
+        category_id: "sashimis",
+        image_url: "/lovable-uploads/0f3ef4af-3737-45b0-a552-0c84028dd3cd.png",
+        is_vegetarian: false,
+        is_spicy: false,
+        pieces: 5
+      }
+    ];
+
+    const nigirisProducts = [
+      {
+        name: "Nigiri Saumon",
+        description: "Riz vinaigré surmonté de saumon",
+        price: 2.50,
+        category_id: "nigiris",
+        image_url: "/lovable-uploads/ab0cbaa4-7dab-449d-b422-e426b7812e41.png",
+        is_vegetarian: false,
+        is_spicy: false,
+        pieces: 1
+      },
+      {
+        name: "Nigiri Thon",
+        description: "Riz vinaigré surmonté de thon",
+        price: 3.00,
+        category_id: "nigiris",
+        image_url: "/lovable-uploads/c30dd633-dfec-4589-afdf-9cf0abf72049.png",
+        is_vegetarian: false,
+        is_spicy: false,
+        pieces: 1
+      }
+    ];
+
+    const californiaProducts = [
+      {
+        name: "California Saumon Avocat",
+        description: "Saumon, avocat, concombre, sauce épicée",
+        price: 6.50,
+        category_id: "california",
+        image_url: "/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png",
+        is_vegetarian: false,
+        is_spicy: true,
+        pieces: 8,
+        is_best_seller: true
+      },
+      {
+        name: "California Thon Épicé",
+        description: "Thon épicé, avocat, concombre",
+        price: 7.00,
+        category_id: "california",
+        image_url: "/lovable-uploads/e94446cb-ba03-42bd-a3bc-9562513a950e.png",
+        is_vegetarian: false,
+        is_spicy: true,
+        pieces: 8
+      }
+    ];
+
+    const plateauxProducts = [
+      {
+        name: "Plateau Découverte",
+        description: "Assortiment de 20 pièces : makis, nigiris, california",
+        price: 24.90,
+        category_id: "plateaux",
+        image_url: "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png",
+        is_vegetarian: false,
+        is_spicy: false,
+        pieces: 20,
+        is_new: true
+      },
+      {
+        name: "Plateau Premium",
+        description: "Sélection premium de 30 pièces avec sashimis",
+        price: 39.90,
+        category_id: "plateaux",
+        image_url: "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png",
+        is_vegetarian: false,
+        is_spicy: false,
+        pieces: 30,
+        is_best_seller: true
+      }
+    ];
+
+    const allProducts = [
+      ...makisProducts,
+      ...sashimisProducts,
+      ...nigirisProducts,
+      ...californiaProducts,
+      ...plateauxProducts
+    ];
+
+    console.log(`Inserting ${allProducts.length} products for restaurant ${targetRestaurantId}`);
+    
+    for (const product of allProducts) {
+      try {
+        // Vérifier si le produit existe déjà
+        const exists = await productExistsInCategory(product.name, product.category_id, targetRestaurantId);
+        if (!exists) {
+          await insertProduct({
+            ...product,
+            restaurant_id: targetRestaurantId
+          });
+          console.log(`Inserted product: ${product.name}`);
+        } else {
+          console.log(`Product ${product.name} already exists, skipping`);
+        }
+      } catch (error) {
+        console.error(`Error inserting product ${product.name}:`, error);
+      }
+    }
+
+    console.log("Full menu initialization completed successfully");
     return true;
   } catch (error) {
-    console.error('Erreur lors de l\'initialisation du menu complet:', error);
+    console.error("Error initializing full menu:", error);
     return false;
   }
 };

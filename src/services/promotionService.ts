@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DayBasedPromotion {
@@ -118,6 +117,9 @@ export const isPromotionActiveToday = async (promotionId: string): Promise<boole
 // Fonctions CRUD pour l'administration
 export const createPromotion = async (promotion: Omit<DayBasedPromotion, 'id' | 'createdAt' | 'updatedAt'>): Promise<DayBasedPromotion | null> => {
   try {
+    // Utiliser le restaurant par défaut pour maintenant
+    const defaultRestaurantId = "11111111-1111-1111-1111-111111111111";
+    
     const { data, error } = await supabase
       .from('day_based_promotions')
       .insert({
@@ -129,7 +131,8 @@ export const createPromotion = async (promotion: Omit<DayBasedPromotion, 'id' | 
         applicable_categories: promotion.applicableCategories,
         start_time: promotion.startTime,
         end_time: promotion.endTime,
-        is_active: promotion.isActive
+        is_active: promotion.isActive,
+        restaurant_id: defaultRestaurantId
       })
       .select()
       .single();
