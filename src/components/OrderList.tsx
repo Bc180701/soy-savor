@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { getAllOrders, updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
@@ -9,6 +10,7 @@ import OrdersAccountingView from "./orders/OrdersAccountingView";
 import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const OrderList = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -17,13 +19,14 @@ const OrderList = () => {
   const [activeView, setActiveView] = useState<string>("accounting");
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { selectedRestaurant } = useRestaurantContext();
 
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        console.log("Récupération des commandes...");
-        const { orders: fetchedOrders, error } = await getAllOrders();
+        console.log("Récupération des commandes pour le restaurant:", selectedRestaurant?.id);
+        const { orders: fetchedOrders, error } = await getAllOrders(selectedRestaurant?.id);
         
         if (error) {
           console.error("Erreur lors de la récupération des commandes:", error);
@@ -33,7 +36,7 @@ const OrderList = () => {
             variant: "destructive",
           });
         } else {
-          console.log(`${fetchedOrders?.length || 0} commandes récupérées:`, fetchedOrders);
+          console.log(`${fetchedOrders?.length || 0} commandes récupérées pour ${selectedRestaurant?.name || 'tous les restaurants'}:`, fetchedOrders);
           setOrders(fetchedOrders || []);
         }
       } catch (err) {
@@ -49,7 +52,7 @@ const OrderList = () => {
     };
 
     fetchOrders();
-  }, [toast]);
+  }, [toast, selectedRestaurant]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -94,7 +97,9 @@ const OrderList = () => {
     <div className={`${isMobile ? 'w-full px-2' : 'bg-white rounded-lg shadow-md'} overflow-hidden`}>
       {!isMobile && (
         <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">Gestion des Commandes</h2>
+          <h2 className="text-xl font-bold">
+            Gestion des Commandes {selectedRestaurant?.name && `- ${selectedRestaurant.name}`}
+          </h2>
         </div>
       )}
       

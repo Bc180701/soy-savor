@@ -1,4 +1,3 @@
-
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -31,22 +30,23 @@ export const createOrder = async (
     deliveryStreet?: string;
     deliveryCity?: string;
     deliveryPostalCode?: string;
-  }
+  },
+  restaurantId?: string
 ): Promise<{ success: boolean; order?: Order; error?: any }> => {
   try {
     // Vérifier si l'utilisateur est connecté
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
 
-    // Utiliser le restaurant par défaut (Châteaurenard) pour maintenant
-    const defaultRestaurantId = "11111111-1111-1111-1111-111111111111";
+    // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
+    const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
 
     // Création de la commande dans la base de données
     const { data: newOrder, error: orderError } = await supabase
       .from("orders")
       .insert({
         user_id: userId, // null si pas connecté
-        restaurant_id: defaultRestaurantId,
+        restaurant_id: targetRestaurantId,
         subtotal: orderInput.subtotal,
         tax: orderInput.tax,
         delivery_fee: orderInput.deliveryFee,
@@ -195,16 +195,17 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
   }
 };
 
-export const getAllOrders = async (): Promise<OrderResponse> => {
+export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse> => {
   try {
-    console.log("Début de récupération de toutes les commandes");
+    console.log("Début de récupération de toutes les commandes pour le restaurant:", restaurantId);
     
-    // Requête à Supabase pour récupérer toutes les commandes
-    const response = await supabase
+    // Construire la requête avec ou sans filtre de restaurant
+    let query = supabase
       .from('orders')
       .select(`
         id,
         user_id,
+        restaurant_id,
         subtotal,
         tax,
         delivery_fee,
@@ -231,6 +232,13 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
         delivery_postal_code
       `)
       .order('created_at', { ascending: false });
+
+    // Ajouter le filtre restaurant si fourni
+    if (restaurantId) {
+      query = query.eq('restaurant_id', restaurantId);
+    }
+      
+    const response = await query;
       
     if (response.error) {
       console.error("Erreur lors de la récupération des commandes:", response.error);
@@ -238,7 +246,7 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
       return { orders: [], error: new Error(response.error.message) };
     }
     
-    console.log(`${response.data?.length || 0} commandes récupérées de Supabase`);
+    console.log(`${response.data?.length || 0} commandes récupérées de Supabase pour le restaurant ${restaurantId || 'tous'}`);
     const orders = response.data || [];
 
     // Convertir les données Supabase au format de notre application
