@@ -6,11 +6,23 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 const RestaurantSelector = () => {
   const { currentRestaurant, restaurants, setCurrentRestaurant, isLoading } = useRestaurantContext();
 
+  console.log("RestaurantSelector - Current restaurant:", currentRestaurant?.name);
+  console.log("RestaurantSelector - Available restaurants:", restaurants.length);
+
   if (isLoading) {
     return (
       <div className="flex items-center space-x-2">
         <Building2 className="h-4 w-4" />
-        <span className="text-sm">Chargement...</span>
+        <span className="text-sm">Chargement des restaurants...</span>
+      </div>
+    );
+  }
+
+  if (restaurants.length === 0) {
+    return (
+      <div className="flex items-center space-x-2">
+        <Building2 className="h-4 w-4" />
+        <span className="text-sm text-red-500">Aucun restaurant disponible</span>
       </div>
     );
   }
@@ -21,6 +33,7 @@ const RestaurantSelector = () => {
       <Select
         value={currentRestaurant?.id || ""}
         onValueChange={(value) => {
+          console.log("Changement de restaurant sélectionné:", value);
           const restaurant = restaurants.find(r => r.id === value);
           if (restaurant) {
             setCurrentRestaurant(restaurant);

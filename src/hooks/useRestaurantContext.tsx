@@ -1,68 +1,61 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Restaurant, type RestaurantContext } from "@/types/restaurant";
-import { fetchRestaurants, RESTAURANTS } from "@/services/restaurantService";
-import { useToast } from "@/hooks/use-toast";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import type { RestaurantContext, Restaurant } from "@/types/restaurant";
+import { fetchRestaurants } from "@/services/restaurantService";
 
-const RestaurantContextValue = createContext<RestaurantContext | undefined>(undefined);
+const RestaurantContextObj = createContext<RestaurantContext | undefined>(undefined);
 
-export const useRestaurantContext = () => {
-  const context = useContext(RestaurantContextValue);
-  if (!context) {
-    throw new Error("useRestaurantContext must be used within a RestaurantProvider");
-  }
-  return context;
-};
-
-interface RestaurantProviderProps {
-  children: ReactNode;
-}
-
-export const RestaurantProvider: React.FC<RestaurantProviderProps> = ({ children }) => {
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     const loadRestaurants = async () => {
       try {
+        console.log("Chargement des restaurants...");
         setIsLoading(true);
-        const restaurantData = await fetchRestaurants();
-        setRestaurants(restaurantData);
         
-        // Définir le restaurant par défaut (Châteaurenard)
-        const defaultRestaurant = restaurantData.find(r => r.id === RESTAURANTS.CHATEAURENARD);
-        if (defaultRestaurant) {
+        const restaurantsList = await fetchRestaurants();
+        console.log("Restaurants chargés:", restaurantsList.length);
+        
+        setRestaurants(restaurantsList);
+        
+        // Sélectionner le premier restaurant par défaut s'il n'y en a pas de sélectionné
+        if (restaurantsList.length > 0 && !currentRestaurant) {
+          const defaultRestaurant = restaurantsList[0];
+          console.log("Sélection du restaurant par défaut:", defaultRestaurant.name);
           setCurrentRestaurant(defaultRestaurant);
-        } else if (restaurantData.length > 0) {
-          setCurrentRestaurant(restaurantData[0]);
         }
       } catch (error) {
-        console.error("Error loading restaurants:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les restaurants",
-          variant: "destructive"
-        });
+        console.error("Erreur lors du chargement des restaurants:", error);
+        setRestaurants([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadRestaurants();
-  }, [toast]);
+  }, []);
 
   const value: RestaurantContext = {
     currentRestaurant,
     restaurants,
     setCurrentRestaurant,
-    isLoading
+    isLoading,
   };
 
   return (
-    <RestaurantContextValue.Provider value={value}>
+    <RestaurantContextObj.Provider value={value}>
       {children}
-    </RestaurantContextValue.Provider>
+    </RestaurantContextObj.Provider>
   );
+};
+
+export const useRestaurantContext = () => {
+  const context = useContext(RestaurantContextObj);
+  if (context === undefined) {
+    throw new Error("useRestaurantContext must be used within a RestaurantProvider");
+  }
+  return context;
 };
