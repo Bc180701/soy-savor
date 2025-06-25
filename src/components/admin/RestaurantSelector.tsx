@@ -6,12 +6,13 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 const RestaurantSelector = () => {
   const { currentRestaurant, restaurants, setCurrentRestaurant, isLoading } = useRestaurantContext();
 
-  console.log("RestaurantSelector - Current restaurant:", currentRestaurant?.name);
-  console.log("RestaurantSelector - Available restaurants:", restaurants.length);
+  console.log("RestaurantSelector render - Current restaurant:", currentRestaurant?.name);
+  console.log("RestaurantSelector render - Available restaurants:", restaurants.length);
+  console.log("RestaurantSelector render - Loading:", isLoading);
 
   if (isLoading) {
     return (
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 min-w-[200px]">
         <Building2 className="h-4 w-4" />
         <span className="text-sm">Chargement des restaurants...</span>
       </div>
@@ -20,7 +21,7 @@ const RestaurantSelector = () => {
 
   if (restaurants.length === 0) {
     return (
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 min-w-[200px]">
         <Building2 className="h-4 w-4" />
         <span className="text-sm text-red-500">Aucun restaurant disponible</span>
       </div>
@@ -28,7 +29,7 @@ const RestaurantSelector = () => {
   }
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-2 min-w-[200px]">
       <Building2 className="h-4 w-4" />
       <Select
         value={currentRestaurant?.id || ""}
@@ -36,6 +37,7 @@ const RestaurantSelector = () => {
           console.log("Changement de restaurant sélectionné:", value);
           const restaurant = restaurants.find(r => r.id === value);
           if (restaurant) {
+            console.log("Restaurant trouvé:", restaurant.name);
             setCurrentRestaurant(restaurant);
           }
         }}
