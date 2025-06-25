@@ -116,17 +116,18 @@ const Admin = () => {
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white shadow-sm border-b">
           <div className="container mx-auto px-4 py-4">
-            <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-              <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
-              <div className="flex items-center bg-gray-50 p-3 rounded-lg border">
-                <span className="text-sm font-medium text-gray-700 mr-3">Restaurant :</span>
-                <RestaurantSelector />
-              </div>
-            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
           </div>
         </div>
         
         <div className="container mx-auto px-4 py-6">
+          <div className="mb-6 flex items-center justify-center">
+            <div className="flex items-center bg-white p-4 rounded-lg border shadow-sm">
+              <span className="text-sm font-medium text-gray-700 mr-3">Restaurant :</span>
+              <RestaurantSelector />
+            </div>
+          </div>
+          
           <AdminManager />
         </div>
       </div>
