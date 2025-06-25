@@ -8,6 +8,13 @@ import RestaurantSelector from "@/components/admin/RestaurantSelector";
 import AdminManager from "@/components/admin/AdminManager";
 import ProductManager from "@/components/admin/ProductManager";
 import DashboardStats from "@/components/admin/DashboardStats";
+import CategoriesTable from "@/components/admin/CategoriesTable";
+import FeaturedProductsManager from "@/components/admin/FeaturedProductsManager";
+import OpeningHoursManager from "@/components/admin/OpeningHoursManager";
+import HomepageEditor from "@/components/admin/HomepageEditor";
+import OrderingLockControl from "@/components/admin/OrderingLockControl";
+import SushiIngredientsManager from "@/components/admin/SushiIngredientsManager";
+import PokeIngredientsManager from "@/components/admin/PokeIngredientsManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Admin = () => {
@@ -124,17 +131,16 @@ const Admin = () => {
         </div>
         
         <div className="container mx-auto px-4 py-6">
-          <div className="mb-6 flex items-center justify-center">
-            <div className="flex items-center bg-white p-4 rounded-lg border shadow-sm">
-              <span className="text-sm font-medium text-gray-700 mr-3">Restaurant :</span>
-              <RestaurantSelector />
-            </div>
-          </div>
-          
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-9 gap-1">
               <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
               <TabsTrigger value="products">Produits</TabsTrigger>
+              <TabsTrigger value="categories">Catégories</TabsTrigger>
+              <TabsTrigger value="featured">Produits Vedettes</TabsTrigger>
+              <TabsTrigger value="hours">Horaires</TabsTrigger>
+              <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
+              <TabsTrigger value="ordering">Commandes</TabsTrigger>
+              <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
               <TabsTrigger value="admin">Administrateurs</TabsTrigger>
             </TabsList>
             
@@ -146,10 +152,44 @@ const Admin = () => {
               <ProductManager />
             </TabsContent>
             
+            <TabsContent value="categories">
+              <CategoriesTable />
+            </TabsContent>
+            
+            <TabsContent value="featured">
+              <FeaturedProductsManager />
+            </TabsContent>
+            
+            <TabsContent value="hours">
+              <OpeningHoursManager />
+            </TabsContent>
+            
+            <TabsContent value="homepage">
+              <HomepageEditor />
+            </TabsContent>
+            
+            <TabsContent value="ordering">
+              <OrderingLockControl />
+            </TabsContent>
+            
+            <TabsContent value="ingredients">
+              <div className="space-y-8">
+                <SushiIngredientsManager />
+                <PokeIngredientsManager />
+              </div>
+            </TabsContent>
+            
             <TabsContent value="admin">
               <AdminManager />
             </TabsContent>
           </Tabs>
+          
+          <div className="mt-8 flex items-center justify-center">
+            <div className="flex items-center bg-white p-4 rounded-lg border shadow-sm">
+              <span className="text-sm font-medium text-gray-700 mr-3">Restaurant :</span>
+              <RestaurantSelector />
+            </div>
+          </div>
         </div>
       </div>
     </RestaurantProvider>
