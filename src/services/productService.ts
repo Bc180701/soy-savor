@@ -1,5 +1,14 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { MenuItem, MenuCategory } from "@/types";
+import { RESTAURANTS } from "./restaurantService";
+import { 
+  fetchCategories, 
+  insertCategory, 
+  fetchAllProducts, 
+  productExistsInCategory, 
+  insertProduct 
+} from "@/integrations/supabase/client";
 
 export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]> => {
   try {
