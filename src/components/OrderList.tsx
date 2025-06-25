@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { getAllOrders, updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
@@ -19,14 +18,14 @@ const OrderList = () => {
   const [activeView, setActiveView] = useState<string>("accounting");
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { selectedRestaurant } = useRestaurantContext();
+  const { currentRestaurant } = useRestaurantContext();
 
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        console.log("Récupération des commandes pour le restaurant:", selectedRestaurant?.id);
-        const { orders: fetchedOrders, error } = await getAllOrders(selectedRestaurant?.id);
+        console.log("Récupération des commandes pour le restaurant:", currentRestaurant?.id);
+        const { orders: fetchedOrders, error } = await getAllOrders(currentRestaurant?.id);
         
         if (error) {
           console.error("Erreur lors de la récupération des commandes:", error);
@@ -36,7 +35,7 @@ const OrderList = () => {
             variant: "destructive",
           });
         } else {
-          console.log(`${fetchedOrders?.length || 0} commandes récupérées pour ${selectedRestaurant?.name || 'tous les restaurants'}:`, fetchedOrders);
+          console.log(`${fetchedOrders?.length || 0} commandes récupérées pour ${currentRestaurant?.name || 'tous les restaurants'}:`, fetchedOrders);
           setOrders(fetchedOrders || []);
         }
       } catch (err) {
@@ -52,7 +51,7 @@ const OrderList = () => {
     };
 
     fetchOrders();
-  }, [toast, selectedRestaurant]);
+  }, [toast, currentRestaurant]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
@@ -98,7 +97,7 @@ const OrderList = () => {
       {!isMobile && (
         <div className="p-6 border-b">
           <h2 className="text-xl font-bold">
-            Gestion des Commandes {selectedRestaurant?.name && `- ${selectedRestaurant.name}`}
+            Gestion des Commandes {currentRestaurant?.name && `- ${currentRestaurant.name}`}
           </h2>
         </div>
       )}
