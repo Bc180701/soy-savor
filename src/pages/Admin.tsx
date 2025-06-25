@@ -39,6 +39,8 @@ const Admin = () => {
           { user_id: session.user.id, role: 'administrateur' }
         );
         
+        let finalIsAdmin = false;
+        
         if (roleError) {
           console.error("Erreur lors de la vérification du rôle:", roleError);
           // Fallback: vérifier directement dans la table user_roles
@@ -54,14 +56,16 @@ const Admin = () => {
             throw fallbackError;
           }
           
-          setIsAdmin(!!fallbackRoleData);
+          finalIsAdmin = !!fallbackRoleData;
           console.log("Utilisateur admin (fallback):", !!fallbackRoleData);
         } else {
-          setIsAdmin(!!hasAdminRole);
+          finalIsAdmin = !!hasAdminRole;
           console.log("Utilisateur admin:", !!hasAdminRole);
         }
         
-        if (!hasAdminRole && !fallbackRoleData) {
+        setIsAdmin(finalIsAdmin);
+        
+        if (!finalIsAdmin) {
           toast({
             title: "Accès refusé",
             description: "Vous n'avez pas les permissions pour accéder à cette page.",
