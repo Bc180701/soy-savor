@@ -6,6 +6,9 @@ import { useToast } from "@/hooks/use-toast";
 import { RestaurantProvider } from "@/hooks/useRestaurantContext";
 import RestaurantSelector from "@/components/admin/RestaurantSelector";
 import AdminManager from "@/components/admin/AdminManager";
+import ProductManager from "@/components/admin/ProductManager";
+import DashboardStats from "@/components/admin/DashboardStats";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -128,7 +131,25 @@ const Admin = () => {
             </div>
           </div>
           
-          <AdminManager />
+          <Tabs defaultValue="dashboard" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+              <TabsTrigger value="products">Produits</TabsTrigger>
+              <TabsTrigger value="admin">Administrateurs</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="dashboard">
+              <DashboardStats />
+            </TabsContent>
+            
+            <TabsContent value="products">
+              <ProductManager />
+            </TabsContent>
+            
+            <TabsContent value="admin">
+              <AdminManager />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </RestaurantProvider>
