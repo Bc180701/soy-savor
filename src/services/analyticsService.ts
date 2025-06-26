@@ -14,13 +14,18 @@ export interface PopularProduct {
   date: string;
 }
 
-export const getOrderAnalytics = async (days = 7): Promise<OrderAnalytics[]> => {
+export const getOrderAnalytics = async (days = 7, restaurantId?: string): Promise<OrderAnalytics[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('order_analytics')
       .select('*')
       .order('date', { ascending: false })
       .limit(days);
+    
+    // Note: order_analytics table doesn't have restaurant_id column
+    // This would need to be added to the database schema if restaurant filtering is needed
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error("Error fetching order analytics:", error);
@@ -34,12 +39,17 @@ export const getOrderAnalytics = async (days = 7): Promise<OrderAnalytics[]> => 
   }
 };
 
-export const getPopularProducts = async (limit = 5): Promise<PopularProduct[]> => {
+export const getPopularProducts = async (limit = 5, restaurantId?: string): Promise<PopularProduct[]> => {
   try {
     // First, get all records from popular_products
-    const { data, error } = await supabase
+    let query = supabase
       .from('popular_products')
       .select('*');
+    
+    // Note: popular_products table doesn't have restaurant_id column
+    // This would need to be added to the database schema if restaurant filtering is needed
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error("Error fetching popular products:", error);
@@ -79,11 +89,17 @@ export const getPopularProducts = async (limit = 5): Promise<PopularProduct[]> =
   }
 };
 
-export const getOrderCountsByStatus = async (): Promise<Record<string, number>> => {
+export const getOrderCountsByStatus = async (restaurantId?: string): Promise<Record<string, number>> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('orders')
       .select('status');
+    
+    if (restaurantId) {
+      query = query.eq('restaurant_id', restaurantId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error("Error fetching order statuses:", error);
@@ -103,12 +119,18 @@ export const getOrderCountsByStatus = async (): Promise<Record<string, number>> 
   }
 };
 
-export const getTotalRevenue = async (): Promise<number> => {
+export const getTotalRevenue = async (restaurantId?: string): Promise<number> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('orders')
       .select('total')
       .eq('payment_status', 'paid');
+    
+    if (restaurantId) {
+      query = query.eq('restaurant_id', restaurantId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) {
       console.error("Error fetching total revenue:", error);

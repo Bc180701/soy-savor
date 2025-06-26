@@ -5,6 +5,7 @@ import StatisticsCard from "./StatisticsCard";
 import { getTotalRevenue } from "@/services/analyticsService";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const DashboardStats = () => {
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -12,32 +13,49 @@ const DashboardStats = () => {
   const [pendingOrders, setPendingOrders] = useState(0);
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
+  const { currentRestaurant } = useRestaurantContext();
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Get total revenue
-        const revenue = await getTotalRevenue();
+        console.log("Récupération des statistiques pour le restaurant:", currentRestaurant?.id);
+
+        // Get total revenue for the selected restaurant
+        const revenue = await getTotalRevenue(currentRestaurant?.id);
         setTotalRevenue(revenue);
 
-        // Get total orders count
-        const { count: totalCount, error: totalError } = await supabase
+        // Get total orders count for the selected restaurant
+        let totalQuery = supabase
           .from('orders')
           .select('*', { count: 'exact', head: true });
+        
+        if (currentRestaurant?.id) {
+          totalQuery = totalQuery.eq('restaurant_id', currentRestaurant.id);
+        }
+        
+        const { count: totalCount, error: totalError } = await totalQuery;
         
         if (!totalError) {
           setTotalOrders(totalCount || 0);
         }
 
-        // Get pending orders count
-        const { count: pendingCount, error: pendingError } = await supabase
+        // Get pending orders count for the selected restaurant
+        let pendingQuery = supabase
           .from('orders')
           .select('*', { count: 'exact', head: true })
           .in('status', ['pending', 'confirmed', 'preparing']);
         
+        if (currentRestaurant?.id) {
+          pendingQuery = pendingQuery.eq('restaurant_id', currentRestaurant.id);
+        }
+        
+        const { count: pendingCount, error: pendingError } = await pendingQuery;
+        
         if (!pendingError) {
           setPendingOrders(pendingCount || 0);
         }
+
+        console.log(`Statistiques récupérées pour ${currentRestaurant?.name || 'tous les restaurants'}: ${totalCount} commandes totales, ${pendingCount} en attente, ${revenue.toFixed(2)}€ de revenus`);
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       } finally {
@@ -46,7 +64,7 @@ const DashboardStats = () => {
     };
 
     fetchStats();
-  }, []);
+  }, [currentRestaurant]);
 
   if (loading) {
     return (
@@ -64,13 +82,13 @@ const DashboardStats = () => {
         title="Revenu Total"
         value={`${totalRevenue.toFixed(2)} €`}
         icon={<TrendingUp className="h-4 w-4" />}
-        description="Toutes les commandes payées"
+        description={`${currentRestaurant?.name || 'Tous les restaurants'}`}
       />
       <StatisticsCard
         title="Commandes Totales"
         value={totalOrders}
         icon={<ShoppingBag className="h-4 w-4" />}
-        description="Depuis le début"
+        description={`${currentRestaurant?.name || 'Tous les restaurants'}`}
       />
       <StatisticsCard
         title="Commandes en Attente"
