@@ -9,19 +9,21 @@ import { RESTAURANTS } from "@/services/restaurantService";
 import { isRestaurantOpenNow, getNextOpenDay } from "@/services/openingHoursService";
 import { supabase } from "@/integrations/supabase/client";
 import { RestaurantProvider, useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { Restaurant } from "@/types/restaurant";
 import LoadingSpinner from "@/components/menu/LoadingSpinner";
 import RestaurantClosedMessage from "@/components/menu/RestaurantClosedMessage";
 import OrderingLockedMessage from "@/components/menu/OrderingLockedMessage";
 import PromotionalBanner from "@/components/menu/PromotionalBanner";
 import CategorySection from "@/components/menu/CategorySection";
 import ProductsDisplay from "@/components/menu/ProductsDisplay";
-import RestaurantSelector from "@/components/menu/RestaurantSelector";
+import RestaurantSelectionDialog from "@/components/menu/RestaurantSelectionDialog";
 
 const CommanderContent = () => {
   const { toast } = useToast();
   const cart = useCart();
   const { isOrderingLocked } = useCart();
-  const { currentRestaurant } = useRestaurantContext();
+  const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
+  const [showRestaurantDialog, setShowRestaurantDialog] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +56,12 @@ const CommanderContent = () => {
     };
     
     checkOpeningHours();
+
+    // Afficher le dialog de sélection de restaurant si aucun restaurant n'est sélectionné
+    if (!currentRestaurant) {
+      setShowRestaurantDialog(true);
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -128,6 +136,12 @@ const CommanderContent = () => {
     loadMenuData();
   }, [currentRestaurant, toast]);
 
+  const handleRestaurantSelected = (restaurant: Restaurant) => {
+    setCurrentRestaurant(restaurant);
+    setCategories([]);
+    setActiveCategory("");
+  };
+
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
     
@@ -161,6 +175,12 @@ const CommanderContent = () => {
 
   return (
     <div className="container mx-auto py-24 px-4">
+      <RestaurantSelectionDialog
+        open={showRestaurantDialog}
+        onOpenChange={setShowRestaurantDialog}
+        onRestaurantSelected={handleRestaurantSelected}
+      />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -172,14 +192,30 @@ const CommanderContent = () => {
           Commandez en ligne et récupérez votre repas dans notre restaurant
         </p>
 
-        {/* Sélection du restaurant */}
-        <div className="max-w-md mx-auto mb-8">
-          <RestaurantSelector />
-        </div>
+        {currentRestaurant && (
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full">
+              <span className="text-sm text-gray-600">Restaurant sélectionné:</span>
+              <span className="font-semibold">{currentRestaurant.name}</span>
+              <button
+                onClick={() => setShowRestaurantDialog(true)}
+                className="text-blue-600 hover:text-blue-800 text-sm underline ml-2"
+              >
+                Changer
+              </button>
+            </div>
+          </div>
+        )}
 
         {!currentRestaurant ? (
           <div className="text-center py-12">
-            <p className="text-lg text-gray-600">Veuillez sélectionner un restaurant pour voir le menu.</p>
+            <p className="text-lg text-gray-600 mb-4">Veuillez sélectionner un restaurant pour voir le menu.</p>
+            <button
+              onClick={() => setShowRestaurantDialog(true)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Choisir un restaurant
+            </button>
           </div>
         ) : (
           <>
