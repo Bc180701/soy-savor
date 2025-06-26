@@ -22,6 +22,12 @@ interface CartStore {
   getTotalPrice: () => number;
   setOrderingLocked: (locked: boolean) => void;
   setSelectedRestaurantId: (restaurantId: string | null) => void;
+  // New properties for cart display and promotions
+  itemCount: number;
+  total: number;
+  plateauCount: number;
+  freeDessertCount: number;
+  getRemainingFreeDesserts: () => number;
 }
 
 export const useCart = create<CartStore>()(
@@ -30,6 +36,35 @@ export const useCart = create<CartStore>()(
       items: [],
       isOrderingLocked: false,
       selectedRestaurantId: null,
+      
+      // Computed properties
+      get itemCount() {
+        return get().getTotalItems();
+      },
+      
+      get total() {
+        return get().getTotalPrice();
+      },
+      
+      get plateauCount() {
+        return get().items.filter(item => 
+          item.menuItem.category === 'plateaux' || 
+          item.menuItem.name.toLowerCase().includes('plateau')
+        ).reduce((total, item) => total + item.quantity, 0);
+      },
+      
+      get freeDessertCount() {
+        return get().items.filter(item => 
+          item.menuItem.category === 'desserts' && 
+          item.menuItem.price === 0 &&
+          item.specialInstructions?.includes('Dessert offert')
+        ).reduce((total, item) => total + item.quantity, 0);
+      },
+      
+      getRemainingFreeDesserts: () => {
+        const state = get();
+        return Math.max(0, state.plateauCount - state.freeDessertCount);
+      },
       
       addItem: (item, quantity, specialInstructions) => {
         const currentItems = get().items;
