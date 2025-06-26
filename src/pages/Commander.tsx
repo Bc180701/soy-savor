@@ -68,7 +68,11 @@ const CommanderContent = () => {
     if (!currentRestaurant) return;
 
     const loadMenuData = async () => {
+      console.log("🔄 Début du chargement du menu pour:", currentRestaurant.name);
       setIsLoading(true);
+      setCategories([]); // Réinitialiser les catégories pour éviter l'affichage de données obsolètes
+      setActiveCategory(""); // Réinitialiser la catégorie active
+      
       try {
         console.log("Chargement des données du menu pour le restaurant:", currentRestaurant.name);
         console.time('Loading Menu Data');
@@ -76,6 +80,7 @@ const CommanderContent = () => {
         // Charger les données du menu pour le restaurant sélectionné
         let menuData = await getMenuData(currentRestaurant.id);
         console.timeEnd('Loading Menu Data');
+        console.log("📋 Données reçues:", menuData.length, "catégories");
         
         // Si aucune donnée n'existe, initialiser automatiquement
         if (menuData.length === 0) {
@@ -115,31 +120,43 @@ const CommanderContent = () => {
           items: category.items.filter(item => item.isNew !== false)
         }));
         
+        console.log("✅ Catégories filtrées:", filteredCategories.map(cat => 
+          `${cat.name}: ${cat.items.length} produits`
+        ));
+        
+        // Mettre à jour les catégories
         setCategories(filteredCategories);
         
         // Set the active category to the first one if available
         if (filteredCategories.length > 0) {
-          setActiveCategory(filteredCategories[0].id);
+          const firstCategory = filteredCategories[0];
+          console.log("🎯 Catégorie active définie sur:", firstCategory.name);
+          setActiveCategory(firstCategory.id);
         }
+        
+        console.log("🎉 Chargement du menu terminé avec succès");
       } catch (error) {
-        console.error("Error loading menu data:", error);
+        console.error("❌ Error loading menu data:", error);
         toast({
           title: "Erreur",
           description: "Impossible de charger les données du menu. Vérifiez les autorisations de la base de données.",
           variant: "destructive"
         });
+        // En cas d'erreur, s'assurer que les catégories sont vides
+        setCategories([]);
+        setActiveCategory("");
       } finally {
         setIsLoading(false);
       }
     };
 
     loadMenuData();
-  }, [currentRestaurant, toast]);
+  }, [currentRestaurant?.id, toast]); // Ajouter currentRestaurant.id comme dépendance
 
   const handleRestaurantSelected = (restaurant: Restaurant) => {
+    console.log("🏪 Nouveau restaurant sélectionné:", restaurant.name);
     setCurrentRestaurant(restaurant);
-    setCategories([]);
-    setActiveCategory("");
+    // Les états seront réinitialisés par l'effet ci-dessus
   };
 
   const addToCart = (item: MenuItem) => {
@@ -172,6 +189,8 @@ const CommanderContent = () => {
 
   // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
   const nonEmptyCategories = categories.filter(cat => cat.items.length > 0);
+
+  console.log("🖼️ Rendu final - Catégories non vides:", nonEmptyCategories.length);
 
   return (
     <div className="container mx-auto py-24 px-4">
@@ -224,6 +243,12 @@ const CommanderContent = () => {
             {nonEmptyCategories.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-lg text-gray-600">Aucun produit disponible actuellement pour {currentRestaurant.name}.</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Rafraîchir la page
+                </button>
               </div>
             ) : (
               <div className="flex flex-col md:flex-row gap-6">
