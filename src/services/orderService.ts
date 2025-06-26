@@ -41,6 +41,8 @@ export const createOrder = async (
     // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
     const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
 
+    console.log(`Création de commande pour le restaurant: ${targetRestaurantId}`);
+
     // Création de la commande dans la base de données
     const { data: newOrder, error: orderError } = await supabase
       .from("orders")
@@ -59,7 +61,7 @@ export const createOrder = async (
         payment_method: orderInput.paymentMethod,
         payment_status: "pending",
         delivery_instructions: orderInput.deliveryInstructions,
-        scheduled_for: orderInput.scheduledFor.toISOString(), // Convert Date to string
+        scheduled_for: orderInput.scheduledFor.toISOString(),
         customer_notes: orderInput.customerNotes,
         pickup_time: orderInput.pickupTime,
         allergies: orderInput.allergies,
@@ -77,6 +79,8 @@ export const createOrder = async (
       console.error("Erreur lors de la création de la commande:", orderError);
       return { success: false, error: orderError };
     }
+
+    console.log(`Commande créée avec succès: ${newOrder.id} pour le restaurant ${targetRestaurantId}`);
 
     // Ajouter les articles de la commande
     const orderItemPromises = orderInput.items.map((item) => {

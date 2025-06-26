@@ -8,17 +8,20 @@ import { getMenuData, initializeCategories, initializeFullMenu } from "@/service
 import { RESTAURANTS } from "@/services/restaurantService";
 import { isRestaurantOpenNow, getNextOpenDay } from "@/services/openingHoursService";
 import { supabase } from "@/integrations/supabase/client";
+import { RestaurantProvider, useRestaurantContext } from "@/hooks/useRestaurantContext";
 import LoadingSpinner from "@/components/menu/LoadingSpinner";
 import RestaurantClosedMessage from "@/components/menu/RestaurantClosedMessage";
 import OrderingLockedMessage from "@/components/menu/OrderingLockedMessage";
 import PromotionalBanner from "@/components/menu/PromotionalBanner";
 import CategorySection from "@/components/menu/CategorySection";
 import ProductsDisplay from "@/components/menu/ProductsDisplay";
+import RestaurantSelector from "@/components/menu/RestaurantSelector";
 
-const Commander = () => {
+const CommanderContent = () => {
   const { toast } = useToast();
   const cart = useCart();
   const { isOrderingLocked } = useCart();
+  const { currentRestaurant } = useRestaurantContext();
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,13 +54,19 @@ const Commander = () => {
     };
     
     checkOpeningHours();
-    
+  }, []);
+
+  useEffect(() => {
+    if (!currentRestaurant) return;
+
     const loadMenuData = async () => {
       setIsLoading(true);
       try {
+        console.log("Chargement des données du menu pour le restaurant:", currentRestaurant.name);
         console.time('Loading Menu Data');
-        // Utiliser la fonction optimisée qui charge tout en une seule requête
-        let menuData = await getMenuData();
+        
+        // Charger les données du menu pour le restaurant sélectionné
+        let menuData = await getMenuData(currentRestaurant.id);
         console.timeEnd('Loading Menu Data');
         
         // Si aucune donnée n'existe, initialiser automatiquement
@@ -67,7 +76,7 @@ const Commander = () => {
           
           // D'abord initialiser les catégories
           console.log("Initialisation des catégories...");
-          const categoriesInitialized = await initializeCategories();
+          const categoriesInitialized = await initializeCategories(currentRestaurant.id);
           if (!categoriesInitialized) {
             throw new Error("Échec de l'initialisation des catégories");
           }
@@ -75,18 +84,18 @@ const Commander = () => {
           
           // Ensuite, initialiser les produits complets
           console.log("Initialisation des produits...");
-          const productsInitialized = await initializeFullMenu();
+          const productsInitialized = await initializeFullMenu(currentRestaurant.id);
           if (!productsInitialized) {
             throw new Error("Échec de l'initialisation des produits");
           }
           console.log("Produits initialisés avec succès");
           
           // Récupérer les données du menu après l'initialisation
-          menuData = await getMenuData();
+          menuData = await getMenuData(currentRestaurant.id);
           
           toast({
             title: "Menu initialisé",
-            description: "Les catégories et produits ont été chargés avec succès.",
+            description: `Les catégories et produits ont été chargés avec succès pour ${currentRestaurant.name}.`,
           });
           
           setIsInitializing(false);
@@ -101,7 +110,7 @@ const Commander = () => {
         setCategories(filteredCategories);
         
         // Set the active category to the first one if available
-        if (filteredCategories.length > 0 && !activeCategory) {
+        if (filteredCategories.length > 0) {
           setActiveCategory(filteredCategories[0].id);
         }
       } catch (error) {
@@ -117,7 +126,7 @@ const Commander = () => {
     };
 
     loadMenuData();
-  }, [toast, activeCategory]);
+  }, [currentRestaurant, toast]);
 
   const addToCart = (item: MenuItem) => {
     cart.addItem(item, 1);
@@ -163,34 +172,55 @@ const Commander = () => {
           Commandez en ligne et récupérez votre repas dans notre restaurant
         </p>
 
-        {!isAuthenticated && <PromotionalBanner />}
+        {/* Sélection du restaurant */}
+        <div className="max-w-md mx-auto mb-8">
+          <RestaurantSelector />
+        </div>
 
-        {nonEmptyCategories.length === 0 ? (
+        {!currentRestaurant ? (
           <div className="text-center py-12">
-            <p className="text-lg text-gray-600">Aucun produit disponible actuellement.</p>
+            <p className="text-lg text-gray-600">Veuillez sélectionner un restaurant pour voir le menu.</p>
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row gap-6">
-            <CategorySection
-              categories={nonEmptyCategories}
-              activeCategory={activeCategory}
-              onCategoryChange={setActiveCategory}
-              isCategoryChanging={isCategoryChanging}
-              setIsCategoryChanging={setIsCategoryChanging}
-              setActiveCategory={setActiveCategory}
-              setVisibleSections={setVisibleSections}
-              categoryRefs={categoryRefs}
-            />
-            
-            <ProductsDisplay
-              categories={nonEmptyCategories}
-              onAddToCart={addToCart}
-              categoryRefs={categoryRefs}
-            />
-          </div>
+          <>
+            {!isAuthenticated && <PromotionalBanner />}
+
+            {nonEmptyCategories.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-lg text-gray-600">Aucun produit disponible actuellement pour {currentRestaurant.name}.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col md:flex-row gap-6">
+                <CategorySection
+                  categories={nonEmptyCategories}
+                  activeCategory={activeCategory}
+                  onCategoryChange={setActiveCategory}
+                  isCategoryChanging={isCategoryChanging}
+                  setIsCategoryChanging={setIsCategoryChanging}
+                  setActiveCategory={setActiveCategory}
+                  setVisibleSections={setVisibleSections}
+                  categoryRefs={categoryRefs}
+                />
+                
+                <ProductsDisplay
+                  categories={nonEmptyCategories}
+                  onAddToCart={addToCart}
+                  categoryRefs={categoryRefs}
+                />
+              </div>
+            )}
+          </>
         )}
       </motion.div>
     </div>
+  );
+};
+
+const Commander = () => {
+  return (
+    <RestaurantProvider>
+      <CommanderContent />
+    </RestaurantProvider>
   );
 };
 
