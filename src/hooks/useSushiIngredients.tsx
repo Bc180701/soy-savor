@@ -71,13 +71,6 @@ export const useSushiIngredients = () => {
         setSauceOptions(sauce);
 
         console.log("✅ Sushi ingredients state updated successfully");
-        console.log("🎯 Final state preview:", {
-          enrobageCount: enrobage.length,
-          baseCount: base.length,
-          garnituresCount: garnitures.length,
-          toppingCount: topping.length,
-          sauceCount: sauce.length
-        });
 
       } catch (error) {
         console.error('💥 Error in fetchIngredients:', error);
@@ -90,18 +83,6 @@ export const useSushiIngredients = () => {
 
     fetchIngredients();
   }, []);
-
-  // Log the current state values when they change
-  useEffect(() => {
-    console.log("🔄 Hook state updated:", {
-      enrobageOptions: enrobageOptions.length,
-      baseOptions: baseOptions.length,
-      garnituresOptions: garnituresOptions.length,
-      toppingOptions: toppingOptions.length,
-      sauceOptions: sauceOptions.length,
-      loading
-    });
-  }, [enrobageOptions, baseOptions, garnituresOptions, toppingOptions, sauceOptions, loading]);
 
   return {
     enrobageOptions,
