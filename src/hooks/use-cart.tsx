@@ -41,7 +41,10 @@ export const useCart = create<CartStore>()(
       
       // Computed properties - maintenant calculées à chaque fois
       get itemCount() {
-        return get().items.reduce((total, item) => total + item.quantity, 0);
+        const state = get();
+        const totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
+        console.log("🛒 Calcul itemCount:", state.items.length, "articles distincts,", totalQuantity, "quantité totale");
+        return totalQuantity;
       },
       
       get total() {
@@ -83,6 +86,7 @@ export const useCart = create<CartStore>()(
         const existingItem = currentItems.find(cartItem => cartItem.menuItem.id === item.id);
         
         if (existingItem) {
+          console.log("🛒 Mise à jour quantité article existant:", item.name, "nouvelle quantité:", existingItem.quantity + quantity);
           set({
             items: currentItems.map(cartItem =>
               cartItem.menuItem.id === item.id
@@ -91,6 +95,7 @@ export const useCart = create<CartStore>()(
             )
           });
         } else {
+          console.log("🛒 Ajout nouvel article:", item.name, "quantité:", quantity);
           set({
             items: [...currentItems, { menuItem: item, quantity, specialInstructions }]
           });
@@ -98,6 +103,7 @@ export const useCart = create<CartStore>()(
       },
       
       removeItem: (itemId) => {
+        console.log("🛒 Suppression article:", itemId);
         set({
           items: get().items.filter(item => item.menuItem.id !== itemId)
         });
@@ -109,6 +115,7 @@ export const useCart = create<CartStore>()(
           return;
         }
         
+        console.log("🛒 Mise à jour quantité:", itemId, "nouvelle quantité:", quantity);
         set({
           items: get().items.map(item =>
             item.menuItem.id === itemId
