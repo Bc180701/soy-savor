@@ -1,12 +1,19 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
-export const checkPostalCodeDelivery = async (postalCode: string): Promise<boolean> => {
-  const { data, error } = await supabase
+export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?: string): Promise<boolean> => {
+  let query = supabase
     .from('delivery_locations')
     .select('*')
     .eq('postal_code', postalCode)
-    .eq('is_active', true)
-    .single();
+    .eq('is_active', true);
+  
+  // Si un restaurant est spécifié, filtrer par restaurant
+  if (restaurantId) {
+    query = query.eq('restaurant_id', restaurantId);
+  }
+  
+  const { data, error } = await query.single();
   
   if (error || !data) {
     console.error("Error checking postal code:", error);
@@ -16,12 +23,19 @@ export const checkPostalCodeDelivery = async (postalCode: string): Promise<boole
   return true;
 };
 
-export const getDeliveryLocations = async (): Promise<{city: string, postalCode: string}[]> => {
-  const { data, error } = await supabase
+export const getDeliveryLocations = async (restaurantId?: string): Promise<{city: string, postalCode: string}[]> => {
+  let query = supabase
     .from('delivery_locations')
     .select('city, postal_code')
     .eq('is_active', true)
     .order('city', { ascending: true });
+  
+  // Si un restaurant est spécifié, filtrer par restaurant
+  if (restaurantId) {
+    query = query.eq('restaurant_id', restaurantId);
+  }
+  
+  const { data, error } = await query;
   
   if (error || !data) {
     console.error("Error fetching delivery locations:", error);

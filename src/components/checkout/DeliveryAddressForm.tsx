@@ -1,519 +1,302 @@
+
 import { useState, useEffect } from "react";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { checkPostalCodeDelivery } from "@/services/deliveryService";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { checkPostalCodeDelivery, getDeliveryLocations } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
-
-const formSchema = z.object({
-  name: z.string().min(2, { message: "Le nom doit contenir au moins 2 caractères" }),
-  street: z.string().min(5, { message: "L'adresse doit contenir au moins 5 caractères" }),
-  city: z.string().min(2, { message: "La ville doit contenir au moins 2 caractères" }),
-  postalCode: z.string().min(5, { message: "Le code postal doit contenir 5 caractères" }),
-  phone: z.string().min(10, { message: "Le numéro de téléphone doit contenir au moins 10 caractères" }),
-  email: z.string().email({ message: "Format d'email invalide" }),
-  instructions: z.string().optional(),
-});
-
-export type DeliveryAddressData = z.infer<typeof formSchema>;
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 interface DeliveryAddressFormProps {
-  onComplete: (data: DeliveryAddressData & { isPostalCodeValid: boolean }) => void;
+  onComplete: (data: {
+    name: string;
+    email: string;
+    phone: string;
+    street: string;
+    city: string;
+    postalCode: string;
+    instructions: string;
+    isPostalCodeValid: boolean;
+  }) => void;
   onCancel: () => void;
 }
 
 const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps) => {
-  const { toast } = useToast();
-  const [useProfileAddress, setUseProfileAddress] = useState(false);
-  const [useProfileContact, setUseProfileContact] = useState(false);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [hasProfile, setHasProfile] = useState(false);
-  const [hasAddress, setHasAddress] = useState(false);
-  const [postalCodeValidationStatus, setPostalCodeValidationStatus] = useState<'valid' | 'invalid' | 'pending' | null>(null);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      street: "",
-      city: "",
-      postalCode: "",
-      phone: "",
-      email: "",
-      instructions: "",
-    },
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    street: "",
+    city: "",
+    postalCode: "",
+    instructions: ""
   });
-
-  const postalCodeValue = form.watch("postalCode");
   
-  // Validation du code postal à chaque changement
+  const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
+  const [isPostalCodeValid, setIsPostalCodeValid] = useState<boolean | null>(null);
+  const [deliveryZones, setDeliveryZones] = useState<{city: string, postalCode: string}[]>([]);
+  const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
+
+  // Load delivery zones for the current restaurant
   useEffect(() => {
-    const validatePostalCode = async () => {
-      console.log("Postal code field changed to:", postalCodeValue);
-      
-      if (!postalCodeValue || postalCodeValue.length < 5) {
-        console.log("Postal code too short, clearing validation status");
-        setPostalCodeValidationStatus(null);
-        form.clearErrors("postalCode");
-        return;
-      }
-      
-      if (postalCodeValue.length === 5) {
-        console.log("Starting postal code validation for current field value:", postalCodeValue);
-        setPostalCodeValidationStatus('pending');
-        
-        try {
-          const isValid = await checkPostalCodeDelivery(postalCodeValue);
-          console.log("Postal code validation result for", postalCodeValue, ":", isValid);
-          
-          if (!isValid) {
-            setPostalCodeValidationStatus('invalid');
-            form.setError("postalCode", {
-              type: "manual",
-              message: "Code postal hors zone de livraison"
-            });
-            toast({
-              variant: "destructive",
-              title: "Zone non desservie",
-              description: `Nous ne livrons pas dans la zone ${postalCodeValue}. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.`,
-            });
-          } else {
-            setPostalCodeValidationStatus('valid');
-            form.clearErrors("postalCode");
-            await form.trigger();
-            toast({
-              title: "Code postal valide",
-              description: "Ce code postal est dans notre zone de livraison.",
-            });
-          }
-        } catch (error) {
-          console.error("Error validating postal code:", error);
-          setPostalCodeValidationStatus('invalid');
-          form.setError("postalCode", {
-            type: "manual",
-            message: "Erreur lors de la validation du code postal"
-          });
-        }
-      } else if (postalCodeValue.length > 5) {
-        setPostalCodeValidationStatus('invalid');
-        form.setError("postalCode", {
-          type: "manual",
-          message: "Le code postal doit contenir exactement 5 caractères"
-        });
+    const loadDeliveryZones = async () => {
+      if (currentRestaurant) {
+        const zones = await getDeliveryLocations(currentRestaurant.id);
+        setDeliveryZones(zones);
       }
     };
-    
-    const timer = setTimeout(validatePostalCode, 300);
-    return () => clearTimeout(timer);
-  }, [postalCodeValue, form, toast]);
+    loadDeliveryZones();
+  }, [currentRestaurant]);
 
-  // Mettre à jour automatiquement les données du parent quand le formulaire change OU quand la validation change
-  useEffect(() => {
-    const subscription = form.watch((data) => {
-      // Toujours envoyer les données au parent, même si le formulaire n'est pas complètement valide
-      onComplete({
-        name: data.name || "",
-        street: data.street || "",
-        city: data.city || "",
-        postalCode: data.postalCode || "",
-        phone: data.phone || "",
-        email: data.email || "",
-        instructions: data.instructions || "",
-        isPostalCodeValid: postalCodeValidationStatus === 'valid'
-      });
-    });
-    return () => subscription.unsubscribe();
-  }, [form, onComplete, postalCodeValidationStatus]);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
 
-  // Aussi déclencher la mise à jour quand le statut de validation change
-  useEffect(() => {
-    const currentData = form.getValues();
-    onComplete({
-      name: currentData.name || "",
-      street: currentData.street || "",
-      city: currentData.city || "",
-      postalCode: currentData.postalCode || "",
-      phone: currentData.phone || "",
-      email: currentData.email || "",
-      instructions: currentData.instructions || "",
-      isPostalCodeValid: postalCodeValidationStatus === 'valid'
-    });
-  }, [postalCodeValidationStatus, form, onComplete]);
-
-  useEffect(() => {
-    const checkUserProfile = async () => {
-      setIsLoadingProfile(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          setIsLoggedIn(false);
-          return;
-        }
-        
-        setIsLoggedIn(true);
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-          
-        if (profileError) {
-          console.error("Erreur lors du chargement du profil:", profileError);
-          return;
-        }
-        
-        const { data: addressData, error: addressError } = await supabase
-          .from("user_addresses")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .eq("is_default", true)
-          .single();
-          
-        if (addressError) {
-          console.error("Erreur lors du chargement de l'adresse:", addressError);
-          return;
-        }
-        
-        if (profileData) {
-          setHasProfile(true);
-        }
-
-        if (addressData) {
-          setHasAddress(true);
-        }
-      } catch (error) {
-        console.error("Erreur lors de la vérification du profil:", error);
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-    
-    checkUserProfile();
-  }, []);
-
-  const loadUserContact = async () => {
-    if (!isLoggedIn) return;
-    
-    setIsLoadingProfile(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        return;
-      }
-      
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-        
-      if (profileError) {
-        console.error("Erreur lors du chargement du profil:", profileError);
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de charger votre profil. Veuillez réessayer.",
-        });
-        return;
-      }
-      
-      if (profileData) {
-        const userEmail = session.user.email || "";
-        const fullName = `${profileData.first_name || ""} ${profileData.last_name || ""}`.trim();
-        
-        form.setValue("name", fullName);
-        form.setValue("phone", profileData.phone || "");
-        form.setValue("email", userEmail);
-        
-        await form.trigger();
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des données:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la récupération de vos informations.",
-      });
-    } finally {
-      setIsLoadingProfile(false);
+    // Reset postal code validation when postal code changes
+    if (name === "postalCode") {
+      setIsPostalCodeValid(null);
     }
   };
 
-  const loadUserAddress = async () => {
-    if (!isLoggedIn) return;
+  const validatePostalCode = async () => {
+    if (!formData.postalCode.trim()) {
+      setIsPostalCodeValid(false);
+      return;
+    }
+
+    if (!currentRestaurant) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner un restaurant",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsValidatingPostalCode(true);
     
-    setIsLoadingProfile(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const isValid = await checkPostalCodeDelivery(formData.postalCode.trim(), currentRestaurant.id);
+      setIsPostalCodeValid(isValid);
       
-      if (!session) {
-        return;
-      }
-      
-      const { data: addressData, error: addressError } = await supabase
-        .from("user_addresses")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .eq("is_default", true)
-        .maybeSingle();
-        
-      if (addressError) {
-        console.error("Erreur lors du chargement de l'adresse:", addressError);
+      if (!isValid) {
         toast({
+          title: "Code postal non desservi",
+          description: `Le code postal ${formData.postalCode} n'est pas dans notre zone de livraison pour ${currentRestaurant.name}.`,
           variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de charger votre adresse. Veuillez réessayer.",
-        });
-        return;
-      }
-      
-      if (addressData) {
-        form.setValue("street", addressData.street);
-        form.setValue("city", addressData.city);
-        setPostalCodeValidationStatus(null);
-        form.setValue("postalCode", addressData.postal_code);
-        if (addressData.additional_info) {
-          form.setValue("instructions", addressData.additional_info);
-        }
-        
-        await form.trigger();
-        
-        toast({
-          title: "Adresse récupérée",
-          description: "Votre adresse enregistrée a été appliquée au formulaire.",
         });
       } else {
         toast({
-          variant: "destructive",
-          title: "Adresse introuvable",
-          description: "Vous n'avez pas d'adresse enregistrée dans votre profil.",
+          title: "Zone de livraison confirmée",
+          description: `Nous livrons bien au code postal ${formData.postalCode} depuis ${currentRestaurant.name}.`,
         });
       }
     } catch (error) {
-      console.error("Erreur lors du chargement des données:", error);
+      console.error("Error validating postal code:", error);
+      setIsPostalCodeValid(false);
       toast({
+        title: "Erreur de validation",
+        description: "Impossible de vérifier le code postal. Veuillez réessayer.",
         variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la récupération de votre adresse.",
       });
     } finally {
-      setIsLoadingProfile(false);
+      setIsValidatingPostalCode(false);
     }
   };
 
-  const handleProfileContactToggle = async (checked: boolean) => {
-    setUseProfileContact(checked);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (checked) {
-      await loadUserContact();
-    } else {
-      form.setValue("name", "");
-      form.setValue("phone", "");
-      form.setValue("email", "");
+    // Validation
+    if (!formData.name || !formData.email || !formData.phone || !formData.street || !formData.city || !formData.postalCode) {
+      toast({
+        title: "Champs manquants",
+        description: "Veuillez remplir tous les champs obligatoires.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    if (isPostalCodeValid !== true) {
+      toast({
+        title: "Code postal non validé",
+        description: "Veuillez vérifier que votre code postal est dans notre zone de livraison.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onComplete({
+      ...formData,
+      isPostalCodeValid: true
+    });
   };
 
-  const handleProfileAddressToggle = async (checked: boolean) => {
-    setUseProfileAddress(checked);
-    
-    if (checked) {
-      await loadUserAddress();
-    } else {
-      form.setValue("street", "");
-      form.setValue("city", "");
-      setPostalCodeValidationStatus(null);
-      form.setValue("postalCode", "");
-      form.setValue("instructions", "");
-    }
+  const getPostalCodeInputClass = () => {
+    if (isPostalCodeValid === true) return "border-green-500 bg-green-50";
+    if (isPostalCodeValid === false) return "border-red-500 bg-red-50";
+    return "";
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium">Adresse de livraison</h3>
-        <p className="text-sm text-gray-500 mt-1">
-          Veuillez entrer l'adresse où vous souhaitez recevoir votre commande
-        </p>
+    <div className="space-y-6 p-6 bg-white rounded-lg border">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-medium">Adresse de livraison</h3>
+        {currentRestaurant && (
+          <div className="text-sm text-gray-600">
+            Restaurant: <span className="font-medium">{currentRestaurant.name}</span>
+          </div>
+        )}
       </div>
 
-      {postalCodeValidationStatus === 'invalid' && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800 font-medium">
-            ⚠️ Code postal hors zone de livraison
+      {deliveryZones.length > 0 && (
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <p className="text-sm text-blue-800 font-medium mb-2">
+            Zones de livraison pour {currentRestaurant?.name} :
           </p>
-          <p className="text-sm text-red-600">
-            Vous ne pouvez pas continuer avec ce code postal. Veuillez en choisir un autre ou opter pour le retrait en magasin.
-          </p>
-        </div>
-      )}
-
-      {isLoggedIn && (
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2 py-2">
-            <Checkbox 
-              id="useProfileContact" 
-              checked={useProfileContact}
-              onCheckedChange={handleProfileContactToggle}
-              disabled={isLoadingProfile || !hasProfile}
-            />
-            <label
-              htmlFor="useProfileContact"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              {hasProfile ? "Utiliser les informations de contact de mon profil" : "Complétez votre profil pour l'utiliser lors de vos commandes"}
-            </label>
-            {isLoadingProfile && useProfileContact && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-          </div>
-          
-          <div className="flex items-center space-x-2 py-2">
-            <Checkbox 
-              id="useProfileAddress" 
-              checked={useProfileAddress}
-              onCheckedChange={handleProfileAddressToggle}
-              disabled={isLoadingProfile || !hasAddress}
-            />
-            <label
-              htmlFor="useProfileAddress"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              {hasAddress ? "Utiliser l'adresse de livraison de mon profil" : "Ajoutez une adresse à votre profil pour l'utiliser lors de vos commandes"}
-            </label>
-            {isLoadingProfile && useProfileAddress && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+          <div className="flex flex-wrap gap-2">
+            {deliveryZones.map((zone, index) => (
+              <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                {zone.city} ({zone.postalCode})
+              </span>
+            ))}
           </div>
         </div>
       )}
 
-      <Form {...form}>
-        <form className="space-y-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nom complet</FormLabel>
-                <FormControl>
-                  <Input placeholder="Jean Dupont" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="street"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Adresse</FormLabel>
-                <FormControl>
-                  <Input placeholder="123 rue de Paris" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ville</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Paris" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="postalCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Code postal</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input placeholder="75000" {...field} />
-                      {postalCodeValidationStatus === 'pending' && (
-                        <Loader2 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-                      )}
-                      {postalCodeValidationStatus === 'valid' && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 bg-green-500 rounded-full" />
-                      )}
-                      {postalCodeValidationStatus === 'invalid' && (
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 bg-red-500 rounded-full" />
-                      )}
-                    </div>
-                  </FormControl>
-                  <FormMessage className="text-red-500" />
-                </FormItem>
-              )}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="name">Nom complet *</Label>
+            <Input
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Votre nom complet"
+              required
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Téléphone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="06 12 34 56 78" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
+          <div>
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
               name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Adresse e-mail</FormLabel>
-                  <FormControl>
-                    <Input placeholder="exemple@email.com" type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              type="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="votre@email.com"
+              required
             />
           </div>
+        </div>
 
-          <FormField
-            control={form.control}
-            name="instructions"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Instructions de livraison (optionnel)</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Digicode, étage, indications pour le livreur..." 
-                    className="resize-none" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+        <div>
+          <Label htmlFor="phone">Téléphone *</Label>
+          <Input
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            placeholder="06 XX XX XX XX"
+            required
           />
-        </form>
-      </Form>
+        </div>
+
+        <div>
+          <Label htmlFor="street">Adresse *</Label>
+          <Input
+            id="street"
+            name="street"
+            value={formData.street}
+            onChange={handleInputChange}
+            placeholder="Numéro et nom de rue"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="city">Ville *</Label>
+            <Input
+              id="city"
+              name="city"
+              value={formData.city}
+              onChange={handleInputChange}
+              placeholder="Votre ville"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="postalCode">Code postal *</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="postalCode"
+                name="postalCode"
+                value={formData.postalCode}
+                onChange={handleInputChange}
+                placeholder="13160"
+                required
+                className={getPostalCodeInputClass()}
+              />
+              <Button
+                type="button"
+                onClick={validatePostalCode}
+                disabled={isValidatingPostalCode || !formData.postalCode.trim()}
+                variant="outline"
+                size="sm"
+              >
+                {isValidatingPostalCode ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isPostalCodeValid === true ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                ) : isPostalCodeValid === false ? (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                ) : (
+                  "Vérifier"
+                )}
+              </Button>
+            </div>
+            {isPostalCodeValid === true && (
+              <p className="text-sm text-green-600 mt-1">✓ Zone de livraison confirmée</p>
+            )}
+            {isPostalCodeValid === false && (
+              <p className="text-sm text-red-600 mt-1">✗ Hors zone de livraison</p>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="instructions">Instructions de livraison</Label>
+          <Textarea
+            id="instructions"
+            name="instructions"
+            value={formData.instructions}
+            onChange={handleInputChange}
+            placeholder="Étage, code d'accès, instructions spéciales..."
+            className="h-20"
+          />
+        </div>
+
+        <div className="flex justify-between pt-4">
+          <Button type="button" onClick={onCancel} variant="outline">
+            Annuler
+          </Button>
+          <Button 
+            type="submit"
+            className="bg-gold-500 hover:bg-gold-600 text-black"
+            disabled={isPostalCodeValid !== true}
+          >
+            Confirmer l'adresse
+          </Button>
+        </div>
+      </form>
     </div>
   );
 };

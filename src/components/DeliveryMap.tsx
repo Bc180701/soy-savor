@@ -1,22 +1,42 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin } from "lucide-react";
 import { useHomepageData } from "@/hooks/useHomepageData";
+import { getDeliveryLocations } from "@/services/deliveryService";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 interface DeliveryMapProps {
-  deliveryZones: string[];
+  deliveryZones?: string[];
 }
 
 export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
   const [activeZone, setActiveZone] = useState<string | null>(null);
+  const [restaurantDeliveryZones, setRestaurantDeliveryZones] = useState<{city: string, postalCode: string}[]>([]);
   const { data: homepageData } = useHomepageData();
+  const { currentRestaurant } = useRestaurantContext();
   
   // Récupérer les données de la section de carte de livraison
   const deliveryMapSection = homepageData?.delivery_map_section;
   const overlayImage = homepageData?.hero_section?.overlay_image || "";
 
+  // Charger les zones de livraison spécifiques au restaurant
+  useEffect(() => {
+    const loadRestaurantDeliveryZones = async () => {
+      if (currentRestaurant) {
+        const zones = await getDeliveryLocations(currentRestaurant.id);
+        setRestaurantDeliveryZones(zones);
+      }
+    };
+    loadRestaurantDeliveryZones();
+  }, [currentRestaurant]);
+
+  // Utiliser les zones du restaurant si disponibles, sinon utiliser les zones par défaut
+  const zonesToDisplay = restaurantDeliveryZones.length > 0 
+    ? restaurantDeliveryZones.map(zone => `${zone.city} (${zone.postalCode})`)
+    : deliveryZones || [];
+
   // Vérifier si les zones de livraison sont disponibles et non vides
-  const hasZones = Array.isArray(deliveryZones) && deliveryZones.length > 0;
+  const hasZones = Array.isArray(zonesToDisplay) && zonesToDisplay.length > 0;
 
   return (
     <section className="py-16 bg-white">
@@ -26,8 +46,18 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
             {deliveryMapSection?.title || "Zones de livraison"}
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            {deliveryMapSection?.subtitle || "Nous livrons dans les communes suivantes autour de Châteaurenard. Commandez en ligne et recevez vos sushis directement chez vous !"}
+            {currentRestaurant ? (
+              `Nous livrons dans les communes suivantes depuis notre restaurant de ${currentRestaurant.name}. Commandez en ligne et recevez vos sushis directement chez vous !`
+            ) : (
+              deliveryMapSection?.subtitle || "Nous livrons dans les communes suivantes. Commandez en ligne et recevez vos sushis directement chez vous !"
+            )}
           </p>
+          {currentRestaurant && (
+            <div className="mt-4 inline-flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full">
+              <span className="text-sm text-blue-800">Restaurant sélectionné:</span>
+              <span className="font-semibold text-blue-900">{currentRestaurant.name}</span>
+            </div>
+          )}
         </div>
         
         <div className="max-w-4xl mx-auto">
@@ -46,10 +76,10 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
                 <div className="bg-white bg-opacity-80 p-6 rounded-lg shadow-md text-center">
                   <MapPin className="mx-auto h-10 w-10 text-gold-600 mb-2" />
                   <h3 className="text-xl font-bold mb-2 better-times-gold">
-                    {deliveryMapSection?.restaurant_info?.name || "SushiEats Châteaurenard"}
+                    {currentRestaurant ? currentRestaurant.name : (deliveryMapSection?.restaurant_info?.name || "SushiEats")}
                   </h3>
                   <p className="text-gray-600 mb-2">
-                    {deliveryMapSection?.restaurant_info?.address || "16 cours Carnot, 13160 Châteaurenard"}
+                    {currentRestaurant ? currentRestaurant.address : (deliveryMapSection?.restaurant_info?.address || "Adresse du restaurant")}
                   </p>
                   <p className="text-sm text-gold-600 font-medium">
                     {deliveryMapSection?.restaurant_info?.subtitle || "Point de départ des livraisons"}
@@ -62,7 +92,7 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
           
           {hasZones ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {deliveryZones.map((zone, index) => (
+              {zonesToDisplay.map((zone, index) => (
                 <div 
                   key={`zone-${index}-${zone}`}
                   className={`p-3 rounded-md cursor-pointer transition-colors ${
@@ -82,7 +112,11 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
           ) : (
             <div className="text-center p-6 bg-gray-50 rounded-lg">
               <p className="text-gray-500">
-                {deliveryMapSection?.no_zones_message || "Aucune zone de livraison n'est actuellement définie."}
+                {currentRestaurant ? (
+                  `Aucune zone de livraison n'est actuellement définie pour ${currentRestaurant.name}.`
+                ) : (
+                  deliveryMapSection?.no_zones_message || "Aucune zone de livraison n'est actuellement définie."
+                )}
               </p>
             </div>
           )}
