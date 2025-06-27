@@ -1,14 +1,10 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { useCart } from "@/hooks/use-cart";
 import { MenuItem, MenuCategory } from "@/types";
 import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
-import { RESTAURANTS } from "@/services/restaurantService";
-import { isRestaurantOpenNow, getNextOpenDay } from "@/services/openingHoursService";
 import { supabase } from "@/integrations/supabase/client";
-import { RestaurantProvider, useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { Restaurant } from "@/types/restaurant";
 import LoadingSpinner from "@/components/menu/LoadingSpinner";
 import RestaurantClosedMessage from "@/components/menu/RestaurantClosedMessage";
@@ -17,10 +13,11 @@ import PromotionalBanner from "@/components/menu/PromotionalBanner";
 import CategorySection from "@/components/menu/CategorySection";
 import ProductsDisplay from "@/components/menu/ProductsDisplay";
 import RestaurantSelectionDialog from "@/components/menu/RestaurantSelectionDialog";
+import { useCart, useCartWithRestaurant } from "@/hooks/use-cart";
 
 const CommanderContent = () => {
   const { toast } = useToast();
-  const cart = useCart();
+  const { addItem: addToCart, checkRestaurantCompatibility, clearCart, selectedRestaurantId } = useCartWithRestaurant();
   const { isOrderingLocked } = useCart();
   const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
   const [showRestaurantDialog, setShowRestaurantDialog] = useState(false);
@@ -155,12 +152,48 @@ const CommanderContent = () => {
 
   const handleRestaurantSelected = (restaurant: Restaurant) => {
     console.log("🏪 Nouveau restaurant sélectionné:", restaurant.name);
+    
+    // Vérifier si le panier est compatible avec le nouveau restaurant
+    const isCompatible = checkRestaurantCompatibility(restaurant.id);
+    
+    if (!isCompatible) {
+      console.log("⚠️ Changement de restaurant détecté, le panier va être vidé");
+      toast({
+        title: "Panier vidé",
+        description: `Votre panier a été vidé car vous avez changé de restaurant.`,
+        variant: "default"
+      });
+      clearCart();
+    }
+    
     setCurrentRestaurant(restaurant);
     // Les états seront réinitialisés par l'effet ci-dessus
   };
 
-  const addToCart = (item: MenuItem) => {
-    cart.addItem(item, 1);
+  const handleAddToCart = (item: MenuItem) => {
+    console.log("🛒 Tentative d'ajout au panier:", item.name, "Restaurant:", currentRestaurant?.name);
+    
+    if (!currentRestaurant) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner un restaurant avant d'ajouter des articles au panier.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Vérifier la compatibilité avant d'ajouter
+    if (!checkRestaurantCompatibility(currentRestaurant.id)) {
+      console.log("⚠️ Restaurant incompatible détecté lors de l'ajout");
+      toast({
+        title: "Panier vidé",
+        description: "Votre panier contenait des articles d'un autre restaurant et a été vidé.",
+        variant: "default"
+      });
+      clearCart();
+    }
+    
+    addToCart(item, 1);
     
     toast({
       title: "Ajouté au panier",
@@ -191,6 +224,8 @@ const CommanderContent = () => {
   const nonEmptyCategories = categories.filter(cat => cat.items.length > 0);
 
   console.log("🖼️ Rendu final - Catégories non vides:", nonEmptyCategories.length);
+  console.log("🏪 Restaurant panier:", selectedRestaurantId);
+  console.log("🏪 Restaurant actuel:", currentRestaurant?.id);
 
   return (
     <div className="container mx-auto py-24 px-4">
@@ -223,6 +258,11 @@ const CommanderContent = () => {
                 Changer
               </button>
             </div>
+            {selectedRestaurantId && selectedRestaurantId !== currentRestaurant.id && (
+              <div className="mt-2 text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded">
+                ⚠️ Votre panier contient des articles d'un autre restaurant
+              </div>
+            )}
           </div>
         )}
 
@@ -265,7 +305,7 @@ const CommanderContent = () => {
                 
                 <ProductsDisplay
                   categories={nonEmptyCategories}
-                  onAddToCart={addToCart}
+                  onAddToCart={handleAddToCart}
                   categoryRefs={categoryRefs}
                 />
               </div>

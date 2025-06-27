@@ -28,6 +28,8 @@ interface CartStore {
   plateauCount: number;
   freeDessertCount: number;
   getRemainingFreeDesserts: () => number;
+  // Nouvelle méthode pour vérifier la compatibilité du restaurant
+  checkRestaurantCompatibility: (restaurantId: string) => boolean;
 }
 
 export const useCart = create<CartStore>()(
@@ -64,6 +66,16 @@ export const useCart = create<CartStore>()(
       getRemainingFreeDesserts: () => {
         const state = get();
         return Math.max(0, state.plateauCount - state.freeDessertCount);
+      },
+
+      checkRestaurantCompatibility: (restaurantId: string) => {
+        const state = get();
+        // Si le panier est vide, n'importe quel restaurant est compatible
+        if (state.items.length === 0) return true;
+        // Si aucun restaurant n'est sélectionné dans le panier, compatible
+        if (!state.selectedRestaurantId) return true;
+        // Sinon, vérifier que c'est le même restaurant
+        return state.selectedRestaurantId === restaurantId;
       },
       
       addItem: (item, quantity, specialInstructions) => {
@@ -107,6 +119,7 @@ export const useCart = create<CartStore>()(
       },
       
       clearCart: () => {
+        console.log("🧹 Vidage du panier");
         set({ items: [], selectedRestaurantId: null });
       },
       
@@ -123,6 +136,7 @@ export const useCart = create<CartStore>()(
       },
 
       setSelectedRestaurantId: (restaurantId) => {
+        console.log("🏪 Restaurant sélectionné dans le panier:", restaurantId);
         set({ selectedRestaurantId: restaurantId });
       }
     }),
@@ -141,12 +155,19 @@ export const useCartWithRestaurant = () => {
   // Synchroniser le restaurant sélectionné avec le panier
   const addItemWithRestaurant = (item: MenuItem, quantity: number, specialInstructions?: string) => {
     if (currentRestaurant) {
-      // Si le panier contient des articles d'un autre restaurant, le vider
-      if (cart.selectedRestaurantId && cart.selectedRestaurantId !== currentRestaurant.id) {
+      console.log("🛒 Ajout d'un article au panier:", item.name, "Restaurant:", currentRestaurant.name);
+      
+      // Vérifier la compatibilité avec le restaurant courant
+      if (!cart.checkRestaurantCompatibility(currentRestaurant.id)) {
+        console.log("⚠️ Restaurant incompatible, vidage du panier");
         cart.clearCart();
       }
       
-      cart.setSelectedRestaurantId(currentRestaurant.id);
+      // Définir le restaurant sélectionné si ce n'est pas déjà fait
+      if (!cart.selectedRestaurantId) {
+        cart.setSelectedRestaurantId(currentRestaurant.id);
+      }
+      
       cart.addItem(item, quantity, specialInstructions);
     }
   };
