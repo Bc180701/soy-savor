@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,10 +12,9 @@ import FeaturedProductsManager from "@/components/admin/FeaturedProductsManager"
 import OpeningHoursManager from "@/components/admin/OpeningHoursManager";
 import HomepageEditor from "@/components/admin/HomepageEditor";
 import OrderingLockControl from "@/components/admin/OrderingLockControl";
-import SushiIngredientsManager from "@/components/admin/SushiIngredientsManager";
-import PokeIngredientsManager from "@/components/admin/PokeIngredientsManager";
 import OrderList from "@/components/OrderList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import IngredientsManager from "@/components/admin/IngredientsManager";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -133,7 +131,7 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10 gap-1">
+            <TabsList className="grid w-full grid-cols-9 gap-1">
               <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
               <TabsTrigger value="orders">Commandes</TabsTrigger>
               <TabsTrigger value="products">Produits</TabsTrigger>
@@ -143,7 +141,6 @@ const Admin = () => {
               <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
               <TabsTrigger value="ordering">Configuration</TabsTrigger>
               <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
-              <TabsTrigger value="admin">Administrateurs</TabsTrigger>
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -179,14 +176,7 @@ const Admin = () => {
             </TabsContent>
             
             <TabsContent value="ingredients">
-              <div className="space-y-8">
-                <SushiIngredientsManager />
-                <PokeIngredientsManager />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="admin">
-              <AdminManager />
+              <IngredientsManager />
             </TabsContent>
           </Tabs>
           
