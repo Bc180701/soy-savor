@@ -16,7 +16,7 @@ export const useSushiIngredients = () => {
     const fetchIngredients = async () => {
       try {
         setLoading(true);
-        console.log("Fetching sushi ingredients from database...");
+        console.log("🔍 Fetching sushi ingredients from database...");
         
         const { data: ingredients, error } = await supabase
           .from('sushi_ingredients')
@@ -24,20 +24,20 @@ export const useSushiIngredients = () => {
           .order('name');
 
         if (error) {
-          console.error('Error fetching sushi ingredients:', error);
-          toast.error("Impossible de charger les ingrédients");
+          console.error('❌ Error fetching sushi ingredients:', error);
+          toast.error("Impossible de charger les ingrédients sushi");
           return;
         }
 
-        console.log("Raw sushi ingredients data:", ingredients);
+        console.log("📦 Raw sushi ingredients data:", ingredients);
 
         if (!ingredients || ingredients.length === 0) {
-          console.log("No sushi ingredients found in database");
-          toast.error("Aucun ingrédient trouvé dans la base de données");
+          console.log("⚠️ No sushi ingredients found in database");
+          toast.error("Aucun ingrédient sushi trouvé dans la base de données");
           return;
         }
 
-        // Transform ingredients to SushiOption format and group by type
+        // Transform ingredients to SushiOption format
         const transformedIngredients: SushiOption[] = ingredients.map(ingredient => ({
           id: ingredient.id,
           name: ingredient.name,
@@ -46,7 +46,7 @@ export const useSushiIngredients = () => {
           category: ingredient.ingredient_type
         }));
 
-        console.log("Transformed sushi ingredients:", transformedIngredients);
+        console.log("🔄 Transformed sushi ingredients:", transformedIngredients);
 
         // Group ingredients by type
         const enrobage = transformedIngredients.filter(ing => ing.category === 'enrobage');
@@ -55,7 +55,7 @@ export const useSushiIngredients = () => {
         const topping = transformedIngredients.filter(ing => ing.category === 'topping');
         const sauce = transformedIngredients.filter(ing => ing.category === 'sauce');
 
-        console.log("Sushi ingredients grouped by category:", { 
+        console.log("📊 Ingredients grouped by category:", { 
           enrobage: enrobage.length, 
           base: base.length, 
           garnitures: garnitures.length, 
@@ -63,24 +63,45 @@ export const useSushiIngredients = () => {
           sauce: sauce.length 
         });
 
+        // Set the state
         setEnrobageOptions(enrobage);
         setBaseOptions(base);
         setGarnituresOptions(garnitures);
         setToppingOptions(topping);
         setSauceOptions(sauce);
 
-        console.log("Sushi ingredients state updated successfully");
+        console.log("✅ Sushi ingredients state updated successfully");
+        console.log("🎯 Final state preview:", {
+          enrobageCount: enrobage.length,
+          baseCount: base.length,
+          garnituresCount: garnitures.length,
+          toppingCount: topping.length,
+          sauceCount: sauce.length
+        });
 
       } catch (error) {
-        console.error('Error in fetchIngredients:', error);
-        toast.error("Une erreur est survenue lors du chargement des ingrédients");
+        console.error('💥 Error in fetchIngredients:', error);
+        toast.error("Une erreur est survenue lors du chargement des ingrédients sushi");
       } finally {
         setLoading(false);
+        console.log("🏁 Loading finished");
       }
     };
 
     fetchIngredients();
   }, []);
+
+  // Log the current state values when they change
+  useEffect(() => {
+    console.log("🔄 Hook state updated:", {
+      enrobageOptions: enrobageOptions.length,
+      baseOptions: baseOptions.length,
+      garnituresOptions: garnituresOptions.length,
+      toppingOptions: toppingOptions.length,
+      sauceOptions: sauceOptions.length,
+      loading
+    });
+  }, [enrobageOptions, baseOptions, garnituresOptions, toppingOptions, sauceOptions, loading]);
 
   return {
     enrobageOptions,

@@ -10,6 +10,22 @@ interface GarnituresSelectionProps {
 }
 
 export const GarnituresSelection = ({ selectedGarnitures, garnituresOptions, onGarnitureSelect }: GarnituresSelectionProps) => {
+  console.log("🥗 GarnituresSelection render - options:", garnituresOptions);
+  
+  if (garnituresOptions.length === 0) {
+    return (
+      <div>
+        <h3 className="text-xl font-bold mb-4">Choisis tes garnitures (2 choix inclus)</h3>
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <p className="text-gray-600">Aucune garniture disponible pour le moment.</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Veuillez ajouter des ingrédients de type "ingredient" dans la section administration.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis tes garnitures (2 choix inclus)</h3>
