@@ -31,6 +31,12 @@ export const useSushiIngredients = () => {
 
         console.log("Sushi ingredients fetched:", ingredients);
 
+        if (!ingredients || ingredients.length === 0) {
+          console.log("No sushi ingredients found in database");
+          toast.error("Aucun ingrédient trouvé dans la base de données");
+          return;
+        }
+
         // Transform ingredients to SushiOption format and group by type
         const transformedIngredients = ingredients.map(ingredient => ({
           id: ingredient.id,
@@ -40,12 +46,22 @@ export const useSushiIngredients = () => {
           category: ingredient.ingredient_type
         }));
 
+        console.log("Transformed ingredients:", transformedIngredients);
+
         // Group ingredients by type
-        setEnrobageOptions(transformedIngredients.filter(ing => ing.category === 'enrobage'));
-        setBaseOptions(transformedIngredients.filter(ing => ing.category === 'protein'));
-        setGarnituresOptions(transformedIngredients.filter(ing => ing.category === 'ingredient'));
-        setToppingOptions(transformedIngredients.filter(ing => ing.category === 'topping'));
-        setSauceOptions(transformedIngredients.filter(ing => ing.category === 'sauce'));
+        const enrobage = transformedIngredients.filter(ing => ing.category === 'enrobage');
+        const base = transformedIngredients.filter(ing => ing.category === 'protein');
+        const garnitures = transformedIngredients.filter(ing => ing.category === 'ingredient');
+        const topping = transformedIngredients.filter(ing => ing.category === 'topping');
+        const sauce = transformedIngredients.filter(ing => ing.category === 'sauce');
+
+        console.log("Categories:", { enrobage: enrobage.length, base: base.length, garnitures: garnitures.length, topping: topping.length, sauce: sauce.length });
+
+        setEnrobageOptions(enrobage);
+        setBaseOptions(base);
+        setGarnituresOptions(garnitures);
+        setToppingOptions(topping);
+        setSauceOptions(sauce);
 
       } catch (error) {
         console.error('Error in fetchIngredients:', error);

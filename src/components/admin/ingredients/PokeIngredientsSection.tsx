@@ -1,38 +1,32 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Plus, Edit } from "lucide-react";
-
-interface PokeIngredient {
-  id: string;
-  name: string;
-  price: number;
-  included: boolean;
-  ingredient_type: string;
-}
+import { PokeIngredient } from "@/hooks/usePokeIngredients";
 
 const PokeIngredientsSection = () => {
-  const { toast } = useToast();
   const [ingredients, setIngredients] = useState<PokeIngredient[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
     price: 0,
     included: true,
-    ingredient_type: "ingredient"
+    ingredient_type: "base"
   });
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const ingredientTypes = [
-    { value: "ingredient", label: "Ingrédient" },
+    { value: "base", label: "Base" },
     { value: "protein", label: "Protéine" },
+    { value: "vegetable", label: "Légume" },
+    { value: "topping", label: "Topping" },
     { value: "sauce", label: "Sauce" }
   ];
 
@@ -52,12 +46,8 @@ const PokeIngredientsSection = () => {
       if (error) throw error;
       setIngredients(data || []);
     } catch (error) {
-      console.error("Erreur lors du chargement des ingrédients poke:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les ingrédients poke",
-        variant: "destructive",
-      });
+      console.error('Erreur lors du chargement des ingrédients pokés:', error);
+      toast.error("Erreur lors du chargement des ingrédients pokés");
     } finally {
       setLoading(false);
     }
@@ -67,11 +57,7 @@ const PokeIngredientsSection = () => {
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      toast({
-        title: "Erreur",
-        description: "Le nom de l'ingrédient est requis",
-        variant: "destructive",
-      });
+      toast.error("Le nom de l'ingrédient est requis");
       return;
     }
 
@@ -83,37 +69,27 @@ const PokeIngredientsSection = () => {
           .eq('id', editingId);
 
         if (error) throw error;
-        toast({
-          title: "Succès",
-          description: "Ingrédient poke modifié avec succès",
-        });
+        toast.success("Ingrédient poké modifié avec succès");
       } else {
         const { error } = await supabase
           .from('poke_ingredients')
           .insert([formData]);
 
         if (error) throw error;
-        toast({
-          title: "Succès",
-          description: "Ingrédient poke ajouté avec succès",
-        });
+        toast.success("Ingrédient poké ajouté avec succès");
       }
 
       setFormData({
         name: "",
         price: 0,
         included: true,
-        ingredient_type: "ingredient"
+        ingredient_type: "base"
       });
       setEditingId(null);
       fetchIngredients();
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder l'ingrédient",
-        variant: "destructive",
-      });
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast.error("Erreur lors de la sauvegarde");
     }
   };
 
@@ -128,7 +104,7 @@ const PokeIngredientsSection = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet ingrédient poke ?")) {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet ingrédient poké ?")) {
       return;
     }
 
@@ -139,18 +115,11 @@ const PokeIngredientsSection = () => {
         .eq('id', id);
 
       if (error) throw error;
-      toast({
-        title: "Succès",
-        description: "Ingrédient poke supprimé avec succès",
-      });
+      toast.success("Ingrédient poké supprimé avec succès");
       fetchIngredients();
     } catch (error) {
-      console.error("Erreur lors de la suppression:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'ingrédient",
-        variant: "destructive",
-      });
+      console.error('Erreur lors de la suppression:', error);
+      toast.error("Erreur lors de la suppression");
     }
   };
 
@@ -159,7 +128,7 @@ const PokeIngredientsSection = () => {
       name: "",
       price: 0,
       included: true,
-      ingredient_type: "ingredient"
+      ingredient_type: "base"
     });
     setEditingId(null);
   };
@@ -183,7 +152,7 @@ const PokeIngredientsSection = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
-            {editingId ? "Modifier l'ingrédient poke" : "Ajouter un ingrédient poke"}
+            {editingId ? "Modifier l'ingrédient poké" : "Ajouter un ingrédient poké"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -195,7 +164,7 @@ const PokeIngredientsSection = () => {
                   id="poke-name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex: Thon, Edamame..."
+                  placeholder="Ex: Riz, Saumon, Avocat..."
                   required
                 />
               </div>
@@ -257,7 +226,7 @@ const PokeIngredientsSection = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Ingrédients poke existants ({ingredients.length})</CardTitle>
+          <CardTitle>Ingrédients pokés existants ({ingredients.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -310,7 +279,7 @@ const PokeIngredientsSection = () => {
 
           {ingredients.length === 0 && (
             <p className="text-center text-gray-500 py-8">
-              Aucun ingrédient poke trouvé. Ajoutez-en un pour commencer.
+              Aucun ingrédient poké trouvé. Ajoutez-en un pour commencer.
             </p>
           )}
         </CardContent>
