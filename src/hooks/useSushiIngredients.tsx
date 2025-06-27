@@ -29,7 +29,7 @@ export const useSushiIngredients = () => {
           return;
         }
 
-        console.log("Sushi ingredients fetched:", ingredients);
+        console.log("Raw sushi ingredients data:", ingredients);
 
         if (!ingredients || ingredients.length === 0) {
           console.log("No sushi ingredients found in database");
@@ -38,7 +38,7 @@ export const useSushiIngredients = () => {
         }
 
         // Transform ingredients to SushiOption format and group by type
-        const transformedIngredients = ingredients.map(ingredient => ({
+        const transformedIngredients: SushiOption[] = ingredients.map(ingredient => ({
           id: ingredient.id,
           name: ingredient.name,
           price: ingredient.price,
@@ -46,7 +46,7 @@ export const useSushiIngredients = () => {
           category: ingredient.ingredient_type
         }));
 
-        console.log("Transformed ingredients:", transformedIngredients);
+        console.log("Transformed sushi ingredients:", transformedIngredients);
 
         // Group ingredients by type
         const enrobage = transformedIngredients.filter(ing => ing.category === 'enrobage');
@@ -55,13 +55,21 @@ export const useSushiIngredients = () => {
         const topping = transformedIngredients.filter(ing => ing.category === 'topping');
         const sauce = transformedIngredients.filter(ing => ing.category === 'sauce');
 
-        console.log("Categories:", { enrobage: enrobage.length, base: base.length, garnitures: garnitures.length, topping: topping.length, sauce: sauce.length });
+        console.log("Sushi ingredients grouped by category:", { 
+          enrobage: enrobage.length, 
+          base: base.length, 
+          garnitures: garnitures.length, 
+          topping: topping.length, 
+          sauce: sauce.length 
+        });
 
         setEnrobageOptions(enrobage);
         setBaseOptions(base);
         setGarnituresOptions(garnitures);
         setToppingOptions(topping);
         setSauceOptions(sauce);
+
+        console.log("Sushi ingredients state updated successfully");
 
       } catch (error) {
         console.error('Error in fetchIngredients:', error);

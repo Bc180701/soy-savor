@@ -10,6 +10,22 @@ interface BaseSelectionProps {
 }
 
 export const BaseSelection = ({ selectedBase, baseOptions, onBaseSelect }: BaseSelectionProps) => {
+  console.log("BaseSelection render - options:", baseOptions);
+  
+  if (baseOptions.length === 0) {
+    return (
+      <div>
+        <h3 className="text-xl font-bold mb-4">Choisis ta base (1 choix inclus)</h3>
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <p className="text-gray-600">Aucune base disponible pour le moment.</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Veuillez ajouter des ingrédients de type "protein" dans la section administration.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis ta base (1 choix inclus)</h3>
