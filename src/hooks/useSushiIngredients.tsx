@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { SushiOption } from "@/types/sushi-creator";
 
 export const useSushiIngredients = () => {
@@ -11,7 +11,6 @@ export const useSushiIngredients = () => {
   const [toppingOptions, setToppingOptions] = useState<SushiOption[]>([]);
   const [sauceOptions, setSauceOptions] = useState<SushiOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchIngredients = async () => {
@@ -26,11 +25,7 @@ export const useSushiIngredients = () => {
 
         if (error) {
           console.error('Error fetching sushi ingredients:', error);
-          toast({
-            title: "Erreur",
-            description: "Impossible de charger les ingrédients",
-            variant: "destructive",
-          });
+          toast.error("Impossible de charger les ingrédients");
           return;
         }
 
@@ -54,18 +49,14 @@ export const useSushiIngredients = () => {
 
       } catch (error) {
         console.error('Error in fetchIngredients:', error);
-        toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors du chargement des ingrédients",
-          variant: "destructive",
-        });
+        toast.error("Une erreur est survenue lors du chargement des ingrédients");
       } finally {
         setLoading(false);
       }
     };
 
     fetchIngredients();
-  }, [toast]);
+  }, []);
 
   return {
     enrobageOptions,
