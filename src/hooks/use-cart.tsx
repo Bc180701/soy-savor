@@ -22,7 +22,7 @@ interface CartStore {
   getTotalPrice: () => number;
   setOrderingLocked: (locked: boolean) => void;
   setSelectedRestaurantId: (restaurantId: string | null) => void;
-  // New properties for cart display and promotions
+  // Properties calculées réactives
   itemCount: number;
   total: number;
   plateauCount: number;
@@ -39,13 +39,13 @@ export const useCart = create<CartStore>()(
       isOrderingLocked: false,
       selectedRestaurantId: null,
       
-      // Computed properties
+      // Computed properties - maintenant calculées à chaque fois
       get itemCount() {
-        return get().getTotalItems();
+        return get().items.reduce((total, item) => total + item.quantity, 0);
       },
       
       get total() {
-        return get().getTotalPrice();
+        return get().items.reduce((total, item) => total + (item.menuItem.price * item.quantity), 0);
       },
       
       get plateauCount() {
