@@ -1,4 +1,3 @@
-
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +26,32 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);
+
+  // Mapping des noms commerciaux pour les badges de catégories
+  const categoryDisplayNames: Record<string, string> = {
+    'box_du_midi': 'BOX MIDI',
+    'plateaux': 'PLATEAU',
+    'yakitori': 'YAKITORI',
+    'gunkan': 'GUNKAN',
+    'sashimi': 'SASHIMI',
+    'poke': 'POKÉ BOWL',
+    'chirashi': 'CHIRASHI',
+    'maki': 'MAKI',
+    'california': 'CALIFORNIA',
+    'crispy': 'CRISPY',
+    'spring': 'SPRING',
+    'salmon': 'SALMON',
+    'green': 'GREEN',
+    'nigiri': 'NIGIRI',
+    'signature': 'SIGNATURE',
+    'temaki': 'TEMAKI',
+    'maki_wrap': 'MAKI WRAP',
+    'accompagnements': 'ACCOMPAGNEMENT',
+    'desserts': 'DESSERT',
+    'boissons': 'BOISSON',
+    'custom': 'SUSHI CRÉATION',
+    'poke_custom': 'POKÉ CRÉATION'
+  };
 
   // Check if an item is a custom product (sushi or poke)
   const isCustomProduct = (item: MenuItem) => {
@@ -148,18 +173,14 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                           {/* Contenu */}
                           <div className="p-3 flex flex-col flex-1">
-                            {/* Badges */}
+                            {/* Badges avec noms commerciaux */}
                             <div className="flex gap-1 mb-2 flex-wrap">
                               {item.category && (
                                 <Badge 
                                   variant="secondary" 
                                   className="bg-pink-100 text-pink-600 border-0 text-xs font-medium uppercase tracking-wider"
                                 >
-                                  {item.category === "poke" ? "POKE" : 
-                                   item.category === "custom" ? "SUSHI" :
-                                   item.category === "maki" ? "MAKI" :
-                                   item.category === "plateaux" ? "PLATEAU" :
-                                   item.category}
+                                  {categoryDisplayNames[item.category] || item.category}
                                 </Badge>
                               )}
                               {item.isVegetarian && (
@@ -309,18 +330,14 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                           <div className="flex-1 p-6">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                {/* Badges */}
+                                {/* Badges avec noms commerciaux */}
                                 <div className="flex gap-2 mb-2 flex-wrap">
                                   {item.category && (
                                     <Badge 
                                       variant="secondary" 
                                       className="bg-pink-100 text-pink-600 border-0 text-xs font-medium uppercase tracking-wider"
                                     >
-                                      {item.category === "poke" ? "POKE BOWL" : 
-                                       item.category === "custom" ? "SUSHI" :
-                                       item.category === "maki" ? "MAKI" :
-                                       item.category === "plateaux" ? "PLATEAU" :
-                                       item.category}
+                                      {categoryDisplayNames[item.category] || item.category}
                                     </Badge>
                                   )}
                                   {item.isBestSeller && (
@@ -497,11 +514,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                       variant="secondary" 
                       className="bg-pink-100 text-pink-600 border-0 text-sm font-medium uppercase tracking-wider mb-2"
                     >
-                      {selectedProductDetails.category === "poke" ? "POKE BOWL" : 
-                       selectedProductDetails.category === "custom" ? "SUSHI" :
-                       selectedProductDetails.category === "maki" ? "MAKI" :
-                       selectedProductDetails.category === "plateaux" ? "PLATEAU" :
-                       selectedProductDetails.category}
+                      {categoryDisplayNames[selectedProductDetails.category] || selectedProductDetails.category}
                     </Badge>
                   )}
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">

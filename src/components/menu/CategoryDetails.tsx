@@ -7,6 +7,32 @@ interface CategoryDetailsProps {
 }
 
 const CategoryDetails = ({ category }: CategoryDetailsProps) => {
+  // Mapping des noms commerciaux pour les catégories
+  const categoryDisplayNames: Record<string, string> = {
+    'box_du_midi': 'Box du Midi',
+    'plateaux': 'Plateaux',
+    'yakitori': 'Yakitori',
+    'gunkan': 'Gunkan',
+    'sashimi': 'Sashimi',
+    'poke': 'Poké Bowl',
+    'chirashi': 'Chirashi',
+    'maki': 'Maki',
+    'california': 'California',
+    'crispy': 'Crispy',
+    'spring': 'Spring',
+    'salmon': 'Salmon',
+    'green': 'Green',
+    'nigiri': 'Nigiri',
+    'signature': 'Signature',
+    'temaki': 'Temaki',
+    'maki_wrap': 'Maki Wrap',
+    'accompagnements': 'Accompagnements',
+    'desserts': 'Desserts',
+    'boissons': 'Boissons',
+    'custom': 'Création Sushi',
+    'poke_custom': 'Création Poké'
+  };
+
   // Special descriptions for specific categories
   const specialDescriptions: Record<string, string> = {
     'box_du_midi': 'Midi uniquement de 11h à 14h. Accompagnements offerts : riz, salade de choux, soupe miso',
@@ -28,12 +54,15 @@ const CategoryDetails = ({ category }: CategoryDetailsProps) => {
     'maki_wrap': 'Wrap de sushi Maki, roulé d\'algue nori avec riz vinaigré et garniture'
   };
 
+  // Use the commercial name if available, otherwise use the category name
+  const displayName = categoryDisplayNames[category.id] || category.name;
+  
   // Use the special description if available, otherwise use the category description
   const description = specialDescriptions[category.id] || category.description;
 
   return (
     <div className="mb-8">
-      <h2 className="text-2xl font-bold bg-akane-600 text-white px-4 py-2 rounded-md">{category.name}</h2>
+      <h2 className="text-2xl font-bold bg-akane-600 text-white px-4 py-2 rounded-md">{displayName}</h2>
       {description && (
         <p className="text-gray-600 italic mt-2 mb-2">{description}</p>
       )}
