@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import DeliveryMethod from "../checkout/DeliveryMethod";
@@ -7,8 +8,10 @@ import { AllergiesSelector } from "../checkout/AllergiesSelector";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { checkPostalCodeDelivery } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DeliveryStepProps {
   deliveryInfo: {
@@ -43,7 +46,48 @@ export const DeliveryStep = ({
   isLoggedIn
 }: DeliveryStepProps) => {
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
+  const [useStoredInfo, setUseStoredInfo] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const { toast } = useToast();
+
+  // Charger le profil utilisateur si connecté
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (isLoggedIn) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile) {
+            setUserProfile(profile);
+          }
+        }
+      }
+    };
+    
+    loadUserProfile();
+  }, [isLoggedIn]);
+
+  // Gérer le pré-remplissage des informations
+  const handleUseStoredInfoChange = (checked: boolean) => {
+    setUseStoredInfo(checked);
+    
+    if (checked && userProfile) {
+      setDeliveryInfo(prev => ({
+        ...prev,
+        name: userProfile.full_name || prev.name,
+        email: userProfile.email || prev.email,
+        phone: userProfile.phone || prev.phone,
+        street: userProfile.address || prev.street,
+        city: userProfile.city || prev.city,
+        postalCode: userProfile.postal_code || prev.postalCode,
+      }));
+    }
+  };
 
   // Handle delivery method change
   const handleOrderTypeChange = (type: "delivery" | "pickup") => {
@@ -81,7 +125,7 @@ export const DeliveryStep = ({
       phone: addressData.phone,
       email: addressData.email,
       deliveryInstructions: addressData.instructions,
-      isPostalCodeValid: addressData.isPostalCodeValid // Utiliser la validation du composant enfant
+      isPostalCodeValid: addressData.isPostalCodeValid
     }));
   };
 
@@ -158,6 +202,20 @@ export const DeliveryStep = ({
         defaultValue={deliveryInfo.orderType} 
         onChange={handleOrderTypeChange} 
       />
+      
+      {/* Case à cocher pour utiliser les informations stockées */}
+      {isLoggedIn && userProfile && (
+        <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-md">
+          <Checkbox
+            id="use-stored-info"
+            checked={useStoredInfo}
+            onCheckedChange={handleUseStoredInfoChange}
+          />
+          <Label htmlFor="use-stored-info" className="text-sm font-medium">
+            Utiliser mes informations enregistrées
+          </Label>
+        </div>
+      )}
       
       {/* Contact Information */}
       <div className="space-y-4">

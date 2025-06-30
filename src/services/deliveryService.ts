@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?: string): Promise<boolean> => {
@@ -13,14 +12,31 @@ export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?:
     query = query.eq('restaurant_id', restaurantId);
   }
   
-  const { data, error } = await query.single();
+  // Utiliser .maybeSingle() au lieu de .single() pour éviter l'erreur avec plusieurs lignes
+  const { data, error } = await query.maybeSingle();
   
-  if (error || !data) {
+  // Si pas de restaurant spécifique, vérifier s'il y a au moins une entrée
+  if (!restaurantId) {
+    const { data: allData, error: allError } = await supabase
+      .from('delivery_locations')
+      .select('*')
+      .eq('postal_code', postalCode)
+      .eq('is_active', true);
+    
+    if (allError) {
+      console.error("Error checking postal code:", allError);
+      return false;
+    }
+    
+    return allData && allData.length > 0;
+  }
+  
+  if (error) {
     console.error("Error checking postal code:", error);
     return false;
   }
   
-  return true;
+  return !!data;
 };
 
 export const getDeliveryLocations = async (restaurantId?: string): Promise<{city: string, postalCode: string}[]> => {
