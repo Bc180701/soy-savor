@@ -9,6 +9,8 @@ import { CartStep } from "@/components/cart/CartStep";
 import { DeliveryStep } from "@/components/cart/DeliveryStep";
 import { PaymentStep } from "@/components/cart/PaymentStep";
 import { CheckoutSteps, CheckoutStep } from "@/components/cart/CheckoutSteps";
+import { RestaurantProvider } from "@/hooks/useRestaurantContext";
+import { useCartRestaurant } from "@/hooks/useCartRestaurant";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -28,16 +30,17 @@ interface DeliveryInfo {
   isPostalCodeValid?: boolean;
 }
 
-const Panier = () => {
+const PanierContent = () => {
   const { items, clearCart } = useCart();
-  const cartTotal = useCartTotal(); // Utiliser le hook réactif pour le total
+  const cartTotal = useCartTotal();
   const { toast } = useToast();
+  const { cartRestaurant } = useCartRestaurant();
   const TAX_RATE = 0.1; // 10% TVA
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
   const [loading, setLoading] = useState(false);
   const [allergies, setAllergies] = useState<string[]>([]);
-  const [tip, setTip] = useState<number>(0); // Nouveau state pour le pourboire
+  const [tip, setTip] = useState<number>(0);
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
     orderType: "delivery",
     name: "",
@@ -57,6 +60,13 @@ const Panier = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
   const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
+
+  // Log du restaurant détecté
+  useEffect(() => {
+    if (cartRestaurant) {
+      console.log("🏪 Restaurant détecté dans le panier:", cartRestaurant.name, "ID:", cartRestaurant.id);
+    }
+  }, [cartRestaurant]);
   
   // Check if user is logged in
   useEffect(() => {
@@ -116,7 +126,8 @@ const Panier = () => {
     discount,
     tip,
     orderTotal,
-    itemsCount: items.length
+    itemsCount: items.length,
+    restaurantId: cartRestaurant?.id
   });
 
   const handleNextStep = () => {
@@ -171,7 +182,7 @@ const Panier = () => {
         toast({
           title: "Code postal non desservi",
           description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
-          variant: "destructive",
+          variant: "restrictive",
         });
         return false;
       }
@@ -181,7 +192,7 @@ const Panier = () => {
       toast({
         title: "Horaire manquant",
         description: `Veuillez sélectionner un horaire de ${deliveryInfo.orderType === "delivery" ? "livraison" : "retrait"}.`,
-        variant: "destructive",
+        variant: "destructrive",
       });
       return false;
     }
@@ -209,13 +220,13 @@ const Panier = () => {
         return;
       }
 
-      // Validate postal code again before proceeding
-      if (deliveryInfo.orderType === "delivery" && deliveryInfo.postalCode) {
-        const isValidPostalCode = await checkPostalCodeDelivery(deliveryInfo.postalCode);
+      // Validate postal code again before proceeding - maintenant avec le restaurant du panier
+      if (deliveryInfo.orderType === "delivery" && deliveryInfo.postalCode && cartRestaurant?.id) {
+        const isValidPostalCode = await checkPostalCodeDelivery(deliveryInfo.postalCode, cartRestaurant.id);
         if (!isValidPostalCode) {
           toast({
             title: "Code postal non desservi",
-            description: `Nous ne livrons pas dans la zone ${deliveryInfo.postalCode}. Veuillez choisir un autre mode de livraison.`,
+            description: `Nous ne livrons pas dans la zone ${deliveryInfo.postalCode} pour ${cartRestaurant.name}. Veuillez choisir un autre mode de livraison.`,
             variant: "destructive",
           });
           setLoading(false);
@@ -231,17 +242,17 @@ const Panier = () => {
       // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
       const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;
       
-      // Appel à la fonction edge pour créer la session de paiement
+      // Appel à la fonction edge pour créer la session de paiement - avec restaurant ID
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           items,
           subtotal,
           tax,
           deliveryFee,
-          tip, // Inclure le pourboire dans la requête
+          tip,
           discount: discount,
           promoCode: appliedPromoCode?.code,
-          total: finalOrderTotal, // Utiliser le total final qui inclut le pourboire
+          total: finalOrderTotal,
           orderType: deliveryInfo.orderType,
           clientName: deliveryInfo.name,
           clientEmail: deliveryInfo.email,
@@ -251,6 +262,7 @@ const Panier = () => {
           deliveryPostalCode: deliveryInfo.postalCode,
           customerNotes: deliveryInfo.notes,
           scheduledFor: scheduledForDate.toISOString(),
+          restaurantId: cartRestaurant?.id, // Ajout du restaurant ID
           successUrl: `${window.location.origin}/commande-confirmee`,
           cancelUrl: `${window.location.origin}/panier`,
         },
@@ -310,6 +322,7 @@ const Panier = () => {
             handlePreviousStep={handlePreviousStep}
             handleNextStep={handleNextStep}
             isLoggedIn={isLoggedIn}
+            cartRestaurant={cartRestaurant} // Passer le restaurant détecté
           />
         );
       case CheckoutStep.Payment:
@@ -337,6 +350,15 @@ const Panier = () => {
   return (
     <div className="container mx-auto py-24 px-4">
       <div className="max-w-4xl mx-auto">
+        {/* Affichage du restaurant détecté */}
+        {cartRestaurant && (
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              <span className="font-medium">Restaurant sélectionné :</span> {cartRestaurant.name}
+            </p>
+          </div>
+        )}
+        
         {/* Étapes du checkout */}
         <CheckoutSteps currentStep={currentStep} />
         
@@ -352,6 +374,14 @@ const Panier = () => {
         </motion.div>
       </div>
     </div>
+  );
+};
+
+const Panier = () => {
+  return (
+    <RestaurantProvider>
+      <PanierContent />
+    </RestaurantProvider>
   );
 };
 

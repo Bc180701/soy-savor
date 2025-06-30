@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import DeliveryMethod from "../checkout/DeliveryMethod";
@@ -12,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { checkPostalCodeDelivery } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Restaurant } from "@/types/restaurant";
 
 interface DeliveryStepProps {
   deliveryInfo: {
@@ -34,6 +34,7 @@ interface DeliveryStepProps {
   handlePreviousStep: () => void;
   handleNextStep: () => void;
   isLoggedIn: boolean;
+  cartRestaurant?: Restaurant | null; // Nouveau prop pour le restaurant du panier
 }
 
 export const DeliveryStep = ({
@@ -43,7 +44,8 @@ export const DeliveryStep = ({
   setAllergies,
   handlePreviousStep,
   handleNextStep,
-  isLoggedIn
+  isLoggedIn,
+  cartRestaurant
 }: DeliveryStepProps) => {
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const [useStoredInfo, setUseStoredInfo] = useState(false);
@@ -145,7 +147,7 @@ export const DeliveryStep = ({
     }));
   };
 
-  // Modified for DeliveryAddressForm - now receives isPostalCodeValid
+  // Modified for DeliveryAddressForm - maintenant avec le restaurant du panier
   const handleAddressComplete = (addressData: any) => {
     setDeliveryInfo(prev => ({
       ...prev,
@@ -228,6 +230,15 @@ export const DeliveryStep = ({
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold">Informations de livraison</h2>
       
+      {/* Affichage du restaurant si disponible */}
+      {cartRestaurant && (
+        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+          <p className="text-sm text-green-800">
+            <span className="font-medium">Commande pour :</span> {cartRestaurant.name}
+          </p>
+        </div>
+      )}
+      
       {/* Delivery Method */}
       <DeliveryMethod 
         defaultValue={deliveryInfo.orderType} 
@@ -298,11 +309,12 @@ export const DeliveryStep = ({
         </div>
       </div>
       
-      {/* Address Information (only for delivery) */}
+      {/* Address Information (only for delivery) - maintenant avec le restaurant du panier */}
       {deliveryInfo.orderType === "delivery" && (
         <DeliveryAddressForm
           onComplete={handleAddressComplete}
           onCancel={handleAddressCancel}
+          cartRestaurant={cartRestaurant} // Passer le restaurant du panier
         />
       )}
       

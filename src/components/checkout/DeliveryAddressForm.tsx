@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { checkPostalCodeDelivery, getDeliveryLocations } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
 import { CheckCircle2, XCircle, Loader2, RefreshCw } from "lucide-react";
-import { useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { Restaurant } from "@/types/restaurant";
 
 interface DeliveryAddressFormProps {
   onComplete: (data: {
@@ -20,9 +20,10 @@ interface DeliveryAddressFormProps {
     isPostalCodeValid: boolean;
   }) => void;
   onCancel: () => void;
+  cartRestaurant?: Restaurant | null; // Utiliser le restaurant du panier
 }
 
-const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps) => {
+const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryAddressFormProps) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -38,37 +39,36 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const [deliveryZones, setDeliveryZones] = useState<{city: string, postalCode: string}[]>([]);
   const [loadingZones, setLoadingZones] = useState(false);
   const { toast } = useToast();
-  const { currentRestaurant } = useRestaurantContext();
 
   // Charger les zones de livraison quand le restaurant change
   useEffect(() => {
     const loadDeliveryZones = async () => {
-      console.log("🔄 Effect déclenché - Restaurant actuel:", currentRestaurant?.name, "ID:", currentRestaurant?.id);
+      console.log("🔄 Effect déclenché - Restaurant du panier:", cartRestaurant?.name, "ID:", cartRestaurant?.id);
       
-      if (!currentRestaurant?.id) {
-        console.log("⚠️ Pas de restaurant sélectionné, reset des zones");
+      if (!cartRestaurant?.id) {
+        console.log("⚠️ Pas de restaurant dans le panier, reset des zones");
         setDeliveryZones([]);
         setIsPostalCodeValid(null);
         return;
       }
       
-      console.log("🚚 Chargement zones pour:", currentRestaurant.name, "ID:", currentRestaurant.id);
+      console.log("🚚 Chargement zones pour:", cartRestaurant.name, "ID:", cartRestaurant.id);
       setLoadingZones(true);
       
       try {
-        const zones = await getDeliveryLocations(currentRestaurant.id);
-        console.log("✅ Zones récupérées pour", currentRestaurant.name, ":", zones);
+        const zones = await getDeliveryLocations(cartRestaurant.id);
+        console.log("✅ Zones récupérées pour", cartRestaurant.name, ":", zones);
         setDeliveryZones(zones);
         
         // Reset la validation du code postal car les zones ont changé
         setIsPostalCodeValid(null);
         
         if (zones.length === 0) {
-          console.log("⚠️ Aucune zone trouvée pour", currentRestaurant.name);
+          console.log("⚠️ Aucune zone trouvée pour", cartRestaurant.name);
         }
         
       } catch (error) {
-        console.error("❌ Erreur chargement zones pour", currentRestaurant.name, ":", error);
+        console.error("❌ Erreur chargement zones pour", cartRestaurant.name, ":", error);
         setDeliveryZones([]);
         setIsPostalCodeValid(null);
       } finally {
@@ -77,7 +77,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     };
 
     loadDeliveryZones();
-  }, [currentRestaurant?.id, currentRestaurant?.name]);
+  }, [cartRestaurant?.id, cartRestaurant?.name]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -98,10 +98,10 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       return;
     }
 
-    if (!currentRestaurant?.id) {
+    if (!cartRestaurant?.id) {
       toast({
         title: "Erreur",
-        description: "Veuillez sélectionner un restaurant",
+        description: "Aucun restaurant détecté dans le panier",
         variant: "destructive",
       });
       return;
@@ -110,20 +110,20 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     setIsValidatingPostalCode(true);
     
     try {
-      console.log("🔍 Validation CP:", formData.postalCode, "pour restaurant:", currentRestaurant.name, "ID:", currentRestaurant.id);
-      const isValid = await checkPostalCodeDelivery(formData.postalCode.trim(), currentRestaurant.id);
+      console.log("🔍 Validation CP:", formData.postalCode, "pour restaurant:", cartRestaurant.name, "ID:", cartRestaurant.id);
+      const isValid = await checkPostalCodeDelivery(formData.postalCode.trim(), cartRestaurant.id);
       setIsPostalCodeValid(isValid);
       
       if (!isValid) {
         toast({
           title: "Code postal non desservi",
-          description: `Le code postal ${formData.postalCode} n'est pas dans notre zone de livraison pour ${currentRestaurant.name}.`,
+          description: `Le code postal ${formData.postalCode} n'est pas dans notre zone de livraison pour ${cartRestaurant.name}.`,
           variant: "destructive",
         });
       } else {
         toast({
           title: "Zone de livraison confirmée",
-          description: `Nous livrons bien au code postal ${formData.postalCode} depuis ${currentRestaurant.name}.`,
+          description: `Nous livrons bien au code postal ${formData.postalCode} depuis ${cartRestaurant.name}.`,
         });
       }
     } catch (error) {
@@ -140,18 +140,18 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   };
 
   const refreshDeliveryZones = async () => {
-    if (!currentRestaurant?.id) return;
+    if (!cartRestaurant?.id) return;
     
     setLoadingZones(true);
     try {
-      console.log("🔄 Actualisation manuelle des zones pour:", currentRestaurant.name);
-      const zones = await getDeliveryLocations(currentRestaurant.id);
+      console.log("🔄 Actualisation manuelle des zones pour:", cartRestaurant.name);
+      const zones = await getDeliveryLocations(cartRestaurant.id);
       setDeliveryZones(zones);
       setIsPostalCodeValid(null);
       
       toast({
         title: "Zones actualisées",
-        description: `Zones de livraison mises à jour pour ${currentRestaurant.name}`,
+        description: `Zones de livraison mises à jour pour ${cartRestaurant.name}`,
       });
     } catch (error) {
       console.error("Erreur actualisation zones:", error);
@@ -203,10 +203,10 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
     <div className="space-y-6 p-6 bg-white rounded-lg border">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-medium">Adresse de livraison</h3>
-        {currentRestaurant && (
+        {cartRestaurant && (
           <div className="flex items-center space-x-2">
             <div className="text-sm text-gray-600">
-              Restaurant: <span className="font-medium">{currentRestaurant.name}</span>
+              Restaurant: <span className="font-medium">{cartRestaurant.name}</span>
             </div>
             <Button
               type="button"
@@ -225,13 +225,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
         <div className="bg-gray-50 p-4 rounded-lg">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm text-gray-600">Chargement des zones de livraison pour {currentRestaurant?.name}...</span>
+            <span className="text-sm text-gray-600">Chargement des zones de livraison pour {cartRestaurant?.name}...</span>
           </div>
         </div>
       ) : deliveryZones.length > 0 ? (
         <div className="bg-blue-50 p-4 rounded-lg">
           <p className="text-sm text-blue-800 font-medium mb-2">
-            Zones de livraison pour {currentRestaurant?.name} ({deliveryZones.length} zones) :
+            Zones de livraison pour {cartRestaurant?.name} ({deliveryZones.length} zones) :
           </p>
           <div className="flex flex-wrap gap-2">
             {deliveryZones.map((zone, index) => (
@@ -241,19 +241,19 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
             ))}
           </div>
         </div>
-      ) : currentRestaurant ? (
+      ) : cartRestaurant ? (
         <div className="bg-yellow-50 p-4 rounded-lg">
           <p className="text-sm text-yellow-800">
-            Aucune zone de livraison définie pour {currentRestaurant.name}
+            Aucune zone de livraison définie pour {cartRestaurant.name}
           </p>
           <p className="text-xs text-yellow-600 mt-1">
-            ID Restaurant: {currentRestaurant.id}
+            ID Restaurant: {cartRestaurant.id}
           </p>
         </div>
       ) : (
         <div className="bg-gray-50 p-4 rounded-lg">
           <p className="text-sm text-gray-600">
-            Sélectionnez un restaurant pour voir les zones de livraison
+            Aucun restaurant détecté dans le panier
           </p>
         </div>
       )}
