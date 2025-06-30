@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ShoppingCart } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
+import { useCartCounter } from "@/hooks/useCartCounter";
 import { useHomepageData } from "@/hooks/useHomepageData";
 
 interface MobileActionsProps {
@@ -11,7 +11,7 @@ interface MobileActionsProps {
 }
 
 const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
-  const cart = useCart();
+  const { itemCount } = useCartCounter();
   const { data: homepageData } = useHomepageData();
   
   return (
@@ -25,7 +25,7 @@ const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
         >
           <ShoppingCart size={20} />
           <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-gold-500 text-black rounded-full text-xs">
-            {cart.itemCount || 0}
+            {itemCount || 0}
           </span>
         </Button>
       </Link>

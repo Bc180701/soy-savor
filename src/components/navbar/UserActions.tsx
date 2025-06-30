@@ -1,7 +1,8 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, User, LogOut, Shield } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
+import { useCartCounter } from "@/hooks/useCartCounter";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,7 @@ interface UserActionsProps {
 }
 
 const UserActions = ({ user, handleLogout }: UserActionsProps) => {
-  const cart = useCart();
+  const { itemCount } = useCartCounter();
   const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   const { data: homepageData } = useHomepageData();
@@ -90,7 +91,7 @@ const UserActions = ({ user, handleLogout }: UserActionsProps) => {
         >
           <ShoppingCart size={20} />
           <span className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 bg-gold-500 text-black rounded-full text-xs">
-            {cart.itemCount || 0}
+            {itemCount || 0}
           </span>
         </Button>
       </Link>

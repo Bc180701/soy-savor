@@ -87,26 +87,26 @@ export const useCart = create<CartStore>()(
         
         if (existingItem) {
           console.log("🛒 Mise à jour quantité article existant:", item.name, "nouvelle quantité:", existingItem.quantity + quantity);
-          set({
-            items: currentItems.map(cartItem =>
+          set((state) => ({
+            items: state.items.map(cartItem =>
               cartItem.menuItem.id === item.id
                 ? { ...cartItem, quantity: cartItem.quantity + quantity }
                 : cartItem
             )
-          });
+          }));
         } else {
           console.log("🛒 Ajout nouvel article:", item.name, "quantité:", quantity);
-          set({
-            items: [...currentItems, { menuItem: item, quantity, specialInstructions }]
-          });
+          set((state) => ({
+            items: [...state.items, { menuItem: item, quantity, specialInstructions }]
+          }));
         }
       },
       
       removeItem: (itemId) => {
         console.log("🛒 Suppression article:", itemId);
-        set({
-          items: get().items.filter(item => item.menuItem.id !== itemId)
-        });
+        set((state) => ({
+          items: state.items.filter(item => item.menuItem.id !== itemId)
+        }));
       },
       
       updateQuantity: (itemId, quantity) => {
@@ -116,13 +116,13 @@ export const useCart = create<CartStore>()(
         }
         
         console.log("🛒 Mise à jour quantité:", itemId, "nouvelle quantité:", quantity);
-        set({
-          items: get().items.map(item =>
+        set((state) => ({
+          items: state.items.map(item =>
             item.menuItem.id === itemId
               ? { ...item, quantity }
               : item
           )
-        });
+        }));
       },
       
       clearCart: () => {
