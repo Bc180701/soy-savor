@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import DeliveryMethod from "../checkout/DeliveryMethod";
@@ -48,23 +49,47 @@ export const DeliveryStep = ({
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const [useStoredInfo, setUseStoredInfo] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const { toast } = useToast();
 
   // Charger le profil utilisateur si connecté
   useEffect(() => {
     const loadUserProfile = async () => {
       if (isLoggedIn) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+        setLoadingProfile(true);
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          console.log("👤 Utilisateur connecté:", user?.email);
           
-          if (profile) {
-            setUserProfile(profile);
+          if (user) {
+            // Récupérer le profil depuis la table profiles
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .maybeSingle();
+            
+            console.log("👤 Profil utilisateur:", { profile, error });
+            
+            if (profile) {
+              setUserProfile({
+                ...profile,
+                email: user.email // Ajouter l'email depuis auth
+              });
+            } else if (!error) {
+              // Si pas de profil mais pas d'erreur, créer un profil minimal
+              setUserProfile({
+                email: user.email,
+                first_name: '',
+                last_name: '',
+                phone: ''
+              });
+            }
           }
+        } catch (error) {
+          console.error("❌ Erreur lors du chargement du profil:", error);
+        } finally {
+          setLoadingProfile(false);
         }
       }
     };
@@ -77,14 +102,12 @@ export const DeliveryStep = ({
     setUseStoredInfo(checked);
     
     if (checked && userProfile) {
+      console.log("✅ Pré-remplissage avec profil:", userProfile);
       setDeliveryInfo(prev => ({
         ...prev,
-        name: userProfile.full_name || prev.name,
+        name: `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || prev.name,
         email: userProfile.email || prev.email,
         phone: userProfile.phone || prev.phone,
-        street: userProfile.address || prev.street,
-        city: userProfile.city || prev.city,
-        postalCode: userProfile.postal_code || prev.postalCode,
       }));
     }
   };
@@ -204,16 +227,31 @@ export const DeliveryStep = ({
       />
       
       {/* Case à cocher pour utiliser les informations stockées */}
-      {isLoggedIn && userProfile && (
+      {isLoggedIn && !loadingProfile && (
         <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-md">
           <Checkbox
             id="use-stored-info"
             checked={useStoredInfo}
             onCheckedChange={handleUseStoredInfoChange}
+            disabled={!userProfile}
           />
           <Label htmlFor="use-stored-info" className="text-sm font-medium">
-            Utiliser mes informations enregistrées
+            {userProfile 
+              ? "Utiliser mes informations enregistrées" 
+              : "Aucune information enregistrée disponible"
+            }
           </Label>
+          {userProfile && (
+            <span className="text-xs text-blue-600">
+              ({userProfile.email})
+            </span>
+          )}
+        </div>
+      )}
+      
+      {loadingProfile && (
+        <div className="p-4 bg-gray-50 rounded-md text-sm text-gray-600">
+          Chargement des informations utilisateur...
         </div>
       )}
       

@@ -1,67 +1,113 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?: string): Promise<boolean> => {
-  let query = supabase
-    .from('delivery_locations')
-    .select('*')
-    .eq('postal_code', postalCode)
-    .eq('is_active', true);
-  
-  // Si un restaurant est spécifié, filtrer par restaurant
-  if (restaurantId) {
-    query = query.eq('restaurant_id', restaurantId);
-  }
-  
-  // Utiliser .maybeSingle() au lieu de .single() pour éviter l'erreur avec plusieurs lignes
-  const { data, error } = await query.maybeSingle();
-  
-  // Si pas de restaurant spécifique, vérifier s'il y a au moins une entrée
-  if (!restaurantId) {
-    const { data: allData, error: allError } = await supabase
+  try {
+    console.log("🚚 Vérification code postal:", postalCode, "pour restaurant:", restaurantId);
+    
+    let query = supabase
       .from('delivery_locations')
       .select('*')
       .eq('postal_code', postalCode)
       .eq('is_active', true);
     
-    if (allError) {
-      console.error("Error checking postal code:", allError);
+    // Si un restaurant est spécifié, filtrer par restaurant
+    if (restaurantId) {
+      query = query.eq('restaurant_id', restaurantId);
+    }
+    
+    const { data, error } = await query;
+    
+    console.log("🚚 Résultat requête:", { data, error });
+    
+    if (error) {
+      console.error("❌ Erreur lors de la vérification du code postal:", error);
+      
+      // Si erreur 406, essayer sans filtre restaurant
+      if (error.code === 'PGRST406' && restaurantId) {
+        console.log("🔄 Tentative sans filtre restaurant...");
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('delivery_locations')
+          .select('*')
+          .eq('postal_code', postalCode)
+          .eq('is_active', true);
+        
+        if (fallbackError) {
+          console.error("❌ Erreur fallback:", fallbackError);
+          return false;
+        }
+        
+        console.log("✅ Données fallback:", fallbackData);
+        return fallbackData && fallbackData.length > 0;
+      }
+      
       return false;
     }
     
-    return allData && allData.length > 0;
-  }
-  
-  if (error) {
-    console.error("Error checking postal code:", error);
+    const isValid = data && data.length > 0;
+    console.log("✅ Code postal", postalCode, isValid ? "accepté" : "refusé");
+    return isValid;
+    
+  } catch (error) {
+    console.error("❌ Erreur inattendue lors de la vérification du code postal:", error);
     return false;
   }
-  
-  return !!data;
 };
 
 export const getDeliveryLocations = async (restaurantId?: string): Promise<{city: string, postalCode: string}[]> => {
-  let query = supabase
-    .from('delivery_locations')
-    .select('city, postal_code')
-    .eq('is_active', true)
-    .order('city', { ascending: true });
-  
-  // Si un restaurant est spécifié, filtrer par restaurant
-  if (restaurantId) {
-    query = query.eq('restaurant_id', restaurantId);
-  }
-  
-  const { data, error } = await query;
-  
-  if (error || !data) {
-    console.error("Error fetching delivery locations:", error);
+  try {
+    console.log("📍 Récupération zones de livraison pour restaurant:", restaurantId);
+    
+    let query = supabase
+      .from('delivery_locations')
+      .select('city, postal_code')
+      .eq('is_active', true)
+      .order('city', { ascending: true });
+    
+    // Si un restaurant est spécifié, filtrer par restaurant
+    if (restaurantId) {
+      query = query.eq('restaurant_id', restaurantId);
+    }
+    
+    const { data, error } = await query;
+    
+    console.log("📍 Résultat zones:", { data, error });
+    
+    if (error) {
+      console.error("❌ Erreur lors de la récupération des zones de livraison:", error);
+      
+      // Si erreur 406, essayer sans filtre restaurant
+      if (error.code === 'PGRST406' && restaurantId) {
+        console.log("🔄 Tentative zones sans filtre restaurant...");
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('delivery_locations')
+          .select('city, postal_code')
+          .eq('is_active', true)
+          .order('city', { ascending: true });
+        
+        if (fallbackError) {
+          console.error("❌ Erreur fallback zones:", fallbackError);
+          return [];
+        }
+        
+        return fallbackData?.map(location => ({
+          city: location.city,
+          postalCode: location.postal_code
+        })) || [];
+      }
+      
+      return [];
+    }
+    
+    return data?.map(location => ({
+      city: location.city,
+      postalCode: location.postal_code
+    })) || [];
+    
+  } catch (error) {
+    console.error("❌ Erreur inattendue lors de la récupération des zones:", error);
     return [];
   }
-  
-  return data.map(location => ({
-    city: location.city,
-    postalCode: location.postal_code
-  }));
 };
 
 export const calculateDeliveryFee = (subtotal: number): number => {
