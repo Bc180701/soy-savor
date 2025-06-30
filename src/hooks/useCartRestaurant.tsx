@@ -10,7 +10,7 @@ const detectRestaurantFromCategory = (category: string): string | null => {
   
   if (category.includes('stmartin') || category.includes('st_martin')) {
     return RESTAURANTS.ST_MARTIN_DE_CRAU;
-  } else if (category.includes('chateaurenard') || category.includes('chato')) {
+  } else if (category.includes('chateaurenard') || category.includes('chato') || category === 'box_du_midi') {
     return RESTAURANTS.CHATEAURENARD;
   }
   
