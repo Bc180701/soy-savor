@@ -15,6 +15,7 @@ import OrderingLockControl from "@/components/admin/OrderingLockControl";
 import OrderList from "@/components/OrderList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import IngredientsManager from "@/components/admin/IngredientsManager";
+import DeliveryZonesManager from "@/components/admin/DeliveryZonesManager";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -131,7 +132,7 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9 gap-1">
+            <TabsList className="grid w-full grid-cols-10 gap-1">
               <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
               <TabsTrigger value="orders">Commandes</TabsTrigger>
               <TabsTrigger value="products">Produits</TabsTrigger>
@@ -140,6 +141,7 @@ const Admin = () => {
               <TabsTrigger value="hours">Horaires</TabsTrigger>
               <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
               <TabsTrigger value="ordering">Configuration</TabsTrigger>
+              <TabsTrigger value="delivery-zones">Zones livraison</TabsTrigger>
               <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
             </TabsList>
             
@@ -173,6 +175,10 @@ const Admin = () => {
             
             <TabsContent value="ordering">
               <OrderingLockControl />
+            </TabsContent>
+            
+            <TabsContent value="delivery-zones">
+              <DeliveryZonesManager />
             </TabsContent>
             
             <TabsContent value="ingredients">
