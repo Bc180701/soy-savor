@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useCart } from "@/hooks/use-cart";
-import { getRestaurantById } from "@/services/restaurantService";
+import { getRestaurantById, RESTAURANTS } from "@/services/restaurantService";
 import { Restaurant } from "@/types/restaurant";
 
 // Fonction utilitaire pour détecter le restaurant depuis la catégorie
@@ -9,11 +9,9 @@ const detectRestaurantFromCategory = (category: string): string | null => {
   console.log("🔍 Détection restaurant depuis catégorie:", category);
   
   if (category.includes('stmartin') || category.includes('st_martin')) {
-    // ID du restaurant St-Martin-de-Crau (à adapter selon vos données)
-    return "your-st-martin-restaurant-id"; // Remplacez par l'ID réel
+    return RESTAURANTS.ST_MARTIN_DE_CRAU;
   } else if (category.includes('chateaurenard') || category.includes('chato')) {
-    // ID du restaurant Châteaurenard (à adapter selon vos données)
-    return "your-chateaurenard-restaurant-id"; // Remplacez par l'ID réel
+    return RESTAURANTS.CHATEAURENARD;
   }
   
   return null;
