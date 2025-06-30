@@ -31,6 +31,7 @@ export interface MenuItem {
   price: number;
   imageUrl?: string;
   category: SushiCategory;
+  restaurant_id?: string; // Ajout du restaurant_id optionnel
   isVegetarian?: boolean;
   isSpicy?: boolean;
   isNew?: boolean;
