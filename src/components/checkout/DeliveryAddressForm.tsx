@@ -40,29 +40,42 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
 
-  // Load delivery zones for the current restaurant
+  // Load delivery zones for the current restaurant with better error handling
   useEffect(() => {
     const loadDeliveryZones = async () => {
-      if (currentRestaurant) {
-        console.log("🚚 Chargement des zones de livraison pour:", currentRestaurant.name, currentRestaurant.id);
+      console.log("🏪 Restaurant actuel dans DeliveryAddressForm:", currentRestaurant?.name, currentRestaurant?.id);
+      
+      if (currentRestaurant?.id) {
+        console.log("🚚 Début chargement zones pour:", currentRestaurant.name);
         setLoadingZones(true);
+        setDeliveryZones([]); // Vider les zones pendant le chargement
+        
         try {
+          // Attendre un peu pour éviter les requêtes trop rapides
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           const zones = await getDeliveryLocations(currentRestaurant.id);
-          console.log("🌍 Zones récupérées:", zones);
+          console.log("🌍 Zones récupérées pour", currentRestaurant.name, ":", zones.length, "zones");
           setDeliveryZones(zones);
+          
+          // Reset validation du code postal quand on change de restaurant
+          setIsPostalCodeValid(null);
+          
         } catch (error) {
-          console.error("❌ Erreur lors du chargement des zones:", error);
+          console.error("❌ Erreur chargement zones:", error);
           setDeliveryZones([]);
         } finally {
           setLoadingZones(false);
         }
       } else {
-        console.log("⚠️ Aucun restaurant sélectionné");
+        console.log("⚠️ Aucun restaurant sélectionné, reset des zones");
         setDeliveryZones([]);
+        setLoadingZones(false);
       }
     };
+
     loadDeliveryZones();
-  }, [currentRestaurant?.id]); // Dépendance sur l'ID du restaurant
+  }, [currentRestaurant?.id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -195,7 +208,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
             Aucune zone de livraison définie pour {currentRestaurant.name}
           </p>
         </div>
-      ) : null}
+      ) : (
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <p className="text-sm text-gray-600">
+            Sélectionnez un restaurant pour voir les zones de livraison
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

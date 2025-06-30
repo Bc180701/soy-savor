@@ -5,43 +5,27 @@ export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?:
   try {
     console.log("🚚 Vérification code postal:", postalCode, "pour restaurant:", restaurantId);
     
-    let query = supabase
+    // Toujours faire une requête simple sans filtre restaurant d'abord
+    const { data, error } = await supabase
       .from('delivery_locations')
       .select('*')
       .eq('postal_code', postalCode)
       .eq('is_active', true);
     
-    // Si un restaurant est spécifié, filtrer par restaurant
-    if (restaurantId) {
-      query = query.eq('restaurant_id', restaurantId);
-    }
-    
-    const { data, error } = await query;
-    
-    console.log("🚚 Résultat requête:", { data, error });
+    console.log("🚚 Résultat requête simple:", { data, error });
     
     if (error) {
       console.error("❌ Erreur lors de la vérification du code postal:", error);
-      
-      // Si erreur 406, essayer sans filtre restaurant
-      if (error.code === 'PGRST406' && restaurantId) {
-        console.log("🔄 Tentative sans filtre restaurant...");
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('delivery_locations')
-          .select('*')
-          .eq('postal_code', postalCode)
-          .eq('is_active', true);
-        
-        if (fallbackError) {
-          console.error("❌ Erreur fallback:", fallbackError);
-          return false;
-        }
-        
-        console.log("✅ Données fallback:", fallbackData);
-        return fallbackData && fallbackData.length > 0;
-      }
-      
       return false;
+    }
+    
+    // Si un restaurant est spécifié, filtrer les résultats
+    if (restaurantId && data) {
+      const filteredData = data.filter(location => location.restaurant_id === restaurantId);
+      console.log("🚚 Données filtrées par restaurant:", filteredData);
+      const isValid = filteredData.length > 0;
+      console.log("✅ Code postal", postalCode, isValid ? "accepté" : "refusé", "pour restaurant", restaurantId);
+      return isValid;
     }
     
     const isValid = data && data.length > 0;
@@ -58,51 +42,39 @@ export const getDeliveryLocations = async (restaurantId?: string): Promise<{city
   try {
     console.log("📍 Récupération zones de livraison pour restaurant:", restaurantId);
     
-    let query = supabase
+    // Faire une requête simple pour récupérer toutes les zones actives
+    const { data, error } = await supabase
       .from('delivery_locations')
-      .select('city, postal_code')
+      .select('city, postal_code, restaurant_id')
       .eq('is_active', true)
       .order('city', { ascending: true });
     
-    // Si un restaurant est spécifié, filtrer par restaurant
-    if (restaurantId) {
-      query = query.eq('restaurant_id', restaurantId);
-    }
-    
-    const { data, error } = await query;
-    
-    console.log("📍 Résultat zones:", { data, error });
+    console.log("📍 Résultat zones brutes:", { data, error, count: data?.length });
     
     if (error) {
       console.error("❌ Erreur lors de la récupération des zones de livraison:", error);
-      
-      // Si erreur 406, essayer sans filtre restaurant
-      if (error.code === 'PGRST406' && restaurantId) {
-        console.log("🔄 Tentative zones sans filtre restaurant...");
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('delivery_locations')
-          .select('city, postal_code')
-          .eq('is_active', true)
-          .order('city', { ascending: true });
-        
-        if (fallbackError) {
-          console.error("❌ Erreur fallback zones:", fallbackError);
-          return [];
-        }
-        
-        return fallbackData?.map(location => ({
-          city: location.city,
-          postalCode: location.postal_code
-        })) || [];
-      }
-      
       return [];
     }
     
-    return data?.map(location => ({
+    if (!data) {
+      console.log("⚠️ Aucune donnée récupérée");
+      return [];
+    }
+    
+    // Si un restaurant est spécifié, filtrer par restaurant
+    let filteredData = data;
+    if (restaurantId) {
+      filteredData = data.filter(location => location.restaurant_id === restaurantId);
+      console.log("🏪 Zones filtrées pour restaurant", restaurantId, ":", filteredData.length, "zones");
+    }
+    
+    const zones = filteredData.map(location => ({
       city: location.city,
       postalCode: location.postal_code
-    })) || [];
+    }));
+    
+    console.log("🌍 Zones finales:", zones);
+    return zones;
     
   } catch (error) {
     console.error("❌ Erreur inattendue lors de la récupération des zones:", error);
