@@ -182,7 +182,7 @@ const PanierContent = () => {
         toast({
           title: "Code postal non desservi",
           description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
-          variant: "restrictive",
+          variant: "destructive",
         });
         return false;
       }
@@ -192,7 +192,7 @@ const PanierContent = () => {
       toast({
         title: "Horaire manquant",
         description: `Veuillez sélectionner un horaire de ${deliveryInfo.orderType === "delivery" ? "livraison" : "retrait"}.`,
-        variant: "destructrive",
+        variant: "destructive",
       });
       return false;
     }

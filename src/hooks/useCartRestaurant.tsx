@@ -18,21 +18,21 @@ export const useCartRestaurant = () => {
 
       // Prendre le restaurant_id du premier article du panier
       const firstItem = items[0];
-      if (!firstItem.restaurant_id) {
+      if (!firstItem.menuItem.restaurant_id) {
         console.warn("Article sans restaurant_id:", firstItem);
         return;
       }
 
       // Vérifier que tous les articles du panier sont du même restaurant
-      const allSameRestaurant = items.every(item => item.restaurant_id === firstItem.restaurant_id);
+      const allSameRestaurant = items.every(item => item.menuItem.restaurant_id === firstItem.menuItem.restaurant_id);
       if (!allSameRestaurant) {
         console.warn("Articles de restaurants différents dans le panier");
       }
 
       setIsLoading(true);
       try {
-        console.log("🔍 Détection restaurant depuis panier:", firstItem.restaurant_id);
-        const restaurant = await getRestaurantById(firstItem.restaurant_id);
+        console.log("🔍 Détection restaurant depuis panier:", firstItem.menuItem.restaurant_id);
+        const restaurant = await getRestaurantById(firstItem.menuItem.restaurant_id);
         if (restaurant) {
           console.log("✅ Restaurant détecté:", restaurant.name);
           setCartRestaurant(restaurant);
