@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useCart } from "@/hooks/use-cart";
+import { useCart, useCartTotal } from "@/hooks/use-cart";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserContactInfo } from "@/services/profileService";
@@ -29,7 +29,8 @@ interface DeliveryInfo {
 }
 
 const Panier = () => {
-  const { items, total, clearCart } = useCart();
+  const { items, clearCart } = useCart();
+  const cartTotal = useCartTotal(); // Utiliser le hook réactif pour le total
   const { toast } = useToast();
   const TAX_RATE = 0.1; // 10% TVA
 
@@ -93,7 +94,8 @@ const Panier = () => {
     }
   };
   
-  const subtotal = total; // Utiliser total de useCart
+  // Utiliser le total réactif au lieu de l'ancien système
+  const subtotal = cartTotal;
   const tax = subtotal * TAX_RATE;
   const deliveryFee = deliveryInfo.orderType === "delivery" ? calculateDeliveryFee(subtotal) : 0;
   
@@ -106,6 +108,16 @@ const Panier = () => {
   
   // Calculate total with discount and tip
   const orderTotal = subtotal + tax + deliveryFee + tip - discount;
+
+  console.log("📊 Panier - Calculs:", {
+    subtotal,
+    tax,
+    deliveryFee,
+    discount,
+    tip,
+    orderTotal,
+    itemsCount: items.length
+  });
 
   const handleNextStep = () => {
     if (currentStep === CheckoutStep.Cart) {

@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import DeliveryMethod from "../checkout/DeliveryMethod";
@@ -69,7 +68,7 @@ export const DeliveryStep = ({
               .eq('id', user.id)
               .maybeSingle();
             
-            console.log("👤 Profil utilisateur:", { profile, error });
+            console.log("👤 Profil utilisateur récupéré:", { profile, error });
             
             if (profile) {
               setUserProfile({
@@ -99,16 +98,25 @@ export const DeliveryStep = ({
 
   // Gérer le pré-remplissage des informations
   const handleUseStoredInfoChange = (checked: boolean) => {
+    console.log("📋 Changement case à cocher:", checked, "Profil disponible:", !!userProfile);
     setUseStoredInfo(checked);
     
     if (checked && userProfile) {
       console.log("✅ Pré-remplissage avec profil:", userProfile);
-      setDeliveryInfo(prev => ({
-        ...prev,
-        name: `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || prev.name,
-        email: userProfile.email || prev.email,
-        phone: userProfile.phone || prev.phone,
-      }));
+      const fullName = `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
+      
+      setDeliveryInfo(prev => {
+        const newInfo = {
+          ...prev,
+          name: fullName || prev.name,
+          email: userProfile.email || prev.email,
+          phone: userProfile.phone || prev.phone,
+        };
+        console.log("📋 Nouvelles informations de livraison:", newInfo);
+        return newInfo;
+      });
+    } else if (!checked) {
+      console.log("❌ Décoché - conservation des valeurs actuelles");
     }
   };
 
@@ -227,25 +235,19 @@ export const DeliveryStep = ({
       />
       
       {/* Case à cocher pour utiliser les informations stockées */}
-      {isLoggedIn && !loadingProfile && (
+      {isLoggedIn && !loadingProfile && userProfile && (
         <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-md">
           <Checkbox
             id="use-stored-info"
             checked={useStoredInfo}
             onCheckedChange={handleUseStoredInfoChange}
-            disabled={!userProfile}
           />
-          <Label htmlFor="use-stored-info" className="text-sm font-medium">
-            {userProfile 
-              ? "Utiliser mes informations enregistrées" 
-              : "Aucune information enregistrée disponible"
-            }
+          <Label htmlFor="use-stored-info" className="text-sm font-medium cursor-pointer">
+            Utiliser mes informations enregistrées
           </Label>
-          {userProfile && (
-            <span className="text-xs text-blue-600">
-              ({userProfile.email})
-            </span>
-          )}
+          <span className="text-xs text-blue-600">
+            ({userProfile.email})
+          </span>
         </div>
       )}
       

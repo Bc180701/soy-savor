@@ -39,7 +39,7 @@ export const useCart = create<CartStore>()(
       isOrderingLocked: false,
       selectedRestaurantId: null,
       
-      // Computed properties - maintenant calculées à chaque fois
+      // Computed properties - maintenant calculées à chaque fois de manière réactive
       get itemCount() {
         const state = get();
         const totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
@@ -48,7 +48,10 @@ export const useCart = create<CartStore>()(
       },
       
       get total() {
-        return get().items.reduce((total, item) => total + (item.menuItem.price * item.quantity), 0);
+        const state = get();
+        const totalPrice = state.items.reduce((total, item) => total + (item.menuItem.price * item.quantity), 0);
+        console.log("💰 Calcul total panier:", totalPrice, "€ pour", state.items.length, "articles");
+        return totalPrice;
       },
       
       get plateauCount() {
@@ -153,6 +156,17 @@ export const useCart = create<CartStore>()(
     }
   )
 );
+
+// Hook personnalisé pour obtenir le total de manière réactive
+export const useCartTotal = () => {
+  const cart = useCart();
+  
+  // Forcer le recalcul en accédant aux items
+  const total = cart.items.reduce((total, item) => total + (item.menuItem.price * item.quantity), 0);
+  
+  console.log("💰 useCartTotal - Total calculé:", total, "€");
+  return total;
+};
 
 // Hook personnalisé pour gérer la sélection de restaurant dans le panier
 export const useCartWithRestaurant = () => {
