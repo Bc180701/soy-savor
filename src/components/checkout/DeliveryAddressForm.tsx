@@ -40,36 +40,34 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
 
-  // Load delivery zones for the current restaurant with better error handling
+  // Charger les zones de livraison quand le restaurant change
   useEffect(() => {
     const loadDeliveryZones = async () => {
-      console.log("🏪 Restaurant actuel dans DeliveryAddressForm:", currentRestaurant?.name, currentRestaurant?.id);
+      console.log("🔄 Restaurant changé dans DeliveryAddressForm:", currentRestaurant?.name, currentRestaurant?.id);
       
-      if (currentRestaurant?.id) {
-        console.log("🚚 Début chargement zones pour:", currentRestaurant.name);
-        setLoadingZones(true);
-        setDeliveryZones([]); // Vider les zones pendant le chargement
-        
-        try {
-          // Attendre un peu pour éviter les requêtes trop rapides
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          const zones = await getDeliveryLocations(currentRestaurant.id);
-          console.log("🌍 Zones récupérées pour", currentRestaurant.name, ":", zones.length, "zones");
-          setDeliveryZones(zones);
-          
-          // Reset validation du code postal quand on change de restaurant
-          setIsPostalCodeValid(null);
-          
-        } catch (error) {
-          console.error("❌ Erreur chargement zones:", error);
-          setDeliveryZones([]);
-        } finally {
-          setLoadingZones(false);
-        }
-      } else {
-        console.log("⚠️ Aucun restaurant sélectionné, reset des zones");
+      if (!currentRestaurant?.id) {
+        console.log("⚠️ Aucun restaurant sélectionné");
         setDeliveryZones([]);
+        setIsPostalCodeValid(null);
+        return;
+      }
+      
+      console.log("🚚 Chargement zones pour restaurant:", currentRestaurant.name);
+      setLoadingZones(true);
+      
+      try {
+        const zones = await getDeliveryLocations(currentRestaurant.id);
+        console.log("✅ Zones chargées pour", currentRestaurant.name, ":", zones.length, "zones");
+        setDeliveryZones(zones);
+        
+        // Reset la validation du code postal car les zones ont changé
+        setIsPostalCodeValid(null);
+        
+      } catch (error) {
+        console.error("❌ Erreur chargement zones:", error);
+        setDeliveryZones([]);
+        setIsPostalCodeValid(null);
+      } finally {
         setLoadingZones(false);
       }
     };
@@ -96,7 +94,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
       return;
     }
 
-    if (!currentRestaurant) {
+    if (!currentRestaurant?.id) {
       toast({
         title: "Erreur",
         description: "Veuillez sélectionner un restaurant",
@@ -196,7 +194,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel }: DeliveryAddressFormProps)
           </p>
           <div className="flex flex-wrap gap-2">
             {deliveryZones.map((zone, index) => (
-              <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+              <span key={`${zone.city}-${zone.postalCode}-${index}`} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                 {zone.city} ({zone.postalCode})
               </span>
             ))}

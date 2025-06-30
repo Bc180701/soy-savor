@@ -1,35 +1,31 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?: string): Promise<boolean> => {
   try {
     console.log("🚚 Vérification code postal:", postalCode, "pour restaurant:", restaurantId);
     
-    // Toujours faire une requête simple sans filtre restaurant d'abord
-    const { data, error } = await supabase
+    let query = supabase
       .from('delivery_locations')
       .select('*')
       .eq('postal_code', postalCode)
       .eq('is_active', true);
     
-    console.log("🚚 Résultat requête simple:", { data, error });
+    // Si un restaurant est spécifié, filtrer par restaurant
+    if (restaurantId) {
+      query = query.eq('restaurant_id', restaurantId);
+    }
+    
+    const { data, error } = await query;
+    
+    console.log("🚚 Résultat vérification:", { data, error, count: data?.length });
     
     if (error) {
       console.error("❌ Erreur lors de la vérification du code postal:", error);
       return false;
     }
     
-    // Si un restaurant est spécifié, filtrer les résultats
-    if (restaurantId && data) {
-      const filteredData = data.filter(location => location.restaurant_id === restaurantId);
-      console.log("🚚 Données filtrées par restaurant:", filteredData);
-      const isValid = filteredData.length > 0;
-      console.log("✅ Code postal", postalCode, isValid ? "accepté" : "refusé", "pour restaurant", restaurantId);
-      return isValid;
-    }
-    
     const isValid = data && data.length > 0;
-    console.log("✅ Code postal", postalCode, isValid ? "accepté" : "refusé");
+    console.log("✅ Code postal", postalCode, isValid ? "accepté" : "refusé", "pour restaurant", restaurantId);
     return isValid;
     
   } catch (error) {
@@ -42,38 +38,37 @@ export const getDeliveryLocations = async (restaurantId?: string): Promise<{city
   try {
     console.log("📍 Récupération zones de livraison pour restaurant:", restaurantId);
     
-    // Faire une requête simple pour récupérer toutes les zones actives
+    if (!restaurantId) {
+      console.log("⚠️ Aucun restaurant spécifié");
+      return [];
+    }
+    
+    // Faire une requête directe avec le restaurant spécifié
     const { data, error } = await supabase
       .from('delivery_locations')
-      .select('city, postal_code, restaurant_id')
+      .select('city, postal_code')
+      .eq('restaurant_id', restaurantId)
       .eq('is_active', true)
       .order('city', { ascending: true });
     
-    console.log("📍 Résultat zones brutes:", { data, error, count: data?.length });
+    console.log("📍 Résultat zones pour restaurant", restaurantId, ":", { data, error, count: data?.length });
     
     if (error) {
       console.error("❌ Erreur lors de la récupération des zones de livraison:", error);
       return [];
     }
     
-    if (!data) {
-      console.log("⚠️ Aucune donnée récupérée");
+    if (!data || data.length === 0) {
+      console.log("⚠️ Aucune zone de livraison trouvée pour le restaurant", restaurantId);
       return [];
     }
     
-    // Si un restaurant est spécifié, filtrer par restaurant
-    let filteredData = data;
-    if (restaurantId) {
-      filteredData = data.filter(location => location.restaurant_id === restaurantId);
-      console.log("🏪 Zones filtrées pour restaurant", restaurantId, ":", filteredData.length, "zones");
-    }
-    
-    const zones = filteredData.map(location => ({
+    const zones = data.map(location => ({
       city: location.city,
       postalCode: location.postal_code
     }));
     
-    console.log("🌍 Zones finales:", zones);
+    console.log("🌍 Zones finales pour restaurant", restaurantId, ":", zones);
     return zones;
     
   } catch (error) {
