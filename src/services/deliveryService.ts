@@ -1,23 +1,23 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?: string): Promise<boolean> => {
   try {
     console.log("🚚 Vérification code postal:", postalCode, "pour restaurant:", restaurantId);
     
-    let query = supabase
+    if (!restaurantId) {
+      console.log("⚠️ Aucun restaurant spécifié pour la vérification du code postal");
+      return false;
+    }
+    
+    const { data, error } = await supabase
       .from('delivery_locations')
       .select('*')
       .eq('postal_code', postalCode)
+      .eq('restaurant_id', restaurantId)
       .eq('is_active', true);
     
-    // Si un restaurant est spécifié, filtrer par restaurant
-    if (restaurantId) {
-      query = query.eq('restaurant_id', restaurantId);
-    }
-    
-    const { data, error } = await query;
-    
-    console.log("🚚 Résultat vérification:", { data, error, count: data?.length });
+    console.log("🚚 Résultat vérification pour restaurant", restaurantId, ":", { data, error, count: data?.length });
     
     if (error) {
       console.error("❌ Erreur lors de la vérification du code postal:", error);
@@ -36,30 +36,39 @@ export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?:
 
 export const getDeliveryLocations = async (restaurantId?: string): Promise<{city: string, postalCode: string}[]> => {
   try {
-    console.log("📍 Récupération zones de livraison pour restaurant:", restaurantId);
+    console.log("📍 Récupération zones de livraison pour restaurant ID:", restaurantId);
     
     if (!restaurantId) {
-      console.log("⚠️ Aucun restaurant spécifié");
+      console.log("⚠️ Aucun restaurant spécifié - retour tableau vide");
       return [];
     }
     
-    // Faire une requête directe avec le restaurant spécifié
+    // Requête directe avec le restaurant spécifié
     const { data, error } = await supabase
       .from('delivery_locations')
-      .select('city, postal_code')
+      .select('city, postal_code, restaurant_id')
       .eq('restaurant_id', restaurantId)
       .eq('is_active', true)
       .order('city', { ascending: true });
     
-    console.log("📍 Résultat zones pour restaurant", restaurantId, ":", { data, error, count: data?.length });
+    console.log("📍 Requête zones pour restaurant", restaurantId);
+    console.log("📍 Résultat brut:", { data, error });
     
     if (error) {
-      console.error("❌ Erreur lors de la récupération des zones de livraison:", error);
+      console.error("❌ Erreur Supabase lors de la récupération des zones:", error);
       return [];
     }
     
     if (!data || data.length === 0) {
       console.log("⚠️ Aucune zone de livraison trouvée pour le restaurant", restaurantId);
+      
+      // Vérifier si le restaurant existe
+      const { data: restaurantCheck } = await supabase
+        .from('restaurants')
+        .select('id, name')
+        .eq('id', restaurantId);
+      
+      console.log("🏪 Vérification existence restaurant:", restaurantCheck);
       return [];
     }
     
@@ -68,7 +77,7 @@ export const getDeliveryLocations = async (restaurantId?: string): Promise<{city
       postalCode: location.postal_code
     }));
     
-    console.log("🌍 Zones finales pour restaurant", restaurantId, ":", zones);
+    console.log("🌍 Zones formatées pour restaurant", restaurantId, ":", zones);
     return zones;
     
   } catch (error) {
