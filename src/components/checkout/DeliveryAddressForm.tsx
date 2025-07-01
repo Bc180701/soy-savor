@@ -21,17 +21,26 @@ interface DeliveryAddressFormProps {
   }) => void;
   onCancel: () => void;
   cartRestaurant?: Restaurant | null; // Utiliser le restaurant du panier
+  initialData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    street?: string;
+    city?: string;
+    postalCode?: string;
+    deliveryInstructions?: string;
+  };
 }
 
-const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryAddressFormProps) => {
+const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData }: DeliveryAddressFormProps) => {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    street: "",
-    city: "",
-    postalCode: "",
-    instructions: ""
+    name: initialData?.name || "",
+    email: initialData?.email || "",
+    phone: initialData?.phone || "",
+    street: initialData?.street || "",
+    city: initialData?.city || "",
+    postalCode: initialData?.postalCode || "",
+    instructions: initialData?.deliveryInstructions || ""
   });
   
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
@@ -39,6 +48,25 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryA
   const [deliveryZones, setDeliveryZones] = useState<{city: string, postalCode: string}[]>([]);
   const [loadingZones, setLoadingZones] = useState(false);
   const { toast } = useToast();
+
+  // Synchroniser avec les données initiales quand elles changent
+  useEffect(() => {
+    if (initialData) {
+      console.log("🔄 Synchronisation avec données initiales:", initialData);
+      setFormData({
+        name: initialData.name || "",
+        email: initialData.email || "",
+        phone: initialData.phone || "",
+        street: initialData.street || "",
+        city: initialData.city || "",
+        postalCode: initialData.postalCode || "",
+        instructions: initialData.deliveryInstructions || ""
+      });
+      
+      // Reset la validation du code postal car les données ont changé
+      setIsPostalCodeValid(null);
+    }
+  }, [initialData]);
 
   // Charger les zones de livraison quand le restaurant change
   useEffect(() => {
@@ -269,6 +297,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryA
               onChange={handleInputChange}
               placeholder="Votre nom complet"
               required
+              key={`address-name-${formData.name}`}
             />
           </div>
           <div>
@@ -281,6 +310,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryA
               onChange={handleInputChange}
               placeholder="votre@email.com"
               required
+              key={`address-email-${formData.email}`}
             />
           </div>
         </div>
@@ -294,6 +324,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryA
             onChange={handleInputChange}
             placeholder="06 XX XX XX XX"
             required
+            key={`address-phone-${formData.phone}`}
           />
         </div>
 
@@ -306,6 +337,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryA
             onChange={handleInputChange}
             placeholder="Numéro et nom de rue"
             required
+            key={`address-street-${formData.street}`}
           />
         </div>
 
@@ -319,6 +351,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryA
               onChange={handleInputChange}
               placeholder="Votre ville"
               required
+              key={`address-city-${formData.city}`}
             />
           </div>
           <div>
@@ -332,6 +365,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryA
                 placeholder="13160"
                 required
                 className={getPostalCodeInputClass()}
+                key={`address-postal-${formData.postalCode}`}
               />
               <Button
                 type="button"
@@ -369,6 +403,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant }: DeliveryA
             onChange={handleInputChange}
             placeholder="Étage, code d'accès, instructions spéciales..."
             className="h-20"
+            key={`address-instructions-${formData.instructions}`}
           />
         </div>
 

@@ -370,6 +370,15 @@ export const DeliveryStep = ({
           onComplete={handleAddressComplete}
           onCancel={handleAddressCancel}
           cartRestaurant={cartRestaurant}
+          initialData={{
+            name: deliveryInfo.name,
+            email: deliveryInfo.email,
+            phone: deliveryInfo.phone,
+            street: deliveryInfo.street,
+            city: deliveryInfo.city,
+            postalCode: deliveryInfo.postalCode,
+            deliveryInstructions: deliveryInfo.deliveryInstructions
+          }}
         />
       )}
       
