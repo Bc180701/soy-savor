@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import DeliveryMethod from "../checkout/DeliveryMethod";
@@ -34,7 +35,7 @@ interface DeliveryStepProps {
   handlePreviousStep: () => void;
   handleNextStep: () => void;
   isLoggedIn: boolean;
-  cartRestaurant?: Restaurant | null; // Nouveau prop pour le restaurant du panier
+  cartRestaurant?: Restaurant | null;
 }
 
 export const DeliveryStep = ({
@@ -50,6 +51,7 @@ export const DeliveryStep = ({
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const [useStoredInfo, setUseStoredInfo] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [userAddress, setUserAddress] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const { toast } = useToast();
 
@@ -64,27 +66,39 @@ export const DeliveryStep = ({
           
           if (user) {
             // Récupérer le profil depuis la table profiles
-            const { data: profile, error } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('*')
               .eq('id', user.id)
               .maybeSingle();
             
-            console.log("👤 Profil utilisateur récupéré:", { profile, error });
+            // Récupérer l'adresse par défaut
+            const { data: address, error: addressError } = await supabase
+              .from('user_addresses')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('is_default', true)
+              .maybeSingle();
+            
+            console.log("👤 Profil utilisateur récupéré:", { profile, profileError });
+            console.log("🏠 Adresse utilisateur récupérée:", { address, addressError });
             
             if (profile) {
               setUserProfile({
                 ...profile,
-                email: user.email // Ajouter l'email depuis auth
+                email: user.email
               });
-            } else if (!error) {
-              // Si pas de profil mais pas d'erreur, créer un profil minimal
+            } else if (!profileError) {
               setUserProfile({
                 email: user.email,
                 first_name: '',
                 last_name: '',
                 phone: ''
               });
+            }
+
+            if (address) {
+              setUserAddress(address);
             }
           }
         } catch (error) {
@@ -105,6 +119,8 @@ export const DeliveryStep = ({
     
     if (checked && userProfile) {
       console.log("✅ Pré-remplissage avec profil:", userProfile);
+      console.log("✅ Pré-remplissage avec adresse:", userAddress);
+      
       const fullName = `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
       
       setDeliveryInfo(prev => {
@@ -114,11 +130,30 @@ export const DeliveryStep = ({
           email: userProfile.email || prev.email,
           phone: userProfile.phone || prev.phone,
         };
+
+        // Si on a une adresse et que c'est une livraison, pré-remplir l'adresse aussi
+        if (userAddress && prev.orderType === "delivery") {
+          newInfo.street = userAddress.street || prev.street;
+          newInfo.city = userAddress.city || prev.city;
+          newInfo.postalCode = userAddress.postal_code || prev.postalCode;
+          newInfo.deliveryInstructions = userAddress.additional_info || prev.deliveryInstructions;
+        }
+
         console.log("📋 Nouvelles informations de livraison:", newInfo);
         return newInfo;
       });
+
+      toast({
+        title: "Informations pré-remplies",
+        description: "Vos informations enregistrées ont été chargées",
+      });
     } else if (!checked) {
-      console.log("❌ Décoché - conservation des valeurs actuelles");
+      console.log("❌ Décoché - informations réinitialisées");
+      // Optionnel: remettre à zéro les champs quand on décoche
+      toast({
+        title: "Informations réinitialisées",
+        description: "Les champs ont été vidés",
+      });
     }
   };
 
@@ -147,7 +182,7 @@ export const DeliveryStep = ({
     }));
   };
 
-  // Modified for DeliveryAddressForm - maintenant avec le restaurant du panier
+  // Modified for DeliveryAddressForm
   const handleAddressComplete = (addressData: any) => {
     setDeliveryInfo(prev => ({
       ...prev,
@@ -247,7 +282,7 @@ export const DeliveryStep = ({
       
       {/* Case à cocher pour utiliser les informations stockées */}
       {isLoggedIn && !loadingProfile && userProfile && (
-        <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-md">
+        <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-md border border-blue-200">
           <Checkbox
             id="use-stored-info"
             checked={useStoredInfo}
@@ -264,7 +299,10 @@ export const DeliveryStep = ({
       
       {loadingProfile && (
         <div className="p-4 bg-gray-50 rounded-md text-sm text-gray-600">
-          Chargement des informations utilisateur...
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span>Chargement des informations utilisateur...</span>
+          </div>
         </div>
       )}
       
@@ -309,12 +347,12 @@ export const DeliveryStep = ({
         </div>
       </div>
       
-      {/* Address Information (only for delivery) - maintenant avec le restaurant du panier */}
+      {/* Address Information (only for delivery) */}
       {deliveryInfo.orderType === "delivery" && (
         <DeliveryAddressForm
           onComplete={handleAddressComplete}
           onCancel={handleAddressCancel}
-          cartRestaurant={cartRestaurant} // Passer le restaurant du panier
+          cartRestaurant={cartRestaurant}
         />
       )}
       
