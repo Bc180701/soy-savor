@@ -10,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
+import { Restaurant } from "@/types/restaurant";
 import { ArrowLeft, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { RestaurantSelector } from "@/components/creation/RestaurantSelector";
 
 interface ComposerPokeState {
   baseItem: MenuItem;
@@ -32,7 +34,8 @@ const ComposerPoke = () => {
 
   const { baseItem } = (location.state as ComposerPokeState) || { baseItem: null };
   
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number>(0); // Commencer à 0 pour la sélection de restaurant
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [selectedIngredients, setSelectedIngredients] = useState<IngredientOption[]>([]);
   const [selectedProteins, setSelectedProteins] = useState<IngredientOption[]>([]);
   const [selectedSauces, setSelectedSauces] = useState<IngredientOption[]>([]);
@@ -142,7 +145,21 @@ const ComposerPoke = () => {
 
   // Navigate to next step or complete order
   const handleNext = () => {
-    if (step < 3) {
+    if (step === 0) {
+      // Validation de la sélection de restaurant
+      if (!selectedRestaurant) {
+        toast({
+          title: "Restaurant requis",
+          description: "Veuillez sélectionner un restaurant",
+          variant: "destructive",
+        });
+        return;
+      }
+      setStep(1);
+      return;
+    }
+
+    if (step < 4) {
       // Validation for each step
       if (step === 1 && selectedIngredients.length === 0) {
         toast({
@@ -181,14 +198,15 @@ const ComposerPoke = () => {
         description: `Ingrédients: ${selectedIngredients.map(g => g.name).join(', ')}, Protéines: ${selectedProteins.map(p => p.name).join(', ')}, Sauces: ${selectedSauces.map(s => s.name).join(', ')}`,
         price: calculateTotalPrice(),
         category: "poke_custom",
+        restaurant_id: selectedRestaurant?.id
       };
       
-      // Add to cart
-      cart.addItem(customPokeItem, 1);
+      // Add to cart with restaurant
+      cart.addItemWithRestaurant(customPokeItem, 1, selectedRestaurant!.id);
       
       toast({
         title: "Personnalisation réussie !",
-        description: "Votre poké bowl personnalisé a été ajouté au panier",
+        description: `Votre poké bowl personnalisé a été ajouté au panier pour ${selectedRestaurant?.name}`,
       });
       
       // Navigate back to menu
@@ -207,6 +225,8 @@ const ComposerPoke = () => {
     }
     
     switch (step) {
+      case 0:
+        return <RestaurantSelector selectedRestaurant={selectedRestaurant} onSelectRestaurant={setSelectedRestaurant} />;
       case 1:
         return (
           <div>
@@ -321,8 +341,17 @@ const ComposerPoke = () => {
         <h1 className="text-3xl font-bold mb-2">POKÉ CRÉA</h1>
         <p className="text-gray-600 mb-6">Composez votre Poké bowl sur mesure selon vos envies ! (5 choix maximum par catégorie)</p>
 
+        {/* Show selected restaurant */}
+        {selectedRestaurant && step > 0 && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              <span className="font-medium">Restaurant sélectionné :</span> {selectedRestaurant.name}
+            </p>
+          </div>
+        )}
+
         <div className="flex mb-6 overflow-x-auto">
-          {[1, 2, 3].map((stepNumber) => (
+          {[0, 1, 2, 3].map((stepNumber) => (
             <div 
               key={stepNumber}
               className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-2 ${
@@ -336,7 +365,7 @@ const ComposerPoke = () => {
               {stepNumber < step ? (
                 <Check className="h-5 w-5" />
               ) : (
-                stepNumber
+                stepNumber === 0 ? "R" : stepNumber
               )}
             </div>
           ))}
@@ -346,14 +375,16 @@ const ComposerPoke = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">
-                Étape {step}/3
+                {step === 0 ? "Restaurant" : `Étape ${step}/3`}
               </h2>
-              <div className="text-right">
-                <p className="text-sm">Total:</p>
-                <p className="text-xl font-bold text-gold-600">
-                  {calculateTotalPrice().toFixed(2)}€
-                </p>
-              </div>
+              {step > 0 && (
+                <div className="text-right">
+                  <p className="text-sm">Total:</p>
+                  <p className="text-xl font-bold text-gold-600">
+                    {calculateTotalPrice().toFixed(2)}€
+                  </p>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -362,12 +393,12 @@ const ComposerPoke = () => {
             <div className="mt-6 flex justify-between">
               <Button 
                 variant="outline" 
-                onClick={() => step > 1 ? setStep(step - 1) : navigate("/commander")}
+                onClick={() => step > 0 ? setStep(step - 1) : navigate("/commander")}
               >
-                {step > 1 ? "Précédent" : "Annuler"}
+                {step > 0 ? "Précédent" : "Annuler"}
               </Button>
               <Button onClick={handleNext}>
-                {step < 3 ? "Continuer" : "Ajouter au panier"}
+                {step === 0 ? "Continuer" : step < 3 ? "Continuer" : "Ajouter au panier"}
               </Button>
             </div>
           </CardContent>

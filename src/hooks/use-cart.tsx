@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MenuItem } from '@/types';
@@ -30,6 +29,8 @@ interface CartStore {
   getRemainingFreeDesserts: () => number;
   // Nouvelle méthode pour vérifier la compatibilité du restaurant
   checkRestaurantCompatibility: (restaurantId: string) => boolean;
+  // Nouvelle méthode pour ajouter des articles avec un restaurant spécifique
+  addItemWithRestaurant: (item: MenuItem, quantity: number, restaurantId: string, specialInstructions?: string) => void;
 }
 
 export const useCart = create<CartStore>()(
@@ -82,6 +83,31 @@ export const useCart = create<CartStore>()(
         if (!state.selectedRestaurantId) return true;
         // Sinon, vérifier que c'est le même restaurant
         return state.selectedRestaurantId === restaurantId;
+      },
+
+      addItemWithRestaurant: (item, quantity, restaurantId, specialInstructions) => {
+        const state = get();
+        
+        console.log("🛒 Ajout article avec restaurant:", item.name, "Restaurant:", restaurantId);
+        
+        // Vérifier la compatibilité avec le restaurant
+        if (!state.checkRestaurantCompatibility(restaurantId)) {
+          console.log("⚠️ Restaurant incompatible, vidage du panier");
+          get().clearCart();
+        }
+        
+        // Définir le restaurant sélectionné si ce n'est pas déjà fait
+        if (!state.selectedRestaurantId) {
+          get().setSelectedRestaurantId(restaurantId);
+        }
+        
+        // Ajouter l'article avec le restaurant_id
+        const itemWithRestaurant = {
+          ...item,
+          restaurant_id: restaurantId
+        };
+        
+        get().addItem(itemWithRestaurant, quantity, specialInstructions);
       },
       
       addItem: (item, quantity, specialInstructions) => {

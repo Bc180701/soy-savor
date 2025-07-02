@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
+import { Restaurant } from "@/types/restaurant";
 import { ArrowLeft, Check } from "lucide-react";
 
 // Import types and utilities
@@ -13,6 +14,7 @@ import { SushiOption, BoxOption, SushiCreation } from "@/types/sushi-creator";
 import { calculateCreationExtraCost, calculateTotalExtraCost, calculateTotalPrice } from "@/utils/sushi-calculator";
 
 // Import components
+import { RestaurantSelector } from "@/components/creation/RestaurantSelector";
 import { BoxSelection } from "@/components/sushi-creator/BoxSelection";
 import { EnrobageSelection } from "@/components/sushi-creator/EnrobageSelection";
 import { BaseSelection } from "@/components/sushi-creator/BaseSelection";
@@ -37,7 +39,8 @@ const ComposerSushi = () => {
 
   const { baseItem } = (location.state as ComposerSushiState) || { baseItem: null };
 
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number>(0); // Commencer à 0 pour la sélection de restaurant
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [selectedBox, setSelectedBox] = useState<BoxOption | null>(null);
   
   // Current creation being built
@@ -132,7 +135,21 @@ const ComposerSushi = () => {
 
   // Navigate to next step or complete order
   const handleNext = () => {
-    if (step < 6) {
+    if (step === 0) {
+      // Validation de la sélection de restaurant
+      if (!selectedRestaurant) {
+        toast({
+          title: "Restaurant requis",
+          description: "Veuillez sélectionner un restaurant",
+          variant: "destructive",
+        });
+        return;
+      }
+      setStep(1);
+      return;
+    }
+
+    if (step < 7) {
       // Validation for each step
       if (step === 1 && !selectedBox) {
         toast({
@@ -227,16 +244,17 @@ const ComposerSushi = () => {
             description: `Enrobage: ${creation.enrobage?.name} | Base: ${creation.base?.name} | Garnitures: ${creation.garnitures.map(g => g.name).join(', ')}${creation.topping ? ` | Topping: ${creation.topping.name}` : ''} | Sauce: ${creation.sauce?.name}`,
             price: finalPrice,
             category: "custom",
-            pieces: 6
+            pieces: 6,
+            restaurant_id: selectedRestaurant?.id
           };
           
-          // Add each creation to cart separately
-          cart.addItem(customSushiItem, 1);
+          // Add each creation to cart with restaurant
+          cart.addItemWithRestaurant(customSushiItem, 1, selectedRestaurant!.id);
         });
         
         toast({
           title: "Personnalisation réussie !",
-          description: `${updatedCompletedCreations.length} créations de sushi ajoutées au panier`,
+          description: `${updatedCompletedCreations.length} créations de sushi ajoutées au panier pour ${selectedRestaurant?.name}`,
         });
         
         // Navigate back to menu
@@ -247,7 +265,7 @@ const ComposerSushi = () => {
 
   // Handle back navigation
   const handleBack = () => {
-    if (step > 1) {
+    if (step > 0) {
       setStep(step - 1);
     } else {
       navigate("/commander");
@@ -269,6 +287,8 @@ const ComposerSushi = () => {
   // Get current step content
   const renderStepContent = () => {
     switch (step) {
+      case 0:
+        return <RestaurantSelector selectedRestaurant={selectedRestaurant} onSelectRestaurant={setSelectedRestaurant} />;
       case 1:
         return <BoxSelection selectedBox={selectedBox} boxOptions={boxOptions} onBoxSelect={handleBoxSelect} />;
       case 2:
@@ -305,6 +325,15 @@ const ComposerSushi = () => {
         <h1 className="text-3xl font-bold mb-2">SUSHI CRÉA</h1>
         <p className="text-gray-600 mb-6">Compose tes propres sushis !</p>
 
+        {/* Show selected restaurant */}
+        {selectedRestaurant && step > 0 && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              <span className="font-medium">Restaurant sélectionné :</span> {selectedRestaurant.name}
+            </p>
+          </div>
+        )}
+
         {/* Show progress for multiple creations */}
         {selectedBox && selectedBox.creations > 1 && step > 1 && (
           <div className="mb-4 p-4 bg-gold-50 border border-gold-200 rounded-lg">
@@ -318,7 +347,7 @@ const ComposerSushi = () => {
         )}
 
         <div className="flex mb-6 overflow-x-auto">
-          {[1, 2, 3, 4, 5, 6].map((stepNumber) => (
+          {[0, 1, 2, 3, 4, 5, 6].map((stepNumber) => (
             <div 
               key={stepNumber}
               className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-2 ${
@@ -332,7 +361,7 @@ const ComposerSushi = () => {
               {stepNumber < step ? (
                 <Check className="h-5 w-5" />
               ) : (
-                stepNumber
+                stepNumber === 0 ? "R" : stepNumber
               )}
             </div>
           ))}
@@ -342,9 +371,9 @@ const ComposerSushi = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">
-                Étape {step}/6
+                {step === 0 ? "Restaurant" : `Étape ${step}/6`}
               </h2>
-              {selectedBox && (
+              {selectedBox && step > 0 && (
                 <div className="text-right">
                   <p className="text-sm">Total estimé:</p>
                   <p className="text-xl font-bold text-gold-600">
@@ -367,10 +396,12 @@ const ComposerSushi = () => {
                 variant="outline" 
                 onClick={handleBack}
               >
-                {step > 1 ? "Précédent" : "Annuler"}
+                {step > 0 ? "Précédent" : "Annuler"}
               </Button>
               <Button onClick={handleNext}>
-                {step < 6 
+                {step === 0 
+                  ? "Continuer"
+                  : step < 6 
                   ? "Continuer" 
                   : completedCreations.length + 1 < (selectedBox?.creations || 0)
                   ? "Création suivante"
