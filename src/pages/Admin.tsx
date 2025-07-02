@@ -16,6 +16,7 @@ import OrderList from "@/components/OrderList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import IngredientsManager from "@/components/admin/IngredientsManager";
 import DeliveryZonesManager from "@/components/admin/DeliveryZonesManager";
+import UsersList from "@/components/admin/UsersList";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -132,7 +133,7 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10 gap-1">
+            <TabsList className="grid w-full grid-cols-11 gap-1">
               <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
               <TabsTrigger value="orders">Commandes</TabsTrigger>
               <TabsTrigger value="products">Produits</TabsTrigger>
@@ -143,6 +144,7 @@ const Admin = () => {
               <TabsTrigger value="ordering">Configuration</TabsTrigger>
               <TabsTrigger value="delivery-zones">Zones livraison</TabsTrigger>
               <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
+              <TabsTrigger value="admins">Administrateurs</TabsTrigger>
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -183,6 +185,10 @@ const Admin = () => {
             
             <TabsContent value="ingredients">
               <IngredientsManager />
+            </TabsContent>
+            
+            <TabsContent value="admins">
+              <AdminManager />
             </TabsContent>
           </Tabs>
           
