@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -133,7 +134,7 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-11 gap-1">
+            <TabsList className="grid w-full grid-cols-12 gap-1">
               <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
               <TabsTrigger value="orders">Commandes</TabsTrigger>
               <TabsTrigger value="products">Produits</TabsTrigger>
@@ -145,6 +146,7 @@ const Admin = () => {
               <TabsTrigger value="delivery-zones">Zones livraison</TabsTrigger>
               <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
               <TabsTrigger value="admins">Administrateurs</TabsTrigger>
+              <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -189,6 +191,10 @@ const Admin = () => {
             
             <TabsContent value="admins">
               <AdminManager />
+            </TabsContent>
+            
+            <TabsContent value="users">
+              <UsersList />
             </TabsContent>
           </Tabs>
           
