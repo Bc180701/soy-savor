@@ -1,7 +1,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
-import Stripe from 'https://esm.sh/stripe@14.21.0';
+import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.43.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -104,71 +103,6 @@ serve(async (req) => {
       );
     }
 
-    // Initialiser Stripe
-    let stripe;
-    try {
-      stripe = new Stripe(stripeKey, {
-        apiVersion: '2023-10-16',
-      });
-      console.log('✅ Instance Stripe créée');
-    } catch (stripeError) {
-      console.error('❌ Erreur initialisation Stripe:', stripeError);
-      return new Response(
-        JSON.stringify({ error: 'Erreur d\'initialisation Stripe' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Initialiser Supabase avec la clé de service
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    console.log('✅ Client Supabase admin créé');
-
-    // Authentification de l'utilisateur (optionnelle)
-    let userId: string | undefined;
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      try {
-        const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '');
-        const token = authHeader.replace('Bearer ', '');
-        const { data: userData } = await supabaseClient.auth.getUser(token);
-        userId = userData.user?.id;
-        console.log('👤 Utilisateur authentifié:', userId);
-      } catch (authError) {
-        console.log("👤 Utilisateur non authentifié, commande en tant qu'invité");
-      }
-    }
-    
-    // Déterminer le restaurant ID
-    const targetRestaurantId = orderData.restaurantId || "11111111-1111-1111-1111-111111111111";
-    console.log('🏪 Restaurant cible:', targetRestaurantId);
-    
-    // Créer ou récupérer le client Stripe
-    let customerId: string | undefined;
-    if (orderData.clientEmail) {
-      try {
-        const { data: customers } = await stripe.customers.list({
-          email: orderData.clientEmail,
-          limit: 1,
-        });
-        
-        if (customers && customers.length > 0) {
-          customerId = customers[0].id;
-          console.log('💳 Client Stripe existant:', customerId);
-        } else {
-          const newCustomer = await stripe.customers.create({
-            email: orderData.clientEmail,
-            name: orderData.clientName,
-            phone: orderData.clientPhone,
-          });
-          customerId = newCustomer.id;
-          console.log('💳 Nouveau client Stripe créé:', customerId);
-        }
-      } catch (stripeError) {
-        console.error('❌ Erreur gestion client Stripe:', stripeError);
-        // Continuer sans customer ID
-      }
-    }
-
     // Créer les éléments de ligne pour Stripe Checkout
     const lineItems = orderData.items.map(item => ({
       price_data: {
@@ -221,42 +155,79 @@ serve(async (req) => {
       totalAmount: orderData.total
     });
     
-    // Créer la session Stripe Checkout
-    let session;
-    try {
-      session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        customer_email: !customerId ? orderData.clientEmail : undefined,
-        payment_method_types: ['card'],
-        line_items: lineItems,
-        mode: 'payment',
-        success_url: orderData.successUrl,
-        cancel_url: orderData.cancelUrl,
-        metadata: {
-          user_id: userId || 'guest',
-          restaurant_id: targetRestaurantId,
-          order_type: orderData.orderType,
-          scheduled_for: orderData.scheduledFor,
-          customer_notes: orderData.customerNotes || '',
-          delivery_address: orderData.orderType === 'delivery' ? 
-            `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
-          tip_amount: orderData.tip ? orderData.tip.toString() : '0',
-          discount_amount: orderData.discount ? orderData.discount.toString() : '0',
-          promo_code: orderData.promoCode || '',
-        },
-      });
+    // Déterminer le restaurant ID
+    const targetRestaurantId = orderData.restaurantId || "11111111-1111-1111-1111-111111111111";
+    console.log('🏪 Restaurant cible:', targetRestaurantId);
 
-      console.log('✅ Session Stripe créée:', session.id);
-    } catch (stripeSessionError) {
-      console.error('❌ Erreur création session Stripe:', stripeSessionError);
+    // Authentification de l'utilisateur (optionnelle)
+    let userId: string | undefined;
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '');
+        const token = authHeader.replace('Bearer ', '');
+        const { data: userData } = await supabaseClient.auth.getUser(token);
+        userId = userData.user?.id;
+        console.log('👤 Utilisateur authentifié:', userId);
+      } catch (authError) {
+        console.log("👤 Utilisateur non authentifié, commande en tant qu'invité");
+      }
+    }
+    
+    // Créer la session Stripe Checkout via API REST
+    const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${stripeKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        'mode': 'payment',
+        'success_url': orderData.successUrl,
+        'cancel_url': orderData.cancelUrl,
+        'customer_email': orderData.clientEmail || '',
+        ...lineItems.reduce((acc, item, index) => {
+          acc[`line_items[${index}][price_data][currency]`] = item.price_data.currency;
+          acc[`line_items[${index}][price_data][product_data][name]`] = item.price_data.product_data.name;
+          if (item.price_data.product_data.description) {
+            acc[`line_items[${index}][price_data][product_data][description]`] = item.price_data.product_data.description;
+          }
+          acc[`line_items[${index}][price_data][unit_amount]`] = item.price_data.unit_amount.toString();
+          acc[`line_items[${index}][quantity]`] = item.quantity.toString();
+          return acc;
+        }, {} as Record<string, string>),
+        'payment_method_types[0]': 'card',
+        'metadata[user_id]': userId || 'guest',
+        'metadata[restaurant_id]': targetRestaurantId,
+        'metadata[order_type]': orderData.orderType,
+        'metadata[scheduled_for]': orderData.scheduledFor,
+        'metadata[customer_notes]': orderData.customerNotes || '',
+        'metadata[delivery_address]': orderData.orderType === 'delivery' ? 
+          `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
+        'metadata[tip_amount]': orderData.tip ? orderData.tip.toString() : '0',
+        'metadata[discount_amount]': orderData.discount ? orderData.discount.toString() : '0',
+        'metadata[promo_code]': orderData.promoCode || '',
+      })
+    });
+
+    if (!stripeResponse.ok) {
+      const errorText = await stripeResponse.text();
+      console.error('❌ Erreur Stripe API:', errorText);
       return new Response(
         JSON.stringify({ 
           error: 'Erreur lors de la création de la session de paiement',
-          details: stripeSessionError.message 
+          details: errorText 
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const session = await stripeResponse.json();
+    console.log('✅ Session Stripe créée:', session.id);
+
+    // Initialiser Supabase avec la clé de service
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('✅ Client Supabase admin créé');
 
     // Créer la commande dans la base de données
     console.log('💾 Création de la commande en base...');
