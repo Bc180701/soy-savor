@@ -26,8 +26,8 @@ interface OrderData {
   tax: number;
   deliveryFee: number;
   tip?: number;
-  discount?: number;
-  promoCode?: string;
+  discount?: number; // Montant de la réduction du code promo
+  promoCode?: string; // Code promo appliqué
   total: number;
   orderType: "delivery" | "pickup";
   clientName?: string;
@@ -52,12 +52,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 create-checkout function called');
-    
     // Vérifier la clé Stripe
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) {
-      console.error('❌ STRIPE_SECRET_KEY not configured');
       return new Response(
         JSON.stringify({ error: 'La clé API Stripe n\'est pas configurée.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -70,33 +67,36 @@ serve(async (req) => {
 
     // Récupérer les données de la commande depuis le corps de la requête
     const orderData: OrderData = await req.json();
-    console.log('📦 Order data received:', {
-      itemCount: orderData.items.length,
-      total: orderData.total,
-      orderType: orderData.orderType,
-      clientEmail: orderData.clientEmail
-    });
     
-    // Initialiser Supabase client avec la clé de service pour bypasser RLS
+    // Initialiser Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('❌ Supabase configuration missing');
-      return new Response(
-        JSON.stringify({ error: 'Configuration Supabase manquante' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    // Client pour authentification utilisateur (si disponible)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    
     // Client avec rôle de service pour les opérations de base de données (bypass RLS)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Authentification de l'utilisateur (optionnelle)
+    let userId: string | undefined;
+    
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: userData } = await supabase.auth.getUser(token);
+        userId = userData.user?.id;
+      } catch (authError) {
+        console.log("Utilisateur non authentifié, commande en tant qu'invité");
+      }
+    }
+    
     // Créer ou récupérer le client Stripe
     let customerId: string | undefined;
     
     if (orderData.clientEmail) {
-      console.log('🔍 Looking for existing Stripe customer:', orderData.clientEmail);
       const { data: customers } = await stripe.customers.list({
         email: orderData.clientEmail,
         limit: 1,
@@ -104,17 +104,14 @@ serve(async (req) => {
       
       if (customers && customers.length > 0) {
         customerId = customers[0].id;
-        console.log('✅ Found existing customer:', customerId);
       } else {
         // Créer un nouveau client
-        console.log('👤 Creating new Stripe customer');
         const newCustomer = await stripe.customers.create({
           email: orderData.clientEmail,
           name: orderData.clientName,
           phone: orderData.clientPhone,
         });
         customerId = newCustomer.id;
-        console.log('✅ Created new customer:', customerId);
       }
     }
 
@@ -139,7 +136,7 @@ serve(async (req) => {
           product_data: {
             name: 'Frais de livraison',
           },
-          unit_amount: Math.round(orderData.deliveryFee * 100),
+          unit_amount: Math.round(orderData.deliveryFee * 100), // Montant en centimes
         },
         quantity: 1,
       });
@@ -153,7 +150,7 @@ serve(async (req) => {
           product_data: {
             name: 'TVA (10%)',
           },
-          unit_amount: Math.round(orderData.tax * 100),
+          unit_amount: Math.round(orderData.tax * 100), // Montant en centimes
         },
         quantity: 1,
       });
@@ -167,13 +164,17 @@ serve(async (req) => {
           product_data: {
             name: 'Pourboire',
           },
-          unit_amount: Math.round(orderData.tip * 100),
+          unit_amount: Math.round(orderData.tip * 100), // Montant en centimes
         },
         quantity: 1,
       });
     }
+    
+    // Pour la réduction, nous devons l'appliquer différemment car Stripe n'accepte pas les montants négatifs
+    // Au lieu de ça, nous ajustons les autres line items ou utilisons un coupon
 
-    console.log('💳 Creating Stripe checkout session with', lineItems.length, 'line items');
+    // Calculer le montant total à payer (en tenant compte de la réduction)
+    // Nous laissons Stripe calculer le total à partir des line items
     
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
@@ -181,10 +182,17 @@ serve(async (req) => {
       customer_email: !customerId ? orderData.clientEmail : undefined,
       payment_method_types: ['card'],
       line_items: lineItems,
+      // Appliquer la réduction comme un coupon si présent
+      discounts: orderData.discount && orderData.discount > 0 ? [
+        {
+          coupon: await createOrRetrieveCoupon(stripe, orderData.discount, orderData.promoCode),
+        },
+      ] : undefined,
       mode: 'payment',
       success_url: orderData.successUrl,
       cancel_url: orderData.cancelUrl,
       metadata: {
+        user_id: userId || 'guest',
         order_type: orderData.orderType,
         scheduled_for: orderData.scheduledFor,
         customer_notes: orderData.customerNotes || '',
@@ -196,69 +204,51 @@ serve(async (req) => {
       },
     });
 
-    console.log('✅ Stripe session created:', session.id);
-
-    // Créer la commande dans Supabase AVANT de renvoyer l'URL
-    console.log('💾 Creating order in database...');
+    // Créer la commande avec un statut de paiement "pending" et inclure le pourboire
     const { data: orderRecord, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
-        subtotal: Number(orderData.subtotal) || 0,
-        tax: Number(orderData.tax) || 0,
-        delivery_fee: Number(orderData.deliveryFee) || 0,
-        tip: Number(orderData.tip) || 0,
-        discount: Number(orderData.discount) || 0,
+        user_id: userId, // null si invité
+        subtotal: orderData.subtotal,
+        tax: orderData.tax,
+        delivery_fee: orderData.deliveryFee,
+        tip: orderData.tip || 0,
+        discount: orderData.discount || 0,
         promo_code: orderData.promoCode || null,
-        total: Number(orderData.total) || 0,
-        order_type: orderData.orderType || 'delivery',
+        total: orderData.total,
+        order_type: orderData.orderType,
         status: 'pending',
         payment_method: 'credit-card',
         payment_status: 'pending',
         scheduled_for: orderData.scheduledFor,
-        client_name: orderData.clientName || null,
-        client_email: orderData.clientEmail || null,
-        client_phone: orderData.clientPhone || null,
-        delivery_street: orderData.deliveryStreet || null,
-        delivery_city: orderData.deliveryCity || null,
-        delivery_postal_code: orderData.deliveryPostalCode || null,
-        customer_notes: orderData.customerNotes || null,
-        stripe_session_id: session.id,
-        restaurant_id: '11111111-1111-1111-1111-111111111111' // ID par défaut Châteaurenard
+        client_name: orderData.clientName,
+        client_email: orderData.clientEmail,
+        client_phone: orderData.clientPhone,
+        delivery_street: orderData.deliveryStreet,
+        delivery_city: orderData.deliveryCity,
+        delivery_postal_code: orderData.deliveryPostalCode,
+        customer_notes: orderData.customerNotes,
+        stripe_session_id: session.id
       })
       .select('id')
       .single();
 
     if (orderError) {
-      console.error('❌ Error creating order:', orderError);
-      return new Response(
-        JSON.stringify({ error: `Erreur lors de la création de la commande: ${orderError.message}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('✅ Order created in database:', orderRecord.id);
-
-    // Ajouter les articles de la commande
-    console.log('📋 Adding order items...');
-    for (const item of orderData.items) {
-      const { error: itemError } = await supabaseAdmin
-        .from('order_items')
-        .insert({
-          order_id: orderRecord.id,
-          product_id: item.menuItem.id,
-          quantity: Number(item.quantity) || 1,
-          price: Number(item.menuItem.price) || 0,
-          special_instructions: item.specialInstructions || null
-        });
-
-      if (itemError) {
-        console.error('❌ Error creating order item:', itemError);
-        // Continue même en cas d'erreur sur un item
+      console.error("Erreur lors de la création de la commande:", orderError);
+    } else {
+      // Ajouter les articles de la commande
+      for (const item of orderData.items) {
+        await supabaseAdmin
+          .from('order_items')
+          .insert({
+            order_id: orderRecord.id,
+            product_id: item.menuItem.id,
+            quantity: item.quantity,
+            price: item.menuItem.price,
+            special_instructions: item.specialInstructions
+          });
       }
     }
-
-    console.log('✅ Order items added successfully');
-    console.log('🎉 Order creation completed, returning Stripe URL');
     
     // Renvoyer l'URL de la session
     return new Response(
@@ -268,7 +258,7 @@ serve(async (req) => {
 
   } catch (err) {
     // Gérer les erreurs
-    console.error('❌ Error in create-checkout:', err);
+    console.error('Erreur lors de la création de la session Stripe:', err);
     
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Une erreur inconnue est survenue' }),
@@ -276,3 +266,23 @@ serve(async (req) => {
     );
   }
 });
+
+// Fonction pour créer ou récupérer un coupon Stripe
+async function createOrRetrieveCoupon(stripe: Stripe, discountAmount: number, promoCode?: string): Promise<string> {
+  const couponId = `discount_${discountAmount.toString().replace('.', '_')}`;
+  
+  try {
+    // Essayer d'abord de récupérer le coupon existant
+    const existingCoupon = await stripe.coupons.retrieve(couponId);
+    return existingCoupon.id;
+  } catch (error) {
+    // Si le coupon n'existe pas, le créer
+    const newCoupon = await stripe.coupons.create({
+      id: couponId,
+      amount_off: Math.round(discountAmount * 100), // Montant en centimes
+      currency: 'eur',
+      name: promoCode ? `Réduction (${promoCode})` : 'Réduction',
+    });
+    return newCoupon.id;
+  }
+}
