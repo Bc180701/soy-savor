@@ -23,7 +23,6 @@ import UpdatePassword from "./pages/UpdatePassword";
 import NotFound from "./pages/NotFound";
 import ComposerSushi from "./pages/ComposerSushi";
 import ComposerPoke from "./pages/ComposerPoke";
-import CommandeConfirmee from "./pages/CommandeConfirmee";
 
 const queryClient = new QueryClient();
 
@@ -59,7 +58,6 @@ function App() {
                 <Route path="update-password" element={<UpdatePassword />} />
                 <Route path="compte" element={<Compte />} />
                 <Route path="panier" element={<Panier />} />
-                <Route path="commande-confirmee" element={<CommandeConfirmee />} />
                 <Route path="admin" element={<Admin />} />
                 <Route path="*" element={<NotFound />} />
               </Route>

@@ -13,11 +13,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 serve(async (req) => {
   try {
-    console.log('=== DÉBUT WEBHOOK STRIPE ===');
-    
     const signature = req.headers.get('stripe-signature');
     if (!signature) {
-      console.error('Signature manquante');
       return new Response('Signature manquante', { status: 400 });
     }
 
@@ -35,7 +32,6 @@ serve(async (req) => {
     let event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      console.log('Événement Stripe vérifié:', event.type);
     } catch (err) {
       console.error(`Erreur de signature du webhook: ${err.message}`);
       return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
@@ -44,7 +40,6 @@ serve(async (req) => {
     // Traiter l'événement
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      console.log('Session de paiement complétée:', session.id);
       
       // Mettre à jour la commande avec le statut "paid"
       const { data: orders, error: findError } = await supabase
@@ -60,7 +55,6 @@ serve(async (req) => {
 
       if (orders && orders.length > 0) {
         const orderId = orders[0].id;
-        console.log('Commande trouvée, mise à jour du statut:', orderId);
         
         // Mettre à jour le statut de paiement et de commande
         const { error: updateError } = await supabase
@@ -75,22 +69,18 @@ serve(async (req) => {
           console.error('Erreur lors de la mise à jour de la commande:', updateError);
           return new Response('Erreur lors de la mise à jour de la commande', { status: 500 });
         }
-        
-        console.log('Commande mise à jour avec succès:', orderId);
       } else {
         console.warn('Aucune commande trouvée pour la session:', session.id);
       }
     }
 
-    console.log('=== FIN WEBHOOK STRIPE SUCCÈS ===');
-    
     return new Response(JSON.stringify({ received: true }), { 
       status: 200,
       headers: { 'Content-Type': 'application/json' } 
     });
     
   } catch (err) {
-    console.error('=== ERREUR WEBHOOK STRIPE ===', err);
+    console.error('Erreur du webhook:', err);
     return new Response(`Webhook error: ${err.message}`, { status: 500 });
   }
 });
