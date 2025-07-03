@@ -55,20 +55,6 @@ serve(async (req) => {
   try {
     console.log('=== DÉBUT CREATE CHECKOUT ===');
     
-    // Vérifier la clé Stripe
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeKey) {
-      console.error('Clé Stripe manquante');
-      return new Response(
-        JSON.stringify({ error: 'La clé API Stripe n\'est pas configurée.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2023-10-16',
-    });
-
     // Récupérer les données de la commande depuis le corps de la requête
     const orderData: OrderData = await req.json();
     console.log('Données de commande reçues:', {
@@ -77,16 +63,51 @@ serve(async (req) => {
       orderType: orderData.orderType,
       restaurantId: orderData.restaurantId
     });
+
+    // Vérifications de base
+    if (!orderData.items || orderData.items.length === 0) {
+      console.error('Aucun article dans la commande');
+      return new Response(
+        JSON.stringify({ error: 'Aucun article dans la commande' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!orderData.total || orderData.total <= 0) {
+      console.error('Total de commande invalide:', orderData.total);
+      return new Response(
+        JSON.stringify({ error: 'Total de commande invalide' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
+    // Vérifier la clé Stripe
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) {
+      console.error('Clé Stripe manquante');
+      return new Response(
+        JSON.stringify({ error: 'Configuration Stripe manquante' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2023-10-16',
+    });
+
     // Initialiser Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
-    // Client pour authentification utilisateur (si disponible)
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    
-    // Client avec rôle de service pour les opérations de base de données (bypass RLS)
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Configuration Supabase manquante');
+      return new Response(
+        JSON.stringify({ error: 'Configuration base de données manquante' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Client avec rôle de service pour les opérations de base de données
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Authentification de l'utilisateur (optionnelle)
@@ -95,8 +116,9 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (authHeader) {
       try {
+        const supabaseAuth = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '');
         const token = authHeader.replace('Bearer ', '');
-        const { data: userData } = await supabase.auth.getUser(token);
+        const { data: userData } = await supabaseAuth.auth.getUser(token);
         userId = userData.user?.id;
         console.log('Utilisateur authentifié:', userId);
       } catch (authError) {
@@ -108,23 +130,28 @@ serve(async (req) => {
     let customerId: string | undefined;
     
     if (orderData.clientEmail) {
-      const { data: customers } = await stripe.customers.list({
-        email: orderData.clientEmail,
-        limit: 1,
-      });
-      
-      if (customers && customers.length > 0) {
-        customerId = customers[0].id;
-        console.log('Client Stripe existant trouvé:', customerId);
-      } else {
-        // Créer un nouveau client
-        const newCustomer = await stripe.customers.create({
+      try {
+        const { data: customers } = await stripe.customers.list({
           email: orderData.clientEmail,
-          name: orderData.clientName,
-          phone: orderData.clientPhone,
+          limit: 1,
         });
-        customerId = newCustomer.id;
-        console.log('Nouveau client Stripe créé:', customerId);
+        
+        if (customers && customers.length > 0) {
+          customerId = customers[0].id;
+          console.log('Client Stripe existant trouvé:', customerId);
+        } else {
+          // Créer un nouveau client
+          const newCustomer = await stripe.customers.create({
+            email: orderData.clientEmail,
+            name: orderData.clientName,
+            phone: orderData.clientPhone,
+          });
+          customerId = newCustomer.id;
+          console.log('Nouveau client Stripe créé:', customerId);
+        }
+      } catch (error) {
+        console.log('Erreur lors de la gestion du client Stripe:', error);
+        // Continuer sans client ID si erreur
       }
     }
 
@@ -134,7 +161,7 @@ serve(async (req) => {
         currency: 'eur',
         product_data: {
           name: item.menuItem.name,
-          description: item.specialInstructions,
+          description: item.specialInstructions || undefined,
         },
         unit_amount: Math.round(item.menuItem.price * 100), // Montant en centimes
       },
@@ -183,19 +210,7 @@ serve(async (req) => {
       });
     }
     
-    // Appliquer la réduction comme un coupon si présent
-    let discounts = undefined;
-    if (orderData.discount && orderData.discount > 0) {
-      try {
-        const couponId = await createOrRetrieveCoupon(stripe, orderData.discount, orderData.promoCode);
-        discounts = [{ coupon: couponId }];
-        console.log('Coupon appliqué:', couponId);
-      } catch (couponError) {
-        console.error('Erreur lors de la création du coupon:', couponError);
-      }
-    }
-    
-    console.log('Création de la session Stripe...');
+    console.log('Création de la session Stripe avec', lineItems.length, 'articles...');
     
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
@@ -203,7 +218,6 @@ serve(async (req) => {
       customer_email: !customerId ? orderData.clientEmail : undefined,
       payment_method_types: ['card'],
       line_items: lineItems,
-      discounts: discounts,
       mode: 'payment',
       success_url: `${orderData.successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: orderData.cancelUrl,
@@ -213,9 +227,9 @@ serve(async (req) => {
         scheduled_for: orderData.scheduledFor,
         customer_notes: orderData.customerNotes || '',
         delivery_address: orderData.orderType === 'delivery' ? 
-          `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
-        tip_amount: orderData.tip ? (orderData.tip).toString() : '0',
-        discount_amount: orderData.discount ? (orderData.discount).toString() : '0',
+          `${orderData.deliveryStreet || ''}, ${orderData.deliveryPostalCode || ''} ${orderData.deliveryCity || ''}` : '',
+        tip_amount: orderData.tip ? orderData.tip.toString() : '0',
+        discount_amount: orderData.discount ? orderData.discount.toString() : '0',
         promo_code: orderData.promoCode || '',
         restaurant_id: orderData.restaurantId || '11111111-1111-1111-1111-111111111111',
       },
@@ -300,23 +314,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Fonction pour créer ou récupérer un coupon Stripe
-async function createOrRetrieveCoupon(stripe: Stripe, discountAmount: number, promoCode?: string): Promise<string> {
-  const couponId = `discount_${discountAmount.toString().replace('.', '_')}`;
-  
-  try {
-    // Essayer d'abord de récupérer le coupon existant
-    const existingCoupon = await stripe.coupons.retrieve(couponId);
-    return existingCoupon.id;
-  } catch (error) {
-    // Si le coupon n'existe pas, le créer
-    const newCoupon = await stripe.coupons.create({
-      id: couponId,
-      amount_off: Math.round(discountAmount * 100), // Montant en centimes
-      currency: 'eur',
-      name: promoCode ? `Réduction (${promoCode})` : 'Réduction',
-    });
-    return newCoupon.id;
-  }
-}
