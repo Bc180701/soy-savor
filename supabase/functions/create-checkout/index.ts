@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.43.0?dts';
 
 // Utiliser l'import direct de Stripe sans les dépendances problématiques
-import Stripe from 'https://esm.sh/stripe@12.18.0?target=deno&no-check';
+import Stripe from 'https://cdn.skypack.dev/stripe@12.18.0?dts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
