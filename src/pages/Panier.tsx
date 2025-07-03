@@ -209,6 +209,7 @@ const PanierContent = () => {
         return;
       }
 
+      // If delivery is selected and postal code is invalid, prevent proceeding
       if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
         toast({
           title: "Code postal non desservi",
@@ -219,6 +220,7 @@ const PanierContent = () => {
         return;
       }
 
+      // Validate postal code again before proceeding - maintenant avec le restaurant du panier
       if (deliveryInfo.orderType === "delivery" && deliveryInfo.postalCode && cartRestaurant?.id) {
         const isValidPostalCode = await checkPostalCodeDelivery(deliveryInfo.postalCode, cartRestaurant.id);
         if (!isValidPostalCode) {
@@ -232,14 +234,15 @@ const PanierContent = () => {
         }
       }
 
+      // Préparation des données pour la fonction edge
       const scheduledForDate = new Date();
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
       scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       
+      // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
       const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;
       
-      console.log('🚀 Envoi commande vers Stripe avec restaurant ID:', cartRestaurant?.id);
-      
+      // Appel à la fonction edge pour créer la session de paiement - avec restaurant ID
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           items,
@@ -259,7 +262,7 @@ const PanierContent = () => {
           deliveryPostalCode: deliveryInfo.postalCode,
           customerNotes: deliveryInfo.notes,
           scheduledFor: scheduledForDate.toISOString(),
-          restaurantId: cartRestaurant?.id, // IMPORTANT: Passer le restaurant ID
+          restaurantId: cartRestaurant?.id, // Ajout du restaurant ID
           successUrl: `${window.location.origin}/commande-confirmee`,
           cancelUrl: `${window.location.origin}/panier`,
         },
@@ -275,6 +278,7 @@ const PanierContent = () => {
         return;
       }
 
+      // Rediriger vers la page de paiement Stripe
       window.location.href = data.url;
       
     } catch (error) {
