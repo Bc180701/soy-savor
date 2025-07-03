@@ -89,7 +89,7 @@ const AdminManager = () => {
     fetchAdminUsers();
   }, []);
 
-  // Handle create admin using Supabase Auth API
+  // Handle create admin using the new edge function
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -111,63 +111,29 @@ const AdminManager = () => {
         throw new Error("Le mot de passe doit contenir au moins 6 caractères");
       }
 
-      console.log("Validation OK, création du compte utilisateur...");
+      console.log("Validation OK, appel de l'edge function...");
 
-      // Créer le compte utilisateur avec Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          emailRedirectTo: undefined // Pas de redirection automatique
+      // Utiliser l'edge function pour créer l'admin
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('create-admin-user', {
+        body: {
+          email: email,
+          password: password
         }
       });
 
-      console.log("Résultat création utilisateur:", { authData, authError });
+      console.log("Résultat edge function:", { functionData, functionError });
 
-      if (authError) {
-        console.error("Erreur lors de la création du compte:", authError);
-        throw new Error(`Erreur lors de la création du compte: ${authError.message}`);
+      if (functionError) {
+        console.error("Erreur lors de l'appel de l'edge function:", functionError);
+        throw new Error(`Erreur lors de la création de l'administrateur: ${functionError.message}`);
       }
 
-      if (!authData.user) {
-        console.error("Aucun utilisateur créé");
-        throw new Error("Aucun utilisateur n'a été créé");
+      if (!functionData?.success) {
+        console.error("Échec de la création:", functionData);
+        throw new Error(functionData?.error || "Erreur inconnue lors de la création de l'administrateur");
       }
 
-      console.log("Utilisateur créé avec succès, ID:", authData.user.id);
-
-      // Ajouter le rôle administrateur avec plus de logs
-      console.log("Ajout du rôle administrateur pour l'utilisateur:", authData.user.id);
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: "administrateur"
-        })
-        .select(); // Ajouter select pour avoir une confirmation
-
-      console.log("Résultat insertion rôle:", { roleData, roleError });
-
-      if (roleError) {
-        console.error("Erreur lors de l'ajout du rôle:", roleError);
-        throw new Error(`Erreur lors de l'ajout du rôle administrateur: ${roleError.message}`);
-      }
-
-      console.log("Rôle administrateur ajouté avec succès:", roleData);
-
-      // Vérification supplémentaire : vérifier que le rôle a bien été ajouté
-      const { data: verifyRole, error: verifyError } = await supabase
-        .from("user_roles")
-        .select("*")
-        .eq("user_id", authData.user.id)
-        .eq("role", "administrateur");
-
-      console.log("Vérification du rôle ajouté:", { verifyRole, verifyError });
-
-      if (verifyError || !verifyRole || verifyRole.length === 0) {
-        console.error("Le rôle n'a pas été correctement ajouté");
-        throw new Error("Le rôle administrateur n'a pas été correctement ajouté");
-      }
+      console.log("Administrateur créé avec succès:", functionData.user);
 
       // Envoyer l'email de bienvenue admin
       try {
