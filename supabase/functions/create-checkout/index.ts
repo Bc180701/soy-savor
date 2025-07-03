@@ -60,7 +60,7 @@ serve(async (req) => {
     if (!stripeKey) {
       console.error('❌ Clé Stripe manquante');
       return new Response(
-        JSON.stringify({ error: 'La clé API Stripe n\'est pas configurée.' }),
+        JSON.stringify({ error: 'Configuration Stripe manquante' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -77,6 +77,21 @@ serve(async (req) => {
       orderType: orderData.orderType,
       restaurantId: orderData.restaurantId
     });
+
+    // Validation des données
+    if (!orderData.items || orderData.items.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Aucun article dans la commande' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!orderData.clientEmail || !orderData.clientName) {
+      return new Response(
+        JSON.stringify({ error: 'Informations client manquantes' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Initialiser Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
@@ -109,28 +124,26 @@ serve(async (req) => {
     
     // Créer ou récupérer le client Stripe
     let customerId: string | undefined;
-    if (orderData.clientEmail) {
-      try {
-        const { data: customers } = await stripe.customers.list({
+    try {
+      const { data: customers } = await stripe.customers.list({
+        email: orderData.clientEmail,
+        limit: 1,
+      });
+      
+      if (customers && customers.length > 0) {
+        customerId = customers[0].id;
+        console.log('👤 Client Stripe existant:', customerId);
+      } else {
+        const newCustomer = await stripe.customers.create({
           email: orderData.clientEmail,
-          limit: 1,
+          name: orderData.clientName,
+          phone: orderData.clientPhone,
         });
-        
-        if (customers && customers.length > 0) {
-          customerId = customers[0].id;
-          console.log('👤 Client Stripe existant:', customerId);
-        } else {
-          const newCustomer = await stripe.customers.create({
-            email: orderData.clientEmail,
-            name: orderData.clientName,
-            phone: orderData.clientPhone,
-          });
-          customerId = newCustomer.id;
-          console.log('👤 Nouveau client Stripe créé:', customerId);
-        }
-      } catch (customerError) {
-        console.error('❌ Erreur client Stripe:', customerError);
+        customerId = newCustomer.id;
+        console.log('👤 Nouveau client Stripe créé:', customerId);
       }
+    } catch (customerError) {
+      console.error('❌ Erreur client Stripe:', customerError);
     }
 
     // Créer les éléments de ligne pour Stripe
