@@ -13,21 +13,18 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 serve(async (req) => {
   try {
-    console.log('🔔 Webhook Stripe reçu');
-    
     const signature = req.headers.get('stripe-signature');
     if (!signature) {
-      console.error('❌ Signature manquante');
       return new Response('Signature manquante', { status: 400 });
     }
 
     // Récupérer le corps brut de la requête
     const body = await req.text();
     
-    // Récupérer le secret du webhook
+    // Récupérer le secret du webhook depuis les variables d'environnement
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     if (!webhookSecret) {
-      console.error('❌ Secret webhook non configuré');
+      console.error('Clé secrète du webhook non configurée');
       return new Response('Webhook secret not configured', { status: 500 });
     }
 
@@ -35,32 +32,29 @@ serve(async (req) => {
     let event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      console.log('✅ Signature webhook vérifiée, événement:', event.type);
     } catch (err) {
-      console.error(`❌ Erreur signature webhook: ${err.message}`);
+      console.error(`Erreur de signature du webhook: ${err.message}`);
       return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
     }
 
-    // Traiter l'événement checkout.session.completed
+    // Traiter l'événement
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      console.log('💳 Session checkout complétée:', session.id);
       
-      // Chercher la commande correspondante
+      // Mettre à jour la commande avec le statut "paid"
       const { data: orders, error: findError } = await supabase
         .from('orders')
-        .select('id, client_email, client_name, total')
+        .select('id')
         .eq('stripe_session_id', session.id)
         .limit(1);
 
       if (findError) {
-        console.error('❌ Erreur recherche commande:', findError);
+        console.error('Erreur lors de la recherche de la commande:', findError);
         return new Response('Erreur lors de la recherche de la commande', { status: 500 });
       }
 
       if (orders && orders.length > 0) {
-        const order = orders[0];
-        console.log('📦 Commande trouvée:', order.id);
+        const orderId = orders[0].id;
         
         // Mettre à jour le statut de paiement et de commande
         const { error: updateError } = await supabase
@@ -69,37 +63,14 @@ serve(async (req) => {
             payment_status: 'paid',
             status: 'confirmed' 
           })
-          .eq('id', order.id);
+          .eq('id', orderId);
 
         if (updateError) {
-          console.error('❌ Erreur mise à jour commande:', updateError);
+          console.error('Erreur lors de la mise à jour de la commande:', updateError);
           return new Response('Erreur lors de la mise à jour de la commande', { status: 500 });
         }
-
-        console.log('✅ Commande mise à jour avec succès:', order.id);
-        
-        // Optionnel : envoyer un email de confirmation
-        if (order.client_email && order.client_name) {
-          console.log('📧 Envoi email confirmation à:', order.client_email);
-          
-          try {
-            await supabase.functions.invoke('send-order-notification', {
-              body: {
-                email: order.client_email,
-                name: order.client_name,
-                orderId: order.id,
-                status: 'confirmed',
-                statusMessage: 'a été confirmée et payée'
-              }
-            });
-            console.log('✅ Email de confirmation envoyé');
-          } catch (emailError) {
-            console.error('⚠️ Erreur envoi email:', emailError);
-            // Ne pas faire échouer le webhook pour un problème d'email
-          }
-        }
       } else {
-        console.warn('⚠️ Aucune commande trouvée pour la session:', session.id);
+        console.warn('Aucune commande trouvée pour la session:', session.id);
       }
     }
 
@@ -109,7 +80,7 @@ serve(async (req) => {
     });
     
   } catch (err) {
-    console.error('❌ Erreur webhook:', err);
+    console.error('Erreur du webhook:', err);
     return new Response(`Webhook error: ${err.message}`, { status: 500 });
   }
 });

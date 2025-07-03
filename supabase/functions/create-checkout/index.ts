@@ -26,8 +26,8 @@ interface OrderData {
   tax: number;
   deliveryFee: number;
   tip?: number;
-  discount?: number;
-  promoCode?: string;
+  discount?: number; // Montant de la réduction du code promo
+  promoCode?: string; // Code promo appliqué
   total: number;
   orderType: "delivery" | "pickup";
   clientName?: string;
@@ -38,17 +38,13 @@ interface OrderData {
   deliveryPostalCode?: string;
   customerNotes?: string;
   scheduledFor: string;
-  restaurantId?: string;
   successUrl: string;
   cancelUrl: string;
 }
 
 serve(async (req) => {
-  console.log('🚀 [CREATE-CHECKOUT] Function started');
-  
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    console.log('✅ [CREATE-CHECKOUT] CORS preflight handled');
     return new Response(null, {
       status: 204,
       headers: corsHeaders
@@ -56,103 +52,51 @@ serve(async (req) => {
   }
 
   try {
-    // Check method
-    if (req.method !== 'POST') {
-      console.log('❌ [CREATE-CHECKOUT] Invalid method:', req.method);
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Parse request body
-    let orderData: OrderData;
-    try {
-      const body = await req.text();
-      console.log('📨 [CREATE-CHECKOUT] Body received, length:', body.length);
-      orderData = JSON.parse(body);
-      console.log('✅ [CREATE-CHECKOUT] Data parsed successfully');
-    } catch (parseError) {
-      console.error('❌ [CREATE-CHECKOUT] JSON parse error:', parseError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON data' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Validate required data
-    if (!orderData.items || orderData.items.length === 0) {
-      console.log('❌ [CREATE-CHECKOUT] No items in order');
-      return new Response(
-        JSON.stringify({ error: 'No items in order' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!orderData.clientEmail || !orderData.clientName) {
-      console.log('❌ [CREATE-CHECKOUT] Missing client info:', {
-        email: !!orderData.clientEmail,
-        name: !!orderData.clientName
-      });
-      return new Response(
-        JSON.stringify({ error: 'Missing client information' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('✅ [CREATE-CHECKOUT] Data validation passed');
-
-    // Check Stripe key
+    // Vérifier la clé Stripe
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) {
-      console.error('❌ [CREATE-CHECKOUT] Missing Stripe key');
       return new Response(
-        JSON.stringify({ error: 'Stripe configuration missing' }),
+        JSON.stringify({ error: 'La clé API Stripe n\'est pas configurée.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log('✅ [CREATE-CHECKOUT] Stripe key found');
     
-    // Initialize Stripe
-    let stripe: Stripe;
-    try {
-      stripe = new Stripe(stripeKey, {
-        apiVersion: '2023-10-16',
-      });
-      console.log('✅ [CREATE-CHECKOUT] Stripe initialized');
-    } catch (stripeError) {
-      console.error('❌ [CREATE-CHECKOUT] Stripe initialization error:', stripeError);
-      return new Response(
-        JSON.stringify({ error: 'Stripe initialization failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Initialize Supabase with service role key (no auth required)
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('❌ [CREATE-CHECKOUT] Missing Supabase config');
-      return new Response(
-        JSON.stringify({ error: 'Supabase configuration missing' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    console.log('✅ [CREATE-CHECKOUT] Supabase config OK');
-
-    // Use service role key to bypass RLS
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2023-10-16',
     });
 
-    // Get or create Stripe customer
+    // Récupérer les données de la commande depuis le corps de la requête
+    const orderData: OrderData = await req.json();
+    
+    // Initialiser Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    // Client pour authentification utilisateur (si disponible)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    
+    // Client avec rôle de service pour les opérations de base de données (bypass RLS)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Authentification de l'utilisateur (optionnelle)
+    let userId: string | undefined;
+    
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: userData } = await supabase.auth.getUser(token);
+        userId = userData.user?.id;
+      } catch (authError) {
+        console.log("Utilisateur non authentifié, commande en tant qu'invité");
+      }
+    }
+    
+    // Créer ou récupérer le client Stripe
     let customerId: string | undefined;
-    try {
-      console.log('🔍 [CREATE-CHECKOUT] Looking for Stripe customer:', orderData.clientEmail);
+    
+    if (orderData.clientEmail) {
       const { data: customers } = await stripe.customers.list({
         email: orderData.clientEmail,
         limit: 1,
@@ -160,208 +104,185 @@ serve(async (req) => {
       
       if (customers && customers.length > 0) {
         customerId = customers[0].id;
-        console.log('👤 [CREATE-CHECKOUT] Existing customer found:', customerId);
       } else {
-        console.log('👤 [CREATE-CHECKOUT] Creating new customer...');
+        // Créer un nouveau client
         const newCustomer = await stripe.customers.create({
           email: orderData.clientEmail,
           name: orderData.clientName,
           phone: orderData.clientPhone,
         });
         customerId = newCustomer.id;
-        console.log('👤 [CREATE-CHECKOUT] New customer created:', customerId);
       }
-    } catch (customerError) {
-      console.error('❌ [CREATE-CHECKOUT] Customer error:', customerError);
-      // Continue without customer ID
     }
 
-    // Create line items
-    console.log('📦 [CREATE-CHECKOUT] Creating line items...');
-    const lineItems = orderData.items.map(item => {
-      console.log('📦 [CREATE-CHECKOUT] Item:', item.menuItem.name, 'price:', item.menuItem.price);
-      return {
+    // Créer les éléments de ligne pour Stripe Checkout
+    const lineItems = orderData.items.map(item => ({
+      price_data: {
+        currency: 'eur',
+        product_data: {
+          name: item.menuItem.name,
+          description: item.specialInstructions,
+        },
+        unit_amount: Math.round(item.menuItem.price * 100), // Montant en centimes
+      },
+      quantity: item.quantity,
+    }));
+
+    // Ajouter les frais de livraison si nécessaires
+    if (orderData.deliveryFee > 0) {
+      lineItems.push({
         price_data: {
           currency: 'eur',
           product_data: {
-            name: item.menuItem.name,
-            description: item.specialInstructions || undefined,
+            name: 'Frais de livraison',
           },
-          unit_amount: Math.round(item.menuItem.price * 100),
+          unit_amount: Math.round(orderData.deliveryFee * 100), // Montant en centimes
         },
-        quantity: item.quantity,
-      };
+        quantity: 1,
+      });
+    }
+    
+    // Ajouter la TVA
+    if (orderData.tax > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: 'TVA (10%)',
+          },
+          unit_amount: Math.round(orderData.tax * 100), // Montant en centimes
+        },
+        quantity: 1,
+      });
+    }
+    
+    // Ajouter le pourboire si présent
+    if (orderData.tip && orderData.tip > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: 'Pourboire',
+          },
+          unit_amount: Math.round(orderData.tip * 100), // Montant en centimes
+        },
+        quantity: 1,
+      });
+    }
+    
+    // Pour la réduction, nous devons l'appliquer différemment car Stripe n'accepte pas les montants négatifs
+    // Au lieu de ça, nous ajustons les autres line items ou utilisons un coupon
+
+    // Calculer le montant total à payer (en tenant compte de la réduction)
+    // Nous laissons Stripe calculer le total à partir des line items
+    
+    // Créer la session Stripe Checkout
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_email: !customerId ? orderData.clientEmail : undefined,
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      // Appliquer la réduction comme un coupon si présent
+      discounts: orderData.discount && orderData.discount > 0 ? [
+        {
+          coupon: await createOrRetrieveCoupon(stripe, orderData.discount, orderData.promoCode),
+        },
+      ] : undefined,
+      mode: 'payment',
+      success_url: orderData.successUrl,
+      cancel_url: orderData.cancelUrl,
+      metadata: {
+        user_id: userId || 'guest',
+        order_type: orderData.orderType,
+        scheduled_for: orderData.scheduledFor,
+        customer_notes: orderData.customerNotes || '',
+        delivery_address: orderData.orderType === 'delivery' ? 
+          `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
+        tip_amount: orderData.tip ? (orderData.tip).toString() : '0',
+        discount_amount: orderData.discount ? (orderData.discount).toString() : '0',
+        promo_code: orderData.promoCode || '',
+      },
     });
 
-    // Add additional fees
-    if (orderData.deliveryFee > 0) {
-      console.log('🚚 [CREATE-CHECKOUT] Adding delivery fee:', orderData.deliveryFee);
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: { name: 'Frais de livraison' },
-          unit_amount: Math.round(orderData.deliveryFee * 100),
-        },
-        quantity: 1,
-      });
-    }
-    
-    if (orderData.tax > 0) {
-      console.log('💰 [CREATE-CHECKOUT] Adding tax:', orderData.tax);
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: { name: 'TVA (10%)' },
-          unit_amount: Math.round(orderData.tax * 100),
-        },
-        quantity: 1,
-      });
-    }
-    
-    if (orderData.tip && orderData.tip > 0) {
-      console.log('💝 [CREATE-CHECKOUT] Adding tip:', orderData.tip);
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: { name: 'Pourboire' },
-          unit_amount: Math.round(orderData.tip * 100),
-        },
-        quantity: 1,
-      });
-    }
-
-    console.log('💳 [CREATE-CHECKOUT] Creating Stripe session with', lineItems.length, 'items');
-    
-    // Create Stripe session
-    let session;
-    try {
-      session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        customer_email: !customerId ? orderData.clientEmail : undefined,
-        payment_method_types: ['card'],
-        line_items: lineItems,
-        mode: 'payment',
-        success_url: `${orderData.successUrl}?session_id={CHECKOUT_SESSION_ID}&success=true`,
-        cancel_url: orderData.cancelUrl,
-        metadata: {
-          order_type: orderData.orderType,
-          scheduled_for: orderData.scheduledFor,
-          customer_notes: orderData.customerNotes || '',
-          restaurant_id: orderData.restaurantId || '11111111-1111-1111-1111-111111111111',
-          delivery_address: orderData.orderType === 'delivery' ? 
-            `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
-        },
-      });
-      console.log('✅ [CREATE-CHECKOUT] Stripe session created:', session.id);
-    } catch (stripeSessionError) {
-      console.error('❌ [CREATE-CHECKOUT] Stripe session error:', stripeSessionError);
-      return new Response(
-        JSON.stringify({ error: 'Payment session creation failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create order in database with better error handling
-    const restaurantId = orderData.restaurantId || '11111111-1111-1111-1111-111111111111';
-    
-    try {
-      console.log('💾 [CREATE-CHECKOUT] Creating order in database...');
-      
-      // Create order with minimal required fields first
-      const orderInsertData = {
-        restaurant_id: restaurantId,
-        subtotal: Number(orderData.subtotal),
-        tax: Number(orderData.tax),
-        delivery_fee: Number(orderData.deliveryFee),
-        tip: Number(orderData.tip || 0),
-        discount: Number(orderData.discount || 0),
-        total: Number(orderData.total),
+    // Créer la commande avec un statut de paiement "pending" et inclure le pourboire
+    const { data: orderRecord, error: orderError } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        user_id: userId, // null si invité
+        subtotal: orderData.subtotal,
+        tax: orderData.tax,
+        delivery_fee: orderData.deliveryFee,
+        tip: orderData.tip || 0,
+        discount: orderData.discount || 0,
+        promo_code: orderData.promoCode || null,
+        total: orderData.total,
         order_type: orderData.orderType,
         status: 'pending',
         payment_method: 'credit-card',
         payment_status: 'pending',
         scheduled_for: orderData.scheduledFor,
-        client_name: orderData.clientName || '',
-        client_email: orderData.clientEmail || '',
-        client_phone: orderData.clientPhone || null,
-        delivery_street: orderData.deliveryStreet || null,
-        delivery_city: orderData.deliveryCity || null,
-        delivery_postal_code: orderData.deliveryPostalCode || null,
-        customer_notes: orderData.customerNotes || null,
-        promo_code: orderData.promoCode || null,
+        client_name: orderData.clientName,
+        client_email: orderData.clientEmail,
+        client_phone: orderData.clientPhone,
+        delivery_street: orderData.deliveryStreet,
+        delivery_city: orderData.deliveryCity,
+        delivery_postal_code: orderData.deliveryPostalCode,
+        customer_notes: orderData.customerNotes,
         stripe_session_id: session.id
-      };
+      })
+      .select('id')
+      .single();
 
-      console.log('💾 [CREATE-CHECKOUT] Order data prepared:', JSON.stringify(orderInsertData, null, 2));
-
-      const { data: orderRecord, error: orderError } = await supabaseAdmin
-        .from('orders')
-        .insert(orderInsertData)
-        .select('id')
-        .single();
-
-      if (orderError) {
-        console.error('❌ [CREATE-CHECKOUT] Order creation error:', orderError);
-        console.error('❌ [CREATE-CHECKOUT] Order data that failed:', orderInsertData);
-        throw new Error(`Database error: ${orderError.message}`);
-      }
-
-      console.log('✅ [CREATE-CHECKOUT] Order created with ID:', orderRecord.id);
-
-      // Add order items with better error handling
-      console.log('📦 [CREATE-CHECKOUT] Adding order items...');
+    if (orderError) {
+      console.error("Erreur lors de la création de la commande:", orderError);
+    } else {
+      // Ajouter les articles de la commande
       for (const item of orderData.items) {
-        try {
-          const { error: itemError } = await supabaseAdmin
-            .from('order_items')
-            .insert({
-              order_id: orderRecord.id,
-              product_id: item.menuItem.id,
-              quantity: item.quantity,
-              price: Number(item.menuItem.price),
-              special_instructions: item.specialInstructions || null
-            });
-
-          if (itemError) {
-            console.error('❌ [CREATE-CHECKOUT] Order item error:', itemError, 'for item:', item);
-            // Continue with other items instead of failing completely
-          } else {
-            console.log('✅ [CREATE-CHECKOUT] Order item added:', item.menuItem.name);
-          }
-        } catch (itemException) {
-          console.error('❌ [CREATE-CHECKOUT] Order item exception:', itemException, 'for item:', item);
-          // Continue with other items
-        }
+        await supabaseAdmin
+          .from('order_items')
+          .insert({
+            order_id: orderRecord.id,
+            product_id: item.menuItem.id,
+            quantity: item.quantity,
+            price: item.menuItem.price,
+            special_instructions: item.specialInstructions
+          });
       }
-      
-      // Return success response
-      console.log('🎉 [CREATE-CHECKOUT] Success! Returning session URL');
-      return new Response(
-        JSON.stringify({ 
-          url: session.url,
-          sessionId: session.id,
-          orderId: orderRecord.id
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-
-    } catch (dbError) {
-      console.error('❌ [CREATE-CHECKOUT] Database error:', dbError);
-      return new Response(
-        JSON.stringify({ error: 'Order creation failed', details: dbError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
+    
+    // Renvoyer l'URL de la session
+    return new Response(
+      JSON.stringify({ url: session.url }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (err) {
-    console.error('❌ [CREATE-CHECKOUT] General error:', err);
+    // Gérer les erreurs
+    console.error('Erreur lors de la création de la session Stripe:', err);
     
     return new Response(
-      JSON.stringify({ 
-        error: err instanceof Error ? err.message : 'Unknown error occurred',
-        details: err instanceof Error ? err.stack : undefined
-      }),
+      JSON.stringify({ error: err instanceof Error ? err.message : 'Une erreur inconnue est survenue' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
+
+// Fonction pour créer ou récupérer un coupon Stripe
+async function createOrRetrieveCoupon(stripe: Stripe, discountAmount: number, promoCode?: string): Promise<string> {
+  const couponId = `discount_${discountAmount.toString().replace('.', '_')}`;
+  
+  try {
+    // Essayer d'abord de récupérer le coupon existant
+    const existingCoupon = await stripe.coupons.retrieve(couponId);
+    return existingCoupon.id;
+  } catch (error) {
+    // Si le coupon n'existe pas, le créer
+    const newCoupon = await stripe.coupons.create({
+      id: couponId,
+      amount_off: Math.round(discountAmount * 100), // Montant en centimes
+      currency: 'eur',
+      name: promoCode ? `Réduction (${promoCode})` : 'Réduction',
+    });
+    return newCoupon.id;
+  }
+}

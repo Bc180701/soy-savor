@@ -1,52 +1,13 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MenuItem } from '@/types';
 import { useRestaurantContext } from '@/hooks/useRestaurantContext';
-import { RESTAURANTS } from '@/services/restaurantService';
 
 export interface CartItem {
   menuItem: MenuItem;
   quantity: number;
   specialInstructions?: string;
 }
-
-// Fonction pour détecter le restaurant depuis la catégorie
-const detectRestaurantFromCategory = (category: string): string => {
-  const categoryMapping: { [key: string]: string } = {
-    'box_du_midi': RESTAURANTS.CHATEAURENARD,
-    'sushis': RESTAURANTS.CHATEAURENARD,
-    'makis': RESTAURANTS.CHATEAURENARD,
-    'california': RESTAURANTS.CHATEAURENARD,
-    'spring': RESTAURANTS.CHATEAURENARD,
-    'sashimis': RESTAURANTS.CHATEAURENARD,
-    'chirashis': RESTAURANTS.CHATEAURENARD,
-    'plateaux': RESTAURANTS.CHATEAURENARD,
-    'accompagnements': RESTAURANTS.CHATEAURENARD,
-    'desserts': RESTAURANTS.CHATEAURENARD,
-    'boissons': RESTAURANTS.CHATEAURENARD,
-    'entrees': RESTAURANTS.CHATEAURENARD,
-    'soupes': RESTAURANTS.CHATEAURENARD,
-    'stmartin_sushis': RESTAURANTS.ST_MARTIN_DE_CRAU,
-    'stmartin_makis': RESTAURANTS.ST_MARTIN_DE_CRAU,
-    'stmartin_california': RESTAURANTS.ST_MARTIN_DE_CRAU,
-    'stmartin_plateaux': RESTAURANTS.ST_MARTIN_DE_CRAU,
-    'stmartin_accompagnements': RESTAURANTS.ST_MARTIN_DE_CRAU,
-    'stmartin_desserts': RESTAURANTS.ST_MARTIN_DE_CRAU,
-    'stmartin_boissons': RESTAURANTS.ST_MARTIN_DE_CRAU,
-  };
-
-  if (categoryMapping[category]) {
-    return categoryMapping[category];
-  }
-
-  if (category.includes('stmartin') || category.includes('st_martin')) {
-    return RESTAURANTS.ST_MARTIN_DE_CRAU;
-  }
-
-  // Par défaut, assigner à Châteaurenard
-  return RESTAURANTS.CHATEAURENARD;
-};
 
 interface CartStore {
   items: CartItem[];
@@ -151,22 +112,6 @@ export const useCart = create<CartStore>()(
       
       addItem: (item, quantity, specialInstructions) => {
         const currentItems = get().items;
-        
-        // S'assurer que l'article a un restaurant_id
-        if (!item.restaurant_id) {
-          const detectedRestaurantId = detectRestaurantFromCategory(item.category);
-          item = {
-            ...item,
-            restaurant_id: detectedRestaurantId
-          };
-        }
-        
-        // Définir le restaurant sélectionné si ce n'est pas déjà fait
-        const state = get();
-        if (!state.selectedRestaurantId && item.restaurant_id) {
-          get().setSelectedRestaurantId(item.restaurant_id);
-        }
-        
         const existingItem = currentItems.find(cartItem => cartItem.menuItem.id === item.id);
         
         if (existingItem) {
@@ -270,13 +215,7 @@ export const useCartWithRestaurant = () => {
         cart.setSelectedRestaurantId(currentRestaurant.id);
       }
       
-      // Ajouter l'article avec le restaurant_id
-      const itemWithRestaurant = {
-        ...item,
-        restaurant_id: currentRestaurant.id
-      };
-      
-      cart.addItem(itemWithRestaurant, quantity, specialInstructions);
+      cart.addItem(item, quantity, specialInstructions);
     }
   };
 
