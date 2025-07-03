@@ -16,14 +16,18 @@ serve(async (req) => {
   try {
     const { email, password } = await req.json()
 
-    console.log('Création admin - Email:', email)
+    console.log('=== CRÉATION ADMIN DEBUG ===')
+    console.log('Email:', email)
+    console.log('Password reçu:', !!password)
 
     // Validation
     if (!email || !password) {
+      console.error('Email ou mot de passe manquant')
       throw new Error('Email et mot de passe requis')
     }
 
     if (password.length < 6) {
+      console.error('Mot de passe trop court:', password.length)
       throw new Error('Le mot de passe doit contenir au moins 6 caractères')
     }
 
@@ -39,7 +43,90 @@ serve(async (req) => {
       }
     )
 
-    console.log('Création de l\'utilisateur avec l\'Admin API...')
+    console.log('Client Supabase Admin créé')
+
+    // Vérifier si l'utilisateur existe déjà
+    const { data: existingUsers, error: checkError } = await supabaseAdmin
+      .from('auth_users_view')
+      .select('id, email')
+      .eq('email', email)
+
+    if (checkError) {
+      console.error('Erreur lors de la vérification utilisateur:', checkError)
+    } else {
+      console.log('Utilisateurs existants trouvés:', existingUsers?.length || 0)
+    }
+
+    // Si l'utilisateur existe déjà, vérifier s'il a déjà le rôle admin
+    if (existingUsers && existingUsers.length > 0) {
+      const existingUser = existingUsers[0]
+      console.log('Utilisateur existant trouvé:', existingUser.id)
+      
+      // Vérifier si l'utilisateur a déjà le rôle administrateur
+      const { data: existingRole, error: roleCheckError } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', existingUser.id)
+        .eq('role', 'administrateur')
+        .single()
+
+      if (roleCheckError && roleCheckError.code !== 'PGRST116') {
+        console.error('Erreur vérification rôle:', roleCheckError)
+        throw new Error(`Erreur lors de la vérification du rôle: ${roleCheckError.message}`)
+      }
+
+      if (existingRole) {
+        console.log('Utilisateur a déjà le rôle administrateur')
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'Cet utilisateur a déjà le rôle administrateur',
+            user: {
+              id: existingUser.id,
+              email: existingUser.email
+            }
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          },
+        )
+      }
+
+      // L'utilisateur existe mais n'a pas le rôle admin, on l'ajoute
+      console.log('Ajout du rôle administrateur à l\'utilisateur existant')
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: existingUser.id,
+          role: 'administrateur'
+        })
+
+      if (roleError) {
+        console.error('Erreur ajout rôle:', roleError)
+        throw new Error(`Erreur lors de l'ajout du rôle: ${roleError.message}`)
+      }
+
+      console.log('Rôle administrateur ajouté avec succès à l\'utilisateur existant')
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Rôle administrateur ajouté à l\'utilisateur existant',
+          user: {
+            id: existingUser.id,
+            email: existingUser.email
+          }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        },
+      )
+    }
+
+    // L'utilisateur n'existe pas, on le crée
+    console.log('Création d\'un nouvel utilisateur...')
 
     // Créer l'utilisateur avec l'Admin API
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
@@ -54,19 +141,19 @@ serve(async (req) => {
     }
 
     if (!userData.user) {
+      console.error('Aucun utilisateur créé dans la réponse')
       throw new Error('Aucun utilisateur créé')
     }
 
     console.log('Utilisateur créé avec succès:', userData.user.id)
 
-    // Ajouter le rôle administrateur avec le service role (bypass RLS)
-    const { data: roleData, error: roleError } = await supabaseAdmin
+    // Ajouter le rôle administrateur
+    const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({
         user_id: userData.user.id,
         role: 'administrateur'
       })
-      .select()
 
     if (roleError) {
       console.error('Erreur ajout rôle:', roleError)
@@ -75,7 +162,7 @@ serve(async (req) => {
 
     console.log('Rôle administrateur ajouté avec succès')
 
-    // Créer le profil utilisateur
+    // Créer le profil utilisateur (optionnel)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
@@ -87,11 +174,16 @@ serve(async (req) => {
     if (profileError) {
       console.error('Erreur création profil:', profileError)
       // Ne pas faire échouer la création pour une erreur de profil
+    } else {
+      console.log('Profil créé avec succès')
     }
+
+    console.log('=== CRÉATION ADMIN TERMINÉE AVEC SUCCÈS ===')
 
     return new Response(
       JSON.stringify({
         success: true,
+        message: 'Administrateur créé avec succès',
         user: {
           id: userData.user.id,
           email: userData.user.email
@@ -104,11 +196,16 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Erreur dans create-admin-user:', error)
+    console.error('=== ERREUR DANS CREATE-ADMIN-USER ===')
+    console.error('Type:', typeof error)
+    console.error('Message:', error.message || 'Erreur inconnue')
+    console.error('Stack:', error.stack || 'Pas de stack trace')
+    console.error('Objet complet:', error)
+    
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: error.message || 'Erreur inconnue lors de la création de l\'administrateur'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
