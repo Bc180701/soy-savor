@@ -26,8 +26,8 @@ interface OrderData {
   tax: number;
   deliveryFee: number;
   tip?: number;
-  discount?: number; // Montant de la réduction du code promo
-  promoCode?: string; // Code promo appliqué
+  discount?: number;
+  promoCode?: string;
   total: number;
   orderType: "delivery" | "pickup";
   clientName?: string;
@@ -38,6 +38,7 @@ interface OrderData {
   deliveryPostalCode?: string;
   customerNotes?: string;
   scheduledFor: string;
+  restaurantId?: string;
   successUrl: string;
   cancelUrl: string;
 }
@@ -52,9 +53,12 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== DÉBUT CREATE CHECKOUT ===');
+    
     // Vérifier la clé Stripe
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) {
+      console.error('Clé Stripe manquante');
       return new Response(
         JSON.stringify({ error: 'La clé API Stripe n\'est pas configurée.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -67,6 +71,12 @@ serve(async (req) => {
 
     // Récupérer les données de la commande depuis le corps de la requête
     const orderData: OrderData = await req.json();
+    console.log('Données de commande reçues:', {
+      itemsCount: orderData.items?.length,
+      total: orderData.total,
+      orderType: orderData.orderType,
+      restaurantId: orderData.restaurantId
+    });
     
     // Initialiser Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
@@ -88,6 +98,7 @@ serve(async (req) => {
         const token = authHeader.replace('Bearer ', '');
         const { data: userData } = await supabase.auth.getUser(token);
         userId = userData.user?.id;
+        console.log('Utilisateur authentifié:', userId);
       } catch (authError) {
         console.log("Utilisateur non authentifié, commande en tant qu'invité");
       }
@@ -104,6 +115,7 @@ serve(async (req) => {
       
       if (customers && customers.length > 0) {
         customerId = customers[0].id;
+        console.log('Client Stripe existant trouvé:', customerId);
       } else {
         // Créer un nouveau client
         const newCustomer = await stripe.customers.create({
@@ -112,6 +124,7 @@ serve(async (req) => {
           phone: orderData.clientPhone,
         });
         customerId = newCustomer.id;
+        console.log('Nouveau client Stripe créé:', customerId);
       }
     }
 
@@ -136,7 +149,7 @@ serve(async (req) => {
           product_data: {
             name: 'Frais de livraison',
           },
-          unit_amount: Math.round(orderData.deliveryFee * 100), // Montant en centimes
+          unit_amount: Math.round(orderData.deliveryFee * 100),
         },
         quantity: 1,
       });
@@ -150,7 +163,7 @@ serve(async (req) => {
           product_data: {
             name: 'TVA (10%)',
           },
-          unit_amount: Math.round(orderData.tax * 100), // Montant en centimes
+          unit_amount: Math.round(orderData.tax * 100),
         },
         quantity: 1,
       });
@@ -164,17 +177,25 @@ serve(async (req) => {
           product_data: {
             name: 'Pourboire',
           },
-          unit_amount: Math.round(orderData.tip * 100), // Montant en centimes
+          unit_amount: Math.round(orderData.tip * 100),
         },
         quantity: 1,
       });
     }
     
-    // Pour la réduction, nous devons l'appliquer différemment car Stripe n'accepte pas les montants négatifs
-    // Au lieu de ça, nous ajustons les autres line items ou utilisons un coupon
-
-    // Calculer le montant total à payer (en tenant compte de la réduction)
-    // Nous laissons Stripe calculer le total à partir des line items
+    // Appliquer la réduction comme un coupon si présent
+    let discounts = undefined;
+    if (orderData.discount && orderData.discount > 0) {
+      try {
+        const couponId = await createOrRetrieveCoupon(stripe, orderData.discount, orderData.promoCode);
+        discounts = [{ coupon: couponId }];
+        console.log('Coupon appliqué:', couponId);
+      } catch (couponError) {
+        console.error('Erreur lors de la création du coupon:', couponError);
+      }
+    }
+    
+    console.log('Création de la session Stripe...');
     
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
@@ -182,14 +203,9 @@ serve(async (req) => {
       customer_email: !customerId ? orderData.clientEmail : undefined,
       payment_method_types: ['card'],
       line_items: lineItems,
-      // Appliquer la réduction comme un coupon si présent
-      discounts: orderData.discount && orderData.discount > 0 ? [
-        {
-          coupon: await createOrRetrieveCoupon(stripe, orderData.discount, orderData.promoCode),
-        },
-      ] : undefined,
+      discounts: discounts,
       mode: 'payment',
-      success_url: orderData.successUrl,
+      success_url: `${orderData.successUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: orderData.cancelUrl,
       metadata: {
         user_id: userId || 'guest',
@@ -201,14 +217,22 @@ serve(async (req) => {
         tip_amount: orderData.tip ? (orderData.tip).toString() : '0',
         discount_amount: orderData.discount ? (orderData.discount).toString() : '0',
         promo_code: orderData.promoCode || '',
+        restaurant_id: orderData.restaurantId || '11111111-1111-1111-1111-111111111111',
       },
     });
 
-    // Créer la commande avec un statut de paiement "pending" et inclure le pourboire
+    console.log('Session Stripe créée:', session.id);
+
+    // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
+    const targetRestaurantId = orderData.restaurantId || "11111111-1111-1111-1111-111111111111";
+
+    // Créer la commande avec un statut de paiement "pending"
+    console.log('Création de la commande dans la base de données...');
     const { data: orderRecord, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
         user_id: userId, // null si invité
+        restaurant_id: targetRestaurantId,
         subtotal: orderData.subtotal,
         tax: orderData.tax,
         delivery_fee: orderData.deliveryFee,
@@ -235,20 +259,30 @@ serve(async (req) => {
 
     if (orderError) {
       console.error("Erreur lors de la création de la commande:", orderError);
-    } else {
-      // Ajouter les articles de la commande
-      for (const item of orderData.items) {
-        await supabaseAdmin
-          .from('order_items')
-          .insert({
-            order_id: orderRecord.id,
-            product_id: item.menuItem.id,
-            quantity: item.quantity,
-            price: item.menuItem.price,
-            special_instructions: item.specialInstructions
-          });
+      throw new Error(`Erreur de création de commande: ${orderError.message}`);
+    }
+
+    console.log('Commande créée avec ID:', orderRecord.id);
+
+    // Ajouter les articles de la commande
+    console.log('Ajout des articles de commande...');
+    for (const item of orderData.items) {
+      const { error: itemError } = await supabaseAdmin
+        .from('order_items')
+        .insert({
+          order_id: orderRecord.id,
+          product_id: item.menuItem.id,
+          quantity: item.quantity,
+          price: item.menuItem.price,
+          special_instructions: item.specialInstructions
+        });
+      
+      if (itemError) {
+        console.error('Erreur lors de l\'ajout d\'un article:', itemError);
       }
     }
+    
+    console.log('=== FIN CREATE CHECKOUT SUCCÈS ===');
     
     // Renvoyer l'URL de la session
     return new Response(
@@ -258,7 +292,7 @@ serve(async (req) => {
 
   } catch (err) {
     // Gérer les erreurs
-    console.error('Erreur lors de la création de la session Stripe:', err);
+    console.error('=== ERREUR CREATE CHECKOUT ===', err);
     
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Une erreur inconnue est survenue' }),
