@@ -44,8 +44,11 @@ interface OrderData {
 }
 
 serve(async (req) => {
+  console.log('🚀 [CREATE-CHECKOUT] Function started');
+  
   // Handle CORS
   if (req.method === 'OPTIONS') {
+    console.log('✅ [CREATE-CHECKOUT] CORS preflight handled');
     return new Response(null, {
       status: 204,
       headers: corsHeaders
@@ -53,115 +56,97 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 [CREATE-CHECKOUT] Début de la fonction');
-    
-    // Vérifier la méthode HTTP
+    // Check method
     if (req.method !== 'POST') {
-      console.log('❌ [CREATE-CHECKOUT] Méthode non autorisée:', req.method);
+      console.log('❌ [CREATE-CHECKOUT] Invalid method:', req.method);
       return new Response(
-        JSON.stringify({ error: 'Méthode non autorisée' }),
+        JSON.stringify({ error: 'Method not allowed' }),
         { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Récupérer et parser le body
+    // Parse request body
     let orderData: OrderData;
     try {
       const body = await req.text();
-      console.log('📨 [CREATE-CHECKOUT] Body reçu:', body.substring(0, 200) + '...');
+      console.log('📨 [CREATE-CHECKOUT] Body received, length:', body.length);
       orderData = JSON.parse(body);
-      console.log('✅ [CREATE-CHECKOUT] Données parsées avec succès');
+      console.log('✅ [CREATE-CHECKOUT] Data parsed successfully');
     } catch (parseError) {
-      console.error('❌ [CREATE-CHECKOUT] Erreur parsing JSON:', parseError);
+      console.error('❌ [CREATE-CHECKOUT] JSON parse error:', parseError);
       return new Response(
-        JSON.stringify({ error: 'Données JSON invalides' }),
+        JSON.stringify({ error: 'Invalid JSON data' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validation des données
-    console.log('🔍 [CREATE-CHECKOUT] Validation des données...');
+    // Validate required data
     if (!orderData.items || orderData.items.length === 0) {
-      console.log('❌ [CREATE-CHECKOUT] Aucun article dans la commande');
+      console.log('❌ [CREATE-CHECKOUT] No items in order');
       return new Response(
-        JSON.stringify({ error: 'Aucun article dans la commande' }),
+        JSON.stringify({ error: 'No items in order' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!orderData.clientEmail || !orderData.clientName) {
-      console.log('❌ [CREATE-CHECKOUT] Informations client manquantes:', {
+      console.log('❌ [CREATE-CHECKOUT] Missing client info:', {
         email: !!orderData.clientEmail,
         name: !!orderData.clientName
       });
       return new Response(
-        JSON.stringify({ error: 'Informations client manquantes' }),
+        JSON.stringify({ error: 'Missing client information' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('✅ [CREATE-CHECKOUT] Validation des données réussie');
+    console.log('✅ [CREATE-CHECKOUT] Data validation passed');
 
-    // Vérifier la clé Stripe
+    // Check Stripe key
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) {
-      console.error('❌ [CREATE-CHECKOUT] Clé Stripe manquante');
+      console.error('❌ [CREATE-CHECKOUT] Missing Stripe key');
       return new Response(
-        JSON.stringify({ error: 'Configuration Stripe manquante' }),
+        JSON.stringify({ error: 'Stripe configuration missing' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log('✅ [CREATE-CHECKOUT] Clé Stripe trouvée');
+    console.log('✅ [CREATE-CHECKOUT] Stripe key found');
     
-    // Initialiser Stripe
+    // Initialize Stripe
     let stripe: Stripe;
     try {
       stripe = new Stripe(stripeKey, {
         apiVersion: '2023-10-16',
       });
-      console.log('✅ [CREATE-CHECKOUT] Stripe initialisé');
+      console.log('✅ [CREATE-CHECKOUT] Stripe initialized');
     } catch (stripeError) {
-      console.error('❌ [CREATE-CHECKOUT] Erreur initialisation Stripe:', stripeError);
+      console.error('❌ [CREATE-CHECKOUT] Stripe initialization error:', stripeError);
       return new Response(
-        JSON.stringify({ error: 'Erreur initialisation Stripe' }),
+        JSON.stringify({ error: 'Stripe initialization failed' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Initialiser Supabase
+    // Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('❌ [CREATE-CHECKOUT] Configuration Supabase manquante');
+      console.error('❌ [CREATE-CHECKOUT] Missing Supabase config');
       return new Response(
-        JSON.stringify({ error: 'Configuration Supabase manquante' }),
+        JSON.stringify({ error: 'Supabase configuration missing' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log('✅ [CREATE-CHECKOUT] Configuration Supabase OK');
+    console.log('✅ [CREATE-CHECKOUT] Supabase config OK');
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Authentification utilisateur (optionnelle)
-    let userId: string | undefined;
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      try {
-        const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '');
-        const token = authHeader.replace('Bearer ', '');
-        const { data: userData } = await supabase.auth.getUser(token);
-        userId = userData.user?.id;
-        console.log('👤 [CREATE-CHECKOUT] Utilisateur authentifié:', userId);
-      } catch (authError) {
-        console.log("👤 [CREATE-CHECKOUT] Utilisateur non authentifié, commande en tant qu'invité");
-      }
-    }
-    
-    // Créer ou récupérer le client Stripe
+    // Get or create Stripe customer
     let customerId: string | undefined;
     try {
-      console.log('🔍 [CREATE-CHECKOUT] Recherche client Stripe pour:', orderData.clientEmail);
+      console.log('🔍 [CREATE-CHECKOUT] Looking for Stripe customer:', orderData.clientEmail);
       const { data: customers } = await stripe.customers.list({
         email: orderData.clientEmail,
         limit: 1,
@@ -169,26 +154,26 @@ serve(async (req) => {
       
       if (customers && customers.length > 0) {
         customerId = customers[0].id;
-        console.log('👤 [CREATE-CHECKOUT] Client Stripe existant:', customerId);
+        console.log('👤 [CREATE-CHECKOUT] Existing customer found:', customerId);
       } else {
-        console.log('👤 [CREATE-CHECKOUT] Création nouveau client Stripe...');
+        console.log('👤 [CREATE-CHECKOUT] Creating new customer...');
         const newCustomer = await stripe.customers.create({
           email: orderData.clientEmail,
           name: orderData.clientName,
           phone: orderData.clientPhone,
         });
         customerId = newCustomer.id;
-        console.log('👤 [CREATE-CHECKOUT] Nouveau client Stripe créé:', customerId);
+        console.log('👤 [CREATE-CHECKOUT] New customer created:', customerId);
       }
     } catch (customerError) {
-      console.error('❌ [CREATE-CHECKOUT] Erreur client Stripe:', customerError);
-      // Continuer sans customerId
+      console.error('❌ [CREATE-CHECKOUT] Customer error:', customerError);
+      // Continue without customer ID
     }
 
-    // Créer les éléments de ligne pour Stripe
-    console.log('📦 [CREATE-CHECKOUT] Création des éléments de ligne...');
+    // Create line items
+    console.log('📦 [CREATE-CHECKOUT] Creating line items...');
     const lineItems = orderData.items.map(item => {
-      console.log('📦 [CREATE-CHECKOUT] Article:', item.menuItem.name, 'prix:', item.menuItem.price);
+      console.log('📦 [CREATE-CHECKOUT] Item:', item.menuItem.name, 'price:', item.menuItem.price);
       return {
         price_data: {
           currency: 'eur',
@@ -202,9 +187,9 @@ serve(async (req) => {
       };
     });
 
-    // Ajouter les frais additionnels
+    // Add additional fees
     if (orderData.deliveryFee > 0) {
-      console.log('🚚 [CREATE-CHECKOUT] Ajout frais de livraison:', orderData.deliveryFee);
+      console.log('🚚 [CREATE-CHECKOUT] Adding delivery fee:', orderData.deliveryFee);
       lineItems.push({
         price_data: {
           currency: 'eur',
@@ -216,7 +201,7 @@ serve(async (req) => {
     }
     
     if (orderData.tax > 0) {
-      console.log('💰 [CREATE-CHECKOUT] Ajout TVA:', orderData.tax);
+      console.log('💰 [CREATE-CHECKOUT] Adding tax:', orderData.tax);
       lineItems.push({
         price_data: {
           currency: 'eur',
@@ -228,7 +213,7 @@ serve(async (req) => {
     }
     
     if (orderData.tip && orderData.tip > 0) {
-      console.log('💝 [CREATE-CHECKOUT] Ajout pourboire:', orderData.tip);
+      console.log('💝 [CREATE-CHECKOUT] Adding tip:', orderData.tip);
       lineItems.push({
         price_data: {
           currency: 'eur',
@@ -239,9 +224,9 @@ serve(async (req) => {
       });
     }
 
-    console.log('💳 [CREATE-CHECKOUT] Création session Stripe avec', lineItems.length, 'articles');
+    console.log('💳 [CREATE-CHECKOUT] Creating Stripe session with', lineItems.length, 'items');
     
-    // Créer la session Stripe Checkout
+    // Create Stripe session
     let session;
     try {
       session = await stripe.checkout.sessions.create({
@@ -253,7 +238,6 @@ serve(async (req) => {
         success_url: `${orderData.successUrl}?session_id={CHECKOUT_SESSION_ID}&success=true`,
         cancel_url: orderData.cancelUrl,
         metadata: {
-          user_id: userId || 'guest',
           order_type: orderData.orderType,
           scheduled_for: orderData.scheduledFor,
           customer_notes: orderData.customerNotes || '',
@@ -262,24 +246,23 @@ serve(async (req) => {
             `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
         },
       });
-      console.log('✅ [CREATE-CHECKOUT] Session Stripe créée:', session.id);
+      console.log('✅ [CREATE-CHECKOUT] Stripe session created:', session.id);
     } catch (stripeSessionError) {
-      console.error('❌ [CREATE-CHECKOUT] Erreur création session Stripe:', stripeSessionError);
+      console.error('❌ [CREATE-CHECKOUT] Stripe session error:', stripeSessionError);
       return new Response(
-        JSON.stringify({ error: 'Erreur création session de paiement' }),
+        JSON.stringify({ error: 'Payment session creation failed' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Créer la commande dans Supabase
+    // Create order in database
     const restaurantId = orderData.restaurantId || '11111111-1111-1111-1111-111111111111';
     
     try {
-      console.log('💾 [CREATE-CHECKOUT] Création commande en base...');
+      console.log('💾 [CREATE-CHECKOUT] Creating order in database...');
       const { data: orderRecord, error: orderError } = await supabaseAdmin
         .from('orders')
         .insert({
-          user_id: userId,
           restaurant_id: restaurantId,
           subtotal: orderData.subtotal,
           tax: orderData.tax,
@@ -306,14 +289,14 @@ serve(async (req) => {
         .single();
 
       if (orderError) {
-        console.error("❌ [CREATE-CHECKOUT] Erreur création commande:", orderError);
-        throw new Error(`Erreur base de données: ${orderError.message}`);
+        console.error('❌ [CREATE-CHECKOUT] Order creation error:', orderError);
+        throw new Error(`Database error: ${orderError.message}`);
       }
 
-      console.log('✅ [CREATE-CHECKOUT] Commande créée avec ID:', orderRecord.id);
+      console.log('✅ [CREATE-CHECKOUT] Order created with ID:', orderRecord.id);
 
-      // Ajouter les articles de la commande
-      console.log('📦 [CREATE-CHECKOUT] Ajout des articles de commande...');
+      // Add order items
+      console.log('📦 [CREATE-CHECKOUT] Adding order items...');
       const orderItemsPromises = orderData.items.map(item => 
         supabaseAdmin
           .from('order_items')
@@ -330,13 +313,13 @@ serve(async (req) => {
       const failedItems = orderItemsResults.filter(result => result.status === 'rejected');
       
       if (failedItems.length > 0) {
-        console.error('⚠️ [CREATE-CHECKOUT] Erreurs articles commande:', failedItems);
+        console.error('⚠️ [CREATE-CHECKOUT] Some order items failed:', failedItems);
       } else {
-        console.log('✅ [CREATE-CHECKOUT] Articles commande ajoutés:', orderData.items.length);
+        console.log('✅ [CREATE-CHECKOUT] Order items added:', orderData.items.length);
       }
       
-      // Retourner l'URL de la session
-      console.log('🎉 [CREATE-CHECKOUT] Succès! Retour URL session');
+      // Return success response
+      console.log('🎉 [CREATE-CHECKOUT] Success! Returning session URL');
       return new Response(
         JSON.stringify({ 
           url: session.url,
@@ -347,19 +330,19 @@ serve(async (req) => {
       );
 
     } catch (dbError) {
-      console.error('❌ [CREATE-CHECKOUT] Erreur base de données:', dbError);
+      console.error('❌ [CREATE-CHECKOUT] Database error:', dbError);
       return new Response(
-        JSON.stringify({ error: 'Erreur lors de la sauvegarde de la commande' }),
+        JSON.stringify({ error: 'Order creation failed' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
   } catch (err) {
-    console.error('❌ [CREATE-CHECKOUT] Erreur générale:', err);
+    console.error('❌ [CREATE-CHECKOUT] General error:', err);
     
     return new Response(
       JSON.stringify({ 
-        error: err instanceof Error ? err.message : 'Une erreur inconnue est survenue',
+        error: err instanceof Error ? err.message : 'Unknown error occurred',
         details: err instanceof Error ? err.stack : undefined
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
