@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.43.0?dts';
-import Stripe from 'https://cdn.skypack.dev/stripe@14.21.0?dts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import Stripe from 'https://esm.sh/stripe@14.21.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,32 +54,72 @@ serve(async (req) => {
   try {
     console.log('🚀 Début de create-checkout');
     
+    // Vérifier les variables d'environnement requises
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
     if (!stripeKey) {
-      console.error('❌ Clé Stripe manquante');
+      console.error('❌ Variable STRIPE_SECRET_KEY manquante');
       return new Response(
-        JSON.stringify({ error: 'La clé API Stripe n\'est pas configurée.' }),
+        JSON.stringify({ error: 'Configuration Stripe manquante' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log('✅ Clé Stripe récupérée');
     
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: '2023-10-16',
-    });
-    console.log('✅ Instance Stripe créée');
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Variables Supabase manquantes');
+      return new Response(
+        JSON.stringify({ error: 'Configuration Supabase manquante' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('✅ Variables d\'environnement vérifiées');
 
-    const orderData: OrderData = await req.json();
-    console.log('📦 Données de commande reçues:', {
-      itemsCount: orderData.items?.length,
-      total: orderData.total,
-      restaurantId: orderData.restaurantId,
-      orderType: orderData.orderType
-    });
-    
-    // Initialiser Supabase avec la clé de service pour contourner les RLS
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    // Récupérer et valider les données de commande
+    let orderData: OrderData;
+    try {
+      orderData = await req.json();
+      console.log('📦 Données de commande reçues:', {
+        itemsCount: orderData.items?.length,
+        total: orderData.total,
+        restaurantId: orderData.restaurantId,
+        orderType: orderData.orderType
+      });
+    } catch (jsonError) {
+      console.error('❌ Erreur parsing JSON:', jsonError);
+      return new Response(
+        JSON.stringify({ error: 'Données de commande invalides' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validation des données obligatoires
+    if (!orderData.items || orderData.items.length === 0) {
+      console.error('❌ Aucun article dans la commande');
+      return new Response(
+        JSON.stringify({ error: 'Aucun article dans la commande' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialiser Stripe
+    let stripe;
+    try {
+      stripe = new Stripe(stripeKey, {
+        apiVersion: '2023-10-16',
+      });
+      console.log('✅ Instance Stripe créée');
+    } catch (stripeError) {
+      console.error('❌ Erreur initialisation Stripe:', stripeError);
+      return new Response(
+        JSON.stringify({ error: 'Erreur d\'initialisation Stripe' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialiser Supabase avec la clé de service
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     console.log('✅ Client Supabase admin créé');
 
@@ -98,7 +138,7 @@ serve(async (req) => {
       }
     }
     
-    // Déterminer le restaurant ID - utiliser celui fourni ou le défaut (Châteaurenard)
+    // Déterminer le restaurant ID
     const targetRestaurantId = orderData.restaurantId || "11111111-1111-1111-1111-111111111111";
     console.log('🏪 Restaurant cible:', targetRestaurantId);
     
@@ -124,8 +164,8 @@ serve(async (req) => {
           console.log('💳 Nouveau client Stripe créé:', customerId);
         }
       } catch (stripeError) {
-        console.error('❌ Erreur lors de la gestion du client Stripe:', stripeError);
-        // Continuer sans customer ID si problème
+        console.error('❌ Erreur gestion client Stripe:', stripeError);
+        // Continuer sans customer ID
       }
     }
 
@@ -176,20 +216,19 @@ serve(async (req) => {
       });
     }
 
-    console.log('💰 Création session Stripe...');
+    console.log('💰 Création session Stripe...', {
+      lineItemsCount: lineItems.length,
+      totalAmount: orderData.total
+    });
     
     // Créer la session Stripe Checkout
+    let session;
     try {
-      const session = await stripe.checkout.sessions.create({
+      session = await stripe.checkout.sessions.create({
         customer: customerId,
         customer_email: !customerId ? orderData.clientEmail : undefined,
         payment_method_types: ['card'],
         line_items: lineItems,
-        discounts: orderData.discount && orderData.discount > 0 ? [
-          {
-            coupon: await createOrRetrieveCoupon(stripe, orderData.discount, orderData.promoCode),
-          },
-        ] : undefined,
         mode: 'payment',
         success_url: orderData.successUrl,
         cancel_url: orderData.cancelUrl,
@@ -208,10 +247,21 @@ serve(async (req) => {
       });
 
       console.log('✅ Session Stripe créée:', session.id);
+    } catch (stripeSessionError) {
+      console.error('❌ Erreur création session Stripe:', stripeSessionError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Erreur lors de la création de la session de paiement',
+          details: stripeSessionError.message 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-      // Créer la commande dans la base de données AVANT la redirection
-      console.log('💾 Création de la commande en base...');
-      
+    // Créer la commande dans la base de données
+    console.log('💾 Création de la commande en base...');
+    
+    try {
       const { data: orderRecord, error: orderError } = await supabaseAdmin
         .from('orders')
         .insert({
@@ -243,7 +293,7 @@ serve(async (req) => {
 
       if (orderError) {
         console.error("❌ Erreur création commande:", orderError);
-        throw new Error(`Erreur lors de la création de la commande: ${orderError.message}`);
+        throw new Error(`Erreur création commande: ${orderError.message}`);
       }
 
       console.log('✅ Commande créée avec ID:', orderRecord.id);
@@ -268,41 +318,31 @@ serve(async (req) => {
       console.log('✅ Articles de commande ajoutés');
       console.log('🎯 Commande créée pour le restaurant:', targetRestaurantId);
       
-      return new Response(
-        JSON.stringify({ url: session.url }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } catch (stripeSessionError) {
-      console.error('❌ Erreur création session Stripe:', stripeSessionError);
-      throw new Error(`Erreur lors de la création de la session Stripe: ${stripeSessionError.message}`);
+    } catch (dbError) {
+      console.error('❌ Erreur base de données:', dbError);
+      // Ne pas bloquer si erreur DB, la session Stripe est créée
+      console.log('⚠️ Continuons avec la session Stripe malgré l\'erreur DB');
     }
+      
+    return new Response(
+      JSON.stringify({ url: session.url }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (err) {
-    console.error('❌ Erreur dans create-checkout:', err);
+    console.error('❌ Erreur globale dans create-checkout:', err);
+    
+    // Retourner une erreur détaillée
+    const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+    const errorStack = err instanceof Error ? err.stack : 'Aucune stack trace';
     
     return new Response(
       JSON.stringify({ 
-        error: err instanceof Error ? err.message : 'Une erreur inconnue est survenue',
-        details: err instanceof Error ? err.stack : 'Aucun détail disponible'
+        error: errorMessage,
+        details: errorStack,
+        timestamp: new Date().toISOString()
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
-
-async function createOrRetrieveCoupon(stripe: Stripe, discountAmount: number, promoCode?: string): Promise<string> {
-  const couponId = `discount_${discountAmount.toString().replace('.', '_')}`;
-  
-  try {
-    const existingCoupon = await stripe.coupons.retrieve(couponId);
-    return existingCoupon.id;
-  } catch (error) {
-    const newCoupon = await stripe.coupons.create({
-      id: couponId,
-      amount_off: Math.round(discountAmount * 100),
-      currency: 'eur',
-      name: promoCode ? `Réduction (${promoCode})` : 'Réduction',
-    });
-    return newCoupon.id;
-  }
-}
