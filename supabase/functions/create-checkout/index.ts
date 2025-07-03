@@ -1,7 +1,9 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
-import Stripe from 'https://esm.sh/stripe@14.20.0';
+
+// Utiliser l'import direct de Stripe sans les dépendances problématiques
+import Stripe from 'https://esm.sh/stripe@12.18.0?target=deno&no-check';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +40,7 @@ interface OrderData {
   deliveryPostalCode?: string;
   customerNotes?: string;
   scheduledFor: string;
-  restaurantId?: string; // Ajout du restaurant ID
+  restaurantId?: string;
   successUrl: string;
   cancelUrl: string;
 }
@@ -186,7 +188,7 @@ serve(async (req) => {
       cancel_url: orderData.cancelUrl,
       metadata: {
         user_id: userId || 'guest',
-        restaurant_id: targetRestaurantId, // IMPORTANT: Ajouter le restaurant ID dans les métadonnées
+        restaurant_id: targetRestaurantId,
         order_type: orderData.orderType,
         scheduled_for: orderData.scheduledFor,
         customer_notes: orderData.customerNotes || '',
@@ -207,7 +209,7 @@ serve(async (req) => {
       .from('orders')
       .insert({
         user_id: userId,
-        restaurant_id: targetRestaurantId, // IMPORTANT: Utiliser le bon restaurant ID
+        restaurant_id: targetRestaurantId,
         subtotal: Number(orderData.subtotal),
         tax: Number(orderData.tax),
         delivery_fee: Number(orderData.deliveryFee),
