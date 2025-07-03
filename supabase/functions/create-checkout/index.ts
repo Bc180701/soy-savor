@@ -128,7 +128,7 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase
+    // Initialize Supabase with service role key (no auth required)
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
@@ -141,7 +141,13 @@ serve(async (req) => {
     }
     console.log('✅ [CREATE-CHECKOUT] Supabase config OK');
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    // Use service role key to bypass RLS
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
 
     // Get or create Stripe customer
     let customerId: string | undefined;
