@@ -16,6 +16,8 @@ serve(async (req) => {
   try {
     const { email, password } = await req.json()
 
+    console.log('Création admin - Email:', email)
+
     // Validation
     if (!email || !password) {
       throw new Error('Email et mot de passe requis')
