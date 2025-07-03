@@ -261,67 +261,77 @@ serve(async (req) => {
       );
     }
 
-    // Create order in database
+    // Create order in database with better error handling
     const restaurantId = orderData.restaurantId || '11111111-1111-1111-1111-111111111111';
     
     try {
       console.log('💾 [CREATE-CHECKOUT] Creating order in database...');
+      
+      // Create order with minimal required fields first
+      const orderInsertData = {
+        restaurant_id: restaurantId,
+        subtotal: Number(orderData.subtotal),
+        tax: Number(orderData.tax),
+        delivery_fee: Number(orderData.deliveryFee),
+        tip: Number(orderData.tip || 0),
+        discount: Number(orderData.discount || 0),
+        total: Number(orderData.total),
+        order_type: orderData.orderType,
+        status: 'pending',
+        payment_method: 'credit-card',
+        payment_status: 'pending',
+        scheduled_for: orderData.scheduledFor,
+        client_name: orderData.clientName || '',
+        client_email: orderData.clientEmail || '',
+        client_phone: orderData.clientPhone || null,
+        delivery_street: orderData.deliveryStreet || null,
+        delivery_city: orderData.deliveryCity || null,
+        delivery_postal_code: orderData.deliveryPostalCode || null,
+        customer_notes: orderData.customerNotes || null,
+        promo_code: orderData.promoCode || null,
+        stripe_session_id: session.id
+      };
+
+      console.log('💾 [CREATE-CHECKOUT] Order data prepared:', JSON.stringify(orderInsertData, null, 2));
+
       const { data: orderRecord, error: orderError } = await supabaseAdmin
         .from('orders')
-        .insert({
-          restaurant_id: restaurantId,
-          subtotal: orderData.subtotal,
-          tax: orderData.tax,
-          delivery_fee: orderData.deliveryFee,
-          tip: orderData.tip || 0,
-          discount: orderData.discount || 0,
-          promo_code: orderData.promoCode || null,
-          total: orderData.total,
-          order_type: orderData.orderType,
-          status: 'pending',
-          payment_method: 'credit-card',
-          payment_status: 'pending',
-          scheduled_for: orderData.scheduledFor,
-          client_name: orderData.clientName,
-          client_email: orderData.clientEmail,
-          client_phone: orderData.clientPhone,
-          delivery_street: orderData.deliveryStreet,
-          delivery_city: orderData.deliveryCity,
-          delivery_postal_code: orderData.deliveryPostalCode,
-          customer_notes: orderData.customerNotes,
-          stripe_session_id: session.id
-        })
+        .insert(orderInsertData)
         .select('id')
         .single();
 
       if (orderError) {
         console.error('❌ [CREATE-CHECKOUT] Order creation error:', orderError);
+        console.error('❌ [CREATE-CHECKOUT] Order data that failed:', orderInsertData);
         throw new Error(`Database error: ${orderError.message}`);
       }
 
       console.log('✅ [CREATE-CHECKOUT] Order created with ID:', orderRecord.id);
 
-      // Add order items
+      // Add order items with better error handling
       console.log('📦 [CREATE-CHECKOUT] Adding order items...');
-      const orderItemsPromises = orderData.items.map(item => 
-        supabaseAdmin
-          .from('order_items')
-          .insert({
-            order_id: orderRecord.id,
-            product_id: item.menuItem.id,
-            quantity: item.quantity,
-            price: item.menuItem.price,
-            special_instructions: item.specialInstructions
-          })
-      );
+      for (const item of orderData.items) {
+        try {
+          const { error: itemError } = await supabaseAdmin
+            .from('order_items')
+            .insert({
+              order_id: orderRecord.id,
+              product_id: item.menuItem.id,
+              quantity: item.quantity,
+              price: Number(item.menuItem.price),
+              special_instructions: item.specialInstructions || null
+            });
 
-      const orderItemsResults = await Promise.allSettled(orderItemsPromises);
-      const failedItems = orderItemsResults.filter(result => result.status === 'rejected');
-      
-      if (failedItems.length > 0) {
-        console.error('⚠️ [CREATE-CHECKOUT] Some order items failed:', failedItems);
-      } else {
-        console.log('✅ [CREATE-CHECKOUT] Order items added:', orderData.items.length);
+          if (itemError) {
+            console.error('❌ [CREATE-CHECKOUT] Order item error:', itemError, 'for item:', item);
+            // Continue with other items instead of failing completely
+          } else {
+            console.log('✅ [CREATE-CHECKOUT] Order item added:', item.menuItem.name);
+          }
+        } catch (itemException) {
+          console.error('❌ [CREATE-CHECKOUT] Order item exception:', itemException, 'for item:', item);
+          // Continue with other items
+        }
       }
       
       // Return success response
@@ -338,7 +348,7 @@ serve(async (req) => {
     } catch (dbError) {
       console.error('❌ [CREATE-CHECKOUT] Database error:', dbError);
       return new Response(
-        JSON.stringify({ error: 'Order creation failed' }),
+        JSON.stringify({ error: 'Order creation failed', details: dbError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
