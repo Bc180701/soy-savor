@@ -26,8 +26,8 @@ interface OrderData {
   tax: number;
   deliveryFee: number;
   tip?: number;
-  discount?: number; // Montant de la réduction du code promo
-  promoCode?: string; // Code promo appliqué
+  discount?: number;
+  promoCode?: string;
   total: number;
   orderType: "delivery" | "pickup";
   clientName?: string;
@@ -38,6 +38,7 @@ interface OrderData {
   deliveryPostalCode?: string;
   customerNotes?: string;
   scheduledFor: string;
+  restaurantId?: string;
   successUrl: string;
   cancelUrl: string;
 }
@@ -52,9 +53,12 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Début de create-checkout');
+    
     // Vérifier la clé Stripe
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) {
+      console.error('❌ Clé Stripe manquante');
       return new Response(
         JSON.stringify({ error: 'La clé API Stripe n\'est pas configurée.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -65,116 +69,118 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // Récupérer les données de la commande depuis le corps de la requête
+    // Récupérer les données de la commande
     const orderData: OrderData = await req.json();
+    console.log('📦 Données reçues:', {
+      itemsCount: orderData.items?.length,
+      total: orderData.total,
+      orderType: orderData.orderType,
+      restaurantId: orderData.restaurantId
+    });
     
-    // Initialiser Supabase client
+    // Initialiser Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
-    // Client pour authentification utilisateur (si disponible)
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    
-    // Client avec rôle de service pour les opérations de base de données (bypass RLS)
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('❌ Configuration Supabase manquante');
+      return new Response(
+        JSON.stringify({ error: 'Configuration Supabase manquante' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Authentification de l'utilisateur (optionnelle)
+    // Authentification utilisateur (optionnelle)
     let userId: string | undefined;
-    
     const authHeader = req.headers.get('Authorization');
     if (authHeader) {
       try {
+        const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '');
         const token = authHeader.replace('Bearer ', '');
         const { data: userData } = await supabase.auth.getUser(token);
         userId = userData.user?.id;
+        console.log('👤 Utilisateur authentifié:', userId);
       } catch (authError) {
-        console.log("Utilisateur non authentifié, commande en tant qu'invité");
+        console.log("👤 Utilisateur non authentifié, commande en tant qu'invité");
       }
     }
     
     // Créer ou récupérer le client Stripe
     let customerId: string | undefined;
-    
     if (orderData.clientEmail) {
-      const { data: customers } = await stripe.customers.list({
-        email: orderData.clientEmail,
-        limit: 1,
-      });
-      
-      if (customers && customers.length > 0) {
-        customerId = customers[0].id;
-      } else {
-        // Créer un nouveau client
-        const newCustomer = await stripe.customers.create({
+      try {
+        const { data: customers } = await stripe.customers.list({
           email: orderData.clientEmail,
-          name: orderData.clientName,
-          phone: orderData.clientPhone,
+          limit: 1,
         });
-        customerId = newCustomer.id;
+        
+        if (customers && customers.length > 0) {
+          customerId = customers[0].id;
+          console.log('👤 Client Stripe existant:', customerId);
+        } else {
+          const newCustomer = await stripe.customers.create({
+            email: orderData.clientEmail,
+            name: orderData.clientName,
+            phone: orderData.clientPhone,
+          });
+          customerId = newCustomer.id;
+          console.log('👤 Nouveau client Stripe créé:', customerId);
+        }
+      } catch (customerError) {
+        console.error('❌ Erreur client Stripe:', customerError);
       }
     }
 
-    // Créer les éléments de ligne pour Stripe Checkout
+    // Créer les éléments de ligne pour Stripe
     const lineItems = orderData.items.map(item => ({
       price_data: {
         currency: 'eur',
         product_data: {
           name: item.menuItem.name,
-          description: item.specialInstructions,
+          description: item.specialInstructions || undefined,
         },
-        unit_amount: Math.round(item.menuItem.price * 100), // Montant en centimes
+        unit_amount: Math.round(item.menuItem.price * 100),
       },
       quantity: item.quantity,
     }));
 
-    // Ajouter les frais de livraison si nécessaires
+    // Ajouter les frais additionnels
     if (orderData.deliveryFee > 0) {
       lineItems.push({
         price_data: {
           currency: 'eur',
-          product_data: {
-            name: 'Frais de livraison',
-          },
-          unit_amount: Math.round(orderData.deliveryFee * 100), // Montant en centimes
+          product_data: { name: 'Frais de livraison' },
+          unit_amount: Math.round(orderData.deliveryFee * 100),
         },
         quantity: 1,
       });
     }
     
-    // Ajouter la TVA
     if (orderData.tax > 0) {
       lineItems.push({
         price_data: {
           currency: 'eur',
-          product_data: {
-            name: 'TVA (10%)',
-          },
-          unit_amount: Math.round(orderData.tax * 100), // Montant en centimes
+          product_data: { name: 'TVA (10%)' },
+          unit_amount: Math.round(orderData.tax * 100),
         },
         quantity: 1,
       });
     }
     
-    // Ajouter le pourboire si présent
     if (orderData.tip && orderData.tip > 0) {
       lineItems.push({
         price_data: {
           currency: 'eur',
-          product_data: {
-            name: 'Pourboire',
-          },
-          unit_amount: Math.round(orderData.tip * 100), // Montant en centimes
+          product_data: { name: 'Pourboire' },
+          unit_amount: Math.round(orderData.tip * 100),
         },
         quantity: 1,
       });
     }
-    
-    // Pour la réduction, nous devons l'appliquer différemment car Stripe n'accepte pas les montants négatifs
-    // Au lieu de ça, nous ajustons les autres line items ou utilisons un coupon
 
-    // Calculer le montant total à payer (en tenant compte de la réduction)
-    // Nous laissons Stripe calculer le total à partir des line items
+    console.log('💳 Création session Stripe avec', lineItems.length, 'articles');
     
     // Créer la session Stripe Checkout
     const session = await stripe.checkout.sessions.create({
@@ -182,33 +188,30 @@ serve(async (req) => {
       customer_email: !customerId ? orderData.clientEmail : undefined,
       payment_method_types: ['card'],
       line_items: lineItems,
-      // Appliquer la réduction comme un coupon si présent
-      discounts: orderData.discount && orderData.discount > 0 ? [
-        {
-          coupon: await createOrRetrieveCoupon(stripe, orderData.discount, orderData.promoCode),
-        },
-      ] : undefined,
       mode: 'payment',
-      success_url: orderData.successUrl,
+      success_url: `${orderData.successUrl}?session_id={CHECKOUT_SESSION_ID}&success=true`,
       cancel_url: orderData.cancelUrl,
       metadata: {
         user_id: userId || 'guest',
         order_type: orderData.orderType,
         scheduled_for: orderData.scheduledFor,
         customer_notes: orderData.customerNotes || '',
+        restaurant_id: orderData.restaurantId || '11111111-1111-1111-1111-111111111111',
         delivery_address: orderData.orderType === 'delivery' ? 
           `${orderData.deliveryStreet}, ${orderData.deliveryPostalCode} ${orderData.deliveryCity}` : '',
-        tip_amount: orderData.tip ? (orderData.tip).toString() : '0',
-        discount_amount: orderData.discount ? (orderData.discount).toString() : '0',
-        promo_code: orderData.promoCode || '',
       },
     });
 
-    // Créer la commande avec un statut de paiement "pending" et inclure le pourboire
+    console.log('✅ Session Stripe créée:', session.id);
+
+    // Créer la commande dans Supabase
+    const restaurantId = orderData.restaurantId || '11111111-1111-1111-1111-111111111111';
+    
     const { data: orderRecord, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
-        user_id: userId, // null si invité
+        user_id: userId,
+        restaurant_id: restaurantId,
         subtotal: orderData.subtotal,
         tax: orderData.tax,
         delivery_fee: orderData.deliveryFee,
@@ -234,55 +237,53 @@ serve(async (req) => {
       .single();
 
     if (orderError) {
-      console.error("Erreur lors de la création de la commande:", orderError);
+      console.error("❌ Erreur création commande:", orderError);
+      throw new Error(`Erreur base de données: ${orderError.message}`);
+    }
+
+    console.log('✅ Commande créée avec ID:', orderRecord.id);
+
+    // Ajouter les articles de la commande
+    const orderItemsPromises = orderData.items.map(item => 
+      supabaseAdmin
+        .from('order_items')
+        .insert({
+          order_id: orderRecord.id,
+          product_id: item.menuItem.id,
+          quantity: item.quantity,
+          price: item.menuItem.price,
+          special_instructions: item.specialInstructions
+        })
+    );
+
+    const orderItemsResults = await Promise.allSettled(orderItemsPromises);
+    const failedItems = orderItemsResults.filter(result => result.status === 'rejected');
+    
+    if (failedItems.length > 0) {
+      console.error('⚠️ Erreurs articles commande:', failedItems);
     } else {
-      // Ajouter les articles de la commande
-      for (const item of orderData.items) {
-        await supabaseAdmin
-          .from('order_items')
-          .insert({
-            order_id: orderRecord.id,
-            product_id: item.menuItem.id,
-            quantity: item.quantity,
-            price: item.menuItem.price,
-            special_instructions: item.specialInstructions
-          });
-      }
+      console.log('✅ Articles commande ajoutés:', orderData.items.length);
     }
     
-    // Renvoyer l'URL de la session
+    // Retourner l'URL de la session
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({ 
+        url: session.url,
+        sessionId: session.id,
+        orderId: orderRecord.id
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (err) {
-    // Gérer les erreurs
-    console.error('Erreur lors de la création de la session Stripe:', err);
+    console.error('❌ Erreur create-checkout:', err);
     
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : 'Une erreur inconnue est survenue' }),
+      JSON.stringify({ 
+        error: err instanceof Error ? err.message : 'Une erreur inconnue est survenue',
+        details: err instanceof Error ? err.stack : undefined
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
-
-// Fonction pour créer ou récupérer un coupon Stripe
-async function createOrRetrieveCoupon(stripe: Stripe, discountAmount: number, promoCode?: string): Promise<string> {
-  const couponId = `discount_${discountAmount.toString().replace('.', '_')}`;
-  
-  try {
-    // Essayer d'abord de récupérer le coupon existant
-    const existingCoupon = await stripe.coupons.retrieve(couponId);
-    return existingCoupon.id;
-  } catch (error) {
-    // Si le coupon n'existe pas, le créer
-    const newCoupon = await stripe.coupons.create({
-      id: couponId,
-      amount_off: Math.round(discountAmount * 100), // Montant en centimes
-      currency: 'eur',
-      name: promoCode ? `Réduction (${promoCode})` : 'Réduction',
-    });
-    return newCoupon.id;
-  }
-}
