@@ -15,7 +15,8 @@ export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?:
       .select('*')
       .eq('postal_code', postalCode)
       .eq('restaurant_id', restaurantId)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .limit(1); // Limiter à 1 résultat pour éviter les doublons
     
     console.log("🚚 Résultat vérification pour restaurant", restaurantId, ":", { data, error, count: data?.length });
     
@@ -43,7 +44,7 @@ export const getDeliveryLocations = async (restaurantId?: string): Promise<{city
       return [];
     }
     
-    // Requête directe avec le restaurant spécifié
+    // Requête avec DISTINCT pour éviter les doublons
     const { data, error } = await supabase
       .from('delivery_locations')
       .select('city, postal_code, restaurant_id')
@@ -72,12 +73,21 @@ export const getDeliveryLocations = async (restaurantId?: string): Promise<{city
       return [];
     }
     
-    const zones = data.map(location => ({
-      city: location.city,
-      postalCode: location.postal_code
-    }));
+    // Créer un Map pour éviter les doublons côté client aussi
+    const uniqueZones = new Map();
+    data.forEach(location => {
+      const key = `${location.city}-${location.postal_code}`;
+      if (!uniqueZones.has(key)) {
+        uniqueZones.set(key, {
+          city: location.city,
+          postalCode: location.postal_code
+        });
+      }
+    });
     
-    console.log("🌍 Zones formatées pour restaurant", restaurantId, ":", zones);
+    const zones = Array.from(uniqueZones.values());
+    
+    console.log("🌍 Zones formatées (sans doublons) pour restaurant", restaurantId, ":", zones);
     return zones;
     
   } catch (error) {

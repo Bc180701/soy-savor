@@ -35,8 +35,11 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
     ? restaurantDeliveryZones.map(zone => `${zone.city} (${zone.postalCode})`)
     : deliveryZones || [];
 
+  // Supprimer les doublons du côté affichage aussi par sécurité
+  const uniqueZonesToDisplay = Array.from(new Set(zonesToDisplay));
+
   // Vérifier si les zones de livraison sont disponibles et non vides
-  const hasZones = Array.isArray(zonesToDisplay) && zonesToDisplay.length > 0;
+  const hasZones = Array.isArray(uniqueZonesToDisplay) && uniqueZonesToDisplay.length > 0;
 
   return (
     <section className="py-16 bg-white">
@@ -92,7 +95,7 @@ export const DeliveryMap = ({ deliveryZones }: DeliveryMapProps) => {
           
           {hasZones ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {zonesToDisplay.map((zone, index) => (
+              {uniqueZonesToDisplay.map((zone, index) => (
                 <div 
                   key={`zone-${index}-${zone}`}
                   className={`p-3 rounded-md cursor-pointer transition-colors ${
