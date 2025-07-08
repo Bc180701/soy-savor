@@ -86,7 +86,7 @@ serve(async (req) => {
     const emailData = {
       sender: {
         name: "SushiEats",
-        email: "notifications@sushieats.fr"
+        email: "notifications@clwebdesign.fr"
       },
       to: [{
         email: email,

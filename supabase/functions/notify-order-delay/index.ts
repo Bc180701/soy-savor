@@ -99,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailData = {
       sender: {
         name: "SushiEats",
-        email: "notifications@sushieats.fr",
+        email: "notifications@clwebdesign.fr",
       },
       to: [
         {

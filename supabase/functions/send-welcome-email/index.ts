@@ -88,7 +88,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailData = {
       sender: {
         name: "SushiEats",
-        email: "bienvenue@sushieats.fr",
+        email: "bienvenue@clwebdesign.fr",
       },
       to: [
         {
