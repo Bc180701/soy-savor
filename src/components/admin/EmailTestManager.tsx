@@ -27,21 +27,15 @@ const EmailTestManager = () => {
     try {
       console.log('🧪 Envoi email de test à:', email);
       
-      // Utiliser l'edge function Brevo
-      const { data, error } = await supabase.functions.invoke('send-order-notification', {
-        body: {
-          email: email,
-          name: "Test Admin",
-          orderId: "TEST-" + Date.now(),
-          status: "confirmed",
-          statusMessage: "est un test d'envoi d'email depuis l'administration"
-        }
+      // Test simple avec nouvelle fonction
+      const { data, error } = await supabase.functions.invoke('test-email-simple', {
+        body: { email }
       });
 
-      console.log('📡 Résultat edge function:', { data, error });
+      console.log('📡 Résultat test simple:', { data, error });
 
       if (error) {
-        console.error('❌ Erreur edge function:', error);
+        console.error('❌ Erreur test simple:', error);
         toast({
           title: "Erreur d'envoi",
           description: `Erreur: ${error.message}`,
@@ -50,7 +44,7 @@ const EmailTestManager = () => {
         return;
       }
 
-      console.log('✅ Email envoyé via edge function');
+      console.log('✅ Email envoyé via test simple');
       
       toast({
         title: "Test envoyé",

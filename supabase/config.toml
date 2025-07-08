@@ -7,5 +7,8 @@ enable_confirmations = false
 [functions.send-order-notification]
 verify_jwt = false
 
+[functions.test-email-simple]
+verify_jwt = false
+
 [functions.notify-order-delay]
 verify_jwt = false
