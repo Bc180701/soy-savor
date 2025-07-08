@@ -10,5 +10,8 @@ verify_jwt = false
 [functions.test-email-simple]
 verify_jwt = false
 
+[functions.debug-brevo]
+verify_jwt = false
+
 [functions.notify-order-delay]
 verify_jwt = false

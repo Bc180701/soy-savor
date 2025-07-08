@@ -27,7 +27,12 @@ const EmailTestManager = () => {
     try {
       console.log('🧪 Envoi email de test à:', email);
       
-      // Test simple avec nouvelle fonction
+      // D'abord tester la clé Brevo
+      console.log('🔍 Test de la clé Brevo...');
+      const debugResult = await supabase.functions.invoke('debug-brevo');
+      console.log('🔍 Debug Brevo:', debugResult);
+
+      // Puis tester l'envoi
       const { data, error } = await supabase.functions.invoke('test-email-simple', {
         body: { email }
       });
