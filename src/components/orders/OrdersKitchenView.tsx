@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { formatCustomProduct } from "@/utils/formatCustomProduct";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OrdersKitchenViewProps {
   orders: Order[];
@@ -25,6 +26,7 @@ const OrdersKitchenView = ({
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(15);
   const [delayReason, setDelayReason] = useState("");
+  const [isNotifying, setIsNotifying] = useState(false);
   const { toast } = useToast();
   
   // Filtrer uniquement les commandes pertinentes pour la cuisine
@@ -53,48 +55,54 @@ const OrdersKitchenView = ({
   };
 
   const handleDelayOrder = async () => {
-    if (!selectedOrderId || !delayReason) return;
+    if (!selectedOrderId || !delayReason || isNotifying) return;
+
+    setIsNotifying(true);
 
     try {
       const selectedOrder = orders.find(order => order.id === selectedOrderId);
-      if (!selectedOrder) return;
+      if (!selectedOrder) {
+        throw new Error("Commande introuvable");
+      }
 
-      const response = await fetch(`https://tdykegnmomyyucbhslok.supabase.co/functions/v1/notify-order-delay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkeWtlZ25tb215eXVjYmhzbG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NjA2NjUsImV4cCI6MjA1ODMzNjY2NX0.88jbkZIkFiFXudHvqe0l2DhqQGh2V9JIThv9FFFagas`
-        },
-        body: JSON.stringify({
+      console.log("Envoi de la notification de retard pour la commande:", selectedOrderId);
+
+      const { data, error } = await supabase.functions.invoke('notify-order-delay', {
+        body: {
           orderId: selectedOrderId,
           customerEmail: selectedOrder.clientEmail,
           customerName: selectedOrder.clientName || "Client",
           delayMinutes,
           delayReason,
           orderType: selectedOrder.orderType
-        })
+        }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erreur lors de l'envoi de la notification");
+      if (error) {
+        console.error("Erreur lors de l'envoi de la notification:", error);
+        throw error;
       }
+
+      console.log("Notification de retard envoyée avec succès:", data);
 
       toast({
         title: "Client notifié",
         description: `Le client a été informé d'un retard de ${delayMinutes} minutes.`,
-        variant: "success",
+        variant: "default",
       });
 
       setDelayDialogOpen(false);
       setDelayReason("");
-    } catch (error) {
+      setSelectedOrderId(null);
+    } catch (error: any) {
       console.error("Erreur lors de la notification de retard:", error);
       toast({
         title: "Erreur",
-        description: "Impossible d'envoyer la notification de retard",
+        description: `Impossible d'envoyer la notification de retard: ${error.message || "Erreur inconnue"}`,
         variant: "destructive",
       });
+    } finally {
+      setIsNotifying(false);
     }
   };
 
@@ -178,6 +186,7 @@ const OrdersKitchenView = ({
                   size="sm" 
                   className="bg-amber-100 border-amber-300 hover:bg-amber-200 text-amber-800"
                   onClick={() => openDelayDialog(order.id)}
+                  disabled={isNotifying}
                 >
                   <AlertCircle className="h-4 w-4 mr-1" />
                   Signaler retard
@@ -227,6 +236,7 @@ const OrdersKitchenView = ({
                   size="sm"
                   onClick={() => setDelayMinutes(Math.max(5, delayMinutes - 5))}
                   className="mr-2"
+                  disabled={isNotifying}
                 >
                   -
                 </Button>
@@ -236,6 +246,7 @@ const OrdersKitchenView = ({
                   size="sm"
                   onClick={() => setDelayMinutes(delayMinutes + 5)}
                   className="ml-2"
+                  disabled={isNotifying}
                 >
                   +
                 </Button>
@@ -249,20 +260,25 @@ const OrdersKitchenView = ({
                 onChange={(e) => setDelayReason(e.target.value)}
                 placeholder="Ex: Volume important de commandes..."
                 required
+                disabled={isNotifying}
               />
             </div>
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDelayDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setDelayDialogOpen(false)}
+              disabled={isNotifying}
+            >
               Annuler
             </Button>
             <Button 
               onClick={handleDelayOrder}
-              disabled={!delayReason}
+              disabled={!delayReason || isNotifying}
               className="bg-amber-500 hover:bg-amber-600 text-white"
             >
-              Notifier le client
+              {isNotifying ? "Envoi en cours..." : "Notifier le client"}
             </Button>
           </DialogFooter>
         </DialogContent>
