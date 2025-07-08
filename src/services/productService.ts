@@ -44,6 +44,13 @@ export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]
     }
 
     console.log(`📦 Produits récupérés pour restaurant ${targetRestaurantId}:`, productsData?.length || 0);
+    
+    // DEBUG: Afficher les catégories récupérées
+    console.log(`🏷️ Catégories récupérées pour restaurant ${targetRestaurantId}:`, categoriesData?.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      description: cat.description
+    })) || []);
 
     // Transformer les données
     const categories: MenuCategory[] = categoriesData.map(category => {
