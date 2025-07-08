@@ -917,16 +917,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      send_order_status_email: {
-        Args: {
-          p_email: string
-          p_name: string
-          p_order_id: string
-          p_status: string
-          p_status_message: string
-        }
-        Returns: boolean
-      }
       update_all_products_status: {
         Args: { flag_name: string; flag_value: boolean }
         Returns: undefined

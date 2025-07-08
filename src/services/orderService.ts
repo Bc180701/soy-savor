@@ -384,36 +384,37 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
 // Fonction pour envoyer une notification par email
 const sendStatusUpdateEmail = async (email: string, name: string, status: string, orderId: string): Promise<void> => {
   try {
-    const statusMessages: Record<string, string> = {
-      'pending': 'est en attente de confirmation',
-      'confirmed': 'a été confirmée',
-      'preparing': 'est en cours de préparation',
-      'ready': 'est prête à être retirée ou livrée',
-      'out-for-delivery': 'est en cours de livraison',
-      'delivered': 'a été livrée',
-      'completed': 'est terminée',
-      'cancelled': 'a été annulée'
+    console.log(`📧 Envoi notification email pour commande ${orderId} - Statut: ${status}`);
+    
+    // Correspondance des statuts avec ceux de l'edge function
+    const statusMapping: Record<string, string> = {
+      'confirmed': 'confirmée',
+      'preparing': 'en_preparation',
+      'ready': 'prête',
+      'out-for-delivery': 'en_livraison',
+      'delivered': 'livrée',
+      'completed': 'récupérée'
     };
     
-    const statusMessage = statusMessages[status] || `a changé de statut (${status})`;
+    const mappedStatus = statusMapping[status] || status;
     
-    const { error } = await supabase.functions.invoke('send-order-notification', {
+    const { data, error } = await supabase.functions.invoke('send-order-notification', {
       body: {
         email,
         name,
         orderId,
-        status,
-        statusMessage
+        status: mappedStatus
       }
     });
     
     if (error) {
-      console.error("Erreur lors de l'envoi de l'email de notification:", error);
+      console.error("❌ Erreur lors de l'envoi de l'email de notification:", error);
       throw error;
     }
     
-    console.log(`Notification email envoyé à ${email} pour la commande ${orderId}`);
+    console.log(`✅ Notification email envoyée à ${email} pour la commande ${orderId} - Status: ${mappedStatus}`);
   } catch (error) {
-    console.error("Erreur lors de l'envoi de l'email de notification:", error);
+    console.error("💥 Erreur lors de l'envoi de l'email de notification:", error);
+    // Ne pas faire échouer la mise à jour du statut même si l'email échoue
   }
 };
