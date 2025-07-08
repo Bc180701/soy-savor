@@ -76,6 +76,12 @@ export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]
 
       console.log(`📂 Catégorie ${category.name}: ${categoryProducts.length} produits`);
 
+      console.log(`🔍 Transformation catégorie:`, {
+        id: category.id,
+        name: category.name,
+        description: category.description
+      });
+      
       return {
         id: category.id as any,
         name: category.name,
