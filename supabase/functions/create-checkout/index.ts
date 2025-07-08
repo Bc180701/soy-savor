@@ -14,6 +14,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Début create-checkout');
+    
     const { 
       items, 
       subtotal, 
@@ -37,16 +39,34 @@ serve(async (req) => {
       cancelUrl
     } = await req.json();
 
+    console.log('📋 Données reçues:', { 
+      items: items?.length, 
+      subtotal, 
+      total, 
+      restaurantId,
+      clientEmail 
+    });
+
     // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
     const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
     console.log('🏪 Création checkout pour restaurant:', targetRestaurantId);
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    console.log('🔑 Vérification clé Stripe:', stripeSecretKey ? 'Présente' : 'MANQUANTE');
+    
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY non configurée');
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    console.log('🔧 Supabase URL:', supabaseUrl ? 'Présent' : 'MANQUANT');
+    console.log('🔧 Service Role Key:', supabaseServiceRoleKey ? 'Présent' : 'MANQUANT');
+    
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Créer les line items pour Stripe
@@ -174,8 +194,15 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Erreur dans create-checkout:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('❌ Erreur détaillée dans create-checkout:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: 'Voir les logs pour plus de détails'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
