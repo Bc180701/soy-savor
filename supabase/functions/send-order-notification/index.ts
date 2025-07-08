@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
-import { Resend } from "npm:resend@2.0.0";
 
 // Initialize Supabase client
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -22,8 +21,6 @@ interface NotificationRequest {
   statusMessage: string;
 }
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -39,6 +36,16 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log('📋 Données parsées:', { email, name, orderId, status });
     
+    // Récupérer la clé API Brevo
+    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+    
+    if (!brevoApiKey) {
+      console.error('❌ Clé API Brevo manquante');
+      throw new Error("Erreur de configuration: clé API Brevo manquante");
+    }
+    
+    console.log('✅ Clé API Brevo présente');
+    
     // Préparer le contenu de l'email
     const subject = `Mise à jour de votre commande #${orderId}`;
     const htmlContent = `
@@ -52,18 +59,42 @@ const handler = async (req: Request): Promise<Response> => {
       </body></html>
     `;
     
-    // Envoyer l'email via Resend
-    console.log('🌐 Tentative d\'envoi via Resend...');
-    const emailResponse = await resend.emails.send({
-      from: "SushiEats <contact@clwebdesign.fr>",
-      to: [email],
-      subject: subject,
-      html: htmlContent,
+    // Envoyer l'email via l'API Brevo
+    console.log('🌐 Tentative d\'envoi via API Brevo...');
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": brevoApiKey,
+      },
+      body: JSON.stringify({
+        sender: {
+          name: "SushiEats",
+          email: "no-reply@brevo.com", // Email par défaut autorisé
+        },
+        to: [
+          {
+            email: email,
+            name: name,
+          },
+        ],
+        subject: subject,
+        htmlContent: htmlContent,
+      }),
     });
     
-    console.log("✅ Email envoyé avec succès via Resend:", emailResponse);
+    console.log('📡 Réponse Brevo - Status:', response.status);
     
-    return new Response(JSON.stringify({ success: true, messageId: emailResponse.data?.id }), {
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("❌ Erreur d'envoi d'email via Brevo:", errorData);
+      throw new Error(`Erreur Brevo: ${response.status} - ${JSON.stringify(errorData)}`);
+    }
+    
+    const responseData = await response.json();
+    console.log("✅ Email envoyé avec succès via Brevo:", responseData);
+    
+    return new Response(JSON.stringify({ success: true, messageId: responseData.messageId }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
