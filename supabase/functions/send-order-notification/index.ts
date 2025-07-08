@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
@@ -13,22 +14,33 @@ interface NotificationRequest {
 }
 
 serve(async (req) => {
+  console.log("🔄 Début de la fonction send-order-notification");
+  
   if (req.method === "OPTIONS") {
+    console.log("✅ Requête OPTIONS traitée");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('📧 Début envoi notification de commande');
-    
+    console.log("📧 Parsing de la requête...");
     const { email, name, orderId, status } = await req.json() as NotificationRequest;
-    console.log('📋 Données reçues:', { email, name, orderId, status });
+    
+    console.log("📝 Données reçues:", { email, name, orderId, status });
+    
+    // Validation des données requises
+    if (!email || !name || !orderId || !status) {
+      console.error("❌ Données manquantes:", { email: !!email, name: !!name, orderId: !!orderId, status: !!status });
+      throw new Error("Tous les champs sont requis: email, name, orderId, status");
+    }
     
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     
     if (!brevoApiKey) {
-      console.error('❌ Clé API Brevo manquante');
+      console.error("❌ Clé API Brevo manquante dans les variables d'environnement");
       throw new Error("Configuration manquante: clé API Brevo");
     }
+    
+    console.log("🔑 Clé API Brevo trouvée");
     
     // Messages selon le statut
     const statusMessages: Record<string, string> = {
@@ -41,7 +53,7 @@ serve(async (req) => {
     };
     
     const statusMessage = statusMessages[status] || 'a été mise à jour';
-    const subject = `Mise à jour de votre commande #${orderId}`;
+    const subject = `Mise à jour de votre commande #${orderId.substring(0, 8)}`;
     
     const htmlContent = `
       <html>
@@ -54,10 +66,10 @@ serve(async (req) => {
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h2 style="color: #2c3e50; margin-top: 0;">Mise à jour de votre commande</h2>
             <p>Bonjour <strong>${name}</strong>,</p>
-            <p>Nous vous informons que votre commande <strong>#${orderId}</strong> ${statusMessage}.</p>
+            <p>Nous vous informons que votre commande <strong>#${orderId.substring(0, 8)}</strong> ${statusMessage}.</p>
             
             <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #4ecdc4;">
-              <p style="margin: 0;"><strong>Statut actuel :</strong> <span style="color: #27ae60; font-weight: bold;">${status.replace('_', ' ')}</span></p>
+              <p style="margin: 0;"><strong>Statut actuel :</strong> <span style="color: #27ae60; font-weight: bold; text-transform: capitalize;">${status.replace('_', ' ')}</span></p>
             </div>
           </div>
           
@@ -71,7 +83,21 @@ serve(async (req) => {
       </html>
     `;
     
-    console.log('🌐 Envoi via API Brevo...');
+    const emailData = {
+      sender: {
+        name: "SushiEats",
+        email: "notifications@sushieats.fr"
+      },
+      to: [{
+        email: email,
+        name: name
+      }],
+      subject: subject,
+      htmlContent: htmlContent
+    };
+    
+    console.log("🌐 Envoi via API Brevo...");
+    console.log("📧 Destinataire:", email);
     
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
@@ -79,42 +105,42 @@ serve(async (req) => {
         "Content-Type": "application/json",
         "api-key": brevoApiKey,
       },
-      body: JSON.stringify({
-        sender: {
-          name: "SushiEats",
-          email: "noreply@brevo.com"
-        },
-        to: [{
-          email: email,
-          name: name
-        }],
-        subject: subject,
-        htmlContent: htmlContent
-      })
+      body: JSON.stringify(emailData)
     });
     
-    console.log('📡 Status Brevo:', response.status);
+    console.log("📡 Statut de la réponse Brevo:", response.status);
     
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("❌ Erreur Brevo:", errorData);
+      let errorData;
+      try {
+        errorData = await response.json();
+        console.error("❌ Erreur détaillée de Brevo:", JSON.stringify(errorData, null, 2));
+      } catch (parseError) {
+        console.error("❌ Impossible de parser la réponse d'erreur de Brevo");
+        errorData = { status: response.status, statusText: response.statusText };
+      }
       throw new Error(`Erreur Brevo: ${response.status} - ${JSON.stringify(errorData)}`);
     }
     
     const result = await response.json();
-    console.log("✅ Email de notification envoyé:", result);
+    console.log("✅ Email de notification envoyé avec succès:", JSON.stringify(result, null, 2));
     
     return new Response(JSON.stringify({ 
       success: true, 
-      messageId: result.messageId 
+      messageId: result.messageId,
+      message: "Notification envoyée avec succès"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
     
   } catch (error: any) {
-    console.error("💥 Erreur:", error);
+    console.error("💥 Erreur dans send-order-notification:", error);
+    console.error("💥 Stack trace:", error.stack);
+    
     return new Response(JSON.stringify({ 
-      error: error.message 
+      error: error.message,
+      success: false,
+      details: "Vérifiez les logs de la fonction pour plus de détails"
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
