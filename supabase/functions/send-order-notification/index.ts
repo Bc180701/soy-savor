@@ -69,7 +69,7 @@ serve(async (req) => {
       body: JSON.stringify({
         sender: {
           name: "SushiEats",
-          email: "noreply@brevo.com"
+          email: "noreply@clwebdesign.fr"
         },
         to: [{
           email: email,
