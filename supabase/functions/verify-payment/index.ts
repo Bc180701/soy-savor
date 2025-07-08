@@ -71,10 +71,20 @@ serve(async (req) => {
 
     console.log('📋 Création commande depuis métadonnées Stripe');
 
+    // Vérifier si l'utilisateur est connecté en récupérant son email depuis Stripe
+    let userId = null;
+    if (session.customer_email) {
+      const { data: userData } = await supabase.auth.admin.listUsers();
+      const user = userData.users?.find(u => u.email === session.customer_email);
+      userId = user?.id || null;
+      console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', session.customer_email);
+    }
+
     // Créer la commande
     const orderData = {
       stripe_session_id: sessionId,
       restaurant_id: metadata.restaurant_id,
+      user_id: userId,
       subtotal: parseFloat(metadata.subtotal || '0'),
       tax: parseFloat(metadata.tax || '0'),
       delivery_fee: parseFloat(metadata.delivery_fee || '0'),
@@ -135,6 +145,30 @@ serve(async (req) => {
         console.log('✅ Articles ajoutés');
       } catch (error) {
         console.error('❌ Erreur parsing items:', error);
+      }
+    }
+
+    // Envoyer la notification email au client
+    if (order.client_email && order.client_name) {
+      try {
+        console.log('📧 Envoi notification email à:', order.client_email);
+        const { error: emailError } = await supabase.functions.invoke('send-order-notification', {
+          body: {
+            email: order.client_email,
+            name: order.client_name,
+            orderId: order.id,
+            status: 'confirmed',
+            statusMessage: 'a été confirmée et est en cours de préparation'
+          }
+        });
+        
+        if (emailError) {
+          console.error('❌ Erreur envoi email:', emailError);
+        } else {
+          console.log('✅ Email de confirmation envoyé');
+        }
+      } catch (emailError) {
+        console.error('❌ Erreur envoi notification:', emailError);
       }
     }
 
