@@ -139,8 +139,8 @@ export const useHomepageData = (): UseHomepageDataResult => {
     hero_section: {
       title: "SushiEats",
       subtitle: "Les meilleurs sushis de Châteaurenard",
-      background_image: "/placeholder-hero.webp",
-      overlay_image: "/map-overlay.svg",
+      background_image: "/lovable-uploads/b09ca63a-4c04-46fa-9754-c3486bc3dca3.png",
+      overlay_image: "",
     },
     custom_creation_section: {
       title: "Créez votre propre sushi ou poké",
