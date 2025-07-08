@@ -74,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         sender: {
           name: "SushiEats",
-          email: "notifications@sushieats.fr",
+          email: "contact@clwebdesign.fr",
         },
         to: [
           {
