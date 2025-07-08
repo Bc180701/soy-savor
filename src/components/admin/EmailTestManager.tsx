@@ -37,6 +37,10 @@ const EmailTestManager = () => {
         }
       });
 
+      console.log('📡 Détails de la réponse:', { data, error });
+      console.log('📡 Type de data:', typeof data);
+      console.log('📡 Type de error:', typeof error);
+
       if (error) {
         console.error('❌ Erreur appel fonction:', error);
         toast({
