@@ -259,11 +259,6 @@ const CommanderContent = () => {
                 Changer
               </button>
             </div>
-            {selectedRestaurantId && selectedRestaurantId !== currentRestaurant.id && (
-              <div className="mt-2 text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded">
-                ⚠️ Votre panier contient des articles d'un autre restaurant
-              </div>
-            )}
           </div>
         )}
 
