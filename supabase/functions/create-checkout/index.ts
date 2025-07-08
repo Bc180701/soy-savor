@@ -110,7 +110,7 @@ serve(async (req) => {
       });
     }
 
-    // Créer la session Stripe
+    // Créer la session Stripe avec TOUTES les données dans les métadonnées
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
@@ -119,74 +119,35 @@ serve(async (req) => {
       cancel_url: cancelUrl,
       customer_email: clientEmail,
       metadata: {
-        restaurant_id: targetRestaurantId, // Ajouter l'ID du restaurant dans les métadonnées
+        restaurant_id: targetRestaurantId,
         order_type: orderType,
         client_name: clientName,
         client_phone: clientPhone,
+        client_email: clientEmail,
+        delivery_street: deliveryStreet || '',
+        delivery_city: deliveryCity || '',
+        delivery_postal_code: deliveryPostalCode || '',
+        customer_notes: customerNotes || '',
+        scheduled_for: scheduledFor || '',
+        subtotal: subtotal.toString(),
+        tax: tax.toString(),
+        delivery_fee: deliveryFee.toString(),
+        tip: tip.toString(),
+        discount: discount.toString(),
+        promo_code: promoCode || '',
+        total: total.toString(),
+        // Stocker les items comme JSON string
+        items: JSON.stringify(items)
       },
     });
 
     console.log('💳 Session Stripe créée:', session.id);
 
-    // Créer la commande dans Supabase AVEC le restaurant_id
-    const orderData = {
-      stripe_session_id: session.id,
-      restaurant_id: targetRestaurantId, // IMPORTANT: associer au bon restaurant
-      subtotal,
-      tax,
-      delivery_fee: deliveryFee,
-      tip,
-      total,
-      discount,
-      promo_code: promoCode,
-      order_type: orderType,
-      status: 'pending',
-      payment_method: 'credit-card',
-      payment_status: 'pending',
-      scheduled_for: scheduledFor,
-      client_name: clientName,
-      client_email: clientEmail,
-      client_phone: clientPhone,
-      delivery_street: deliveryStreet,
-      delivery_city: deliveryCity,
-      delivery_postal_code: deliveryPostalCode,
-      customer_notes: customerNotes,
-    };
-
-    console.log('📝 Création commande avec restaurant:', targetRestaurantId);
-
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert(orderData)
-      .select()
-      .single();
-
-    if (orderError) {
-      console.error('❌ Erreur création commande:', orderError);
-      throw orderError;
-    }
-
-    console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', targetRestaurantId);
-
-    // Ajouter les articles de la commande
-    const orderItemPromises = items.map((item: any) => {
-      return supabase
-        .from('order_items')
-        .insert({
-          order_id: order.id,
-          product_id: item.menuItem.id,
-          quantity: item.quantity,
-          price: item.menuItem.price,
-          special_instructions: item.specialInstructions,
-        });
-    });
-
-    await Promise.all(orderItemPromises);
-    console.log('✅ Articles de commande ajoutés');
-
+    // Retourner immédiatement sans créer la commande
+    // La commande sera créée par le webhook une fois le paiement confirmé
     return new Response(JSON.stringify({ 
       url: session.url,
-      orderId: order.id,
+      sessionId: session.id,
       restaurantId: targetRestaurantId 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
