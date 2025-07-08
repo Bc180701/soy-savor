@@ -45,21 +45,20 @@ serve(async (req) => {
 
     console.log('Client Supabase Admin créé')
 
-    // Vérifier si l'utilisateur existe déjà
-    const { data: existingUsers, error: checkError } = await supabaseAdmin
-      .from('auth_users_view')
-      .select('id, email')
-      .eq('email', email)
-
-    if (checkError) {
-      console.error('Erreur lors de la vérification utilisateur:', checkError)
-    } else {
-      console.log('Utilisateurs existants trouvés:', existingUsers?.length || 0)
+    // Vérifier si l'utilisateur existe déjà en utilisant l'Admin API
+    console.log('Vérification existence utilisateur avec Admin API...')
+    const { data: usersList, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+    
+    if (listError) {
+      console.error('Erreur lors de la récupération des utilisateurs:', listError)
+      throw new Error(`Impossible de vérifier les utilisateurs existants: ${listError.message}`)
     }
 
+    const existingUser = usersList.users.find(user => user.email === email)
+    console.log('Utilisateur existant trouvé:', !!existingUser)
+
     // Si l'utilisateur existe déjà, vérifier s'il a déjà le rôle admin
-    if (existingUsers && existingUsers.length > 0) {
-      const existingUser = existingUsers[0]
+    if (existingUser) {
       console.log('Utilisateur existant trouvé:', existingUser.id)
       
       // Vérifier si l'utilisateur a déjà le rôle administrateur

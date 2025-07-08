@@ -49,25 +49,18 @@ const AdminManager = () => {
       }
 
       if (adminRoles && adminRoles.length > 0) {
-        // Pour chaque rôle d'admin, récupérer les informations depuis auth_users_view
-        const { data: authUsers, error: usersError } = await supabase
-          .from("auth_users_view")
-          .select("id, email, created_at")
-          .in("id", adminRoles.map(role => role.user_id));
+        // Appeler l'edge function pour récupérer les détails des utilisateurs admin
+        const { data: adminUsersData, error: usersError } = await supabase.functions.invoke('get-admin-users', {
+          body: { userIds: adminRoles.map(role => role.user_id) }
+        });
 
-        console.log("Utilisateurs auth trouvés:", authUsers);
+        console.log("Utilisateurs admin récupérés:", adminUsersData);
 
         if (usersError) {
           console.error("Erreur lors de la récupération des utilisateurs:", usersError);
           setAdminUsers([]);
         } else {
-          const adminUsersData: AdminUser[] = (authUsers || []).map(user => ({
-            id: user.id!,
-            email: user.email!,
-            created_at: user.created_at!
-          }));
-          console.log("Administrateurs finaux:", adminUsersData);
-          setAdminUsers(adminUsersData);
+          setAdminUsers(adminUsersData?.users || []);
         }
       } else {
         console.log("Aucun rôle administrateur trouvé");
