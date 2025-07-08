@@ -24,12 +24,19 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     console.log('📧 Début fonction send-order-notification');
-    const { email, name, orderId, status, statusMessage } = await req.json() as NotificationRequest;
+    const bodyText = await req.text();
+    console.log('📋 Body reçu:', bodyText);
     
-    console.log('📋 Données reçues:', { email, name, orderId, status });
+    const { email, name, orderId, status, statusMessage } = JSON.parse(bodyText) as NotificationRequest;
+    
+    console.log('📋 Données parsées:', { email, name, orderId, status });
     
     // Récupérer la clé API Brevo depuis les variables d'environnement
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+    
+    console.log('🔑 Tentative récupération clé API Brevo...');
+    console.log('🔑 Clé présente:', !!brevoApiKey);
+    console.log('🔑 Début de la clé:', brevoApiKey ? brevoApiKey.substring(0, 10) + '...' : 'undefined');
     
     if (!brevoApiKey) {
       console.error('❌ Clé API Brevo manquante');
