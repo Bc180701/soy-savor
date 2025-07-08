@@ -41,14 +41,14 @@ export const createOrder = async (
     // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
     const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
 
-    console.log(`Création de commande pour le restaurant: ${targetRestaurantId}`);
+    console.log(`🏪 Création de commande pour le restaurant: ${targetRestaurantId}`);
 
     // Création de la commande dans la base de données
     const { data: newOrder, error: orderError } = await supabase
       .from("orders")
       .insert({
         user_id: userId, // null si pas connecté
-        restaurant_id: targetRestaurantId,
+        restaurant_id: targetRestaurantId, // IMPORTANT: bien associer le restaurant
         subtotal: orderInput.subtotal,
         tax: orderInput.tax,
         delivery_fee: orderInput.deliveryFee,
@@ -76,11 +76,11 @@ export const createOrder = async (
       .single();
 
     if (orderError) {
-      console.error("Erreur lors de la création de la commande:", orderError);
+      console.error("❌ Erreur lors de la création de la commande:", orderError);
       return { success: false, error: orderError };
     }
 
-    console.log(`Commande créée avec succès: ${newOrder.id} pour le restaurant ${targetRestaurantId}`);
+    console.log(`✅ Commande créée avec succès: ${newOrder.id} pour le restaurant ${targetRestaurantId}`);
 
     // Ajouter les articles de la commande
     const orderItemPromises = orderInput.items.map((item) => {
@@ -131,7 +131,7 @@ export const createOrder = async (
       order: orderResult
     };
   } catch (error) {
-    console.error("Erreur lors de la création de la commande:", error);
+    console.error("❌ Erreur lors de la création de la commande:", error);
     return { success: false, error };
   }
 };
@@ -201,7 +201,7 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
 
 export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse> => {
   try {
-    console.log("Début de récupération de toutes les commandes pour le restaurant:", restaurantId);
+    console.log("📋 Début de récupération de toutes les commandes pour le restaurant:", restaurantId);
     
     // Construire la requête avec ou sans filtre de restaurant
     let query = supabase
@@ -240,17 +240,18 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
     // Ajouter le filtre restaurant si fourni
     if (restaurantId) {
       query = query.eq('restaurant_id', restaurantId);
+      console.log("🏪 Filtrage par restaurant:", restaurantId);
     }
       
     const response = await query;
       
     if (response.error) {
-      console.error("Erreur lors de la récupération des commandes:", response.error);
+      console.error("❌ Erreur lors de la récupération des commandes:", response.error);
       // Create a proper Error instance from the PostgrestError
       return { orders: [], error: new Error(response.error.message) };
     }
     
-    console.log(`${response.data?.length || 0} commandes récupérées de Supabase pour le restaurant ${restaurantId || 'tous'}`);
+    console.log(`✅ ${response.data?.length || 0} commandes récupérées de Supabase pour le restaurant ${restaurantId || 'tous'}`);
     const orders = response.data || [];
 
     // Convertir les données Supabase au format de notre application
