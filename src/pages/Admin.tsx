@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import IngredientsManager from "@/components/admin/IngredientsManager";
 import DeliveryZonesManager from "@/components/admin/DeliveryZonesManager";
 import UsersList from "@/components/admin/UsersList";
+import EmailTestManager from "@/components/admin/EmailTestManager";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -134,19 +135,20 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-12 gap-1">
-              <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
-              <TabsTrigger value="orders">Commandes</TabsTrigger>
-              <TabsTrigger value="products">Produits</TabsTrigger>
-              <TabsTrigger value="categories">Catégories</TabsTrigger>
-              <TabsTrigger value="featured">Produits Vedettes</TabsTrigger>
-              <TabsTrigger value="hours">Horaires</TabsTrigger>
-              <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
-              <TabsTrigger value="ordering">Configuration</TabsTrigger>
-              <TabsTrigger value="delivery-zones">Zones livraison</TabsTrigger>
-              <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
-              <TabsTrigger value="admins">Administrateurs</TabsTrigger>
-              <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-12 gap-1 overflow-x-auto">
+              <TabsTrigger value="dashboard" className="whitespace-nowrap">Tableau de bord</TabsTrigger>
+              <TabsTrigger value="orders" className="whitespace-nowrap">Commandes</TabsTrigger>
+              <TabsTrigger value="products" className="whitespace-nowrap">Produits</TabsTrigger>
+              <TabsTrigger value="categories" className="whitespace-nowrap">Catégories</TabsTrigger>
+              <TabsTrigger value="featured" className="whitespace-nowrap">Produits Vedettes</TabsTrigger>
+              <TabsTrigger value="hours" className="whitespace-nowrap">Horaires</TabsTrigger>
+              <TabsTrigger value="homepage" className="whitespace-nowrap">Page d'accueil</TabsTrigger>
+              <TabsTrigger value="ordering" className="whitespace-nowrap">Configuration</TabsTrigger>
+              <TabsTrigger value="delivery-zones" className="whitespace-nowrap">Zones livraison</TabsTrigger>
+              <TabsTrigger value="ingredients" className="whitespace-nowrap">Ingrédients</TabsTrigger>
+              <TabsTrigger value="admins" className="whitespace-nowrap">Administrateurs</TabsTrigger>
+              <TabsTrigger value="users" className="whitespace-nowrap">Utilisateurs</TabsTrigger>
+              <TabsTrigger value="email-test" className="whitespace-nowrap">Test Email</TabsTrigger>
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -195,6 +197,10 @@ const Admin = () => {
             
             <TabsContent value="users">
               <UsersList />
+            </TabsContent>
+            
+            <TabsContent value="email-test">
+              <EmailTestManager />
             </TabsContent>
           </Tabs>
           
