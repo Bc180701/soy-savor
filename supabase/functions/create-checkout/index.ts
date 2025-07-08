@@ -37,7 +37,9 @@ serve(async (req) => {
       cancelUrl
     } = await req.json();
 
-    console.log('🏪 Création checkout pour restaurant:', restaurantId);
+    // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
+    const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
+    console.log('🏪 Création checkout pour restaurant:', targetRestaurantId);
 
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
@@ -97,7 +99,7 @@ serve(async (req) => {
       cancel_url: cancelUrl,
       customer_email: clientEmail,
       metadata: {
-        restaurant_id: restaurantId, // Ajouter l'ID du restaurant dans les métadonnées
+        restaurant_id: targetRestaurantId, // Ajouter l'ID du restaurant dans les métadonnées
         order_type: orderType,
         client_name: clientName,
         client_phone: clientPhone,
@@ -109,7 +111,7 @@ serve(async (req) => {
     // Créer la commande dans Supabase AVEC le restaurant_id
     const orderData = {
       stripe_session_id: session.id,
-      restaurant_id: restaurantId, // IMPORTANT: associer au bon restaurant
+      restaurant_id: targetRestaurantId, // IMPORTANT: associer au bon restaurant
       subtotal,
       tax,
       delivery_fee: deliveryFee,
@@ -131,7 +133,7 @@ serve(async (req) => {
       customer_notes: customerNotes,
     };
 
-    console.log('📝 Création commande avec restaurant:', restaurantId);
+    console.log('📝 Création commande avec restaurant:', targetRestaurantId);
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -144,7 +146,7 @@ serve(async (req) => {
       throw orderError;
     }
 
-    console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId);
+    console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', targetRestaurantId);
 
     // Ajouter les articles de la commande
     const orderItemPromises = items.map((item: any) => {
@@ -165,7 +167,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       url: session.url,
       orderId: order.id,
-      restaurantId: restaurantId 
+      restaurantId: targetRestaurantId 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
