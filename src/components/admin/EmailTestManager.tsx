@@ -25,22 +25,22 @@ const EmailTestManager = () => {
     setIsLoading(true);
     
     try {
-      console.log('🧪 Envoi email de test à:', email);
+      console.log('🧪 Test de notification de commande à:', email);
       
-      // D'abord tester la clé Brevo
-      console.log('🔍 Test de la clé Brevo...');
-      const debugResult = await supabase.functions.invoke('debug-brevo');
-      console.log('🔍 Debug Brevo:', debugResult);
-
-      // Puis tester l'envoi
-      const { data, error } = await supabase.functions.invoke('test-email-simple', {
-        body: { email }
+      const { data, error } = await supabase.functions.invoke('send-order-notification', {
+        body: { 
+          email,
+          name: "Test User",
+          orderId: "TEST-001",
+          status: "en préparation",
+          statusMessage: "est en cours de préparation"
+        }
       });
 
-      console.log('📡 Résultat test simple:', { data, error });
+      console.log('📡 Résultat test:', { data, error });
 
       if (error) {
-        console.error('❌ Erreur test simple:', error);
+        console.error('❌ Erreur test:', error);
         toast({
           title: "Erreur d'envoi",
           description: `Erreur: ${error.message}`,
@@ -49,7 +49,7 @@ const EmailTestManager = () => {
         return;
       }
 
-      console.log('✅ Email envoyé via test simple');
+      console.log('✅ Email de notification envoyé');
       
       toast({
         title: "Test envoyé",
