@@ -27,19 +27,21 @@ const EmailTestManager = () => {
     try {
       console.log('🧪 Envoi email de test à:', email);
       
-      // Utiliser la fonction de base de données Supabase
-      const { data, error } = await supabase.rpc('send_order_status_email', {
-        p_email: email,
-        p_name: "Test Admin",
-        p_order_id: "TEST-" + Date.now(),
-        p_status: "confirmed",
-        p_status_message: "est un test d'envoi d'email depuis l'administration"
+      // Utiliser l'edge function Brevo
+      const { data, error } = await supabase.functions.invoke('send-order-notification', {
+        body: {
+          email: email,
+          name: "Test Admin",
+          orderId: "TEST-" + Date.now(),
+          status: "confirmed",
+          statusMessage: "est un test d'envoi d'email depuis l'administration"
+        }
       });
 
-      console.log('📡 Résultat fonction DB:', { data, error });
+      console.log('📡 Résultat edge function:', { data, error });
 
       if (error) {
-        console.error('❌ Erreur fonction DB:', error);
+        console.error('❌ Erreur edge function:', error);
         toast({
           title: "Erreur d'envoi",
           description: `Erreur: ${error.message}`,
@@ -48,7 +50,7 @@ const EmailTestManager = () => {
         return;
       }
 
-      console.log('✅ Email envoyé via fonction DB');
+      console.log('✅ Email envoyé via edge function');
       
       toast({
         title: "Test envoyé",
