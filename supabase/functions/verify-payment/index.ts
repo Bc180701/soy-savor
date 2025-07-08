@@ -152,7 +152,7 @@ serve(async (req) => {
     if (order.client_email && order.client_name) {
       try {
         console.log('📧 Envoi notification email à:', order.client_email);
-        const { error: emailError } = await supabase.functions.invoke('send-email-notification', {
+        const { error: emailError } = await supabase.functions.invoke('send-order-notification', {
           body: {
             email: order.client_email,
             name: order.client_name,

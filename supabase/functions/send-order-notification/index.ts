@@ -52,6 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
     
     // Envoyer l'email via l'API Brevo
+    console.log('🌐 Tentative d\'envoi via API Brevo...');
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -74,14 +75,17 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
     
+    console.log('📡 Réponse Brevo - Status:', response.status);
+    console.log('📡 Réponse Brevo - Headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("Erreur d'envoi d'email via Brevo:", errorData);
-      throw new Error(`Erreur Brevo: ${JSON.stringify(errorData)}`);
+      console.error("❌ Erreur d'envoi d'email via Brevo:", errorData);
+      throw new Error(`Erreur Brevo: ${response.status} - ${JSON.stringify(errorData)}`);
     }
     
     const responseData = await response.json();
-    console.log("Email envoyé avec succès via Brevo:", responseData);
+    console.log("✅ Email envoyé avec succès via Brevo:", responseData);
     
     return new Response(JSON.stringify({ success: true, messageId: responseData.messageId }), {
       status: 200,
