@@ -1,12 +1,145 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, Package, Truck } from "lucide-react";
+import { CheckCircle, Package, Truck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const CommandeConfirmee = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
+  const { toast } = useToast();
+
+  // Créer la commande si elle n'existe pas déjà
+  useEffect(() => {
+    const createOrderFromSession = async () => {
+      if (!sessionId || orderCreated || isCreatingOrder) return;
+
+      setIsCreatingOrder(true);
+      try {
+        // Vérifier si la commande existe déjà
+        const { data: existingOrder } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('stripe_session_id', sessionId)
+          .maybeSingle();
+
+        if (existingOrder) {
+          setOrderCreated(true);
+          setIsCreatingOrder(false);
+          return;
+        }
+
+        // Récupérer les données du panier depuis localStorage
+        const cartData = localStorage.getItem('cart-storage');
+        const restaurantData = localStorage.getItem('restaurant-storage');
+        const deliveryData = localStorage.getItem('delivery-info');
+
+        if (!cartData) {
+          throw new Error('Données de panier manquantes');
+        }
+
+        const cart = JSON.parse(cartData);
+        const restaurant = restaurantData ? JSON.parse(restaurantData) : null;
+        const delivery = deliveryData ? JSON.parse(deliveryData) : null;
+
+        // Calculer les totaux depuis le panier
+        const items = cart.state?.items || [];
+        const subtotal = items.reduce((sum: number, item: any) => sum + (item.menuItem.price * item.quantity), 0);
+        const tax = subtotal * 0.1;
+        const deliveryFee = delivery?.orderType === "delivery" ? 3.50 : 0;
+        const tip = delivery?.tip || 0;
+        const total = subtotal + tax + deliveryFee + tip;
+
+        // Créer la commande
+        const orderData = {
+          stripe_session_id: sessionId,
+          restaurant_id: restaurant?.state?.selectedRestaurant?.id || "11111111-1111-1111-1111-111111111111",
+          subtotal,
+          tax,
+          delivery_fee: deliveryFee,
+          tip,
+          total,
+          discount: 0,
+          order_type: delivery?.orderType || "delivery",
+          status: 'confirmed',
+          payment_method: 'credit-card',
+          payment_status: 'paid',
+          scheduled_for: new Date().toISOString(),
+          client_name: delivery?.name || "Client",
+          client_email: delivery?.email || "",
+          client_phone: delivery?.phone || "",
+          delivery_street: delivery?.street || null,
+          delivery_city: delivery?.city || null,
+          delivery_postal_code: delivery?.postalCode || null,
+          customer_notes: delivery?.notes || null,
+        };
+
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert(orderData)
+          .select()
+          .single();
+
+        if (orderError) throw orderError;
+
+        // Ajouter les articles
+        if (items.length > 0) {
+          const orderItems = items.map((item: any) => ({
+            order_id: order.id,
+            product_id: item.menuItem.id,
+            quantity: item.quantity,
+            price: item.menuItem.price,
+            special_instructions: item.specialInstructions || null,
+          }));
+
+          const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItems);
+
+          if (itemsError) throw itemsError;
+        }
+
+        // Vider le panier
+        localStorage.removeItem('cart-storage');
+        localStorage.removeItem('delivery-info');
+        
+        setOrderCreated(true);
+        
+        toast({
+          title: "Commande créée",
+          description: "Votre commande a été enregistrée avec succès.",
+        });
+
+      } catch (error) {
+        console.error('Erreur création commande:', error);
+        toast({
+          title: "Erreur",
+          description: "Problème lors de l'enregistrement de la commande.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsCreatingOrder(false);
+      }
+    };
+
+    createOrderFromSession();
+  }, [sessionId, orderCreated, isCreatingOrder, toast]);
+
+  if (isCreatingOrder) {
+    return (
+      <div className="container mx-auto py-24 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <Loader2 className="w-20 h-20 text-blue-600 mx-auto mb-4 animate-spin" />
+          <h1 className="text-2xl font-bold mb-2">Finalisation de votre commande...</h1>
+          <p className="text-gray-600">Veuillez patienter pendant que nous enregistrons votre commande.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-24 px-4">
