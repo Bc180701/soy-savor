@@ -62,7 +62,7 @@ export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]
           description: product.description || '',
           price: parseFloat(product.price?.toString() || '0'),
           imageUrl: product.image_url || '',
-          category: product.category_id as any,
+          category: categoriesData.find(cat => cat.id === product.category_id)?.name || product.category_id,
           restaurant_id: product.restaurant_id, // AJOUT: Inclure le restaurant_id
           isVegetarian: product.is_vegetarian || false,
           isSpicy: product.is_spicy || false,
