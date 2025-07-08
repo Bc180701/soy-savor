@@ -282,6 +282,7 @@ export type Database = {
           restaurant_id: string
           scheduled_for: string
           status: string
+          stripe_session_id: string | null
           subtotal: number
           tax: number
           tip: number | null
@@ -312,6 +313,7 @@ export type Database = {
           restaurant_id: string
           scheduled_for: string
           status?: string
+          stripe_session_id?: string | null
           subtotal: number
           tax: number
           tip?: number | null
@@ -342,6 +344,7 @@ export type Database = {
           restaurant_id?: string
           scheduled_for?: string
           status?: string
+          stripe_session_id?: string | null
           subtotal?: number
           tax?: number
           tip?: number | null
