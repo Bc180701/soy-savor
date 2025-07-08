@@ -18,7 +18,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import IngredientsManager from "@/components/admin/IngredientsManager";
 import DeliveryZonesManager from "@/components/admin/DeliveryZonesManager";
 import UsersList from "@/components/admin/UsersList";
-import EmailTestManager from "@/components/admin/EmailTestManager";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -135,7 +134,7 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-13 gap-1">
+            <TabsList className="grid w-full grid-cols-12 gap-1">
               <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
               <TabsTrigger value="orders">Commandes</TabsTrigger>
               <TabsTrigger value="products">Produits</TabsTrigger>
@@ -148,7 +147,6 @@ const Admin = () => {
               <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
               <TabsTrigger value="admins">Administrateurs</TabsTrigger>
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-              <TabsTrigger value="email-test">Test Email</TabsTrigger>
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -197,10 +195,6 @@ const Admin = () => {
             
             <TabsContent value="users">
               <UsersList />
-            </TabsContent>
-            
-            <TabsContent value="email-test">
-              <EmailTestManager />
             </TabsContent>
           </Tabs>
           
