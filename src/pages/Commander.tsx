@@ -152,7 +152,8 @@ const CommanderContent = () => {
   }, [currentRestaurant?.id, toast]); // Ajouter currentRestaurant.id comme dépendance
 
   const handleRestaurantSelected = (restaurant: Restaurant) => {
-    console.log("🏪 Nouveau restaurant sélectionné:", restaurant.name);
+    console.log("🏪 Nouveau restaurant sélectionné:", restaurant.name, "ID:", restaurant.id);
+    console.log("🏪 Restaurant actuel avant changement:", currentRestaurant?.name, "ID:", currentRestaurant?.id);
     
     // Vérifier si le panier est compatible avec le nouveau restaurant
     const isCompatible = checkRestaurantCompatibility(restaurant.id);
@@ -168,6 +169,7 @@ const CommanderContent = () => {
     }
     
     setCurrentRestaurant(restaurant);
+    console.log("🏪 setCurrentRestaurant appelé avec:", restaurant.name, "ID:", restaurant.id);
     // Les états seront réinitialisés par l'effet ci-dessus
   };
 
