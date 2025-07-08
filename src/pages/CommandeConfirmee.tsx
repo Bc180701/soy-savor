@@ -13,112 +13,45 @@ const CommandeConfirmee = () => {
   const [orderCreated, setOrderCreated] = useState(false);
   const { toast } = useToast();
 
-  // Créer la commande si elle n'existe pas déjà
+  // Vérifier et créer la commande via l'edge function
   useEffect(() => {
-    const createOrderFromSession = async () => {
+    const verifyAndCreateOrder = async () => {
       if (!sessionId || orderCreated || isCreatingOrder) return;
 
       setIsCreatingOrder(true);
       try {
-        // Vérifier si la commande existe déjà
-        const { data: existingOrder } = await supabase
-          .from('orders')
-          .select('id')
-          .eq('stripe_session_id', sessionId)
-          .maybeSingle();
+        console.log('🔍 Vérification paiement pour session:', sessionId);
 
-        if (existingOrder) {
-          setOrderCreated(true);
-          setIsCreatingOrder(false);
-          return;
-        }
-
-        // Récupérer les données du panier depuis localStorage
-        const cartData = localStorage.getItem('cart-storage');
-        const restaurantData = localStorage.getItem('restaurant-storage');
-        const deliveryData = localStorage.getItem('delivery-info');
-
-        if (!cartData) {
-          throw new Error('Données de panier manquantes');
-        }
-
-        const cart = JSON.parse(cartData);
-        const restaurant = restaurantData ? JSON.parse(restaurantData) : null;
-        const delivery = deliveryData ? JSON.parse(deliveryData) : null;
-
-        // Calculer les totaux depuis le panier
-        const items = cart.state?.items || [];
-        const subtotal = items.reduce((sum: number, item: any) => sum + (item.menuItem.price * item.quantity), 0);
-        const tax = subtotal * 0.1;
-        const deliveryFee = delivery?.orderType === "delivery" ? 3.50 : 0;
-        const tip = delivery?.tip || 0;
-        const total = subtotal + tax + deliveryFee + tip;
-
-        // Créer la commande
-        const orderData = {
-          stripe_session_id: sessionId,
-          restaurant_id: restaurant?.state?.selectedRestaurant?.id || "11111111-1111-1111-1111-111111111111",
-          subtotal,
-          tax,
-          delivery_fee: deliveryFee,
-          tip,
-          total,
-          discount: 0,
-          order_type: delivery?.orderType || "delivery",
-          status: 'confirmed',
-          payment_method: 'credit-card',
-          payment_status: 'paid',
-          scheduled_for: new Date().toISOString(),
-          client_name: delivery?.name || "Client",
-          client_email: delivery?.email || "",
-          client_phone: delivery?.phone || "",
-          delivery_street: delivery?.street || null,
-          delivery_city: delivery?.city || null,
-          delivery_postal_code: delivery?.postalCode || null,
-          customer_notes: delivery?.notes || null,
-        };
-
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .insert(orderData)
-          .select()
-          .single();
-
-        if (orderError) throw orderError;
-
-        // Ajouter les articles
-        if (items.length > 0) {
-          const orderItems = items.map((item: any) => ({
-            order_id: order.id,
-            product_id: item.menuItem.id,
-            quantity: item.quantity,
-            price: item.menuItem.price,
-            special_instructions: item.specialInstructions || null,
-          }));
-
-          const { error: itemsError } = await supabase
-            .from('order_items')
-            .insert(orderItems);
-
-          if (itemsError) throw itemsError;
-        }
-
-        // Vider le panier
-        localStorage.removeItem('cart-storage');
-        localStorage.removeItem('delivery-info');
-        
-        setOrderCreated(true);
-        
-        toast({
-          title: "Commande créée",
-          description: "Votre commande a été enregistrée avec succès.",
+        const { data, error } = await supabase.functions.invoke('verify-payment', {
+          body: { sessionId }
         });
 
+        if (error) {
+          throw error;
+        }
+
+        if (data.success) {
+          setOrderCreated(true);
+          
+          // Vider le panier localStorage
+          localStorage.removeItem('cart-storage');
+          localStorage.removeItem('delivery-info');
+          
+          toast({
+            title: "Commande confirmée !",
+            description: `Votre commande #${data.orderId} a été créée avec succès.`,
+          });
+
+          console.log('✅ Commande créée:', data.orderId);
+        } else {
+          throw new Error(data.error || 'Erreur lors de la vérification du paiement');
+        }
+
       } catch (error) {
-        console.error('Erreur création commande:', error);
+        console.error('❌ Erreur vérification paiement:', error);
         toast({
           title: "Erreur",
-          description: "Problème lors de l'enregistrement de la commande.",
+          description: "Impossible de vérifier votre paiement. Contactez le support.",
           variant: "destructive",
         });
       } finally {
@@ -126,7 +59,7 @@ const CommandeConfirmee = () => {
       }
     };
 
-    createOrderFromSession();
+    verifyAndCreateOrder();
   }, [sessionId, orderCreated, isCreatingOrder, toast]);
 
   if (isCreatingOrder) {
