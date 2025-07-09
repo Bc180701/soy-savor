@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.notify-order-delay]
 verify_jwt = false
+
+[functions.test-email]
+verify_jwt = false
