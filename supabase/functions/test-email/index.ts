@@ -30,27 +30,57 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Clé API Brevo manquante dans les variables d'environnement");
     }
     
-    // Test simple d'envoi d'email
+    // Test avec une adresse d'expéditeur plus standard
     const emailData = {
       sender: {
         name: "SushiEats Test",
-        email: "test@clwebdesign.fr"
+        email: "noreply@mg.clwebdesign.fr" // Utilisation d'un sous-domaine dédié
       },
       to: [{
         email: email,
         name: "Test User"
       }],
-      subject: "Test d'envoi d'email - SushiEats",
+      subject: "🍣 Test d'envoi d'email - SushiEats",
       htmlContent: `
         <html>
-          <body style="font-family: Arial, sans-serif; padding: 20px;">
-            <h2 style="color: #2c3e50;">Test d'envoi d'email</h2>
-            <p>Ceci est un email de test pour vérifier la configuration Brevo.</p>
-            <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-            <p><strong>Domaine:</strong> clwebdesign.fr</p>
-            <p>Si vous recevez cet email, la configuration fonctionne !</p>
+          <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <h2 style="color: #2c3e50; text-align: center;">🍣 Test d'envoi d'email réussi !</h2>
+              <p style="font-size: 16px; line-height: 1.6;">Félicitations ! Cet email de test a été envoyé avec succès depuis votre système SushiEats.</p>
+              
+              <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p><strong>📅 Timestamp:</strong> ${new Date().toISOString()}</p>
+                <p><strong>🌐 Domaine:</strong> clwebdesign.fr</p>
+                <p><strong>📧 Destinataire:</strong> ${email}</p>
+              </div>
+              
+              <p style="color: #27ae60; font-weight: bold; text-align: center;">
+                ✅ Si vous recevez cet email, la configuration Brevo fonctionne parfaitement !
+              </p>
+              
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+              
+              <p style="font-size: 14px; color: #666; text-align: center;">
+                Cet email a été envoyé automatiquement par votre système de test SushiEats.<br>
+                Ne pas répondre à cet email.
+              </p>
+            </div>
           </body>
         </html>
+      `,
+      // Ajout d'une version texte pour améliorer la délivrabilité
+      textContent: `
+Test d'envoi d'email - SushiEats
+
+Félicitations ! Cet email de test a été envoyé avec succès.
+
+Timestamp: ${new Date().toISOString()}
+Domaine: clwebdesign.fr
+Destinataire: ${email}
+
+Si vous recevez cet email, la configuration Brevo fonctionne !
+
+Cet email a été envoyé automatiquement par votre système de test SushiEats.
       `
     };
     
@@ -90,6 +120,11 @@ const handler = async (req: Request): Promise<Response> => {
         success: false,
         error: "Erreur Brevo",
         details: errorData,
+        suggestions: [
+          "Vérifiez que le domaine clwebdesign.fr est vérifié dans Brevo",
+          "Vérifiez que l'adresse d'expéditeur est autorisée",
+          "Consultez les logs Brevo pour plus de détails"
+        ],
         debugInfo: {
           hasApiKey: !!brevoApiKey,
           apiKeyLength: brevoApiKey?.length || 0,
@@ -109,10 +144,17 @@ const handler = async (req: Request): Promise<Response> => {
       success: true, 
       messageId: result.messageId,
       message: "Email de test envoyé avec succès !",
+      deliveryTips: [
+        "Vérifiez votre dossier Spam/Indésirables",
+        "Vérifiez le dossier Promotions (Gmail)",
+        "L'email peut prendre quelques minutes à arriver",
+        "Ajoutez noreply@mg.clwebdesign.fr à vos contacts"
+      ],
       debugInfo: {
         hasApiKey: !!brevoApiKey,
         timestamp: new Date().toISOString(),
-        brevoResponse: result
+        brevoResponse: result,
+        senderEmail: "noreply@mg.clwebdesign.fr"
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -126,6 +168,11 @@ const handler = async (req: Request): Promise<Response> => {
       success: false,
       error: error.message,
       stack: error.stack,
+      suggestions: [
+        "Vérifiez votre configuration Brevo",
+        "Vérifiez que la clé API est correcte",
+        "Consultez les logs Supabase pour plus de détails"
+      ],
       debugInfo: {
         timestamp: new Date().toISOString(),
         hasApiKey: !!Deno.env.get("BREVO_API_KEY")
