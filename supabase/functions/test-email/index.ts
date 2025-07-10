@@ -1,19 +1,22 @@
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
 interface TestEmailRequest {
   email: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
-  console.log("🔧 Début du test d'envoi d'email via SMTP");
+serve(async (req) => {
+  console.log("🔧 Début du test d'envoi d'email via API Brevo");
   
-  if (req.method === "OPTIONS") {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
     console.log("✅ Requête OPTIONS traitée");
     return new Response(null, { headers: corsHeaders });
   }
@@ -22,36 +25,33 @@ const handler = async (req: Request): Promise<Response> => {
     const { email } = await req.json() as TestEmailRequest;
     console.log("📧 Email de test pour:", email);
     
-    // Récupération de la clé API Brevo (mot de passe SMTP)
-    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
-    console.log("🔑 Clé API Brevo:", brevoApiKey ? "PRÉSENTE" : "MANQUANTE");
+    console.log("🔑 Clé API Brevo:", BREVO_API_KEY ? "PRÉSENTE" : "MANQUANTE");
     
-    if (!brevoApiKey) {
+    if (!BREVO_API_KEY) {
       throw new Error("Clé API Brevo manquante dans les variables d'environnement");
     }
     
     console.log("🌐 Tentative d'envoi via l'API Brevo...");
     
-    // Utilisation de l'API Brevo au lieu de SMTP pour éviter les problèmes de dépendances
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
       headers: {
-        "accept": "application/json",
-        "api-key": brevoApiKey,
-        "content-type": "application/json"
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'api-key': BREVO_API_KEY
       },
       body: JSON.stringify({
         sender: {
-          name: "SushiEats",
-          email: "clweb@hotmail.com"
+          name: 'SushiEats',
+          email: 'clweb@hotmail.com'
         },
         to: [
           {
             email: email,
-            name: "Destinataire"
+            name: 'Destinataire'
           }
         ],
-        subject: "🍣 Test Brevo API - SushiEats",
+        subject: '🍣 Test Brevo API - SushiEats',
         htmlContent: `
           <html>
             <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
@@ -84,83 +84,51 @@ const handler = async (req: Request): Promise<Response> => {
       })
     });
     
+    const responseData = await response.json();
     console.log("📧 Statut de la réponse Brevo:", response.status);
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Erreur API Brevo:", errorText);
-      throw new Error(`Erreur API Brevo: ${response.status} - ${errorText}`);
+      console.error("❌ Erreur API Brevo:", responseData);
+      throw new Error(`Erreur API Brevo: ${response.status} - ${JSON.stringify(responseData)}`);
     }
     
-    const result = await response.json();
-    console.log("✅ Email envoyé avec succès via l'API Brevo:", result);
+    console.log("✅ Email envoyé avec succès via l'API Brevo:", responseData);
     
     return new Response(JSON.stringify({ 
       success: true, 
       message: "Email de test envoyé avec succès via l'API Brevo !",
       method: "API Brevo",
-      messageId: result.messageId,
-      deliveryTips: [
-        "Vérifiez votre dossier Spam/Indésirables",
-        "Vérifiez le dossier Promotions (Gmail)",
-        "L'email peut prendre quelques minutes à arriver",
-        "L'API Brevo offre une excellente délivrabilité",
-        "Ajoutez clweb@hotmail.com à vos contacts"
-      ],
+      messageId: responseData.messageId,
       debugInfo: {
-        hasApiKey: !!brevoApiKey,
+        hasApiKey: !!BREVO_API_KEY,
         timestamp: new Date().toISOString(),
         senderEmail: "clweb@hotmail.com",
         apiEndpoint: "https://api.brevo.com/v3/smtp/email",
-        messageId: result.messageId
+        messageId: responseData.messageId
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200
     });
     
   } catch (error: any) {
     console.error("💥 Erreur dans test-email:", error);
     console.error("💥 Stack trace:", error.stack);
     
-    let errorMessage = error.message;
-    let suggestions = [
-      "Vérifiez votre clé API Brevo",
-      "Vérifiez que la clé API est active",
-      "Vérifiez que l'expéditeur clweb@hotmail.com est autorisé"
-    ];
-    
-    // Messages d'erreur spécifiques selon le type d'erreur
-    if (error.message.includes("401") || error.message.includes("Unauthorized")) {
-      suggestions = [
-        "Erreur d'authentification - Vérifiez votre clé API Brevo",
-        "Assurez-vous que la clé API est correcte et active",
-        "Vérifiez que vous avez les permissions d'envoi d'emails"
-      ];
-    } else if (error.message.includes("400") || error.message.includes("Bad Request")) {
-      suggestions = [
-        "Erreur dans la requête - Vérifiez l'adresse email",
-        "Assurez-vous que l'expéditeur clweb@hotmail.com est vérifié",
-        "Vérifiez que le domaine est autorisé dans Brevo"
-      ];
-    }
-    
     return new Response(JSON.stringify({ 
       success: false,
-      error: errorMessage,
+      error: error.message,
       method: "API Brevo",
       stack: error.stack,
-      suggestions: suggestions,
       debugInfo: {
         timestamp: new Date().toISOString(),
-        hasApiKey: !!Deno.env.get("BREVO_API_KEY"),
+        hasApiKey: !!BREVO_API_KEY,
         apiEndpoint: "https://api.brevo.com/v3/smtp/email",
         senderEmail: "clweb@hotmail.com"
       }
     }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
-};
-
-serve(handler);
+});
