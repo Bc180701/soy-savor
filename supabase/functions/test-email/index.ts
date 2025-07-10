@@ -23,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { email } = await req.json() as TestEmailRequest;
     console.log("📧 Email de test pour:", email);
     
-    // Vérification de la clé API Brevo (utilisée comme mot de passe SMTP)
+    // Récupération de la clé API Brevo (mot de passe SMTP)
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     console.log("🔑 Clé API Brevo:", brevoApiKey ? "PRÉSENTE" : "MANQUANTE");
     
@@ -33,14 +33,14 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("🌐 Configuration du client SMTP Brevo...");
     
-    // Configuration du client SMTP Brevo
+    // Configuration SMTP avec les BONS paramètres de votre compte
     const client = new SMTPClient({
       connection: {
         hostname: "smtp-relay.brevo.com",
         port: 587,
         tls: true,
         auth: {
-          username: "contact@clwebdesign.fr", // Votre email vérifié dans Brevo
+          username: "clweb@hotmail.com", // Votre vrai identifiant SMTP
           password: brevoApiKey, // Votre clé API Brevo sert de mot de passe
         },
       },
@@ -56,7 +56,8 @@ const handler = async (req: Request): Promise<Response> => {
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
               <p><strong>📅 Timestamp:</strong> ${new Date().toISOString()}</p>
               <p><strong>🌐 Méthode:</strong> SMTP Brevo</p>
-              <p><strong>🔧 Serveur:</strong> smtp-relay.brevo.com</p>
+              <p><strong>🔧 Serveur:</strong> smtp-relay.brevo.com:587</p>
+              <p><strong>👤 Identifiant:</strong> clweb@hotmail.com</p>
               <p><strong>📧 Destinataire:</strong> ${email}</p>
             </div>
             
@@ -78,9 +79,9 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("📤 Envoi de l'email via SMTP...");
     
     await client.send({
-      from: "contact@clwebdesign.fr",
+      from: "clweb@hotmail.com", // Utilisation de votre identifiant SMTP comme expéditeur
       to: email,
-      subject: "🍣 Test SMTP Brevo - SushiEats",
+      subject: "🍣 Test SMTP Brevo - SushiEats (Configuration corrigée)",
       content: htmlContent,
       html: htmlContent,
     });
@@ -94,20 +95,22 @@ const handler = async (req: Request): Promise<Response> => {
       success: true, 
       message: "Email de test envoyé avec succès via SMTP Brevo !",
       method: "SMTP",
-      server: "smtp-relay.brevo.com",
+      server: "smtp-relay.brevo.com:587",
+      username: "clweb@hotmail.com",
       deliveryTips: [
         "Vérifiez votre dossier Spam/Indésirables",
         "Vérifiez le dossier Promotions (Gmail)",
         "L'email peut prendre quelques minutes à arriver",
         "SMTP Brevo offre généralement une meilleure délivrabilité",
-        "Ajoutez contact@clwebdesign.fr à vos contacts"
+        "Ajoutez clweb@hotmail.com à vos contacts"
       ],
       debugInfo: {
         hasApiKey: !!brevoApiKey,
         timestamp: new Date().toISOString(),
-        senderEmail: "contact@clwebdesign.fr",
+        senderEmail: "clweb@hotmail.com",
         smtpServer: "smtp-relay.brevo.com",
-        port: 587
+        port: 587,
+        authUsername: "clweb@hotmail.com"
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -121,14 +124,14 @@ const handler = async (req: Request): Promise<Response> => {
     let suggestions = [
       "Vérifiez votre configuration SMTP Brevo",
       "Vérifiez que la clé API est correcte",
-      "Vérifiez que l'adresse contact@clwebdesign.fr est vérifiée dans Brevo"
+      "Vérifiez que l'identifiant clweb@hotmail.com est correct"
     ];
     
     // Messages d'erreur spécifiques selon le type d'erreur
     if (error.message.includes("authentication") || error.message.includes("auth")) {
       suggestions = [
         "Erreur d'authentification SMTP - Vérifiez votre clé API Brevo",
-        "Assurez-vous que l'email contact@clwebdesign.fr est vérifié dans Brevo",
+        "Assurez-vous que l'identifiant clweb@hotmail.com est correct",
         "La clé API sert de mot de passe pour l'authentification SMTP"
       ];
     } else if (error.message.includes("connection") || error.message.includes("timeout")) {
@@ -149,7 +152,8 @@ const handler = async (req: Request): Promise<Response> => {
         timestamp: new Date().toISOString(),
         hasApiKey: !!Deno.env.get("BREVO_API_KEY"),
         smtpServer: "smtp-relay.brevo.com",
-        port: 587
+        port: 587,
+        authUsername: "clweb@hotmail.com"
       }
     }), {
       status: 500,
