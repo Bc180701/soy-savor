@@ -1,6 +1,6 @@
 
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +12,7 @@ interface TestEmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  console.log("🔧 Début du test d'envoi d'email");
+  console.log("🔧 Début du test d'envoi d'email via SMTP");
   
   if (req.method === "OPTIONS") {
     console.log("✅ Requête OPTIONS traitée");
@@ -23,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { email } = await req.json() as TestEmailRequest;
     console.log("📧 Email de test pour:", email);
     
-    // Vérification de la clé API Brevo
+    // Vérification de la clé API Brevo (utilisée comme mot de passe SMTP)
     const brevoApiKey = Deno.env.get("BREVO_API_KEY");
     console.log("🔑 Clé API Brevo:", brevoApiKey ? "PRÉSENTE" : "MANQUANTE");
     
@@ -31,152 +31,125 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Clé API Brevo manquante dans les variables d'environnement");
     }
     
-    // Test avec l'adresse contact officielle
-    const emailData = {
-      sender: {
-        name: "SushiEats Test",
-        email: "contact@clwebdesign.fr" // Utilisation de l'adresse contact officielle
-      },
-      to: [{
-        email: email,
-        name: "Test User"
-      }],
-      subject: "🍣 Test d'envoi d'email - SushiEats",
-      htmlContent: `
-        <html>
-          <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-              <h2 style="color: #2c3e50; text-align: center;">🍣 Test d'envoi d'email réussi !</h2>
-              <p style="font-size: 16px; line-height: 1.6;">Félicitations ! Cet email de test a été envoyé avec succès depuis votre système SushiEats.</p>
-              
-              <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>📅 Timestamp:</strong> ${new Date().toISOString()}</p>
-                <p><strong>🌐 Domaine:</strong> clwebdesign.fr</p>
-                <p><strong>📧 Destinataire:</strong> ${email}</p>
-              </div>
-              
-              <p style="color: #27ae60; font-weight: bold; text-align: center;">
-                ✅ Si vous recevez cet email, la configuration Brevo fonctionne parfaitement !
-              </p>
-              
-              <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-              
-              <p style="font-size: 14px; color: #666; text-align: center;">
-                Cet email a été envoyé automatiquement par votre système de test SushiEats.<br>
-                Ne pas répondre à cet email.
-              </p>
-            </div>
-          </body>
-        </html>
-      `,
-      // Ajout d'une version texte pour améliorer la délivrabilité
-      textContent: `
-Test d'envoi d'email - SushiEats
-
-Félicitations ! Cet email de test a été envoyé avec succès.
-
-Timestamp: ${new Date().toISOString()}
-Domaine: clwebdesign.fr
-Destinataire: ${email}
-
-Si vous recevez cet email, la configuration Brevo fonctionne !
-
-Cet email a été envoyé automatiquement par votre système de test SushiEats.
-      `
-    };
+    console.log("🌐 Configuration du client SMTP Brevo...");
     
-    console.log("🌐 Tentative d'envoi via Brevo API...");
-    console.log("📝 Données email:", JSON.stringify(emailData, null, 2));
-    
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": brevoApiKey,
+    // Configuration du client SMTP Brevo
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp-relay.brevo.com",
+        port: 587,
+        tls: true,
+        auth: {
+          username: "contact@clwebdesign.fr", // Votre email vérifié dans Brevo
+          password: brevoApiKey, // Votre clé API Brevo sert de mot de passe
+        },
       },
-      body: JSON.stringify(emailData)
     });
     
-    console.log("📡 Status Brevo:", response.status);
-    console.log("📡 Headers Brevo:", Object.fromEntries(response.headers.entries()));
+    const htmlContent = `
+      <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #2c3e50; text-align: center;">🍣 Test SMTP Brevo réussi !</h2>
+            <p style="font-size: 16px; line-height: 1.6;">Félicitations ! Cet email de test a été envoyé avec succès via SMTP Brevo depuis votre système SushiEats.</p>
+            
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p><strong>📅 Timestamp:</strong> ${new Date().toISOString()}</p>
+              <p><strong>🌐 Méthode:</strong> SMTP Brevo</p>
+              <p><strong>🔧 Serveur:</strong> smtp-relay.brevo.com</p>
+              <p><strong>📧 Destinataire:</strong> ${email}</p>
+            </div>
+            
+            <p style="color: #27ae60; font-weight: bold; text-align: center;">
+              ✅ Si vous recevez cet email, la configuration SMTP Brevo fonctionne parfaitement !
+            </p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+            
+            <p style="font-size: 14px; color: #666; text-align: center;">
+              Cet email a été envoyé automatiquement par votre système de test SushiEats via SMTP.<br>
+              Ne pas répondre à cet email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
     
-    if (!response.ok) {
-      let errorData;
-      const responseText = await response.text();
-      console.log("❌ Réponse brute Brevo:", responseText);
-      
-      try {
-        errorData = JSON.parse(responseText);
-        console.log("❌ Erreur Brevo parsée:", JSON.stringify(errorData, null, 2));
-      } catch (parseError) {
-        console.log("❌ Impossible de parser la réponse d'erreur");
-        errorData = { 
-          status: response.status, 
-          statusText: response.statusText,
-          rawResponse: responseText
-        };
-      }
-      
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: "Erreur Brevo",
-        details: errorData,
-        suggestions: [
-          "Vérifiez que le domaine clwebdesign.fr est vérifié dans Brevo",
-          "Vérifiez que l'adresse contact@clwebdesign.fr est autorisée",
-          "Consultez les logs Brevo pour plus de détails"
-        ],
-        debugInfo: {
-          hasApiKey: !!brevoApiKey,
-          apiKeyLength: brevoApiKey?.length || 0,
-          apiKeyStart: brevoApiKey?.substring(0, 10) + "...",
-          timestamp: new Date().toISOString()
-        }
-      }), {
-        status: response.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    console.log("📤 Envoi de l'email via SMTP...");
     
-    const result = await response.json();
-    console.log("✅ Succès Brevo:", JSON.stringify(result, null, 2));
+    await client.send({
+      from: "contact@clwebdesign.fr",
+      to: email,
+      subject: "🍣 Test SMTP Brevo - SushiEats",
+      content: htmlContent,
+      html: htmlContent,
+    });
+    
+    console.log("✅ Email envoyé avec succès via SMTP Brevo");
+    
+    // Fermer la connexion SMTP
+    await client.close();
     
     return new Response(JSON.stringify({ 
       success: true, 
-      messageId: result.messageId,
-      message: "Email de test envoyé avec succès !",
+      message: "Email de test envoyé avec succès via SMTP Brevo !",
+      method: "SMTP",
+      server: "smtp-relay.brevo.com",
       deliveryTips: [
         "Vérifiez votre dossier Spam/Indésirables",
         "Vérifiez le dossier Promotions (Gmail)",
         "L'email peut prendre quelques minutes à arriver",
+        "SMTP Brevo offre généralement une meilleure délivrabilité",
         "Ajoutez contact@clwebdesign.fr à vos contacts"
       ],
       debugInfo: {
         hasApiKey: !!brevoApiKey,
         timestamp: new Date().toISOString(),
-        brevoResponse: result,
-        senderEmail: "contact@clwebdesign.fr"
+        senderEmail: "contact@clwebdesign.fr",
+        smtpServer: "smtp-relay.brevo.com",
+        port: 587
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
     
   } catch (error: any) {
-    console.error("💥 Erreur dans test-email:", error);
+    console.error("💥 Erreur dans test-email SMTP:", error);
     console.error("💥 Stack trace:", error.stack);
+    
+    let errorMessage = error.message;
+    let suggestions = [
+      "Vérifiez votre configuration SMTP Brevo",
+      "Vérifiez que la clé API est correcte",
+      "Vérifiez que l'adresse contact@clwebdesign.fr est vérifiée dans Brevo"
+    ];
+    
+    // Messages d'erreur spécifiques selon le type d'erreur
+    if (error.message.includes("authentication") || error.message.includes("auth")) {
+      suggestions = [
+        "Erreur d'authentification SMTP - Vérifiez votre clé API Brevo",
+        "Assurez-vous que l'email contact@clwebdesign.fr est vérifié dans Brevo",
+        "La clé API sert de mot de passe pour l'authentification SMTP"
+      ];
+    } else if (error.message.includes("connection") || error.message.includes("timeout")) {
+      suggestions = [
+        "Problème de connexion au serveur SMTP Brevo",
+        "Vérifiez votre connexion internet",
+        "Le serveur smtp-relay.brevo.com:587 doit être accessible"
+      ];
+    }
     
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message,
+      error: errorMessage,
+      method: "SMTP",
       stack: error.stack,
-      suggestions: [
-        "Vérifiez votre configuration Brevo",
-        "Vérifiez que la clé API est correcte",
-        "Consultez les logs Supabase pour plus de détails"
-      ],
+      suggestions: suggestions,
       debugInfo: {
         timestamp: new Date().toISOString(),
-        hasApiKey: !!Deno.env.get("BREVO_API_KEY")
+        hasApiKey: !!Deno.env.get("BREVO_API_KEY"),
+        smtpServer: "smtp-relay.brevo.com",
+        port: 587
       }
     }), {
       status: 500,
@@ -186,4 +159,3 @@ Cet email a été envoyé automatiquement par votre système de test SushiEats.
 };
 
 serve(handler);
-
