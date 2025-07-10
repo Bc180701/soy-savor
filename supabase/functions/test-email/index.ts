@@ -1,4 +1,5 @@
 
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
@@ -30,11 +31,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Clé API Brevo manquante dans les variables d'environnement");
     }
     
-    // Test avec une adresse d'expéditeur plus standard
+    // Test avec l'adresse contact officielle
     const emailData = {
       sender: {
         name: "SushiEats Test",
-        email: "noreply@mg.clwebdesign.fr" // Utilisation d'un sous-domaine dédié
+        email: "contact@clwebdesign.fr" // Utilisation de l'adresse contact officielle
       },
       to: [{
         email: email,
@@ -122,7 +123,7 @@ Cet email a été envoyé automatiquement par votre système de test SushiEats.
         details: errorData,
         suggestions: [
           "Vérifiez que le domaine clwebdesign.fr est vérifié dans Brevo",
-          "Vérifiez que l'adresse d'expéditeur est autorisée",
+          "Vérifiez que l'adresse contact@clwebdesign.fr est autorisée",
           "Consultez les logs Brevo pour plus de détails"
         ],
         debugInfo: {
@@ -148,13 +149,13 @@ Cet email a été envoyé automatiquement par votre système de test SushiEats.
         "Vérifiez votre dossier Spam/Indésirables",
         "Vérifiez le dossier Promotions (Gmail)",
         "L'email peut prendre quelques minutes à arriver",
-        "Ajoutez noreply@mg.clwebdesign.fr à vos contacts"
+        "Ajoutez contact@clwebdesign.fr à vos contacts"
       ],
       debugInfo: {
         hasApiKey: !!brevoApiKey,
         timestamp: new Date().toISOString(),
         brevoResponse: result,
-        senderEmail: "noreply@mg.clwebdesign.fr"
+        senderEmail: "contact@clwebdesign.fr"
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -185,3 +186,4 @@ Cet email a été envoyé automatiquement par votre système de test SushiEats.
 };
 
 serve(handler);
+
