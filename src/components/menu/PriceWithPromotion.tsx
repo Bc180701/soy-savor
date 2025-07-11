@@ -25,7 +25,7 @@ export const PriceWithPromotion = ({
   useEffect(() => {
     const checkPromotion = async () => {
       try {
-        console.log(`Vérification promotion pour produit ${productId}, catégorie ${category}, restaurant ${currentRestaurant?.id}`);
+        console.log(`🔍 Vérification promotion pour produit ${productId}, catégorie ${category}, restaurant ${currentRestaurant?.id}`);
         
         let activePromotion = null;
         if (productId) {
@@ -39,7 +39,7 @@ export const PriceWithPromotion = ({
           activePromotion = await getActivePromotionForCategory(category, currentRestaurant?.id);
         }
         
-        console.log(`Promotion trouvée:`, activePromotion);
+        console.log(`🎯 Promotion trouvée:`, activePromotion);
         setPromotion(activePromotion);
       } catch (error) {
         console.error('Erreur lors de la vérification de la promotion:', error);
