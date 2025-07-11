@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import IngredientsManager from "@/components/admin/IngredientsManager";
 import DeliveryZonesManager from "@/components/admin/DeliveryZonesManager";
 import UsersList from "@/components/admin/UsersList";
+import RestaurantClosuresManager from "@/components/admin/RestaurantClosuresManager";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -133,13 +134,14 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-11 gap-1 overflow-x-auto">
+            <TabsList className="grid w-full grid-cols-12 gap-1 overflow-x-auto">
               <TabsTrigger value="dashboard" className="whitespace-nowrap">Tableau de bord</TabsTrigger>
               <TabsTrigger value="orders" className="whitespace-nowrap">Commandes</TabsTrigger>
               <TabsTrigger value="products" className="whitespace-nowrap">Produits</TabsTrigger>
               <TabsTrigger value="categories" className="whitespace-nowrap">Catégories</TabsTrigger>
               <TabsTrigger value="featured" className="whitespace-nowrap">Produits Vedettes</TabsTrigger>
               <TabsTrigger value="hours" className="whitespace-nowrap">Horaires</TabsTrigger>
+              <TabsTrigger value="closures" className="whitespace-nowrap">Fermetures</TabsTrigger>
               <TabsTrigger value="homepage" className="whitespace-nowrap">Page d'accueil</TabsTrigger>
               <TabsTrigger value="ordering" className="whitespace-nowrap">Configuration</TabsTrigger>
               <TabsTrigger value="delivery-zones" className="whitespace-nowrap">Zones livraison</TabsTrigger>
@@ -170,6 +172,10 @@ const Admin = () => {
             
             <TabsContent value="hours">
               <OpeningHoursManager />
+            </TabsContent>
+            
+            <TabsContent value="closures">
+              <RestaurantClosuresManager />
             </TabsContent>
             
             <TabsContent value="homepage">

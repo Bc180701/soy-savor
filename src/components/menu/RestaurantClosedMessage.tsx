@@ -4,12 +4,14 @@ import { Clock, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { DayOpeningHours } from "@/services/openingHoursService";
 
 interface RestaurantClosedMessageProps {
-  nextOpenDay: any;
+  nextOpenDay: DayOpeningHours | null;
+  restaurantName?: string;
 }
 
-const RestaurantClosedMessage = ({ nextOpenDay }: RestaurantClosedMessageProps) => {
+const RestaurantClosedMessage = ({ nextOpenDay, restaurantName }: RestaurantClosedMessageProps) => {
   // Fonction auxiliaire pour formater le nom du jour
   function getFormattedDayName(day: string): string {
     const dayNames: {[key: string]: string} = {
@@ -36,13 +38,15 @@ const RestaurantClosedMessage = ({ nextOpenDay }: RestaurantClosedMessageProps) 
           <Clock size={80} className="text-amber-500" />
         </div>
         
-        <h1 className="text-3xl font-bold mb-4">Restaurant Fermé Aujourd'hui</h1>
+        <h1 className="text-3xl font-bold mb-4">
+          {restaurantName ? `${restaurantName} fermé aujourd'hui` : "Restaurant Fermé Aujourd'hui"}
+        </h1>
         
         <Alert className="mb-8 border-amber-500">
           <AlertTriangle className="h-5 w-5 text-amber-500" />
           <AlertTitle>Commandes indisponibles</AlertTitle>
           <AlertDescription>
-            Notre restaurant est actuellement fermé. Nous sommes ouverts de mardi à samedi.
+            Notre restaurant est actuellement fermé. Vous pouvez consulter nos horaires d'ouverture habituels.
           </AlertDescription>
         </Alert>
         

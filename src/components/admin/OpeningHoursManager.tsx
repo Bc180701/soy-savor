@@ -1,14 +1,18 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Save } from "lucide-react";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { 
+  getWeekOpeningHours, 
+  saveRestaurantOpeningHours, 
+  DayOpeningHours 
+} from "@/services/openingHoursService";
 
 interface DayHours {
   day: string;
@@ -20,6 +24,7 @@ interface DayHours {
 
 const OpeningHoursManager = () => {
   const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [openingHours, setOpeningHours] = useState<DayHours[]>([
@@ -33,31 +38,21 @@ const OpeningHoursManager = () => {
   ]);
 
   const fetchOpeningHours = async () => {
+    if (!currentRestaurant) {
+      console.log("Aucun restaurant sélectionné");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log("Chargement des horaires pour le restaurant:", currentRestaurant.name);
       
-      const { data, error } = await supabase
-        .from('homepage_sections')
-        .select('section_data')
-        .eq('section_name', 'opening_hours')
-        .maybeSingle();
+      const hours = await getWeekOpeningHours(currentRestaurant.id);
       
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-      
-      if (data && data.section_data) {
-        // Convert from DayOpeningHours to our component state format
-        const dbHours = data.section_data as Array<{
-          day: string;
-          is_open: boolean;
-          open_time: string;
-          close_time: string;
-          day_order: number;
-        }>;
-        
-        // Map database data to our state format
-        const formattedData = dbHours.map(item => ({
+      if (hours && hours.length > 0) {
+        // Convertir les données vers le format du composant
+        const formattedData = hours.map(item => ({
           day: item.day,
           dayName: getDayName(item.day),
           isOpen: item.is_open,
@@ -68,7 +63,7 @@ const OpeningHoursManager = () => {
         setOpeningHours(formattedData);
       }
     } catch (error) {
-      console.error("Error loading opening hours:", error);
+      console.error("Erreur lors du chargement des horaires:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les horaires d'ouverture",
@@ -105,12 +100,21 @@ const OpeningHoursManager = () => {
   };
 
   const saveOpeningHours = async () => {
+    if (!currentRestaurant) {
+      toast({
+        title: "Erreur",
+        description: "Aucun restaurant sélectionné",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setSaving(true);
-      console.log("Début de la sauvegarde des horaires d'ouverture");
+      console.log("Sauvegarde des horaires pour le restaurant:", currentRestaurant.name);
       
-      // Convert our state format to database format
-      const dbData = openingHours.map((item, index) => ({
+      // Convertir vers le format de l'API
+      const hoursData: DayOpeningHours[] = openingHours.map((item, index) => ({
         day: item.day,
         day_order: index,
         is_open: item.isOpen,
@@ -118,55 +122,19 @@ const OpeningHoursManager = () => {
         close_time: item.closeTime
       }));
       
-      console.log("Données à sauvegarder:", dbData);
+      const success = await saveRestaurantOpeningHours(currentRestaurant.id, hoursData);
       
-      // Première tentative : vérifier si l'enregistrement existe
-      const { data: existingData, error: selectError } = await supabase
-        .from('homepage_sections')
-        .select('id')
-        .eq('section_name', 'opening_hours')
-        .maybeSingle();
-      
-      if (selectError && selectError.code !== 'PGRST116') {
-        throw selectError;
-      }
-      
-      let result;
-      
-      if (existingData) {
-        // Mise à jour de l'enregistrement existant
-        console.log("Mise à jour de l'enregistrement existant");
-        result = await supabase
-          .from('homepage_sections')
-          .update({ 
-            section_data: dbData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('section_name', 'opening_hours');
+      if (success) {
+        toast({
+          title: "Horaires sauvegardés",
+          description: `Les horaires d'ouverture de ${currentRestaurant.name} ont été mis à jour avec succès`,
+        });
       } else {
-        // Création d'un nouvel enregistrement
-        console.log("Création d'un nouvel enregistrement");
-        result = await supabase
-          .from('homepage_sections')
-          .insert({ 
-            section_name: 'opening_hours',
-            section_data: dbData
-          });
+        throw new Error("Échec de la sauvegarde");
       }
-      
-      if (result.error) {
-        throw result.error;
-      }
-      
-      console.log("Horaires sauvegardés avec succès");
-      
-      toast({
-        title: "Horaires sauvegardés",
-        description: "Les horaires d'ouverture ont été mis à jour avec succès",
-      });
       
     } catch (error) {
-      console.error("Error saving opening hours:", error);
+      console.error("Erreur lors de la sauvegarde des horaires:", error);
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les horaires d'ouverture",
@@ -179,12 +147,29 @@ const OpeningHoursManager = () => {
   
   useEffect(() => {
     fetchOpeningHours();
-  }, []);
+  }, [currentRestaurant]);
+
+  if (!currentRestaurant) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Horaires d'ouverture</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-gray-500">
+            Veuillez sélectionner un restaurant pour gérer ses horaires d'ouverture.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Horaires d'ouverture</CardTitle>
+        <CardTitle>
+          Horaires d'ouverture - {currentRestaurant.name}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (

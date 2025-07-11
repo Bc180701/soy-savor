@@ -660,6 +660,91 @@ export type Database = {
           },
         ]
       }
+      restaurant_closures: {
+        Row: {
+          closure_date: string
+          created_at: string
+          end_time: string | null
+          id: string
+          is_all_day: boolean
+          reason: string | null
+          restaurant_id: string
+          start_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          closure_date: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_all_day?: boolean
+          reason?: string | null
+          restaurant_id: string
+          start_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          closure_date?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          is_all_day?: boolean
+          reason?: string | null
+          restaurant_id?: string
+          start_time?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_closures_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_opening_hours: {
+        Row: {
+          close_time: string
+          created_at: string
+          day_of_week: number
+          id: string
+          is_open: boolean
+          open_time: string
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          close_time?: string
+          created_at?: string
+          day_of_week: number
+          id?: string
+          is_open?: boolean
+          open_time?: string
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          is_open?: boolean
+          open_time?: string
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_opening_hours_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           address: string | null
