@@ -50,6 +50,8 @@ export type Database = {
         Row: {
           applicable_categories: string[] | null
           applicable_days: number[]
+          applicable_products: string[] | null
+          applicable_restaurants: string[] | null
           created_at: string
           description: string
           discount: number
@@ -65,6 +67,8 @@ export type Database = {
         Insert: {
           applicable_categories?: string[] | null
           applicable_days: number[]
+          applicable_products?: string[] | null
+          applicable_restaurants?: string[] | null
           created_at?: string
           description: string
           discount: number
@@ -80,6 +84,8 @@ export type Database = {
         Update: {
           applicable_categories?: string[] | null
           applicable_days?: number[]
+          applicable_products?: string[] | null
+          applicable_restaurants?: string[] | null
           created_at?: string
           description?: string
           discount?: number

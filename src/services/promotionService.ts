@@ -36,8 +36,8 @@ export const fetchDayBasedPromotions = async (): Promise<DayBasedPromotion[]> =>
       isPercentage: promo.is_percentage,
       applicableDays: promo.applicable_days,
       applicableCategories: promo.applicable_categories,
-      applicableProducts: promo.applicable_products,
-      applicableRestaurants: promo.applicable_restaurants,
+      applicableProducts: promo.applicable_products || [],
+      applicableRestaurants: promo.applicable_restaurants || [],
       startTime: promo.start_time,
       endTime: promo.end_time,
       isActive: promo.is_active,
@@ -168,8 +168,8 @@ export const createPromotion = async (promotion: Omit<DayBasedPromotion, 'id' | 
         is_percentage: promotion.isPercentage,
         applicable_days: promotion.applicableDays,
         applicable_categories: promotion.applicableCategories,
-        applicable_products: promotion.applicableProducts,
-        applicable_restaurants: promotion.applicableRestaurants,
+        applicable_products: promotion.applicableProducts || [],
+        applicable_restaurants: promotion.applicableRestaurants || [],
         start_time: promotion.startTime,
         end_time: promotion.endTime,
         is_active: promotion.isActive,
@@ -188,8 +188,8 @@ export const createPromotion = async (promotion: Omit<DayBasedPromotion, 'id' | 
       isPercentage: data.is_percentage,
       applicableDays: data.applicable_days,
       applicableCategories: data.applicable_categories,
-      applicableProducts: data.applicable_products,
-      applicableRestaurants: data.applicable_restaurants,
+      applicableProducts: data.applicable_products || [],
+      applicableRestaurants: data.applicable_restaurants || [],
       startTime: data.start_time,
       endTime: data.end_time,
       isActive: data.is_active,
@@ -212,8 +212,8 @@ export const updatePromotion = async (id: string, promotion: Partial<Omit<DayBas
     if (promotion.isPercentage !== undefined) updateData.is_percentage = promotion.isPercentage;
     if (promotion.applicableDays !== undefined) updateData.applicable_days = promotion.applicableDays;
     if (promotion.applicableCategories !== undefined) updateData.applicable_categories = promotion.applicableCategories;
-    if (promotion.applicableProducts !== undefined) updateData.applicable_products = promotion.applicableProducts;
-    if (promotion.applicableRestaurants !== undefined) updateData.applicable_restaurants = promotion.applicableRestaurants;
+    if (promotion.applicableProducts !== undefined) updateData.applicable_products = promotion.applicableProducts || [];
+    if (promotion.applicableRestaurants !== undefined) updateData.applicable_restaurants = promotion.applicableRestaurants || [];
     if (promotion.startTime !== undefined) updateData.start_time = promotion.startTime;
     if (promotion.endTime !== undefined) updateData.end_time = promotion.endTime;
     if (promotion.isActive !== undefined) updateData.is_active = promotion.isActive;
@@ -235,8 +235,8 @@ export const updatePromotion = async (id: string, promotion: Partial<Omit<DayBas
       isPercentage: data.is_percentage,
       applicableDays: data.applicable_days,
       applicableCategories: data.applicable_categories,
-      applicableProducts: data.applicable_products,
-      applicableRestaurants: data.applicable_restaurants,
+      applicableProducts: data.applicable_products || [],
+      applicableRestaurants: data.applicable_restaurants || [],
       startTime: data.start_time,
       endTime: data.end_time,
       isActive: data.is_active,
@@ -281,8 +281,8 @@ export const getAllPromotions = async (): Promise<DayBasedPromotion[]> => {
       isPercentage: promo.is_percentage,
       applicableDays: promo.applicable_days,
       applicableCategories: promo.applicable_categories,
-      applicableProducts: promo.applicable_products,
-      applicableRestaurants: promo.applicable_restaurants,
+      applicableProducts: promo.applicable_products || [],
+      applicableRestaurants: promo.applicable_restaurants || [],
       startTime: promo.start_time,
       endTime: promo.end_time,
       isActive: promo.is_active,
