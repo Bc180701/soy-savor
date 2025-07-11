@@ -1,5 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,14 +36,14 @@ serve(async (req) => {
       throw new Error("Tous les champs sont requis: email, name, orderId, status");
     }
     
-    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
-    if (!brevoApiKey) {
-      console.error("❌ Clé API Brevo manquante dans les variables d'environnement");
-      throw new Error("Configuration manquante: clé API Brevo");
+    if (!resendApiKey) {
+      console.error("❌ Clé API Resend manquante dans les variables d'environnement");
+      throw new Error("Configuration manquante: clé API Resend");
     }
     
-    console.log("🔑 Clé API Brevo trouvée");
+    console.log("🔑 Clé API Resend trouvée");
     
     // Messages selon le statut
     const statusMessages: Record<string, string> = {
@@ -53,13 +56,13 @@ serve(async (req) => {
     };
     
     const statusMessage = statusMessages[status] || 'a été mise à jour';
-    const subject = `Mise à jour de votre commande #${orderId.substring(0, 8)}`;
+    const subject = `🍣 Mise à jour de votre commande #${orderId.substring(0, 8)}`;
     
     const htmlContent = `
       <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2c3e50; margin-bottom: 10px;">SushiEats</h1>
+            <h1 style="color: #2c3e50; margin-bottom: 10px;">🍣 SushiEats</h1>
             <div style="height: 3px; background: linear-gradient(90deg, #ff6b6b, #4ecdc4); margin: 0 auto; width: 100px;"></div>
           </div>
           
@@ -83,51 +86,28 @@ serve(async (req) => {
       </html>
     `;
     
-    const emailData = {
-      sender: {
-        name: "SushiEats",
-        email: "notifications@clwebdesign.fr"
-      },
-      to: [{
-        email: email,
-        name: name
-      }],
-      subject: subject,
-      htmlContent: htmlContent
-    };
-    
-    console.log("🌐 Envoi via API Brevo...");
+    console.log("🌐 Envoi via API Resend...");
     console.log("📧 Destinataire:", email);
     
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": brevoApiKey,
-      },
-      body: JSON.stringify(emailData)
+    const emailResponse = await resend.emails.send({
+      from: "SushiEats <onboarding@resend.dev>",
+      to: [email],
+      subject: subject,
+      html: htmlContent,
     });
     
-    console.log("📡 Statut de la réponse Brevo:", response.status);
+    console.log("📡 Réponse Resend:", emailResponse);
     
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-        console.error("❌ Erreur détaillée de Brevo:", JSON.stringify(errorData, null, 2));
-      } catch (parseError) {
-        console.error("❌ Impossible de parser la réponse d'erreur de Brevo");
-        errorData = { status: response.status, statusText: response.statusText };
-      }
-      throw new Error(`Erreur Brevo: ${response.status} - ${JSON.stringify(errorData)}`);
+    if (emailResponse.error) {
+      console.error("❌ Erreur Resend:", emailResponse.error);
+      throw new Error(`Erreur Resend: ${emailResponse.error.message}`);
     }
     
-    const result = await response.json();
-    console.log("✅ Email de notification envoyé avec succès:", JSON.stringify(result, null, 2));
+    console.log("✅ Email de notification envoyé avec succès:", emailResponse.data?.id);
     
     return new Response(JSON.stringify({ 
       success: true, 
-      messageId: result.messageId,
+      messageId: emailResponse.data?.id,
       message: "Notification envoyée avec succès"
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -146,4 +126,5 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+});
 });
