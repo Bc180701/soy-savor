@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DayOpeningHours {
@@ -35,70 +34,103 @@ export interface RestaurantClosure {
 // Vérifier si le restaurant est ouvert maintenant
 export const isRestaurantOpenNow = async (restaurantId: string): Promise<boolean> => {
   try {
-    console.log("🔍 Vérification ouverture pour restaurant:", restaurantId);
+    console.log("🔍 [DEBUG] Vérification ouverture pour restaurant:", restaurantId);
     const now = new Date();
     const currentDay = now.getDay(); // 0 = dimanche, 1 = lundi, etc.
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     const currentDate = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
 
+    console.log("🔍 [DEBUG] Date/Heure actuelle:", {
+      currentDay,
+      currentTime,
+      currentDate,
+      dayName: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][currentDay]
+    });
+
     // Vérifier d'abord les fermetures temporaires POUR CE RESTAURANT SPÉCIFIQUE
-    console.log("🔍 Vérification fermetures temporaires pour:", restaurantId, "date:", currentDate);
+    console.log("🔍 [DEBUG] Vérification fermetures temporaires pour:", restaurantId);
     const { data: closures, error: closureError } = await supabase
       .from('restaurant_closures')
       .select('*')
-      .eq('restaurant_id', restaurantId)  // FILTRE IMPORTANT : par restaurant
+      .eq('restaurant_id', restaurantId)
       .eq('closure_date', currentDate);
 
     if (closureError) {
-      console.error("Erreur lors de la vérification des fermetures:", closureError);
+      console.error("❌ [ERROR] Erreur lors de la vérification des fermetures:", closureError);
+    } else {
+      console.log("🔍 [DEBUG] Fermetures trouvées:", closures?.length || 0);
     }
-
-    console.log("🔍 Fermetures trouvées:", closures?.length || 0, "pour restaurant:", restaurantId);
 
     // Si il y a une fermeture pour aujourd'hui POUR CE RESTAURANT
     if (closures && closures.length > 0) {
       for (const closure of closures) {
-        console.log("🔍 Fermeture trouvée:", closure);
+        console.log("🔍 [DEBUG] Fermeture détectée:", closure);
         if (closure.is_all_day) {
-          console.log("❌ Restaurant fermé toute la journée:", restaurantId);
-          return false; // Fermé toute la journée
+          console.log("❌ [RESULT] Restaurant fermé toute la journée");
+          return false;
         }
         
         // Vérifier si l'heure actuelle est dans la plage de fermeture
         if (closure.start_time && closure.end_time) {
           if (currentTime >= closure.start_time && currentTime <= closure.end_time) {
-            console.log("❌ Restaurant fermé pendant cette plage horaire:", restaurantId);
-            return false; // Fermé pendant cette plage horaire
+            console.log("❌ [RESULT] Restaurant fermé pendant cette plage horaire");
+            return false;
           }
         }
       }
     }
 
     // Vérifier les horaires d'ouverture normaux POUR CE RESTAURANT
-    console.log("🔍 Vérification horaires normaux pour:", restaurantId, "jour:", currentDay);
+    console.log("🔍 [DEBUG] Vérification horaires normaux - jour:", currentDay);
     const { data: openingHours, error } = await supabase
       .from('restaurant_opening_hours')
       .select('*')
-      .eq('restaurant_id', restaurantId)  // FILTRE IMPORTANT : par restaurant
-      .eq('day_of_week', currentDay)
-      .single();
+      .eq('restaurant_id', restaurantId)
+      .eq('day_of_week', currentDay);
 
-    if (error || !openingHours) {
-      console.log("⚠️ Aucune donnée d'horaires trouvée pour ce restaurant, considéré comme ouvert");
+    console.log("🔍 [DEBUG] Réponse horaires d'ouverture:", { openingHours, error });
+
+    if (error) {
+      console.error("❌ [ERROR] Erreur lors de la récupération des horaires:", error);
+      console.log("⚠️ [FALLBACK] Pas d'horaires trouvés, considéré comme ouvert par défaut");
       return true;
     }
 
-    if (!openingHours.is_open) {
-      console.log("❌ Restaurant fermé selon horaires normaux:", restaurantId);
+    if (!openingHours || openingHours.length === 0) {
+      console.log("⚠️ [FALLBACK] Aucune donnée d'horaires trouvée, considéré comme ouvert");
+      return true;
+    }
+
+    const todayHours = openingHours[0];
+    console.log("🔍 [DEBUG] Horaires du jour:", todayHours);
+
+    if (!todayHours.is_open) {
+      console.log("❌ [RESULT] Restaurant fermé selon horaires configurés");
       return false;
     }
 
-    const isOpen = currentTime >= openingHours.open_time && currentTime <= openingHours.close_time;
-    console.log("✅ Restaurant", restaurantId, "ouvert:", isOpen, "heure actuelle:", currentTime, "horaires:", openingHours.open_time, "-", openingHours.close_time);
+    // Nettoyer les heures pour éviter les erreurs de format
+    const openTime = todayHours.open_time;
+    const closeTime = todayHours.close_time;
+    
+    console.log("🔍 [DEBUG] Comparaison horaires:", {
+      currentTime,
+      openTime,
+      closeTime
+    });
+
+    if (!openTime || !closeTime) {
+      console.log("⚠️ [FALLBACK] Horaires non définis, considéré comme ouvert");
+      return true;
+    }
+
+    const isOpen = currentTime >= openTime && currentTime <= closeTime;
+    console.log(`✅ [RESULT] Restaurant ${isOpen ? 'OUVERT' : 'FERMÉ'}`);
     
     return isOpen;
   } catch (error) {
-    console.error("Exception lors de la vérification des horaires:", error);
+    console.error("❌ [EXCEPTION] Exception lors de la vérification des horaires:", error);
+    console.log("⚠️ [FALLBACK] Erreur, considéré comme ouvert par défaut");
     return true;
   }
 };
@@ -106,6 +138,7 @@ export const isRestaurantOpenNow = async (restaurantId: string): Promise<boolean
 // Récupérer les horaires de la semaine pour un restaurant
 export const getWeekOpeningHours = async (restaurantId: string): Promise<DayOpeningHours[]> => {
   try {
+    console.log("🔍 [DEBUG] Récupération horaires semaine pour:", restaurantId);
     const { data: openingHours, error } = await supabase
       .from('restaurant_opening_hours')
       .select('*')
@@ -113,14 +146,16 @@ export const getWeekOpeningHours = async (restaurantId: string): Promise<DayOpen
       .order('day_of_week');
 
     if (error) {
-      console.error("Erreur lors de la récupération des horaires:", error);
+      console.error("❌ [ERROR] Erreur lors de la récupération des horaires:", error);
       return getDefaultOpeningHours();
     }
 
     if (!openingHours || openingHours.length === 0) {
-      console.log("Aucune donnée d'horaires trouvée, utilisation d'horaires par défaut");
+      console.log("⚠️ [FALLBACK] Aucune donnée d'horaires trouvée, utilisation d'horaires par défaut");
       return getDefaultOpeningHours();
     }
+
+    console.log("✅ [SUCCESS] Horaires récupérés:", openingHours);
 
     // Convertir les données de la base vers le format attendu
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -133,7 +168,7 @@ export const getWeekOpeningHours = async (restaurantId: string): Promise<DayOpen
       day_order: hour.day_of_week
     }));
   } catch (error) {
-    console.error("Exception lors de la récupération des horaires:", error);
+    console.error("❌ [EXCEPTION] Exception lors de la récupération des horaires:", error);
     return getDefaultOpeningHours();
   }
 };
@@ -196,7 +231,7 @@ export const getNextOpenDay = async (restaurantId: string): Promise<DayOpeningHo
 // Sauvegarder les horaires d'ouverture pour un restaurant
 export const saveRestaurantOpeningHours = async (restaurantId: string, hours: DayOpeningHours[]): Promise<boolean> => {
   try {
-    console.log("Sauvegarde des horaires pour le restaurant:", restaurantId);
+    console.log("📝 [DEBUG] Sauvegarde des horaires pour le restaurant:", restaurantId);
     
     const dayMap: { [key: string]: number } = {
       'sunday': 0,
@@ -215,32 +250,40 @@ export const saveRestaurantOpeningHours = async (restaurantId: string, hours: Da
       .eq('restaurant_id', restaurantId);
 
     if (deleteError) {
-      console.error("Erreur lors de la suppression des horaires existants:", deleteError);
+      console.error("❌ [ERROR] Erreur lors de la suppression des horaires existants:", deleteError);
       throw deleteError;
     }
 
-    // Insérer les nouveaux horaires
-    const hoursToInsert = hours.map(hour => ({
-      restaurant_id: restaurantId,
-      day_of_week: dayMap[hour.day],
-      is_open: hour.is_open,
-      open_time: hour.open_time,
-      close_time: hour.close_time
-    }));
+    // Insérer les nouveaux horaires avec validation
+    const hoursToInsert = hours.map(hour => {
+      // Validation des heures
+      const openTime = hour.open_time || "11:00";
+      const closeTime = hour.close_time || "22:00";
+      
+      return {
+        restaurant_id: restaurantId,
+        day_of_week: dayMap[hour.day],
+        is_open: hour.is_open,
+        open_time: openTime,
+        close_time: closeTime
+      };
+    });
+
+    console.log("📝 [DEBUG] Données à insérer:", hoursToInsert);
 
     const { error: insertError } = await supabase
       .from('restaurant_opening_hours')
       .insert(hoursToInsert);
 
     if (insertError) {
-      console.error("Erreur lors de l'insertion des nouveaux horaires:", insertError);
+      console.error("❌ [ERROR] Erreur lors de l'insertion des nouveaux horaires:", insertError);
       throw insertError;
     }
 
-    console.log("Horaires sauvegardés avec succès");
+    console.log("✅ [SUCCESS] Horaires sauvegardés avec succès");
     return true;
   } catch (error) {
-    console.error("Exception lors de la sauvegarde des horaires:", error);
+    console.error("❌ [EXCEPTION] Exception lors de la sauvegarde des horaires:", error);
     return false;
   }
 };

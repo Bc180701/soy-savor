@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, addMinutes, isAfter } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -31,26 +32,33 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
   useEffect(() => {
     const checkOpeningStatus = async () => {
       if (!currentRestaurant) {
+        console.log("🔍 [TimeSlotSelector] Aucun restaurant sélectionné");
         setIsLoading(false);
         return;
       }
 
+      console.log("🔍 [TimeSlotSelector] Vérification statut pour:", currentRestaurant.name, currentRestaurant.id);
       setIsLoading(true);
       
       try {
-        // Check if restaurant is open today
+        // Vérifier si le restaurant est ouvert aujourd'hui
         const open = await isRestaurantOpenNow(currentRestaurant.id);
+        console.log("🔍 [TimeSlotSelector] Restaurant ouvert:", open);
         setIsOpen(open);
         
-        // Get all opening hours
+        // Récupérer tous les horaires d'ouverture
         const weekHours = await getWeekOpeningHours(currentRestaurant.id);
+        console.log("🔍 [TimeSlotSelector] Horaires semaine:", weekHours);
         
         if (weekHours.length > 0) {
           const today = new Date();
           const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
           const currentDay = days[today.getDay()];
           
+          console.log("🔍 [TimeSlotSelector] Jour actuel:", currentDay, today.getDay());
+          
           const todayHours = weekHours.find(day => day.day === currentDay);
+          console.log("🔍 [TimeSlotSelector] Horaires du jour trouvées:", todayHours);
           
           if (todayHours) {
             setTodayOpeningHours({
@@ -58,18 +66,18 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
               open_time: todayHours.open_time,
               close_time: todayHours.close_time
             });
+            console.log("✅ [TimeSlotSelector] Horaires configurées:", todayHours);
           } else {
-            // Si aucune donnée n'est trouvée, utiliser des horaires par défaut
-            console.log("Aucune donnée d'horaires trouvée, utilisation des horaires par défaut");
+            // Si aucune donnée n'est trouvée pour ce jour, marquer comme fermé
+            console.log("⚠️ [TimeSlotSelector] Aucune donnée pour ce jour, considéré comme fermé");
             setTodayOpeningHours({
-              is_open: true,
+              is_open: false,
               open_time: "11:00",
               close_time: "22:00"
             });
           }
         } else {
-          // Si aucune donnée d'horaires n'existe, utiliser des horaires par défaut
-          console.log("Aucune donnée d'horaires en base, utilisation des horaires par défaut");
+          console.log("⚠️ [TimeSlotSelector] Aucune donnée d'horaires, utilisation par défaut");
           setTodayOpeningHours({
             is_open: true,
             open_time: "11:00",
@@ -77,7 +85,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
           });
         }
       } catch (error) {
-        console.error("Error checking opening status:", error);
+        console.error("❌ [TimeSlotSelector] Erreur lors de la vérification:", error);
         // En cas d'erreur, utiliser des horaires par défaut pour ne pas bloquer l'utilisateur
         setTodayOpeningHours({
           is_open: true,
@@ -94,18 +102,25 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
 
   useEffect(() => {
     if (!isLoading && todayOpeningHours) {
+      console.log("🔍 [TimeSlotSelector] Génération créneaux avec:", todayOpeningHours);
       generateTimeSlots();
     }
   }, [orderType, isLoading, todayOpeningHours]);
 
   const generateTimeSlots = () => {
-    if (!todayOpeningHours) return;
+    if (!todayOpeningHours) {
+      console.log("⚠️ [TimeSlotSelector] Pas d'horaires disponibles");
+      return;
+    }
     
     const now = new Date();
     const slots: TimeOption[] = [];
 
+    console.log("🔍 [TimeSlotSelector] Génération créneaux - Restaurant ouvert:", todayOpeningHours.is_open);
+
     // Si nous sommes fermés aujourd'hui
     if (!todayOpeningHours.is_open) {
+      console.log("❌ [TimeSlotSelector] Restaurant fermé aujourd'hui");
       setTimeSlots([]);
       return;
     }
@@ -127,6 +142,12 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
     const endDate = new Date();
     endDate.setHours(closeHour, closeMinute, 0, 0);
 
+    console.log("🔍 [TimeSlotSelector] Heures:", {
+      startDate: startDate.toLocaleTimeString(),
+      endDate: endDate.toLocaleTimeString(),
+      now: now.toLocaleTimeString()
+    });
+
     // Ajuster pour le délai de livraison ou de retrait
     const interval = orderType === "delivery" ? 30 : 15;
     const minDelay = orderType === "delivery" ? 30 : 20;
@@ -146,6 +167,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
       currentTime = addMinutes(currentTime, interval);
     }
 
+    console.log("✅ [TimeSlotSelector] Créneaux générés:", slots.length);
     setTimeSlots(slots);
 
     // Sélectionner automatiquement le premier créneau disponible si aucun n'est sélectionné
@@ -154,6 +176,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
       if (firstAvailable) {
         setSelectedSlot(firstAvailable.value);
         onSelect(firstAvailable.value);
+        console.log("✅ [TimeSlotSelector] Premier créneau sélectionné:", firstAvailable.value);
       }
     }
   };
