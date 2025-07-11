@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Trash2, Plus } from "lucide-react";
+import { Calendar, Trash2, Plus, PowerOff } from "lucide-react";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { 
   getRestaurantClosures, 
@@ -16,12 +15,14 @@ import {
   deleteRestaurantClosure,
   RestaurantClosure 
 } from "@/services/openingHoursService";
+import { supabase } from "@/integrations/supabase/client";
 
 const RestaurantClosuresManager = () => {
   const { toast } = useToast();
-  const { currentRestaurant } = useRestaurantContext();
+  const { currentRestaurant, restaurants } = useRestaurantContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [closingAll, setClosingAll] = useState(false);
   const [closures, setClosures] = useState<RestaurantClosure[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -153,6 +154,62 @@ const RestaurantClosuresManager = () => {
     });
   };
 
+  const handleCloseAllRestaurants = async () => {
+    if (!restaurants || restaurants.length === 0) {
+      toast({
+        title: "Erreur",
+        description: "Aucun restaurant disponible",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    
+    try {
+      setClosingAll(true);
+      
+      // Ajouter une fermeture pour chaque restaurant
+      const closurePromises = restaurants.map(restaurant => 
+        addRestaurantClosure(restaurant.id, {
+          closure_date: today,
+          reason: "Fermeture exceptionnelle - Tous les restaurants",
+          is_all_day: true
+        })
+      );
+
+      const results = await Promise.all(closurePromises);
+      const successCount = results.filter(Boolean).length;
+      
+      if (successCount === restaurants.length) {
+        toast({
+          title: "Fermeture globale appliquée",
+          description: `Tous les restaurants (${successCount}) ont été fermés pour aujourd'hui`,
+        });
+      } else {
+        toast({
+          title: "Fermeture partielle",
+          description: `${successCount}/${restaurants.length} restaurants fermés`,
+          variant: "destructive",
+        });
+      }
+      
+      // Recharger les fermetures si on est sur un restaurant spécifique
+      if (currentRestaurant) {
+        fetchClosures();
+      }
+    } catch (error) {
+      console.error("Erreur lors de la fermeture globale:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de fermer tous les restaurants",
+        variant: "destructive",
+      });
+    } finally {
+      setClosingAll(false);
+    }
+  };
+
   useEffect(() => {
     fetchClosures();
   }, [currentRestaurant]);
@@ -161,11 +218,37 @@ const RestaurantClosuresManager = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Fermetures temporaires</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Fermetures temporaires
+            </span>
+            <Button 
+              onClick={handleCloseAllRestaurants}
+              disabled={closingAll}
+              variant="destructive"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <PowerOff className="h-4 w-4" />
+              {closingAll ? "Fermeture..." : "Fermer tous les restaurants"}
+            </Button>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            Veuillez sélectionner un restaurant pour gérer ses fermetures temporaires.
+          <div className="text-center py-8 space-y-4">
+            <div className="text-gray-500">
+              Veuillez sélectionner un restaurant pour gérer ses fermetures temporaires spécifiques.
+            </div>
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <h3 className="font-semibold text-orange-800 mb-2">Configuration globale</h3>
+              <p className="text-sm text-orange-700 mb-3">
+                Utilisez le bouton ci-dessus pour fermer tous les restaurants d'un coup en cas d'urgence ou de fermeture exceptionnelle.
+              </p>
+              <p className="text-xs text-orange-600">
+                Cette action ajoutera une fermeture pour la date d'aujourd'hui à tous les restaurants actifs.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -180,14 +263,26 @@ const RestaurantClosuresManager = () => {
             <Calendar className="h-5 w-5" />
             Fermetures temporaires - {currentRestaurant.name}
           </span>
-          <Button 
-            onClick={() => setShowForm(!showForm)}
-            variant="outline"
-            size="sm"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter une fermeture
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleCloseAllRestaurants}
+              disabled={closingAll}
+              variant="destructive"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <PowerOff className="h-4 w-4" />
+              {closingAll ? "Fermeture..." : "Fermer tous"}
+            </Button>
+            <Button 
+              onClick={() => setShowForm(!showForm)}
+              variant="outline"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter une fermeture
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
