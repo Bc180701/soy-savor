@@ -32,7 +32,7 @@ const ProductsTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [showInactive, setShowInactive] = useState(false);
+  const [productStatusFilter, setProductStatusFilter] = useState<string>("active"); // "active", "inactive", "all"
   const productsPerPage = 10;
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
@@ -139,11 +139,19 @@ const ProductsTable = () => {
     }
   };
 
-  // Filtrer les produits par recherche, catégorie et statut actif/inactif
+  // Filtrer les produits par recherche, catégorie et statut
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === "all" || product.category_id === categoryFilter;
-    const matchesStatus = showInactive || product.is_new !== false;
+    
+    let matchesStatus = true;
+    if (productStatusFilter === "active") {
+      matchesStatus = product.is_new === true;
+    } else if (productStatusFilter === "inactive") {
+      matchesStatus = product.is_new === false;
+    }
+    // Si productStatusFilter === "all", on affiche tous les produits
+    
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -154,7 +162,7 @@ const ProductsTable = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, categoryFilter, showInactive]);
+  }, [searchQuery, categoryFilter, productStatusFilter]);
 
   const handleSaveProduct = (updatedProducts: any[]) => {
     setProducts(updatedProducts);
@@ -210,16 +218,27 @@ const ProductsTable = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="showInactive"
-            checked={showInactive}
-            onChange={(e) => setShowInactive(e.target.checked)}
-            className="rounded text-gold-600 focus:ring-gold-500"
-          />
-          <label htmlFor="showInactive" className="text-sm text-muted-foreground">
-            Afficher les produits désactivés
-          </label>
+          <Button
+            variant={productStatusFilter === "active" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setProductStatusFilter("active")}
+          >
+            Actifs
+          </Button>
+          <Button
+            variant={productStatusFilter === "inactive" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setProductStatusFilter("inactive")}
+          >
+            Désactivés
+          </Button>
+          <Button
+            variant={productStatusFilter === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setProductStatusFilter("all")}
+          >
+            Tous
+          </Button>
         </div>
       </div>
       
@@ -306,7 +325,7 @@ const ProductsTable = () => {
           ) : (
             <TableRow>
               <TableCell colSpan={8} className="h-24 text-center">
-                {searchQuery || categoryFilter !== "all" || !showInactive ? (
+                {searchQuery || categoryFilter !== "all" || productStatusFilter !== "all" ? (
                   <div className="text-muted-foreground">Aucun produit ne correspond aux critères de recherche</div>
                 ) : (
                   <div className="text-muted-foreground">Aucun produit disponible</div>
