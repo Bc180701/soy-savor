@@ -1,3 +1,4 @@
+
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -398,7 +399,7 @@ const sendStatusUpdateEmail = async (email: string, name: string, status: string
     
     const mappedStatus = statusMapping[status] || status;
     
-    const { data, error } = await supabase.functions.invoke('send-order-notification', {
+    const { data, error } = await supabase.functions.invoke('change-statut-notif', {
       body: {
         email,
         name,

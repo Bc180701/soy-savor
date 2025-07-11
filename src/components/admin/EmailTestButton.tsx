@@ -41,7 +41,7 @@ const EmailTestButton = () => {
       
       const testOrderId = `TEST-${Date.now()}`;
       
-      const { data, error } = await supabase.functions.invoke('send-order-notification', {
+      const { data, error } = await supabase.functions.invoke('change-statut-notif', {
         body: {
           email: testEmail,
           name: testName,
@@ -117,7 +117,7 @@ const EmailTestButton = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Mail className="h-5 w-5" />
-          Test des notifications email
+          Test des notifications email avec Resend
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -172,7 +172,7 @@ const EmailTestButton = () => {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Test de tous les statuts</h3>
           <p className="text-sm text-gray-600">
-            Envoie un email de test pour chaque statut de commande (avec 1 seconde d'intervalle)
+            Envoie un email de test pour chaque statut de commande avec la nouvelle fonction Resend
           </p>
           <Button
             onClick={testAllStatuses}
@@ -185,15 +185,11 @@ const EmailTestButton = () => {
           </Button>
         </div>
 
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h4 className="font-semibold text-blue-800">Statuts testés :</h4>
-          <ul className="text-sm text-blue-700 mt-2 space-y-1">
-            {statusOptions.map((status) => (
-              <li key={status.value}>
-                <strong>{status.label}</strong> ({status.value})
-              </li>
-            ))}
-          </ul>
+        <div className="bg-green-50 p-4 rounded-lg">
+          <h4 className="font-semibold text-green-800">Nouvelle fonction : change-statut-notif</h4>
+          <p className="text-sm text-green-700 mt-2">
+            Cette nouvelle fonction utilise Resend dès le départ et remplace l'ancienne fonction qui utilisait Brevo.
+          </p>
         </div>
       </CardContent>
     </Card>

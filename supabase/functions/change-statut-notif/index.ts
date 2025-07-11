@@ -17,7 +17,7 @@ interface NotificationRequest {
 }
 
 serve(async (req) => {
-  console.log("🔄 Début de la fonction send-order-notification");
+  console.log("🔄 Début de la fonction change-statut-notif");
   
   if (req.method === "OPTIONS") {
     console.log("✅ Requête OPTIONS traitée");
@@ -114,7 +114,7 @@ serve(async (req) => {
     });
     
   } catch (error: any) {
-    console.error("💥 Erreur dans send-order-notification:", error);
+    console.error("💥 Erreur dans change-statut-notif:", error);
     console.error("💥 Stack trace:", error.stack);
     
     return new Response(JSON.stringify({ 
