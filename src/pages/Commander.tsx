@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -44,11 +43,10 @@ const CommanderContent = () => {
     
     checkAuth();
 
-    // Afficher le dialog de sélection de restaurant si aucun restaurant n'est sélectionné
-    if (!currentRestaurant) {
-      setShowRestaurantDialog(true);
-      setIsLoading(false);
-    }
+    // Toujours afficher le dialog de sélection de restaurant au début
+    // Ne pas dépendre de currentRestaurant pour décider
+    setShowRestaurantDialog(true);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -157,7 +155,7 @@ const CommanderContent = () => {
     };
 
     loadMenuData();
-  }, [currentRestaurant?.id, toast]); // Ajouter currentRestaurant.id comme dépendance
+  }, [currentRestaurant?.id, toast]);
 
   const handleRestaurantSelected = (restaurant: Restaurant) => {
     console.log("🏪 Nouveau restaurant sélectionné:", restaurant.name, "ID:", restaurant.id);
@@ -217,8 +215,8 @@ const CommanderContent = () => {
     return <OrderingLockedMessage />;
   }
   
-  // Si le restaurant est fermé aujourd'hui, afficher le message de fermeture
-  if (!isRestaurantOpen && nextOpenDay && currentRestaurant) {
+  // Si le restaurant est fermé ET qu'un restaurant est sélectionné, afficher le message de fermeture
+  if (currentRestaurant && !isRestaurantOpen && nextOpenDay) {
     return <RestaurantClosedMessage nextOpenDay={nextOpenDay} restaurantName={currentRestaurant.name} />;
   }
 
@@ -272,8 +270,8 @@ const CommanderContent = () => {
           </div>
         )}
 
-        {/* Bannière de statut du restaurant */}
-        <RestaurantStatusBanner />
+        {/* Bannière de statut du restaurant - seulement si un restaurant est sélectionné */}
+        {currentRestaurant && <RestaurantStatusBanner />}
 
         {!currentRestaurant ? (
           <div className="text-center py-12">

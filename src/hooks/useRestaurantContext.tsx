@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { RestaurantContext, Restaurant } from "@/types/restaurant";
 import { fetchRestaurants } from "@/services/restaurantService";
+import { isRestaurantOpenNow } from "@/services/openingHoursService";
 
 const RestaurantContextObj = createContext<RestaurantContext | undefined>(undefined);
 
@@ -21,12 +22,10 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
         
         setRestaurants(restaurantsList);
         
-        // Sélectionner le premier restaurant par défaut s'il n'y en a pas de sélectionné
-        if (restaurantsList.length > 0 && !currentRestaurant) {
-          const defaultRestaurant = restaurantsList[0];
-          console.log("Sélection du restaurant par défaut:", defaultRestaurant.name);
-          setCurrentRestaurant(defaultRestaurant);
-        }
+        // Ne pas sélectionner automatiquement un restaurant par défaut
+        // Laisser l'utilisateur choisir parmi les restaurants disponibles
+        console.log("Aucun restaurant sélectionné par défaut - l'utilisateur devra choisir");
+        
       } catch (error) {
         console.error("Erreur lors du chargement des restaurants:", error);
         setRestaurants([]);
