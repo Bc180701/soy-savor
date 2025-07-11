@@ -40,6 +40,7 @@ import {
   DayBasedPromotion,
   getDayName 
 } from "@/services/promotionService";
+import { supabase } from "@/integrations/supabase/client";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Dimanche' },
@@ -62,8 +63,22 @@ const CATEGORIES = [
   { value: 'boissons', label: 'Boissons' }
 ];
 
+interface Product {
+  id: string;
+  name: string;
+  category_id: string;
+}
+
+interface Restaurant {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
 const PromotionsManager = () => {
   const [promotions, setPromotions] = useState<DayBasedPromotion[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPromotion, setEditingPromotion] = useState<DayBasedPromotion | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -76,6 +91,8 @@ const PromotionsManager = () => {
     isPercentage: true,
     applicableDays: [] as number[],
     applicableCategories: [] as string[],
+    applicableProducts: [] as string[],
+    applicableRestaurants: [] as string[],
     startTime: '',
     endTime: '',
     isActive: true
@@ -83,6 +100,8 @@ const PromotionsManager = () => {
 
   useEffect(() => {
     loadPromotions();
+    loadProducts();
+    loadRestaurants();
   }, []);
 
   const loadPromotions = async () => {
@@ -103,6 +122,34 @@ const PromotionsManager = () => {
     }
   };
 
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, category_id')
+        .order('name');
+      
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des produits:', error);
+    }
+  };
+
+  const loadRestaurants = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('id, name, is_active')
+        .order('name');
+      
+      if (error) throw error;
+      setRestaurants(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des restaurants:', error);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -111,6 +158,8 @@ const PromotionsManager = () => {
       isPercentage: true,
       applicableDays: [],
       applicableCategories: [],
+      applicableProducts: [],
+      applicableRestaurants: [],
       startTime: '',
       endTime: '',
       isActive: true
@@ -127,6 +176,8 @@ const PromotionsManager = () => {
       isPercentage: promotion.isPercentage,
       applicableDays: promotion.applicableDays,
       applicableCategories: promotion.applicableCategories || [],
+      applicableProducts: promotion.applicableProducts || [],
+      applicableRestaurants: promotion.applicableRestaurants || [],
       startTime: promotion.startTime || '',
       endTime: promotion.endTime || '',
       isActive: promotion.isActive
@@ -216,6 +267,24 @@ const PromotionsManager = () => {
     }));
   };
 
+  const handleProductToggle = (productId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      applicableProducts: prev.applicableProducts.includes(productId)
+        ? prev.applicableProducts.filter(p => p !== productId)
+        : [...prev.applicableProducts, productId]
+    }));
+  };
+
+  const handleRestaurantToggle = (restaurantId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      applicableRestaurants: prev.applicableRestaurants.includes(restaurantId)
+        ? prev.applicableRestaurants.filter(r => r !== restaurantId)
+        : [...prev.applicableRestaurants, restaurantId]
+    }));
+  };
+
   const handleNewPromotionClick = () => {
     console.log('Bouton nouvelle promotion cliqué');
     resetForm();
@@ -241,14 +310,14 @@ const PromotionsManager = () => {
               Nouvelle promotion
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingPromotion ? 'Modifier la promotion' : 'Créer une nouvelle promotion'}
               </DialogTitle>
             </DialogHeader>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="title">Titre *</Label>
@@ -350,6 +419,24 @@ const PromotionsManager = () => {
               </div>
 
               <div>
+                <Label>Restaurants (laisser vide pour tous)</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2 max-h-32 overflow-y-auto">
+                  {restaurants.map((restaurant) => (
+                    <div key={restaurant.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={formData.applicableRestaurants.includes(restaurant.id)}
+                        onCheckedChange={() => handleRestaurantToggle(restaurant.id)}
+                      />
+                      <Label className="text-sm">
+                        {restaurant.name}
+                        {!restaurant.is_active && <span className="text-gray-400"> (fermé)</span>}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <Label>Catégories applicables (laisser vide pour toutes)</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   {CATEGORIES.map((category) => (
@@ -359,6 +446,24 @@ const PromotionsManager = () => {
                         onCheckedChange={() => handleCategoryToggle(category.value)}
                       />
                       <Label className="text-sm">{category.label}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>Produits spécifiques (optionnel)</Label>
+                <div className="grid grid-cols-1 gap-2 mt-2 max-h-48 overflow-y-auto border rounded p-2">
+                  {products.map((product) => (
+                    <div key={product.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={formData.applicableProducts.includes(product.id)}
+                        onCheckedChange={() => handleProductToggle(product.id)}
+                      />
+                      <Label className="text-sm">
+                        {product.name} 
+                        <span className="text-gray-400 ml-1">({product.category_id})</span>
+                      </Label>
                     </div>
                   ))}
                 </div>
@@ -392,6 +497,7 @@ const PromotionsManager = () => {
                   <TableHead>Remise</TableHead>
                   <TableHead>Jours</TableHead>
                   <TableHead>Horaires</TableHead>
+                  <TableHead>Cible</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -428,6 +534,31 @@ const PromotionsManager = () => {
                       ) : (
                         <span className="text-gray-400">Toute la journée</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs space-y-1">
+                        {promotion.applicableRestaurants && promotion.applicableRestaurants.length > 0 && (
+                          <div>
+                            <Badge variant="outline" className="text-xs">
+                              {promotion.applicableRestaurants.length} restaurant(s)
+                            </Badge>
+                          </div>
+                        )}
+                        {promotion.applicableProducts && promotion.applicableProducts.length > 0 && (
+                          <div>
+                            <Badge variant="outline" className="text-xs">
+                              {promotion.applicableProducts.length} produit(s)
+                            </Badge>
+                          </div>
+                        )}
+                        {promotion.applicableCategories && promotion.applicableCategories.length > 0 && (
+                          <div>
+                            <Badge variant="outline" className="text-xs">
+                              {promotion.applicableCategories.length} catégorie(s)
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={promotion.isActive ? "default" : "destructive"}>

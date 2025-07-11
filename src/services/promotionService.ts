@@ -8,6 +8,8 @@ export interface DayBasedPromotion {
   isPercentage: boolean;
   applicableDays: number[]; // 0 = dimanche, 1 = lundi, etc.
   applicableCategories?: string[];
+  applicableProducts?: string[]; // IDs des produits spécifiques
+  applicableRestaurants?: string[]; // IDs des restaurants, si vide = tous
   startTime?: string; // Format HH:MM
   endTime?: string; // Format HH:MM
   isActive: boolean;
@@ -34,6 +36,8 @@ export const fetchDayBasedPromotions = async (): Promise<DayBasedPromotion[]> =>
       isPercentage: promo.is_percentage,
       applicableDays: promo.applicable_days,
       applicableCategories: promo.applicable_categories,
+      applicableProducts: promo.applicable_products,
+      applicableRestaurants: promo.applicable_restaurants,
       startTime: promo.start_time,
       endTime: promo.end_time,
       isActive: promo.is_active,
@@ -46,13 +50,13 @@ export const fetchDayBasedPromotions = async (): Promise<DayBasedPromotion[]> =>
   }
 };
 
-export const checkDayBasedPromotions = async (): Promise<DayBasedPromotion[]> => {
+export const checkDayBasedPromotions = async (restaurantId?: string): Promise<DayBasedPromotion[]> => {
   const promotions = await fetchDayBasedPromotions();
   const now = new Date();
   const currentDay = now.getDay(); // 0 = dimanche, 1 = lundi, etc.
   const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   
-  console.log(`Vérification des promotions - Jour: ${currentDay}, Heure: ${currentTime}`);
+  console.log(`Vérification des promotions - Jour: ${currentDay}, Heure: ${currentTime}, Restaurant: ${restaurantId}`);
   
   return promotions.filter(promotion => {
     // Vérifier si le jour actuel est dans les jours applicables
@@ -64,23 +68,60 @@ export const checkDayBasedPromotions = async (): Promise<DayBasedPromotion[]> =>
       isTimeApplicable = currentTime >= promotion.startTime && currentTime <= promotion.endTime;
     }
     
-    const isActive = isDayApplicable && isTimeApplicable;
+    // Vérifier si la promotion s'applique au restaurant
+    let isRestaurantApplicable = true;
+    if (promotion.applicableRestaurants && promotion.applicableRestaurants.length > 0 && restaurantId) {
+      isRestaurantApplicable = promotion.applicableRestaurants.includes(restaurantId);
+    }
+    
+    const isActive = isDayApplicable && isTimeApplicable && isRestaurantApplicable;
     
     if (isActive) {
-      console.log(`Promotion active: ${promotion.title}`);
+      console.log(`Promotion active: ${promotion.title} pour restaurant ${restaurantId || 'tous'}`);
     }
     
     return isActive;
   });
 };
 
-export const getActivePromotionForCategory = async (category: string): Promise<DayBasedPromotion | null> => {
-  const activePromotions = await checkDayBasedPromotions();
+export const getActivePromotionForCategory = async (category: string, restaurantId?: string): Promise<DayBasedPromotion | null> => {
+  const activePromotions = await checkDayBasedPromotions(restaurantId);
   
-  return activePromotions.find(promotion => 
-    !promotion.applicableCategories || 
-    promotion.applicableCategories.includes(category)
-  ) || null;
+  console.log(`Recherche promotion pour catégorie: ${category}, restaurant: ${restaurantId || 'tous'}`);
+  console.log('Promotions actives:', activePromotions);
+  
+  return activePromotions.find(promotion => {
+    // Si des catégories spécifiques sont définies, vérifier si la catégorie correspond
+    const categoryMatch = !promotion.applicableCategories || 
+                         promotion.applicableCategories.length === 0 || 
+                         promotion.applicableCategories.includes(category);
+    
+    console.log(`Promotion ${promotion.title}: catégories applicables:`, promotion.applicableCategories, 'match:', categoryMatch);
+    
+    return categoryMatch;
+  }) || null;
+};
+
+export const getActivePromotionForProduct = async (productId: string, category: string, restaurantId?: string): Promise<DayBasedPromotion | null> => {
+  const activePromotions = await checkDayBasedPromotions(restaurantId);
+  
+  console.log(`Recherche promotion pour produit: ${productId}, catégorie: ${category}, restaurant: ${restaurantId || 'tous'}`);
+  
+  return activePromotions.find(promotion => {
+    // Vérifier si le produit spécifique est ciblé
+    const productMatch = promotion.applicableProducts && 
+                        promotion.applicableProducts.includes(productId);
+    
+    // Vérifier si la catégorie est ciblée (si pas de produits spécifiques)
+    const categoryMatch = !promotion.applicableProducts && 
+                         (!promotion.applicableCategories || 
+                          promotion.applicableCategories.length === 0 || 
+                          promotion.applicableCategories.includes(category));
+    
+    console.log(`Promotion ${promotion.title}: produit match:`, productMatch, 'catégorie match:', categoryMatch);
+    
+    return productMatch || categoryMatch;
+  }) || null;
 };
 
 export const calculatePromotionDiscount = (
@@ -102,13 +143,11 @@ export const calculatePromotionDiscount = (
   }
 };
 
-// Fonction pour obtenir le nom du jour en français
 export const getDayName = (dayIndex: number): string => {
   const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
   return days[dayIndex] || 'Jour inconnu';
 };
 
-// Fonction pour vérifier si une promotion est active aujourd'hui
 export const isPromotionActiveToday = async (promotionId: string): Promise<boolean> => {
   const activePromotions = await checkDayBasedPromotions();
   return activePromotions.some(promo => promo.id === promotionId);
@@ -129,6 +168,8 @@ export const createPromotion = async (promotion: Omit<DayBasedPromotion, 'id' | 
         is_percentage: promotion.isPercentage,
         applicable_days: promotion.applicableDays,
         applicable_categories: promotion.applicableCategories,
+        applicable_products: promotion.applicableProducts,
+        applicable_restaurants: promotion.applicableRestaurants,
         start_time: promotion.startTime,
         end_time: promotion.endTime,
         is_active: promotion.isActive,
@@ -147,6 +188,8 @@ export const createPromotion = async (promotion: Omit<DayBasedPromotion, 'id' | 
       isPercentage: data.is_percentage,
       applicableDays: data.applicable_days,
       applicableCategories: data.applicable_categories,
+      applicableProducts: data.applicable_products,
+      applicableRestaurants: data.applicable_restaurants,
       startTime: data.start_time,
       endTime: data.end_time,
       isActive: data.is_active,
@@ -169,6 +212,8 @@ export const updatePromotion = async (id: string, promotion: Partial<Omit<DayBas
     if (promotion.isPercentage !== undefined) updateData.is_percentage = promotion.isPercentage;
     if (promotion.applicableDays !== undefined) updateData.applicable_days = promotion.applicableDays;
     if (promotion.applicableCategories !== undefined) updateData.applicable_categories = promotion.applicableCategories;
+    if (promotion.applicableProducts !== undefined) updateData.applicable_products = promotion.applicableProducts;
+    if (promotion.applicableRestaurants !== undefined) updateData.applicable_restaurants = promotion.applicableRestaurants;
     if (promotion.startTime !== undefined) updateData.start_time = promotion.startTime;
     if (promotion.endTime !== undefined) updateData.end_time = promotion.endTime;
     if (promotion.isActive !== undefined) updateData.is_active = promotion.isActive;
@@ -190,6 +235,8 @@ export const updatePromotion = async (id: string, promotion: Partial<Omit<DayBas
       isPercentage: data.is_percentage,
       applicableDays: data.applicable_days,
       applicableCategories: data.applicable_categories,
+      applicableProducts: data.applicable_products,
+      applicableRestaurants: data.applicable_restaurants,
       startTime: data.start_time,
       endTime: data.end_time,
       isActive: data.is_active,
@@ -234,6 +281,8 @@ export const getAllPromotions = async (): Promise<DayBasedPromotion[]> => {
       isPercentage: promo.is_percentage,
       applicableDays: promo.applicable_days,
       applicableCategories: promo.applicable_categories,
+      applicableProducts: promo.applicable_products,
+      applicableRestaurants: promo.applicable_restaurants,
       startTime: promo.start_time,
       endTime: promo.end_time,
       isActive: promo.is_active,
