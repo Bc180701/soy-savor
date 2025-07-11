@@ -134,7 +134,7 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-12 gap-1 overflow-x-auto">
+            <TabsList className="grid w-full grid-cols-11 gap-1 overflow-x-auto">
               <TabsTrigger value="dashboard" className="whitespace-nowrap">Tableau de bord</TabsTrigger>
               <TabsTrigger value="orders" className="whitespace-nowrap">Commandes</TabsTrigger>
               <TabsTrigger value="products" className="whitespace-nowrap">Produits</TabsTrigger>
@@ -143,10 +143,8 @@ const Admin = () => {
               <TabsTrigger value="hours" className="whitespace-nowrap">Horaires</TabsTrigger>
               <TabsTrigger value="closures" className="whitespace-nowrap">Fermetures</TabsTrigger>
               <TabsTrigger value="homepage" className="whitespace-nowrap">Page d'accueil</TabsTrigger>
-              <TabsTrigger value="ordering" className="whitespace-nowrap">Configuration</TabsTrigger>
               <TabsTrigger value="delivery-zones" className="whitespace-nowrap">Zones livraison</TabsTrigger>
               <TabsTrigger value="ingredients" className="whitespace-nowrap">Ingrédients</TabsTrigger>
-              <TabsTrigger value="admins" className="whitespace-nowrap">Administrateurs</TabsTrigger>
               <TabsTrigger value="users" className="whitespace-nowrap">Utilisateurs</TabsTrigger>
             </TabsList>
             
@@ -182,20 +180,12 @@ const Admin = () => {
               <HomepageEditor />
             </TabsContent>
             
-            <TabsContent value="ordering">
-              <OrderingLockControl />
-            </TabsContent>
-            
             <TabsContent value="delivery-zones">
               <DeliveryZonesManager />
             </TabsContent>
             
             <TabsContent value="ingredients">
               <IngredientsManager />
-            </TabsContent>
-            
-            <TabsContent value="admins">
-              <AdminManager />
             </TabsContent>
             
             <TabsContent value="users">
