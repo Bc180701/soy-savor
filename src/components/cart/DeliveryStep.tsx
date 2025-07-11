@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import DeliveryMethod from "../checkout/DeliveryMethod";
@@ -382,11 +381,12 @@ export const DeliveryStep = ({
         />
       )}
       
-      {/* Pickup/Delivery Time */}
+      {/* Pickup/Delivery Time - Passer le restaurant du panier */}
       <TimeSlotSelector
         orderType={deliveryInfo.orderType}
         onSelect={handleTimeSelection}
         selectedTime={deliveryInfo.pickupTime}
+        cartRestaurant={cartRestaurant}
       />
       
       {/* Special Instructions */}

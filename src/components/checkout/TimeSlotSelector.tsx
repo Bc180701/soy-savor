@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { format, addMinutes, isAfter } from "date-fns";
 import { fr } from "date-fns/locale";
 import { isRestaurantOpenNow, getWeekOpeningHours } from "@/services/openingHoursService";
-import { useRestaurantContext } from "@/hooks/useRestaurantContext";
+import type { Restaurant } from "@/types/restaurant";
 
 interface TimeOption {
   label: string;
@@ -15,10 +15,10 @@ interface TimeSlotSelectorProps {
   orderType: "delivery" | "pickup";
   onSelect: (time: string) => void;
   selectedTime?: string;
+  cartRestaurant?: Restaurant | null;
 }
 
-const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelectorProps) => {
-  const { currentRestaurant } = useRestaurantContext();
+const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<TimeOption[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(selectedTime || null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,23 +31,23 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
 
   useEffect(() => {
     const checkOpeningStatus = async () => {
-      if (!currentRestaurant) {
-        console.log("🔍 [TimeSlotSelector] Aucun restaurant sélectionné");
+      if (!cartRestaurant) {
+        console.log("🔍 [TimeSlotSelector] Aucun restaurant du panier fourni");
         setIsLoading(false);
         return;
       }
 
-      console.log("🔍 [TimeSlotSelector] Vérification statut pour:", currentRestaurant.name, currentRestaurant.id);
+      console.log("🔍 [TimeSlotSelector] Vérification statut pour:", cartRestaurant.name, cartRestaurant.id);
       setIsLoading(true);
       
       try {
         // Vérifier si le restaurant est ouvert aujourd'hui
-        const open = await isRestaurantOpenNow(currentRestaurant.id);
+        const open = await isRestaurantOpenNow(cartRestaurant.id);
         console.log("🔍 [TimeSlotSelector] Restaurant ouvert:", open);
         setIsOpen(open);
         
         // Récupérer tous les horaires d'ouverture
-        const weekHours = await getWeekOpeningHours(currentRestaurant.id);
+        const weekHours = await getWeekOpeningHours(cartRestaurant.id);
         console.log("🔍 [TimeSlotSelector] Horaires semaine:", weekHours);
         
         if (weekHours.length > 0) {
@@ -98,7 +98,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
     };
     
     checkOpeningStatus();
-  }, [currentRestaurant]);
+  }, [cartRestaurant]);
 
   useEffect(() => {
     if (!isLoading && todayOpeningHours) {
