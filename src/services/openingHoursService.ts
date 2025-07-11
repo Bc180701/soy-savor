@@ -35,56 +35,68 @@ export interface RestaurantClosure {
 // Vérifier si le restaurant est ouvert maintenant
 export const isRestaurantOpenNow = async (restaurantId: string): Promise<boolean> => {
   try {
+    console.log("🔍 Vérification ouverture pour restaurant:", restaurantId);
     const now = new Date();
     const currentDay = now.getDay(); // 0 = dimanche, 1 = lundi, etc.
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     const currentDate = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
 
-    // Vérifier d'abord les fermetures temporaires
+    // Vérifier d'abord les fermetures temporaires POUR CE RESTAURANT SPÉCIFIQUE
+    console.log("🔍 Vérification fermetures temporaires pour:", restaurantId, "date:", currentDate);
     const { data: closures, error: closureError } = await supabase
       .from('restaurant_closures')
       .select('*')
-      .eq('restaurant_id', restaurantId)
+      .eq('restaurant_id', restaurantId)  // FILTRE IMPORTANT : par restaurant
       .eq('closure_date', currentDate);
 
     if (closureError) {
       console.error("Erreur lors de la vérification des fermetures:", closureError);
     }
 
-    // Si il y a une fermeture pour aujourd'hui
+    console.log("🔍 Fermetures trouvées:", closures?.length || 0, "pour restaurant:", restaurantId);
+
+    // Si il y a une fermeture pour aujourd'hui POUR CE RESTAURANT
     if (closures && closures.length > 0) {
       for (const closure of closures) {
+        console.log("🔍 Fermeture trouvée:", closure);
         if (closure.is_all_day) {
+          console.log("❌ Restaurant fermé toute la journée:", restaurantId);
           return false; // Fermé toute la journée
         }
         
         // Vérifier si l'heure actuelle est dans la plage de fermeture
         if (closure.start_time && closure.end_time) {
           if (currentTime >= closure.start_time && currentTime <= closure.end_time) {
+            console.log("❌ Restaurant fermé pendant cette plage horaire:", restaurantId);
             return false; // Fermé pendant cette plage horaire
           }
         }
       }
     }
 
-    // Vérifier les horaires d'ouverture normaux
+    // Vérifier les horaires d'ouverture normaux POUR CE RESTAURANT
+    console.log("🔍 Vérification horaires normaux pour:", restaurantId, "jour:", currentDay);
     const { data: openingHours, error } = await supabase
       .from('restaurant_opening_hours')
       .select('*')
-      .eq('restaurant_id', restaurantId)
+      .eq('restaurant_id', restaurantId)  // FILTRE IMPORTANT : par restaurant
       .eq('day_of_week', currentDay)
       .single();
 
     if (error || !openingHours) {
-      console.log("Aucune donnée d'horaires trouvée pour ce restaurant, considéré comme ouvert");
+      console.log("⚠️ Aucune donnée d'horaires trouvée pour ce restaurant, considéré comme ouvert");
       return true;
     }
 
     if (!openingHours.is_open) {
+      console.log("❌ Restaurant fermé selon horaires normaux:", restaurantId);
       return false;
     }
 
-    return currentTime >= openingHours.open_time && currentTime <= openingHours.close_time;
+    const isOpen = currentTime >= openingHours.open_time && currentTime <= openingHours.close_time;
+    console.log("✅ Restaurant", restaurantId, "ouvert:", isOpen, "heure actuelle:", currentTime, "horaires:", openingHours.open_time, "-", openingHours.close_time);
+    
+    return isOpen;
   } catch (error) {
     console.error("Exception lors de la vérification des horaires:", error);
     return true;

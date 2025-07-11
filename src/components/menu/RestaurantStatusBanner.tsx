@@ -19,8 +19,10 @@ const RestaurantStatusBanner = () => {
       }
 
       try {
+        console.log("🔍 Vérification statut pour restaurant:", currentRestaurant.name, "ID:", currentRestaurant.id);
         setLoading(true);
         const restaurantIsOpen = await isRestaurantOpenNow(currentRestaurant.id);
+        console.log("📊 Résultat statut restaurant:", currentRestaurant.name, "ouvert:", restaurantIsOpen);
         setIsOpen(restaurantIsOpen);
         
         if (!restaurantIsOpen) {

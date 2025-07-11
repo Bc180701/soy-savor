@@ -26,16 +26,20 @@ const RestaurantSelectionDialog = ({
     const checkRestaurantStatus = async () => {
       if (!restaurants.length) return;
       
+      console.log("🔍 Vérification statut pour", restaurants.length, "restaurants");
       setStatusLoading(true);
       const statusMap: {[key: string]: boolean} = {};
       
       for (const restaurant of restaurants) {
+        console.log("🔍 Vérification restaurant:", restaurant.name, "ID:", restaurant.id);
         const isOpen = await isRestaurantOpenNow(restaurant.id);
         statusMap[restaurant.id] = isOpen;
+        console.log("📊 Restaurant", restaurant.name, "ouvert:", isOpen);
       }
       
       setRestaurantStatus(statusMap);
       setStatusLoading(false);
+      console.log("✅ Statuts finaux:", statusMap);
     };
 
     if (open && restaurants.length > 0) {
