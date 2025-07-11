@@ -12,7 +12,6 @@ import DeliveryZonesManager from "./DeliveryZonesManager";
 import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
 import RestaurantSelector from "./RestaurantSelector";
-import EmailTestButton from "./EmailTestButton";
 
 const AdminManager = () => {
   return (
@@ -25,7 +24,7 @@ const AdminManager = () => {
       <Separator />
       
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-1">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7 gap-1">
           <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
           <TabsTrigger value="orders">Commandes</TabsTrigger>
           <TabsTrigger value="products">Produits</TabsTrigger>
@@ -33,7 +32,6 @@ const AdminManager = () => {
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
           <TabsTrigger value="settings">Paramètres</TabsTrigger>
-          <TabsTrigger value="email-test">Test Email</TabsTrigger>
         </TabsList>
         
         <TabsContent value="dashboard" className="space-y-4">
@@ -67,10 +65,6 @@ const AdminManager = () => {
             <DeliveryZonesManager />
             <IngredientsManager />
           </div>
-        </TabsContent>
-
-        <TabsContent value="email-test" className="space-y-4">
-          <EmailTestButton />
         </TabsContent>
       </Tabs>
     </div>
