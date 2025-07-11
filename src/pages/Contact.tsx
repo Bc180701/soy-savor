@@ -83,18 +83,52 @@ const Contact = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     
-    // Simuler un envoi d'email
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        title: "Message envoyé!",
-        description: "Nous vous répondrons dans les plus brefs délais.",
+    try {
+      const { data, error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: values.name,
+          email: values.email,
+          subject: values.subject,
+          message: values.message,
+        },
       });
-      form.reset();
-    }, 1500);
+
+      if (error) {
+        console.error('Erreur lors de l\'envoi:', error);
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors de l'envoi. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.success) {
+        toast({
+          title: "Message envoyé!",
+          description: "Nous vous répondrons dans les plus brefs délais.",
+        });
+        form.reset();
+      } else {
+        toast({
+          title: "Erreur",
+          description: data.error || "Une erreur est survenue lors de l'envoi.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'envoi. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const contactInfoList = [
