@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +15,7 @@ import PromotionalBanner from "@/components/menu/PromotionalBanner";
 import CategorySection from "@/components/menu/CategorySection";
 import ProductsDisplay from "@/components/menu/ProductsDisplay";
 import RestaurantSelectionDialog from "@/components/menu/RestaurantSelectionDialog";
+import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
 import { useCart, useCartWithRestaurant } from "@/hooks/use-cart";
 
 const CommanderContent = () => {
@@ -41,8 +43,16 @@ const CommanderContent = () => {
     };
     
     checkAuth();
-    
-    // Vérifier si le restaurant est ouvert maintenant
+
+    // Afficher le dialog de sélection de restaurant si aucun restaurant n'est sélectionné
+    if (!currentRestaurant) {
+      setShowRestaurantDialog(true);
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Vérifier si le restaurant sélectionné est ouvert maintenant
     const checkOpeningHours = async () => {
       if (!currentRestaurant) return;
       
@@ -55,12 +65,8 @@ const CommanderContent = () => {
       }
     };
     
-    checkOpeningHours();
-
-    // Afficher le dialog de sélection de restaurant si aucun restaurant n'est sélectionné
-    if (!currentRestaurant) {
-      setShowRestaurantDialog(true);
-      setIsLoading(false);
+    if (currentRestaurant) {
+      checkOpeningHours();
     }
   }, [currentRestaurant]);
 
@@ -211,9 +217,9 @@ const CommanderContent = () => {
     return <OrderingLockedMessage />;
   }
   
-  // Si le restaurant est fermé aujourd'hui
-  if (!isRestaurantOpen && nextOpenDay) {
-    return <RestaurantClosedMessage nextOpenDay={nextOpenDay} />;
+  // Si le restaurant est fermé aujourd'hui, afficher le message de fermeture
+  if (!isRestaurantOpen && nextOpenDay && currentRestaurant) {
+    return <RestaurantClosedMessage nextOpenDay={nextOpenDay} restaurantName={currentRestaurant.name} />;
   }
 
   // Afficher uniquement le chargement initial, pas lors des changements de catégorie
@@ -265,6 +271,9 @@ const CommanderContent = () => {
             </div>
           </div>
         )}
+
+        {/* Bannière de statut du restaurant */}
+        <RestaurantStatusBanner />
 
         {!currentRestaurant ? (
           <div className="text-center py-12">

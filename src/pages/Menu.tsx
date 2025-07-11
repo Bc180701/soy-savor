@@ -10,9 +10,12 @@ import LoadingSpinner from "@/components/menu/LoadingSpinner";
 import PromotionalBanner from "@/components/menu/PromotionalBanner";
 import CategorySection from "@/components/menu/CategorySection";
 import MenuProductsDisplay from "@/components/menu/MenuProductsDisplay";
+import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
+import { RestaurantProvider, useRestaurantContext } from "@/hooks/useRestaurantContext";
 
-const Menu = () => {
+const MenuContent = () => {
   const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,8 +38,9 @@ const Menu = () => {
       setIsLoading(true);
       try {
         console.time('Loading Menu Data');
-        // Utiliser la fonction optimisée qui charge tout en une seule requête
-        let menuData = await getMenuData();
+        // Utiliser le premier restaurant par défaut si aucun n'est sélectionné
+        const restaurantId = currentRestaurant?.id || RESTAURANTS.CHATEAURENARD;
+        let menuData = await getMenuData(restaurantId);
         console.timeEnd('Loading Menu Data');
         
         // Si aucune donnée n'existe, initialiser automatiquement
@@ -44,9 +48,9 @@ const Menu = () => {
           console.log("Aucune donnée de menu trouvée, initialisation automatique...");
           setIsInitializing(true);
           
-          // D'abord initialiser les catégories avec l'ID du restaurant par défaut
+          // D'abord initialiser les catégories avec l'ID du restaurant
           console.log("Initialisation des catégories...");
-          const categoriesInitialized = await initializeCategories(RESTAURANTS.CHATEAURENARD);
+          const categoriesInitialized = await initializeCategories(restaurantId);
           if (!categoriesInitialized) {
             throw new Error("Échec de l'initialisation des catégories");
           }
@@ -54,14 +58,14 @@ const Menu = () => {
           
           // Ensuite, initialiser les produits complets
           console.log("Initialisation des produits...");
-          const productsInitialized = await initializeFullMenu(RESTAURANTS.CHATEAURENARD);
+          const productsInitialized = await initializeFullMenu(restaurantId);
           if (!productsInitialized) {
             throw new Error("Échec de l'initialisation des produits");
           }
           console.log("Produits initialisés avec succès");
           
           // Récupérer les données du menu après l'initialisation
-          menuData = await getMenuData();
+          menuData = await getMenuData(restaurantId);
           
           toast({
             title: "Menu initialisé",
@@ -90,7 +94,7 @@ const Menu = () => {
     };
 
     loadMenuData();
-  }, [toast, activeCategory]);
+  }, [toast, activeCategory, currentRestaurant]);
 
   // Afficher uniquement le chargement initial, pas lors des changements de catégorie
   if ((isLoading && categories.length === 0) || isInitializing) {
@@ -116,6 +120,9 @@ const Menu = () => {
         <p className="text-gray-600 text-center mb-8">
           Découvrez nos spécialités japonaises préparées avec soin
         </p>
+
+        {/* Bannière de statut du restaurant */}
+        <RestaurantStatusBanner />
 
         {!isAuthenticated && <PromotionalBanner />}
 
@@ -147,6 +154,14 @@ const Menu = () => {
         )}
       </motion.div>
     </div>
+  );
+};
+
+const Menu = () => {
+  return (
+    <RestaurantProvider>
+      <MenuContent />
+    </RestaurantProvider>
   );
 };
 
