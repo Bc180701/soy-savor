@@ -44,11 +44,13 @@ const CommanderContent = () => {
     
     // Vérifier si le restaurant est ouvert maintenant
     const checkOpeningHours = async () => {
-      const isOpen = await isRestaurantOpenNow();
+      if (!currentRestaurant) return;
+      
+      const isOpen = await isRestaurantOpenNow(currentRestaurant.id);
       setIsRestaurantOpen(isOpen);
       
       if (!isOpen) {
-        const nextDay = await getNextOpenDay();
+        const nextDay = await getNextOpenDay(currentRestaurant.id);
         setNextOpenDay(nextDay);
       }
     };
@@ -60,7 +62,7 @@ const CommanderContent = () => {
       setShowRestaurantDialog(true);
       setIsLoading(false);
     }
-  }, []);
+  }, [currentRestaurant]);
 
   useEffect(() => {
     if (!currentRestaurant) return;

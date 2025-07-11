@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { format, addMinutes, isAfter } from "date-fns";
 import { fr } from "date-fns/locale";
 import { isRestaurantOpenNow, getWeekOpeningHours } from "@/services/openingHoursService";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 interface TimeOption {
   label: string;
@@ -17,6 +17,7 @@ interface TimeSlotSelectorProps {
 }
 
 const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelectorProps) => {
+  const { currentRestaurant } = useRestaurantContext();
   const [timeSlots, setTimeSlots] = useState<TimeOption[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(selectedTime || null);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,15 +30,20 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
 
   useEffect(() => {
     const checkOpeningStatus = async () => {
+      if (!currentRestaurant) {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       
       try {
         // Check if restaurant is open today
-        const open = await isRestaurantOpenNow();
+        const open = await isRestaurantOpenNow(currentRestaurant.id);
         setIsOpen(open);
         
         // Get all opening hours
-        const weekHours = await getWeekOpeningHours();
+        const weekHours = await getWeekOpeningHours(currentRestaurant.id);
         
         if (weekHours.length > 0) {
           const today = new Date();
@@ -84,7 +90,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime }: TimeSlotSelecto
     };
     
     checkOpeningStatus();
-  }, []);
+  }, [currentRestaurant]);
 
   useEffect(() => {
     if (!isLoading && todayOpeningHours) {
