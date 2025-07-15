@@ -13,30 +13,19 @@ import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
 import RestaurantSelector from "./RestaurantSelector";
 import AdminInviteManager from "./AdminInviteManager";
-import StripeKeysManager from "./StripeKeysManager";
-import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const AdminManager = () => {
-  const { currentRestaurant } = useRestaurantContext();
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Administration</h1>
-        <div className="flex items-center gap-4">
-          <RestaurantSelector />
-          {currentRestaurant && (
-            <div className="text-sm text-gray-600">
-              Restaurant actuel : <span className="font-semibold">{currentRestaurant.name}</span>
-            </div>
-          )}
-        </div>
+        <RestaurantSelector />
       </div>
       
       <Separator />
       
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 gap-1">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-1">
           <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
           <TabsTrigger value="orders">Commandes</TabsTrigger>
           <TabsTrigger value="products">Produits</TabsTrigger>
@@ -44,7 +33,6 @@ const AdminManager = () => {
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
           <TabsTrigger value="admins">Administrateurs</TabsTrigger>
-          <TabsTrigger value="stripe-keys">Clés Stripe</TabsTrigger>
           <TabsTrigger value="settings">Paramètres</TabsTrigger>
         </TabsList>
         
@@ -74,10 +62,6 @@ const AdminManager = () => {
         
         <TabsContent value="admins" className="space-y-4">
           <AdminInviteManager />
-        </TabsContent>
-        
-        <TabsContent value="stripe-keys" className="space-y-4">
-          <StripeKeysManager />
         </TabsContent>
         
         <TabsContent value="settings" className="space-y-4">
