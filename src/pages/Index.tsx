@@ -188,9 +188,6 @@ const Index = () => {
       {/* Google Reviews Section */}
       <GoogleReviewsSection />
 
-      {/* Delivery Map */}
-      <DeliveryMap deliveryZones={homepageData?.delivery_zones || DEFAULT_HOMEPAGE_DATA.delivery_zones} />
-
       {/* Promotions - Only show if there are promotions to display */}
       {hasPromotionsToDisplay && (
         <section className="py-12">
