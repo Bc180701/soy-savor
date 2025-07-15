@@ -18,7 +18,6 @@ const FooterSectionEditor = ({ data, onSave }: FooterSectionEditorProps) => {
   const [formData, setFormData] = useState<FooterSection>({
     company_description: "Découvrez l'art du sushi à Châteaurenard. Des produits frais préparés avec soin pour une expérience gourmande unique.",
     navigation_title: "Navigation",
-    hours_title: "Horaires d'ouverture",
     contact_title: "Contact",
     opening_hours: {
       monday: "Fermé",
@@ -49,16 +48,6 @@ const FooterSectionEditor = ({ data, onSave }: FooterSectionEditorProps) => {
       setFormData(data);
     }
   }, [data]);
-
-  const handleOpeningHoursChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      opening_hours: {
-        ...prev.opening_hours,
-        [field]: value
-      }
-    }));
-  };
 
   const handleLegalLinksChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -139,91 +128,11 @@ const FooterSectionEditor = ({ data, onSave }: FooterSectionEditorProps) => {
             />
           </div>
           <div>
-            <Label htmlFor="hours-title">Titre des horaires</Label>
-            <Input
-              id="hours-title"
-              value={formData.hours_title}
-              onChange={(e) => setFormData(prev => ({ ...prev, hours_title: e.target.value }))}
-              className="mt-1"
-            />
-          </div>
-          <div>
             <Label htmlFor="contact-title">Titre du contact</Label>
             <Input
               id="contact-title"
               value={formData.contact_title}
               onChange={(e) => setFormData(prev => ({ ...prev, contact_title: e.target.value }))}
-              className="mt-1"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Horaires d'ouverture</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <Label htmlFor="monday">Lundi</Label>
-            <Input
-              id="monday"
-              value={formData.opening_hours.monday}
-              onChange={(e) => handleOpeningHoursChange('monday', e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="tuesday">Mardi</Label>
-            <Input
-              id="tuesday"
-              value={formData.opening_hours.tuesday}
-              onChange={(e) => handleOpeningHoursChange('tuesday', e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="wednesday">Mercredi</Label>
-            <Input
-              id="wednesday"
-              value={formData.opening_hours.wednesday}
-              onChange={(e) => handleOpeningHoursChange('wednesday', e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="thursday">Jeudi</Label>
-            <Input
-              id="thursday"
-              value={formData.opening_hours.thursday}
-              onChange={(e) => handleOpeningHoursChange('thursday', e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="friday">Vendredi</Label>
-            <Input
-              id="friday"
-              value={formData.opening_hours.friday}
-              onChange={(e) => handleOpeningHoursChange('friday', e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="saturday">Samedi</Label>
-            <Input
-              id="saturday"
-              value={formData.opening_hours.saturday}
-              onChange={(e) => handleOpeningHoursChange('saturday', e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="sunday">Dimanche</Label>
-            <Input
-              id="sunday"
-              value={formData.opening_hours.sunday}
-              onChange={(e) => handleOpeningHoursChange('sunday', e.target.value)}
               className="mt-1"
             />
           </div>
