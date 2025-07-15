@@ -14,13 +14,23 @@ import OrderingLockControl from "./OrderingLockControl";
 import RestaurantSelector from "./RestaurantSelector";
 import AdminInviteManager from "./AdminInviteManager";
 import StripeKeysManager from "./StripeKeysManager";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const AdminManager = () => {
+  const { currentRestaurant } = useRestaurantContext();
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">Administration</h1>
-        <RestaurantSelector />
+        <div className="flex items-center gap-4">
+          <RestaurantSelector />
+          {currentRestaurant && (
+            <div className="text-sm text-gray-600">
+              Restaurant actuel : <span className="font-semibold">{currentRestaurant.name}</span>
+            </div>
+          )}
+        </div>
       </div>
       
       <Separator />
