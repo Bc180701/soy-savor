@@ -13,17 +13,26 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    console.log('🔍 Début get-stripe-key');
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('❌ Configuration Supabase manquante');
+      throw new Error('Configuration Supabase manquante');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    const { restaurantId } = await req.json();
+    const body = await req.json();
+    const { restaurantId } = body;
+    
+    console.log('🔍 Recherche clé pour restaurant:', restaurantId);
     
     if (!restaurantId) {
       throw new Error('Restaurant ID manquant');
     }
-
-    console.log('🔍 Récupération clé Stripe pour restaurant:', restaurantId);
 
     // Récupérer la clé depuis les settings du restaurant
     const { data: restaurant, error } = await supabase
@@ -33,11 +42,13 @@ serve(async (req) => {
       .single();
 
     if (error) {
-      console.error('Erreur récupération restaurant:', error);
+      console.error('❌ Erreur récupération restaurant:', error);
       throw error;
     }
 
     const stripeKey = restaurant?.settings?.stripe_secret_key || null;
+    
+    console.log('🔍 Clé trouvée:', stripeKey ? `${stripeKey.substring(0, 10)}...` : 'Aucune clé');
     
     return new Response(JSON.stringify({ 
       stripeKey: stripeKey 
@@ -47,7 +58,11 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Erreur get-stripe-key:', error);
+    console.error('❌ Erreur get-stripe-key:', {
+      message: error.message,
+      stack: error.stack
+    });
+    
     return new Response(JSON.stringify({ 
       error: error.message 
     }), {

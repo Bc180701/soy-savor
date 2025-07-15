@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Save, Shield, CheckCircle, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Save, Shield, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
@@ -31,15 +31,22 @@ const StripeKeysManager = () => {
     
     try {
       console.log('🔍 Chargement de la clé pour restaurant:', currentRestaurant.id);
+      setIsLoading(true);
+      
       const { data, error } = await supabase.functions.invoke('get-stripe-key', {
         body: { restaurantId: currentRestaurant.id }
       });
       
       if (error) {
-        console.error('Erreur lors du chargement:', error);
+        console.error('❌ Erreur lors du chargement:', error);
         setKeyStatus('error');
         setErrorMessage(error.message || 'Erreur lors du chargement');
-        throw error;
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger la clé existante",
+          variant: "destructive",
+        });
+        return;
       }
       
       if (data?.stripeKey) {
@@ -48,12 +55,20 @@ const StripeKeysManager = () => {
         console.log('✅ Clé chargée avec succès');
       } else {
         setKeyStatus('unknown');
+        setStripeSecretKey('');
         console.log('ℹ️ Aucune clé trouvée');
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de la clé:', error);
+      console.error('❌ Erreur lors du chargement de la clé:', error);
       setKeyStatus('error');
       setErrorMessage('Impossible de charger la clé existante');
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger la clé existante",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -109,6 +124,8 @@ const StripeKeysManager = () => {
     
     try {
       console.log('💾 Sauvegarde de la clé pour restaurant:', currentRestaurant.id);
+      console.log('🔑 Format de clé:', stripeSecretKey.substring(0, 10) + '...');
+      
       const { data, error } = await supabase.functions.invoke('save-stripe-key', {
         body: { 
           restaurantId: currentRestaurant.id,
@@ -117,10 +134,15 @@ const StripeKeysManager = () => {
       });
       
       if (error) {
-        console.error('Erreur lors de la sauvegarde:', error);
+        console.error('❌ Erreur lors de la sauvegarde:', error);
         setKeyStatus('error');
         setErrorMessage(error.message || 'Erreur lors de la sauvegarde');
-        throw error;
+        toast({
+          title: "Erreur",
+          description: error.message || 'Erreur lors de la sauvegarde',
+          variant: "destructive",
+        });
+        return;
       }
       
       console.log('✅ Réponse de sauvegarde:', data);
@@ -130,7 +152,7 @@ const StripeKeysManager = () => {
         description: `La clé Stripe pour ${currentRestaurant.name} a été mise à jour avec succès.`,
       });
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      console.error('❌ Erreur lors de la sauvegarde:', error);
       setKeyStatus('error');
       const errorMsg = error instanceof Error ? error.message : 'Impossible de sauvegarder la clé API';
       setErrorMessage(errorMsg);
@@ -152,7 +174,15 @@ const StripeKeysManager = () => {
       console.log('🧪 Test de la clé Stripe...');
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
-          items: [{ menuItem: { id: 'test', name: 'Test', price: 1 }, quantity: 1 }],
+          items: [{ 
+            menuItem: { 
+              id: 'test', 
+              name: 'Test', 
+              price: 1,
+              description: 'Test item'
+            }, 
+            quantity: 1 
+          }],
           subtotal: 1,
           tax: 0,
           deliveryFee: 0,
@@ -171,15 +201,22 @@ const StripeKeysManager = () => {
       });
       
       if (error) {
-        throw error;
+        console.error('❌ Erreur lors du test:', error);
+        toast({
+          title: "Test échoué",
+          description: `Erreur: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
       }
       
+      console.log('✅ Test réussi:', data);
       toast({
         title: "Test réussi",
         description: "La clé Stripe fonctionne correctement !",
       });
     } catch (error) {
-      console.error('Erreur lors du test:', error);
+      console.error('❌ Erreur lors du test:', error);
       toast({
         title: "Test échoué",
         description: "La clé Stripe ne fonctionne pas. Vérifiez qu'elle est correcte.",
@@ -276,16 +313,26 @@ const StripeKeysManager = () => {
               {isLoading ? "Sauvegarde..." : "Sauvegarder la clé API"}
             </Button>
             
-            {keyStatus === 'saved' && (
-              <Button 
-                onClick={testStripeKey} 
-                disabled={isLoading}
-                variant="outline"
-              >
-                Tester la clé
-              </Button>
-            )}
+            <Button 
+              onClick={loadStripeKey} 
+              disabled={!currentRestaurant || isLoading}
+              variant="outline"
+              size="icon"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
+          
+          {keyStatus === 'saved' && (
+            <Button 
+              onClick={testStripeKey} 
+              disabled={isLoading}
+              variant="outline"
+              className="w-full"
+            >
+              Tester la clé
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>
