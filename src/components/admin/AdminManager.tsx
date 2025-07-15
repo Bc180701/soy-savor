@@ -1,5 +1,7 @@
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import DashboardStats from "./DashboardStats";
 import ProductManager from "./ProductManager";
@@ -13,66 +15,93 @@ import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
 import RestaurantSelector from "./RestaurantSelector";
 import AdminInviteManager from "./AdminInviteManager";
+import StripeKeysManager from "./StripeKeysManager";
+import AdminSidebar from "./AdminSidebar";
 
 const AdminManager = () => {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Administration</h1>
-        <RestaurantSelector />
-      </div>
-      
-      <Separator />
-      
-      <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-1">
-          <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
-          <TabsTrigger value="orders">Commandes</TabsTrigger>
-          <TabsTrigger value="products">Produits</TabsTrigger>
-          <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-          <TabsTrigger value="promotions">Promotions</TabsTrigger>
-          <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
-          <TabsTrigger value="admins">Administrateurs</TabsTrigger>
-          <TabsTrigger value="settings">Paramètres</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="dashboard" className="space-y-4">
-          <DashboardStats />
-        </TabsContent>
-        
-        <TabsContent value="orders" className="space-y-4">
-          <OrderList />
-        </TabsContent>
-        
-        <TabsContent value="products" className="space-y-4">
-          <ProductManager />
-        </TabsContent>
-        
-        <TabsContent value="users" className="space-y-4">
-          <UsersList />
-        </TabsContent>
-        
-        <TabsContent value="promotions" className="space-y-4">
-          <PromotionsManager />
-        </TabsContent>
-        
-        <TabsContent value="homepage" className="space-y-4">
-          <HomepageEditor />
-        </TabsContent>
-        
-        <TabsContent value="admins" className="space-y-4">
-          <AdminInviteManager />
-        </TabsContent>
-        
-        <TabsContent value="settings" className="space-y-4">
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case "dashboard":
+        return <DashboardStats />;
+      case "orders":
+        return <OrderList />;
+      case "products":
+        return <ProductManager />;
+      case "users":
+        return <UsersList />;
+      case "promotions":
+        return <PromotionsManager />;
+      case "homepage":
+        return <HomepageEditor />;
+      case "admins":
+        return <AdminInviteManager />;
+      case "stripe-keys":
+        return <StripeKeysManager />;
+      case "settings":
+        return (
           <div className="grid gap-6">
             <OrderingLockControl />
             <OpeningHoursManager />
             <DeliveryZonesManager />
             <IngredientsManager />
           </div>
-        </TabsContent>
-      </Tabs>
+        );
+      default:
+        return <DashboardStats />;
+    }
+  };
+
+  const getSectionTitle = () => {
+    const titles = {
+      dashboard: "Tableau de bord",
+      orders: "Commandes",
+      products: "Produits",
+      users: "Utilisateurs",
+      promotions: "Promotions",
+      homepage: "Page d'accueil",
+      admins: "Administrateurs",
+      "stripe-keys": "Clés Stripe",
+      settings: "Paramètres"
+    };
+    return titles[activeSection as keyof typeof titles] || "Administration";
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <AdminSidebar 
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="bg-white shadow-sm border-b">
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden mr-3"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <h1 className="text-2xl font-bold text-gray-900">{getSectionTitle()}</h1>
+            </div>
+            <RestaurantSelector />
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-auto">
+          <div className="p-6">
+            {renderContent()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
