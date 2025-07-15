@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,7 @@ import DeliveryZonesManager from "@/components/admin/DeliveryZonesManager";
 import UsersList from "@/components/admin/UsersList";
 import RestaurantClosuresManager from "@/components/admin/RestaurantClosuresManager";
 import AdminInviteManager from "@/components/admin/AdminInviteManager";
+import StripeKeysManager from "@/components/admin/StripeKeysManager";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -135,7 +137,7 @@ const Admin = () => {
         
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-12 gap-1 overflow-x-auto">
+            <TabsList className="grid w-full grid-cols-13 gap-1 overflow-x-auto">
               <TabsTrigger value="dashboard" className="whitespace-nowrap">Tableau de bord</TabsTrigger>
               <TabsTrigger value="orders" className="whitespace-nowrap">Commandes</TabsTrigger>
               <TabsTrigger value="products" className="whitespace-nowrap">Produits</TabsTrigger>
@@ -148,6 +150,7 @@ const Admin = () => {
               <TabsTrigger value="ingredients" className="whitespace-nowrap">Ingrédients</TabsTrigger>
               <TabsTrigger value="users" className="whitespace-nowrap">Utilisateurs</TabsTrigger>
               <TabsTrigger value="admins" className="whitespace-nowrap">Administrateurs</TabsTrigger>
+              <TabsTrigger value="stripe-keys" className="whitespace-nowrap">Clés Stripe</TabsTrigger>
             </TabsList>
             
             <TabsContent value="dashboard">
@@ -196,6 +199,10 @@ const Admin = () => {
             
             <TabsContent value="admins">
               <AdminInviteManager />
+            </TabsContent>
+            
+            <TabsContent value="stripe-keys">
+              <StripeKeysManager />
             </TabsContent>
           </Tabs>
           

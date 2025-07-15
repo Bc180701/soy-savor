@@ -34,7 +34,7 @@ serve(async (req) => {
       deliveryPostalCode,
       customerNotes,
       scheduledFor,
-      restaurantId, // Important: récupérer l'ID du restaurant
+      restaurantId,
       successUrl,
       cancelUrl
     } = await req.json();
@@ -51,23 +51,40 @@ serve(async (req) => {
     const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
     console.log('🏪 Création checkout pour restaurant:', targetRestaurantId);
 
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    console.log('🔑 Vérification clé Stripe:', stripeSecretKey ? 'Présente' : 'MANQUANTE');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    // Récupérer la clé Stripe spécifique au restaurant
+    console.log('🔑 Récupération clé Stripe pour restaurant:', targetRestaurantId);
+    const { data: restaurant, error: restaurantError } = await supabase
+      .from('restaurants')
+      .select('settings')
+      .eq('id', targetRestaurantId)
+      .single();
+
+    if (restaurantError) {
+      console.error('Erreur récupération restaurant:', restaurantError);
+      throw restaurantError;
+    }
+
+    // Utiliser la clé spécifique au restaurant ou la clé par défaut
+    let stripeSecretKey = restaurant?.settings?.stripe_secret_key;
     
     if (!stripeSecretKey) {
-      throw new Error('STRIPE_SECRET_KEY non configurée');
+      console.log('⚠️ Pas de clé spécifique, utilisation clé par défaut');
+      stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    }
+    
+    console.log('🔑 Clé Stripe:', stripeSecretKey ? 'Présente' : 'MANQUANTE');
+    
+    if (!stripeSecretKey) {
+      throw new Error('Aucune clé Stripe configurée pour ce restaurant');
     }
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    console.log('🔧 Supabase URL:', supabaseUrl ? 'Présent' : 'MANQUANT');
-    console.log('🔧 Service Role Key:', supabaseServiceRoleKey ? 'Présent' : 'MANQUANT');
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Créer les line items pour Stripe
     const lineItems = items.map((item: any) => ({
@@ -77,7 +94,7 @@ serve(async (req) => {
           name: item.menuItem.name,
           description: item.menuItem.description || '',
         },
-        unit_amount: Math.round(item.menuItem.price * 100), // Prix en centimes
+        unit_amount: Math.round(item.menuItem.price * 100),
       },
       quantity: item.quantity,
     }));
@@ -136,15 +153,12 @@ serve(async (req) => {
         discount: discount.toString(),
         promo_code: promoCode || '',
         total: total.toString(),
-        // Stocker les items comme JSON string
         items: JSON.stringify(items)
       },
     });
 
     console.log('💳 Session Stripe créée:', session.id);
 
-    // Retourner immédiatement sans créer la commande
-    // La commande sera créée par le webhook une fois le paiement confirmé
     return new Response(JSON.stringify({ 
       url: session.url,
       sessionId: session.id,

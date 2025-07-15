@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.43.0';
 import Stripe from 'https://cdn.skypack.dev/stripe@14.20.0';
@@ -23,15 +24,6 @@ serve(async (req) => {
 
     console.log('🔍 Vérification session:', sessionId);
 
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeSecretKey) {
-      throw new Error('STRIPE_SECRET_KEY non configurée');
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
@@ -39,7 +31,7 @@ serve(async (req) => {
     // Vérifier si la commande existe déjà
     const { data: existingOrder } = await supabase
       .from('orders')
-      .select('id')
+      .select('id, restaurant_id')
       .eq('stripe_session_id', sessionId)
       .maybeSingle();
 
@@ -55,16 +47,52 @@ serve(async (req) => {
       });
     }
 
-    // Récupérer la session Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    console.log('💳 Session Stripe récupérée:', session.payment_status);
+    // Récupérer d'abord la session avec la clé par défaut pour obtenir les métadonnées
+    const defaultStripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!defaultStripeKey) {
+      throw new Error('Clé Stripe par défaut non configurée');
+    }
 
-    if (session.payment_status !== 'paid') {
-      throw new Error(`Paiement non confirmé. Statut: ${session.payment_status}`);
+    const defaultStripe = new Stripe(defaultStripeKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    const session = await defaultStripe.checkout.sessions.retrieve(sessionId);
+    const restaurantId = session.metadata?.restaurant_id;
+
+    if (!restaurantId) {
+      throw new Error('Restaurant ID manquant dans les métadonnées');
+    }
+
+    // Récupérer la clé Stripe spécifique au restaurant
+    const { data: restaurant, error: restaurantError } = await supabase
+      .from('restaurants')
+      .select('settings')
+      .eq('id', restaurantId)
+      .single();
+
+    if (restaurantError) {
+      console.error('Erreur récupération restaurant:', restaurantError);
+      throw restaurantError;
+    }
+
+    // Utiliser la clé spécifique au restaurant ou la clé par défaut
+    let stripeSecretKey = restaurant?.settings?.stripe_secret_key || defaultStripeKey;
+    
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Re-récupérer la session avec la bonne clé
+    const finalSession = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log('💳 Session Stripe récupérée:', finalSession.payment_status);
+
+    if (finalSession.payment_status !== 'paid') {
+      throw new Error(`Paiement non confirmé. Statut: ${finalSession.payment_status}`);
     }
 
     // Récupérer les métadonnées
-    const metadata = session.metadata;
+    const metadata = finalSession.metadata;
     if (!metadata.restaurant_id) {
       throw new Error('Métadonnées incomplètes');
     }
@@ -73,11 +101,11 @@ serve(async (req) => {
 
     // Vérifier si l'utilisateur est connecté en récupérant son email depuis Stripe
     let userId = null;
-    if (session.customer_email) {
+    if (finalSession.customer_email) {
       const { data: userData } = await supabase.auth.admin.listUsers();
-      const user = userData.users?.find(u => u.email === session.customer_email);
+      const user = userData.users?.find(u => u.email === finalSession.customer_email);
       userId = user?.id || null;
-      console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', session.customer_email);
+      console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', finalSession.customer_email);
     }
 
     // Créer la commande
