@@ -53,6 +53,12 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('❌ Configuration Supabase manquante');
+      throw new Error('Configuration Supabase manquante');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Récupérer la clé Stripe spécifique au restaurant
@@ -64,9 +70,12 @@ serve(async (req) => {
       .single();
 
     if (restaurantError) {
-      console.error('Erreur récupération restaurant:', restaurantError);
-      throw restaurantError;
+      console.error('❌ Erreur récupération restaurant:', restaurantError);
+      throw new Error(`Restaurant non trouvé: ${restaurantError.message}`);
     }
+
+    console.log('🏪 Restaurant trouvé:', restaurant ? 'Oui' : 'Non');
+    console.log('⚙️ Settings restaurant:', restaurant?.settings ? 'Présents' : 'Absents');
 
     // Utiliser la clé spécifique au restaurant ou la clé par défaut
     let stripeSecretKey = restaurant?.settings?.stripe_secret_key;
@@ -74,6 +83,8 @@ serve(async (req) => {
     if (!stripeSecretKey) {
       console.log('⚠️ Pas de clé spécifique, utilisation clé par défaut');
       stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    } else {
+      console.log('✅ Clé spécifique au restaurant trouvée');
     }
     
     console.log('🔑 Clé Stripe:', stripeSecretKey ? 'Présente' : 'MANQUANTE');
@@ -82,6 +93,13 @@ serve(async (req) => {
       throw new Error('Aucune clé Stripe configurée pour ce restaurant');
     }
 
+    // Valider le format de la clé
+    if (!stripeSecretKey.startsWith('sk_live_') && !stripeSecretKey.startsWith('sk_test_')) {
+      console.error('❌ Format de clé invalide:', stripeSecretKey.substring(0, 10) + '...');
+      throw new Error('Format de clé Stripe invalide');
+    }
+
+    console.log('🔧 Initialisation Stripe...');
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
@@ -127,7 +145,10 @@ serve(async (req) => {
       });
     }
 
+    console.log('📦 Line items créés:', lineItems.length);
+
     // Créer la session Stripe avec TOUTES les données dans les métadonnées
+    console.log('💳 Création session Stripe...');
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
@@ -157,7 +178,7 @@ serve(async (req) => {
       },
     });
 
-    console.log('💳 Session Stripe créée:', session.id);
+    console.log('✅ Session Stripe créée:', session.id);
 
     return new Response(JSON.stringify({ 
       url: session.url,
