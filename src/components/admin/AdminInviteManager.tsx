@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Shield, UserPlus } from "lucide-react";
+import AdminUsersList from "./AdminUsersList";
 
 const AdminInviteManager = () => {
   const [email, setEmail] = useState("");
@@ -107,7 +108,7 @@ const AdminInviteManager = () => {
           Gestion des Administrateurs
         </h3>
         <p className="text-muted-foreground">
-          Inviter de nouveaux administrateurs à accéder au système
+          Inviter de nouveaux administrateurs et gérer les comptes existants
         </p>
       </div>
 
@@ -176,6 +177,8 @@ const AdminInviteManager = () => {
           </form>
         </CardContent>
       </Card>
+
+      <AdminUsersList />
     </div>
   );
 };
