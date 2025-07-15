@@ -14,17 +14,17 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 [DEBUG] Début create-checkout - Method:', req.method);
+    console.log('🚀 [STEP 1] Début create-checkout - Method:', req.method);
     
-    // Parse request body avec gestion d'erreur détaillée
+    // Parse request body
     let requestBody;
     try {
       const bodyText = await req.text();
-      console.log('🚀 [DEBUG] Body reçu (longueur):', bodyText.length);
+      console.log('🚀 [STEP 2] Body reçu (longueur):', bodyText.length);
       requestBody = JSON.parse(bodyText);
-      console.log('🚀 [DEBUG] Body parsé avec succès');
+      console.log('🚀 [STEP 3] Body parsé avec succès');
     } catch (error) {
-      console.error('❌ [ERROR] Erreur parsing JSON:', error.message);
+      console.error('❌ [STEP 3] Erreur parsing JSON:', error.message);
       return new Response(JSON.stringify({ 
         error: 'Invalid JSON in request body',
         details: error.message
@@ -34,7 +34,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('🚀 [DEBUG] Validation des champs requis...');
+    console.log('🚀 [STEP 4] Validation des champs requis...');
     
     const { 
       items, 
@@ -59,7 +59,7 @@ serve(async (req) => {
       cancelUrl
     } = requestBody;
 
-    console.log('🚀 [DEBUG] Données extraites:', { 
+    console.log('🚀 [STEP 5] Données extraites:', { 
       itemsCount: items?.length || 0, 
       subtotal, 
       total, 
@@ -70,7 +70,7 @@ serve(async (req) => {
 
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
-      console.error('❌ [ERROR] Panier vide ou invalide');
+      console.error('❌ [STEP 6] Panier vide ou invalide');
       return new Response(JSON.stringify({ 
         error: 'Panier vide ou invalide',
         details: 'Le panier doit contenir au moins un article'
@@ -81,7 +81,7 @@ serve(async (req) => {
     }
 
     if (!clientEmail || !clientName || !orderType) {
-      console.error('❌ [ERROR] Données client manquantes:', { clientEmail, clientName, orderType });
+      console.error('❌ [STEP 7] Données client manquantes:', { clientEmail, clientName, orderType });
       return new Response(JSON.stringify({ 
         error: 'Informations client manquantes',
         details: 'Email, nom et type de commande sont obligatoires'
@@ -91,16 +91,16 @@ serve(async (req) => {
       });
     }
 
-    // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
+    // Utiliser le restaurant fourni ou le restaurant par défaut
     const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
-    console.log('🏪 [DEBUG] Restaurant cible:', targetRestaurantId);
+    console.log('🏪 [STEP 8] Restaurant cible:', targetRestaurantId);
 
     // Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseServiceRoleKey) {
-      console.error('❌ [ERROR] Configuration Supabase manquante');
+      console.error('❌ [STEP 9] Configuration Supabase manquante');
       return new Response(JSON.stringify({ 
         error: 'Configuration serveur manquante',
         details: 'Variables d\'environnement Supabase non configurées'
@@ -111,10 +111,10 @@ serve(async (req) => {
     }
     
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-    console.log('🚀 [DEBUG] Client Supabase initialisé');
+    console.log('🚀 [STEP 10] Client Supabase initialisé');
 
-    // Récupérer la clé Stripe spécifique au restaurant
-    console.log('🔑 [DEBUG] Récupération clé Stripe pour restaurant:', targetRestaurantId);
+    // Récupérer la clé Stripe
+    console.log('🔑 [STEP 11] Récupération clé Stripe pour restaurant:', targetRestaurantId);
     let restaurantData;
     try {
       const { data: restaurant, error: restaurantError } = await supabase
@@ -124,7 +124,7 @@ serve(async (req) => {
         .single();
 
       if (restaurantError) {
-        console.error('❌ [ERROR] Erreur récupération restaurant:', restaurantError);
+        console.error('❌ [STEP 12] Erreur récupération restaurant:', restaurantError);
         return new Response(JSON.stringify({ 
           error: 'Restaurant non trouvé',
           details: restaurantError.message
@@ -135,9 +135,9 @@ serve(async (req) => {
       }
       
       restaurantData = restaurant;
-      console.log('🏪 [DEBUG] Restaurant récupéré:', restaurantData ? 'Oui' : 'Non');
+      console.log('🏪 [STEP 13] Restaurant récupéré:', restaurantData ? 'Oui' : 'Non');
     } catch (error) {
-      console.error('❌ [ERROR] Exception lors récupération restaurant:', error);
+      console.error('❌ [STEP 13] Exception lors récupération restaurant:', error);
       return new Response(JSON.stringify({ 
         error: 'Erreur lors de la récupération du restaurant',
         details: error.message
@@ -151,14 +151,14 @@ serve(async (req) => {
     let stripeSecretKey = restaurantData?.settings?.stripe_secret_key;
     
     if (!stripeSecretKey) {
-      console.log('⚠️ [DEBUG] Pas de clé spécifique, utilisation clé par défaut');
+      console.log('⚠️ [STEP 14] Pas de clé spécifique, utilisation clé par défaut');
       stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     } else {
-      console.log('✅ [DEBUG] Clé spécifique au restaurant trouvée');
+      console.log('✅ [STEP 14] Clé spécifique au restaurant trouvée');
     }
     
     if (!stripeSecretKey) {
-      console.error('❌ [ERROR] Aucune clé Stripe disponible');
+      console.error('❌ [STEP 15] Aucune clé Stripe disponible');
       return new Response(JSON.stringify({ 
         error: 'Configuration Stripe manquante',
         details: 'Aucune clé Stripe configurée pour ce restaurant'
@@ -170,7 +170,7 @@ serve(async (req) => {
 
     // Valider le format de la clé
     if (!stripeSecretKey.startsWith('sk_live_') && !stripeSecretKey.startsWith('sk_test_')) {
-      console.error('❌ [ERROR] Format de clé invalide:', stripeSecretKey.substring(0, 10) + '...');
+      console.error('❌ [STEP 16] Format de clé invalide:', stripeSecretKey.substring(0, 10) + '...');
       return new Response(JSON.stringify({ 
         error: 'Clé Stripe invalide',
         details: 'Format de clé incorrect'
@@ -180,15 +180,15 @@ serve(async (req) => {
       });
     }
 
-    console.log('🔧 [DEBUG] Initialisation Stripe...');
+    console.log('🔧 [STEP 17] Initialisation Stripe...');
     let stripe;
     try {
       stripe = new Stripe(stripeSecretKey, {
         apiVersion: '2023-10-16',
       });
-      console.log('✅ [DEBUG] Stripe initialisé avec succès');
+      console.log('✅ [STEP 18] Stripe initialisé avec succès');
     } catch (error) {
-      console.error('❌ [ERROR] Erreur initialisation Stripe:', error);
+      console.error('❌ [STEP 18] Erreur initialisation Stripe:', error);
       return new Response(JSON.stringify({ 
         error: 'Erreur configuration Stripe',
         details: error.message
@@ -202,11 +202,13 @@ serve(async (req) => {
     const lineItems = [];
     
     try {
-      console.log('📦 [DEBUG] Création des line items...');
+      console.log('📦 [STEP 19] Création des line items...');
       
       for (const item of items) {
+        console.log('📦 [STEP 19.1] Traitement item:', item);
+        
         if (!item.menuItem || !item.menuItem.name || typeof item.menuItem.price !== 'number' || !item.quantity) {
-          console.error('❌ [ERROR] Item invalide:', item);
+          console.error('❌ [STEP 19.2] Item invalide:', item);
           continue;
         }
 
@@ -223,10 +225,10 @@ serve(async (req) => {
         };
         
         lineItems.push(lineItem);
-        console.log('📦 [DEBUG] Line item ajouté:', item.menuItem.name, '-', item.menuItem.price, '€');
+        console.log('📦 [STEP 19.3] Line item ajouté:', item.menuItem.name, '-', item.menuItem.price, '€');
       }
 
-      // Ajouter les frais de livraison si applicable
+      // Ajouter les frais de livraison
       if (deliveryFee > 0) {
         lineItems.push({
           price_data: {
@@ -238,10 +240,10 @@ serve(async (req) => {
           },
           quantity: 1,
         });
-        console.log('📦 [DEBUG] Frais de livraison ajoutés:', deliveryFee, '€');
+        console.log('📦 [STEP 19.4] Frais de livraison ajoutés:', deliveryFee, '€');
       }
 
-      // Ajouter le pourboire si applicable
+      // Ajouter le pourboire
       if (tip > 0) {
         lineItems.push({
           price_data: {
@@ -253,13 +255,13 @@ serve(async (req) => {
           },
           quantity: 1,
         });
-        console.log('📦 [DEBUG] Pourboire ajouté:', tip, '€');
+        console.log('📦 [STEP 19.5] Pourboire ajouté:', tip, '€');
       }
 
-      console.log('📦 [DEBUG] Total line items créés:', lineItems.length);
+      console.log('📦 [STEP 20] Total line items créés:', lineItems.length);
 
       if (lineItems.length === 0) {
-        console.error('❌ [ERROR] Aucun line item valide');
+        console.error('❌ [STEP 21] Aucun line item valide');
         return new Response(JSON.stringify({ 
           error: 'Panier invalide',
           details: 'Aucun article valide dans le panier'
@@ -270,7 +272,7 @@ serve(async (req) => {
       }
 
     } catch (error) {
-      console.error('❌ [ERROR] Erreur création line items:', error);
+      console.error('❌ [STEP 20] Erreur création line items:', error);
       return new Response(JSON.stringify({ 
         error: 'Erreur traitement panier',
         details: error.message
@@ -281,7 +283,7 @@ serve(async (req) => {
     }
 
     // Créer la session Stripe
-    console.log('💳 [DEBUG] Création session Stripe...');
+    console.log('💳 [STEP 21] Création session Stripe...');
     let session;
     try {
       const sessionData = {
@@ -313,7 +315,7 @@ serve(async (req) => {
         },
       };
 
-      console.log('💳 [DEBUG] Configuration session:', {
+      console.log('💳 [STEP 22] Configuration session:', {
         mode: sessionData.mode,
         lineItemsCount: sessionData.line_items.length,
         customerEmail: sessionData.customer_email,
@@ -321,10 +323,10 @@ serve(async (req) => {
       });
 
       session = await stripe.checkout.sessions.create(sessionData);
-      console.log('✅ [DEBUG] Session Stripe créée avec succès:', session.id);
+      console.log('✅ [STEP 23] Session Stripe créée avec succès:', session.id);
       
     } catch (error) {
-      console.error('❌ [ERROR] Erreur création session Stripe:', {
+      console.error('❌ [STEP 23] Erreur création session Stripe:', {
         message: error.message,
         type: error.type,
         code: error.code,
@@ -346,7 +348,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('✅ [DEBUG] Réponse finale:', {
+    console.log('✅ [STEP 24] Réponse finale:', {
       sessionId: session.id,
       url: session.url,
       restaurantId: targetRestaurantId
@@ -362,7 +364,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ [ERROR] Erreur générale dans create-checkout:', {
+    console.error('❌ [CRITICAL ERROR] Erreur générale dans create-checkout:', {
       message: error.message,
       stack: error.stack,
       name: error.name,
