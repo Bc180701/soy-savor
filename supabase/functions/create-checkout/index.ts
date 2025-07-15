@@ -14,14 +14,17 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Début create-checkout');
+    console.log('🚀 [DEBUG] Début create-checkout - Method:', req.method);
     
-    // Parse request body
+    // Parse request body avec gestion d'erreur détaillée
     let requestBody;
     try {
-      requestBody = await req.json();
+      const bodyText = await req.text();
+      console.log('🚀 [DEBUG] Body reçu (longueur):', bodyText.length);
+      requestBody = JSON.parse(bodyText);
+      console.log('🚀 [DEBUG] Body parsé avec succès');
     } catch (error) {
-      console.error('❌ Erreur parsing JSON:', error);
+      console.error('❌ [ERROR] Erreur parsing JSON:', error.message);
       return new Response(JSON.stringify({ 
         error: 'Invalid JSON in request body',
         details: error.message
@@ -31,6 +34,8 @@ serve(async (req) => {
       });
     }
 
+    console.log('🚀 [DEBUG] Validation des champs requis...');
+    
     const { 
       items, 
       subtotal, 
@@ -54,17 +59,18 @@ serve(async (req) => {
       cancelUrl
     } = requestBody;
 
-    console.log('📋 Données reçues:', { 
-      items: items?.length || 0, 
+    console.log('🚀 [DEBUG] Données extraites:', { 
+      itemsCount: items?.length || 0, 
       subtotal, 
       total, 
       restaurantId,
-      clientEmail 
+      clientEmail,
+      orderType
     });
 
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
-      console.error('❌ Aucun item dans le panier');
+      console.error('❌ [ERROR] Panier vide ou invalide');
       return new Response(JSON.stringify({ 
         error: 'Panier vide ou invalide',
         details: 'Le panier doit contenir au moins un article'
@@ -75,7 +81,7 @@ serve(async (req) => {
     }
 
     if (!clientEmail || !clientName || !orderType) {
-      console.error('❌ Données client manquantes');
+      console.error('❌ [ERROR] Données client manquantes:', { clientEmail, clientName, orderType });
       return new Response(JSON.stringify({ 
         error: 'Informations client manquantes',
         details: 'Email, nom et type de commande sont obligatoires'
@@ -87,14 +93,14 @@ serve(async (req) => {
 
     // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
     const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
-    console.log('🏪 Création checkout pour restaurant:', targetRestaurantId);
+    console.log('🏪 [DEBUG] Restaurant cible:', targetRestaurantId);
 
     // Initialize Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseServiceRoleKey) {
-      console.error('❌ Configuration Supabase manquante');
+      console.error('❌ [ERROR] Configuration Supabase manquante');
       return new Response(JSON.stringify({ 
         error: 'Configuration serveur manquante',
         details: 'Variables d\'environnement Supabase non configurées'
@@ -105,41 +111,54 @@ serve(async (req) => {
     }
     
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    console.log('🚀 [DEBUG] Client Supabase initialisé');
 
     // Récupérer la clé Stripe spécifique au restaurant
-    console.log('🔑 Récupération clé Stripe pour restaurant:', targetRestaurantId);
-    const { data: restaurant, error: restaurantError } = await supabase
-      .from('restaurants')
-      .select('settings')
-      .eq('id', targetRestaurantId)
-      .single();
+    console.log('🔑 [DEBUG] Récupération clé Stripe pour restaurant:', targetRestaurantId);
+    let restaurantData;
+    try {
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('settings')
+        .eq('id', targetRestaurantId)
+        .single();
 
-    if (restaurantError) {
-      console.error('❌ Erreur récupération restaurant:', restaurantError);
+      if (restaurantError) {
+        console.error('❌ [ERROR] Erreur récupération restaurant:', restaurantError);
+        return new Response(JSON.stringify({ 
+          error: 'Restaurant non trouvé',
+          details: restaurantError.message
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        });
+      }
+      
+      restaurantData = restaurant;
+      console.log('🏪 [DEBUG] Restaurant récupéré:', restaurantData ? 'Oui' : 'Non');
+    } catch (error) {
+      console.error('❌ [ERROR] Exception lors récupération restaurant:', error);
       return new Response(JSON.stringify({ 
-        error: 'Restaurant non trouvé',
-        details: restaurantError.message
+        error: 'Erreur lors de la récupération du restaurant',
+        details: error.message
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 404,
+        status: 500,
       });
     }
 
-    console.log('🏪 Restaurant trouvé:', restaurant ? 'Oui' : 'Non');
-    console.log('⚙️ Settings restaurant:', restaurant?.settings ? 'Présents' : 'Absents');
-
     // Utiliser la clé spécifique au restaurant ou la clé par défaut
-    let stripeSecretKey = restaurant?.settings?.stripe_secret_key;
+    let stripeSecretKey = restaurantData?.settings?.stripe_secret_key;
     
     if (!stripeSecretKey) {
-      console.log('⚠️ Pas de clé spécifique, utilisation clé par défaut');
+      console.log('⚠️ [DEBUG] Pas de clé spécifique, utilisation clé par défaut');
       stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     } else {
-      console.log('✅ Clé spécifique au restaurant trouvée');
+      console.log('✅ [DEBUG] Clé spécifique au restaurant trouvée');
     }
     
     if (!stripeSecretKey) {
-      console.error('❌ Aucune clé Stripe disponible');
+      console.error('❌ [ERROR] Aucune clé Stripe disponible');
       return new Response(JSON.stringify({ 
         error: 'Configuration Stripe manquante',
         details: 'Aucune clé Stripe configurée pour ce restaurant'
@@ -151,7 +170,7 @@ serve(async (req) => {
 
     // Valider le format de la clé
     if (!stripeSecretKey.startsWith('sk_live_') && !stripeSecretKey.startsWith('sk_test_')) {
-      console.error('❌ Format de clé invalide:', stripeSecretKey.substring(0, 10) + '...');
+      console.error('❌ [ERROR] Format de clé invalide:', stripeSecretKey.substring(0, 10) + '...');
       return new Response(JSON.stringify({ 
         error: 'Clé Stripe invalide',
         details: 'Format de clé incorrect'
@@ -161,14 +180,15 @@ serve(async (req) => {
       });
     }
 
-    console.log('🔧 Initialisation Stripe...');
+    console.log('🔧 [DEBUG] Initialisation Stripe...');
     let stripe;
     try {
       stripe = new Stripe(stripeSecretKey, {
         apiVersion: '2023-10-16',
       });
+      console.log('✅ [DEBUG] Stripe initialisé avec succès');
     } catch (error) {
-      console.error('❌ Erreur initialisation Stripe:', error);
+      console.error('❌ [ERROR] Erreur initialisation Stripe:', error);
       return new Response(JSON.stringify({ 
         error: 'Erreur configuration Stripe',
         details: error.message
@@ -182,13 +202,15 @@ serve(async (req) => {
     const lineItems = [];
     
     try {
+      console.log('📦 [DEBUG] Création des line items...');
+      
       for (const item of items) {
-        if (!item.menuItem || !item.menuItem.name || !item.menuItem.price || !item.quantity) {
-          console.error('❌ Item invalide:', item);
+        if (!item.menuItem || !item.menuItem.name || typeof item.menuItem.price !== 'number' || !item.quantity) {
+          console.error('❌ [ERROR] Item invalide:', item);
           continue;
         }
 
-        lineItems.push({
+        const lineItem = {
           price_data: {
             currency: 'eur',
             product_data: {
@@ -198,7 +220,10 @@ serve(async (req) => {
             unit_amount: Math.round(item.menuItem.price * 100),
           },
           quantity: item.quantity,
-        });
+        };
+        
+        lineItems.push(lineItem);
+        console.log('📦 [DEBUG] Line item ajouté:', item.menuItem.name, '-', item.menuItem.price, '€');
       }
 
       // Ajouter les frais de livraison si applicable
@@ -213,6 +238,7 @@ serve(async (req) => {
           },
           quantity: 1,
         });
+        console.log('📦 [DEBUG] Frais de livraison ajoutés:', deliveryFee, '€');
       }
 
       // Ajouter le pourboire si applicable
@@ -227,12 +253,13 @@ serve(async (req) => {
           },
           quantity: 1,
         });
+        console.log('📦 [DEBUG] Pourboire ajouté:', tip, '€');
       }
 
-      console.log('📦 Line items créés:', lineItems.length);
+      console.log('📦 [DEBUG] Total line items créés:', lineItems.length);
 
       if (lineItems.length === 0) {
-        console.error('❌ Aucun line item valide');
+        console.error('❌ [ERROR] Aucun line item valide');
         return new Response(JSON.stringify({ 
           error: 'Panier invalide',
           details: 'Aucun article valide dans le panier'
@@ -243,7 +270,7 @@ serve(async (req) => {
       }
 
     } catch (error) {
-      console.error('❌ Erreur création line items:', error);
+      console.error('❌ [ERROR] Erreur création line items:', error);
       return new Response(JSON.stringify({ 
         error: 'Erreur traitement panier',
         details: error.message
@@ -254,10 +281,10 @@ serve(async (req) => {
     }
 
     // Créer la session Stripe
-    console.log('💳 Création session Stripe...');
+    console.log('💳 [DEBUG] Création session Stripe...');
     let session;
     try {
-      session = await stripe.checkout.sessions.create({
+      const sessionData = {
         payment_method_types: ['card'],
         line_items: lineItems,
         mode: 'payment',
@@ -284,19 +311,46 @@ serve(async (req) => {
           total: total?.toString() || '0',
           items: JSON.stringify(items)
         },
+      };
+
+      console.log('💳 [DEBUG] Configuration session:', {
+        mode: sessionData.mode,
+        lineItemsCount: sessionData.line_items.length,
+        customerEmail: sessionData.customer_email,
+        restaurantId: sessionData.metadata.restaurant_id
       });
+
+      session = await stripe.checkout.sessions.create(sessionData);
+      console.log('✅ [DEBUG] Session Stripe créée avec succès:', session.id);
+      
     } catch (error) {
-      console.error('❌ Erreur création session Stripe:', error);
+      console.error('❌ [ERROR] Erreur création session Stripe:', {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+        param: error.param,
+        stack: error.stack
+      });
+      
       return new Response(JSON.stringify({ 
         error: 'Erreur création session de paiement',
-        details: error.message
+        details: error.message,
+        stripeError: {
+          type: error.type,
+          code: error.code,
+          param: error.param
+        }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
 
-    console.log('✅ Session Stripe créée:', session.id);
+    console.log('✅ [DEBUG] Réponse finale:', {
+      sessionId: session.id,
+      url: session.url,
+      restaurantId: targetRestaurantId
+    });
 
     return new Response(JSON.stringify({ 
       url: session.url,
@@ -308,15 +362,17 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Erreur générale dans create-checkout:', {
+    console.error('❌ [ERROR] Erreur générale dans create-checkout:', {
       message: error.message,
       stack: error.stack,
-      name: error.name
+      name: error.name,
+      cause: error.cause
     });
     
     return new Response(JSON.stringify({ 
       error: 'Erreur interne du serveur',
-      details: error.message
+      details: error.message,
+      stack: error.stack
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
