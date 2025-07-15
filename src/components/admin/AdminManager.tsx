@@ -13,7 +13,6 @@ import OpeningHoursManager from "./OpeningHoursManager";
 import DeliveryZonesManager from "./DeliveryZonesManager";
 import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
-import RestaurantSelector from "./RestaurantSelector";
 import AdminInviteManager from "./AdminInviteManager";
 import StripeKeysManager from "./StripeKeysManager";
 import AdminSidebar from "./AdminSidebar";
@@ -92,7 +91,6 @@ const AdminManager = () => {
               </Button>
               <h1 className="text-2xl font-bold text-gray-900">{getSectionTitle()}</h1>
             </div>
-            <RestaurantSelector />
           </div>
         </div>
         

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import RestaurantSelector from "./RestaurantSelector";
 
 interface AdminSidebarProps {
   activeSection: string;
@@ -64,6 +65,11 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
           >
             <XIcon className="h-4 w-4" />
           </Button>
+        </div>
+        
+        {/* Restaurant Selector */}
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <RestaurantSelector />
         </div>
         
         <nav className="p-4">
