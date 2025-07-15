@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,14 +47,17 @@ const handler = async (req: Request): Promise<Response> => {
     
     const { email, password } = requestData as AdminWelcomeEmailRequest;
     
-    // Get Brevo API key from environment variables
-    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
-    if (!brevoApiKey) {
-      console.error("❌ Clé API Brevo manquante dans les variables d'environnement");
-      throw new Error("Erreur de configuration: clé API Brevo manquante");
+    // Get Resend API key from environment variables
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("❌ Clé API Resend manquante dans les variables d'environnement");
+      throw new Error("Erreur de configuration: clé API Resend manquante");
     }
 
-    console.log("🔑 Clé API Brevo trouvée");
+    console.log("🔑 Clé API Resend trouvée");
+
+    // Initialize Resend
+    const resend = new Resend(resendApiKey);
 
     // Prepare email content
     const subject = "Bienvenue dans l'équipe d'administration SushiEats";
@@ -92,54 +96,23 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
     
-    const emailData = {
-      sender: {
-        name: "SushiEats Admin",
-        email: "admin@clwebdesign.fr",
-      },
-      to: [
-        {
-          email: email,
-        },
-      ],
-      subject: subject,
-      htmlContent: htmlContent,
-    };
-    
-    console.log("🌐 Envoi via API Brevo...");
+    console.log("🌐 Envoi via API Resend...");
     console.log("📧 Destinataire:", email);
     
-    // Send email via Brevo API
+    // Send email via Resend API
     try {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "api-key": brevoApiKey,
-        },
-        body: JSON.stringify(emailData),
+      const emailResponse = await resend.emails.send({
+        from: "SushiEats Admin <admin@clwebdesign.fr>",
+        to: [email],
+        subject: subject,
+        html: htmlContent,
       });
       
-      console.log("📡 Statut de la réponse Brevo:", response.status);
-      
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-          console.error("❌ Erreur détaillée de Brevo:", JSON.stringify(errorData, null, 2));
-        } catch (parseError) {
-          console.error("❌ Impossible de parser la réponse d'erreur de Brevo");
-          errorData = { status: response.status, statusText: response.statusText };
-        }
-        throw new Error(`Erreur d'envoi d'email: ${response.status} - ${JSON.stringify(errorData)}`);
-      }
-      
-      const responseBody = await response.json();
-      console.log("✅ Email admin envoyé avec succès:", JSON.stringify(responseBody, null, 2));
+      console.log("✅ Email admin envoyé avec succès:", emailResponse);
       
       return new Response(JSON.stringify({ 
         success: true, 
-        messageId: responseBody.messageId,
+        messageId: emailResponse.data?.id,
         message: "Email d'accueil admin envoyé avec succès" 
       }), {
         status: 200,
