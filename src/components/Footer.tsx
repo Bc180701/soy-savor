@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Mail, Phone, Clock } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ContactInfo, useHomepageData } from "@/hooks/useHomepageData";
 
@@ -43,7 +43,7 @@ const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto py-12 px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Logo et informations */}
           <div className="space-y-4">
             <Link to="/" className="inline-block">
@@ -121,46 +121,6 @@ const Footer = () => {
                 </Link>
               </li>
             </ul>
-          </div>
-
-          {/* Horaires */}
-          <div>
-            <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">
-              {footerData?.hours_title || "Horaires d'ouverture"}
-            </h4>
-            <div className="flex items-start space-x-2 text-gray-400">
-              <Clock size={18} className="mt-1 flex-shrink-0" />
-              <div className="text-sm space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium text-red-400">Lundi:</span>
-                  <span className="ml-2">{footerData?.opening_hours?.monday || "Fermé"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Mardi:</span>
-                  <span className="ml-2">{footerData?.opening_hours?.tuesday || "11:00–14:00, 18:00–22:00"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Mercredi:</span>
-                  <span className="ml-2">{footerData?.opening_hours?.wednesday || "11:00–14:00, 18:00–22:00"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Jeudi:</span>
-                  <span className="ml-2">{footerData?.opening_hours?.thursday || "11:00–14:00, 18:00–22:00"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Vendredi:</span>
-                  <span className="ml-2">{footerData?.opening_hours?.friday || "11:00–14:00, 18:00–22:00"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Samedi:</span>
-                  <span className="ml-2">{footerData?.opening_hours?.saturday || "11:00–14:00, 18:00–22:00"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-red-400">Dimanche:</span>
-                  <span className="ml-2">{footerData?.opening_hours?.sunday || "Fermé"}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Contact */}
