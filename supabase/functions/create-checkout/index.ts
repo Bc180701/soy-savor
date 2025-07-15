@@ -282,8 +282,18 @@ serve(async (req) => {
       });
     }
 
+    // Créer un résumé simplifié des articles pour les métadonnées
+    const itemsSummary = items.map(item => ({
+      id: item.menuItem.id,
+      name: item.menuItem.name,
+      price: item.menuItem.price,
+      quantity: item.quantity
+    }));
+
+    console.log('📝 [STEP 21] Résumé articles créé:', itemsSummary.length, 'articles');
+
     // Créer la session Stripe
-    console.log('💳 [STEP 21] Création session Stripe...');
+    console.log('💳 [STEP 22] Création session Stripe...');
     let session;
     try {
       const sessionData = {
@@ -311,22 +321,24 @@ serve(async (req) => {
           discount: discount?.toString() || '0',
           promo_code: promoCode || '',
           total: total?.toString() || '0',
-          items: JSON.stringify(items)
+          items_count: items.length.toString(),
+          items_summary: JSON.stringify(itemsSummary).substring(0, 450), // Limiter à 450 caractères
         },
       };
 
-      console.log('💳 [STEP 22] Configuration session:', {
+      console.log('💳 [STEP 23] Configuration session:', {
         mode: sessionData.mode,
         lineItemsCount: sessionData.line_items.length,
         customerEmail: sessionData.customer_email,
-        restaurantId: sessionData.metadata.restaurant_id
+        restaurantId: sessionData.metadata.restaurant_id,
+        metadataSize: JSON.stringify(sessionData.metadata).length
       });
 
       session = await stripe.checkout.sessions.create(sessionData);
-      console.log('✅ [STEP 23] Session Stripe créée avec succès:', session.id);
+      console.log('✅ [STEP 24] Session Stripe créée avec succès:', session.id);
       
     } catch (error) {
-      console.error('❌ [STEP 23] Erreur création session Stripe:', {
+      console.error('❌ [STEP 24] Erreur création session Stripe:', {
         message: error.message,
         type: error.type,
         code: error.code,
@@ -348,7 +360,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('✅ [STEP 24] Réponse finale:', {
+    console.log('✅ [STEP 25] Réponse finale:', {
       sessionId: session.id,
       url: session.url,
       restaurantId: targetRestaurantId
