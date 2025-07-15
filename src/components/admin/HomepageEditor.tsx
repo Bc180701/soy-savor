@@ -9,7 +9,6 @@ import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import HeroSectionEditor from "./homepage-editor/HeroSectionEditor";
 import PromotionsEditor from "./homepage-editor/PromotionsEditor";
-import OrderOptionsEditor from "./homepage-editor/OrderOptionsEditor";
 import CustomCreationSectionEditor from "./homepage-editor/CustomCreationSectionEditor";
 import ContactInfoEditor from "./homepage-editor/ContactInfoEditor";
 import GoogleReviewsEditor from "./homepage-editor/GoogleReviewsEditor";
@@ -133,7 +132,6 @@ const HomepageEditor = () => {
           <TabsTrigger value="custom_creation">Création Personnalisée</TabsTrigger>
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="google_reviews">Avis Google</TabsTrigger>
-          <TabsTrigger value="order">Options de commande</TabsTrigger>
           <TabsTrigger value="contact">Coordonnées</TabsTrigger>
         </TabsList>
 
@@ -246,26 +244,6 @@ const HomepageEditor = () => {
               <GoogleReviewsEditor 
                 data={homepageData.google_reviews_section} 
                 onSave={(data) => saveHomepageData('google_reviews_section', data)} 
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="order">
-          <Card>
-            <CardHeader>
-              <CardTitle>Options de commande</CardTitle>
-              <CardDescription>
-                Personnalisez les options de commande affichées sur la page d'accueil.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <OrderOptionsEditor 
-                data={homepageData.order_options.map(option => ({
-                  ...option,
-                  icon: option.icon || "Truck"
-                }))} 
-                onSave={(data) => saveHomepageData('order_options', data)} 
               />
             </CardContent>
           </Card>
