@@ -4,23 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RestaurantProvider } from "@/hooks/useRestaurantContext";
-import RestaurantSelector from "@/components/admin/RestaurantSelector";
 import AdminManager from "@/components/admin/AdminManager";
-import ProductManager from "@/components/admin/ProductManager";
-import DashboardStats from "@/components/admin/DashboardStats";
-import CategoriesTable from "@/components/admin/CategoriesTable";
-import FeaturedProductsManager from "@/components/admin/FeaturedProductsManager";
-import OpeningHoursManager from "@/components/admin/OpeningHoursManager";
-import HomepageEditor from "@/components/admin/HomepageEditor";
-import OrderingLockControl from "@/components/admin/OrderingLockControl";
-import OrderList from "@/components/OrderList";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import IngredientsManager from "@/components/admin/IngredientsManager";
-import DeliveryZonesManager from "@/components/admin/DeliveryZonesManager";
-import UsersList from "@/components/admin/UsersList";
-import RestaurantClosuresManager from "@/components/admin/RestaurantClosuresManager";
-import AdminInviteManager from "@/components/admin/AdminInviteManager";
-import StripeKeysManager from "@/components/admin/StripeKeysManager";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -129,89 +113,8 @@ const Admin = () => {
   return (
     <RestaurantProvider>
       <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
-          <div className="container mx-auto px-4 py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
-          </div>
-        </div>
-        
         <div className="container mx-auto px-4 py-6">
-          <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-13 gap-1 overflow-x-auto">
-              <TabsTrigger value="dashboard" className="whitespace-nowrap">Tableau de bord</TabsTrigger>
-              <TabsTrigger value="orders" className="whitespace-nowrap">Commandes</TabsTrigger>
-              <TabsTrigger value="products" className="whitespace-nowrap">Produits</TabsTrigger>
-              <TabsTrigger value="categories" className="whitespace-nowrap">Catégories</TabsTrigger>
-              <TabsTrigger value="featured" className="whitespace-nowrap">Produits Vedettes</TabsTrigger>
-              <TabsTrigger value="hours" className="whitespace-nowrap">Horaires</TabsTrigger>
-              <TabsTrigger value="closures" className="whitespace-nowrap">Fermetures</TabsTrigger>
-              <TabsTrigger value="homepage" className="whitespace-nowrap">Page d'accueil</TabsTrigger>
-              <TabsTrigger value="delivery-zones" className="whitespace-nowrap">Zones livraison</TabsTrigger>
-              <TabsTrigger value="ingredients" className="whitespace-nowrap">Ingrédients</TabsTrigger>
-              <TabsTrigger value="users" className="whitespace-nowrap">Utilisateurs</TabsTrigger>
-              <TabsTrigger value="admins" className="whitespace-nowrap">Administrateurs</TabsTrigger>
-              <TabsTrigger value="stripe-keys" className="whitespace-nowrap">Clés Stripe</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="dashboard">
-              <DashboardStats />
-            </TabsContent>
-            
-            <TabsContent value="orders">
-              <OrderList />
-            </TabsContent>
-            
-            <TabsContent value="products">
-              <ProductManager />
-            </TabsContent>
-            
-            <TabsContent value="categories">
-              <CategoriesTable />
-            </TabsContent>
-            
-            <TabsContent value="featured">
-              <FeaturedProductsManager />
-            </TabsContent>
-            
-            <TabsContent value="hours">
-              <OpeningHoursManager />
-            </TabsContent>
-            
-            <TabsContent value="closures">
-              <RestaurantClosuresManager />
-            </TabsContent>
-            
-            <TabsContent value="homepage">
-              <HomepageEditor />
-            </TabsContent>
-            
-            <TabsContent value="delivery-zones">
-              <DeliveryZonesManager />
-            </TabsContent>
-            
-            <TabsContent value="ingredients">
-              <IngredientsManager />
-            </TabsContent>
-            
-            <TabsContent value="users">
-              <UsersList />
-            </TabsContent>
-            
-            <TabsContent value="admins">
-              <AdminInviteManager />
-            </TabsContent>
-            
-            <TabsContent value="stripe-keys">
-              <StripeKeysManager />
-            </TabsContent>
-          </Tabs>
-          
-          <div className="mt-8 flex items-center justify-center">
-            <div className="flex items-center bg-white p-4 rounded-lg border shadow-sm">
-              <span className="text-sm font-medium text-gray-700 mr-3">Restaurant :</span>
-              <RestaurantSelector />
-            </div>
-          </div>
+          <AdminManager />
         </div>
       </div>
     </RestaurantProvider>

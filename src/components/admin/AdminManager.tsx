@@ -13,6 +13,7 @@ import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
 import RestaurantSelector from "./RestaurantSelector";
 import AdminInviteManager from "./AdminInviteManager";
+import StripeKeysManager from "./StripeKeysManager";
 
 const AdminManager = () => {
   return (
@@ -25,7 +26,7 @@ const AdminManager = () => {
       <Separator />
       
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-1">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 gap-1">
           <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
           <TabsTrigger value="orders">Commandes</TabsTrigger>
           <TabsTrigger value="products">Produits</TabsTrigger>
@@ -33,6 +34,7 @@ const AdminManager = () => {
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
           <TabsTrigger value="admins">Administrateurs</TabsTrigger>
+          <TabsTrigger value="stripe-keys">Clés Stripe</TabsTrigger>
           <TabsTrigger value="settings">Paramètres</TabsTrigger>
         </TabsList>
         
@@ -62,6 +64,10 @@ const AdminManager = () => {
         
         <TabsContent value="admins" className="space-y-4">
           <AdminInviteManager />
+        </TabsContent>
+        
+        <TabsContent value="stripe-keys" className="space-y-4">
+          <StripeKeysManager />
         </TabsContent>
         
         <TabsContent value="settings" className="space-y-4">
