@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +13,7 @@ import ContactInfoEditor from "./homepage-editor/ContactInfoEditor";
 import GoogleReviewsEditor from "./homepage-editor/GoogleReviewsEditor";
 import HeaderSectionEditor from "./homepage-editor/HeaderSectionEditor";
 import FooterSectionEditor from "./homepage-editor/FooterSectionEditor";
+import RestaurantsManager from "./RestaurantsManager";
 import { HomepageData, useHomepageData } from "@/hooks/useHomepageData";
 
 const HomepageEditor = () => {
@@ -133,6 +133,7 @@ const HomepageEditor = () => {
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="google_reviews">Avis Google</TabsTrigger>
           <TabsTrigger value="contact">Coordonnées</TabsTrigger>
+          <TabsTrigger value="restaurants">Nos Restaurants</TabsTrigger>
         </TabsList>
 
         <TabsContent value="header">
@@ -266,6 +267,20 @@ const HomepageEditor = () => {
                 }} 
                 onSave={(data) => saveHomepageData('contact_info', data)} 
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="restaurants">
+          <Card>
+            <CardHeader>
+              <CardTitle>Nos Restaurants</CardTitle>
+              <CardDescription>
+                Gérez les restaurants qui apparaissent sur la page "Nos Restaurants" avec leurs adresses et horaires.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RestaurantsManager />
             </CardContent>
           </Card>
         </TabsContent>

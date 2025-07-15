@@ -111,6 +111,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/nos-restaurants" className="text-gray-400 hover:text-white transition-colors">
+                  Nos Restaurants
+                </Link>
+              </li>
+              <li>
                 <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">
                   {homepageData?.header_section?.nav_links?.contact || "Contact"}
                 </Link>

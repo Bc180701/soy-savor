@@ -793,6 +793,89 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurants_info: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          display_order: number
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          postal_code: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          display_order?: number
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          postal_code: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          display_order?: number
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          postal_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      restaurants_info_hours: {
+        Row: {
+          close_time: string | null
+          created_at: string
+          day_of_week: number
+          id: string
+          is_open: boolean
+          open_time: string | null
+          restaurant_info_id: string
+          updated_at: string
+        }
+        Insert: {
+          close_time?: string | null
+          created_at?: string
+          day_of_week: number
+          id?: string
+          is_open?: boolean
+          open_time?: string | null
+          restaurant_info_id: string
+          updated_at?: string
+        }
+        Update: {
+          close_time?: string | null
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          is_open?: boolean
+          open_time?: string | null
+          restaurant_info_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurants_info_hours_restaurant_info_id_fkey"
+            columns: ["restaurant_info_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_info"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           comment: string | null
