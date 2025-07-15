@@ -21,36 +21,39 @@ import CommandeConfirmee from "./pages/CommandeConfirmee";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import NosRestaurants from "./pages/NosRestaurants";
+import { RestaurantProvider } from "./hooks/useRestaurantContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout><Outlet /></Layout>}>
-            <Route index element={<Index />} />
-            <Route path="menu" element={<Menu />} />
-            <Route path="commander" element={<Commander />} />
-            <Route path="composer-sushi" element={<ComposerSushi />} />
-            <Route path="composer-poke" element={<ComposerPoke />} />
-            <Route path="panier" element={<Panier />} />
-            <Route path="contact" element={<Contact />} />
-            <Route path="nos-restaurants" element={<NosRestaurants />} />
-            <Route path="compte" element={<Compte />} />
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-            <Route path="reset-password" element={<ResetPassword />} />
-            <Route path="update-password" element={<UpdatePassword />} />
-            <Route path="commande-confirmee/:orderId" element={<CommandeConfirmee />} />
-            <Route path="admin" element={<Admin />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <RestaurantProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Layout><Outlet /></Layout>}>
+              <Route index element={<Index />} />
+              <Route path="menu" element={<Menu />} />
+              <Route path="commander" element={<Commander />} />
+              <Route path="composer-sushi" element={<ComposerSushi />} />
+              <Route path="composer-poke" element={<ComposerPoke />} />
+              <Route path="panier" element={<Panier />} />
+              <Route path="contact" element={<Contact />} />
+              <Route path="nos-restaurants" element={<NosRestaurants />} />
+              <Route path="compte" element={<Compte />} />
+              <Route path="login" element={<Login />} />
+              <Route path="register" element={<Register />} />
+              <Route path="reset-password" element={<ResetPassword />} />
+              <Route path="update-password" element={<UpdatePassword />} />
+              <Route path="commande-confirmee/:orderId" element={<CommandeConfirmee />} />
+              <Route path="admin" element={<Admin />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </RestaurantProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
