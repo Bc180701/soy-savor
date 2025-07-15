@@ -32,6 +32,13 @@ interface RestaurantHour {
   close_time?: string;
 }
 
+interface FormHour {
+  day_of_week: number;
+  is_open: boolean;
+  open_time: string;
+  close_time: string;
+}
+
 const dayNames = [
   "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"
 ];
@@ -57,7 +64,7 @@ const RestaurantsManager = () => {
       is_open: index !== 0 && index !== 1, // Fermé dimanche et lundi par défaut
       open_time: index !== 0 && index !== 1 ? "11:00" : "",
       close_time: index !== 0 && index !== 1 ? "22:00" : ""
-    }))
+    })) as FormHour[]
   });
 
   useEffect(() => {
@@ -110,12 +117,19 @@ const RestaurantsManager = () => {
         email: restaurant.email || "",
         is_active: restaurant.is_active,
         display_order: restaurant.display_order,
-        hours: restaurant.hours.length > 0 ? restaurant.hours : dayNames.map((_, index) => ({
-          day_of_week: index,
-          is_open: index !== 0 && index !== 1,
-          open_time: index !== 0 && index !== 1 ? "11:00" : "",
-          close_time: index !== 0 && index !== 1 ? "22:00" : ""
-        }))
+        hours: restaurant.hours.length > 0 
+          ? restaurant.hours.map(hour => ({
+              day_of_week: hour.day_of_week,
+              is_open: hour.is_open,
+              open_time: hour.open_time || "",
+              close_time: hour.close_time || ""
+            }))
+          : dayNames.map((_, index) => ({
+              day_of_week: index,
+              is_open: index !== 0 && index !== 1,
+              open_time: index !== 0 && index !== 1 ? "11:00" : "",
+              close_time: index !== 0 && index !== 1 ? "22:00" : ""
+            }))
       });
     } else {
       setEditingRestaurant(null);
@@ -262,7 +276,7 @@ const RestaurantsManager = () => {
     }
   };
 
-  const updateHour = (dayIndex: number, field: string, value: any) => {
+  const updateHour = (dayIndex: number, field: keyof FormHour, value: any) => {
     const newHours = [...formData.hours];
     newHours[dayIndex] = { ...newHours[dayIndex], [field]: value };
     setFormData({ ...formData, hours: newHours });
