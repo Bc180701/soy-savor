@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -90,17 +89,7 @@ export interface HeaderSection {
 export interface FooterSection {
   company_description: string;
   navigation_title: string;
-  hours_title: string;
   contact_title: string;
-  opening_hours: {
-    monday: string;
-    tuesday: string;
-    wednesday: string;
-    thursday: string;
-    friday: string;
-    saturday: string;
-    sunday: string;
-  };
   copyright_text: string;
   legal_links: {
     mentions_legales: string;
@@ -198,17 +187,7 @@ export const useHomepageData = (): UseHomepageDataResult => {
       company_description:
         "Découvrez l'art du sushi à Châteaurenard. Des produits frais préparés avec soin pour une expérience gourmande unique.",
       navigation_title: "Navigation",
-      hours_title: "Horaires d'ouverture",
       contact_title: "Contact",
-      opening_hours: {
-        monday: "Fermé",
-        tuesday: "11:00–14:00, 18:00–22:00",
-        wednesday: "11:00–14:00, 18:00–22:00",
-        thursday: "11:00–14:00, 18:00–22:00",
-        friday: "11:00–14:00, 18:00–22:00",
-        saturday: "11:00–14:00, 18:00–22:00",
-        sunday: "Fermé",
-      },
       copyright_text: "SushiEats. Tous droits réservés.",
       legal_links: {
         mentions_legales: "Mentions légales",

@@ -19,15 +19,6 @@ const FooterSectionEditor = ({ data, onSave }: FooterSectionEditorProps) => {
     company_description: "Découvrez l'art du sushi à Châteaurenard. Des produits frais préparés avec soin pour une expérience gourmande unique.",
     navigation_title: "Navigation",
     contact_title: "Contact",
-    opening_hours: {
-      monday: "Fermé",
-      tuesday: "11:00–14:00, 18:00–22:00",
-      wednesday: "11:00–14:00, 18:00–22:00",
-      thursday: "11:00–14:00, 18:00–22:00",
-      friday: "11:00–14:00, 18:00–22:00",
-      saturday: "11:00–14:00, 18:00–22:00",
-      sunday: "Fermé"
-    },
     copyright_text: "SushiEats. Tous droits réservés.",
     legal_links: {
       mentions_legales: "Mentions légales",
