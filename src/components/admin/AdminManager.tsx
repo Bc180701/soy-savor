@@ -78,18 +78,18 @@ const AdminManager = () => {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white shadow-sm border-b relative z-10">
+        <div className="bg-white shadow-sm border-b relative">
           <div className="flex items-center justify-between px-4 py-4">
-            <div className="flex items-center">
+            <div className="flex items-center relative">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden mr-3 relative z-50"
+                className="lg:hidden mr-3 relative z-[9999] bg-white hover:bg-gray-100 border shadow-sm"
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <h1 className="text-2xl font-bold text-gray-900">{getSectionTitle()}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 relative z-10">{getSectionTitle()}</h1>
             </div>
           </div>
         </div>
