@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DeliveryMethod from "../checkout/DeliveryMethod";
 import DeliveryAddressForm from "../checkout/DeliveryAddressForm";
 import TimeSlotSelector from "../checkout/TimeSlotSelector";
@@ -12,6 +14,7 @@ import { checkPostalCodeDelivery } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Restaurant } from "@/types/restaurant";
+import { User, Mail, Phone, MapPin, Clock, MessageSquare, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface DeliveryStepProps {
   deliveryInfo: {
@@ -178,7 +181,6 @@ export const DeliveryStep = ({
     }));
   };
 
-  // Update delivery info
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setDeliveryInfo(prev => ({
@@ -187,7 +189,6 @@ export const DeliveryStep = ({
     }));
   };
 
-  // Handle time slot selection
   const handleTimeSelection = (time: string) => {
     setDeliveryInfo(prev => ({
       ...prev,
@@ -195,7 +196,6 @@ export const DeliveryStep = ({
     }));
   };
 
-  // Modified for DeliveryAddressForm
   const handleAddressComplete = (addressData: any) => {
     setDeliveryInfo(prev => ({
       ...prev,
@@ -210,12 +210,10 @@ export const DeliveryStep = ({
     }));
   };
 
-  // Function to handle cancellation from DeliveryAddressForm
   const handleAddressCancel = () => {
     // Do nothing, just return to the current state
   };
 
-  // Fonction pour valider avant de passer à l'étape suivante
   const handleContinueToPayment = () => {
     console.log("Attempting to continue, postal code valid:", deliveryInfo.isPostalCodeValid);
     
@@ -263,7 +261,6 @@ export const DeliveryStep = ({
     handleNextStep();
   };
 
-  // Calculer si le bouton doit être désactivé
   const isContinueButtonDisabled = () => {
     // Pour la livraison, vérifier que le code postal est valide
     if (deliveryInfo.orderType === "delivery") {
@@ -275,158 +272,246 @@ export const DeliveryStep = ({
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold">Informations de livraison</h2>
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-bold text-gray-900">Informations de livraison</h2>
+        <p className="text-gray-600">Renseignez vos coordonnées pour finaliser votre commande</p>
+      </div>
       
-      {/* Affichage du restaurant si disponible */}
+      {/* Restaurant Card */}
       {cartRestaurant && (
-        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-          <p className="text-sm text-green-800">
-            <span className="font-medium">Commande pour :</span> {cartRestaurant.name}
-          </p>
-        </div>
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <div>
+                <p className="text-sm font-medium text-green-800">
+                  Commande pour : {cartRestaurant.name}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
       
       {/* Delivery Method */}
-      <DeliveryMethod 
-        defaultValue={deliveryInfo.orderType} 
-        onChange={handleOrderTypeChange} 
-      />
-      
-      {/* Case à cocher pour utiliser les informations stockées */}
-      {isLoggedIn && !loadingProfile && userProfile && (
-        <div className="flex items-center space-x-2 p-4 bg-blue-50 rounded-md border border-blue-200">
-          <Checkbox
-            id="use-stored-info"
-            checked={useStoredInfo}
-            onCheckedChange={handleUseStoredInfoChange}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-gold-600" />
+            Mode de livraison
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DeliveryMethod 
+            defaultValue={deliveryInfo.orderType} 
+            onChange={handleOrderTypeChange} 
           />
-          <Label htmlFor="use-stored-info" className="text-sm font-medium cursor-pointer">
-            Utiliser mes informations enregistrées
-          </Label>
-          <span className="text-xs text-blue-600">
-            ({userProfile.email})
-          </span>
-        </div>
+        </CardContent>
+      </Card>
+      
+      {/* Stored Info Checkbox */}
+      {isLoggedIn && !loadingProfile && userProfile && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="use-stored-info"
+                checked={useStoredInfo}
+                onCheckedChange={handleUseStoredInfoChange}
+              />
+              <Label htmlFor="use-stored-info" className="flex items-center gap-2 cursor-pointer">
+                <User className="w-4 h-4 text-blue-600" />
+                <span className="font-medium text-blue-900">
+                  Utiliser mes informations enregistrées
+                </span>
+                <span className="text-sm text-blue-600">
+                  ({userProfile.email})
+                </span>
+              </Label>
+            </div>
+          </CardContent>
+        </Card>
       )}
       
       {loadingProfile && (
-        <div className="p-4 bg-gray-50 rounded-md text-sm text-gray-600">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <span>Chargement des informations utilisateur...</span>
-          </div>
-        </div>
+        <Card className="border-gray-200 bg-gray-50">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-gray-600">Chargement des informations utilisateur...</span>
+            </div>
+          </CardContent>
+        </Card>
       )}
       
       {/* Contact Information */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-medium">Informations de contact</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="name">Nom complet *</Label>
-            <Input
-              id="name"
-              name="name"
-              value={deliveryInfo.name}
-              onChange={handleChange}
-              placeholder="Votre nom"
-              required
-              key={`name-${deliveryInfo.name}`}
-            />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5 text-gold-600" />
+            Informations de contact
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Nom complet *
+              </Label>
+              <Input
+                id="name"
+                name="name"
+                value={deliveryInfo.name}
+                onChange={handleChange}
+                placeholder="Votre nom"
+                required
+                className="mt-1"
+                key={`name-${deliveryInfo.name}`}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Email *
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={deliveryInfo.email}
+                onChange={handleChange}
+                placeholder="votre@email.com"
+                required
+                className="mt-1"
+                key={`email-${deliveryInfo.email}`}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone" className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                Téléphone *
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                value={deliveryInfo.phone}
+                onChange={handleChange}
+                placeholder="06 XX XX XX XX"
+                required
+                className="mt-1"
+                key={`phone-${deliveryInfo.phone}`}
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              value={deliveryInfo.email}
-              onChange={handleChange}
-              placeholder="votre@email.com"
-              required
-              key={`email-${deliveryInfo.email}`}
-            />
-          </div>
-          <div>
-            <Label htmlFor="phone">Téléphone *</Label>
-            <Input
-              id="phone"
-              name="phone"
-              value={deliveryInfo.phone}
-              onChange={handleChange}
-              placeholder="06 XX XX XX XX"
-              required
-              key={`phone-${deliveryInfo.phone}`}
-            />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
       
       {/* Address Information (only for delivery) */}
       {deliveryInfo.orderType === "delivery" && (
-        <DeliveryAddressForm
-          onComplete={handleAddressComplete}
-          onCancel={handleAddressCancel}
-          cartRestaurant={cartRestaurant}
-          initialData={{
-            name: deliveryInfo.name,
-            email: deliveryInfo.email,
-            phone: deliveryInfo.phone,
-            street: deliveryInfo.street,
-            city: deliveryInfo.city,
-            postalCode: deliveryInfo.postalCode,
-            deliveryInstructions: deliveryInfo.deliveryInstructions
-          }}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-gold-600" />
+              Adresse de livraison
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DeliveryAddressForm
+              onComplete={handleAddressComplete}
+              onCancel={handleAddressCancel}
+              cartRestaurant={cartRestaurant}
+              initialData={{
+                name: deliveryInfo.name,
+                email: deliveryInfo.email,
+                phone: deliveryInfo.phone,
+                street: deliveryInfo.street,
+                city: deliveryInfo.city,
+                postalCode: deliveryInfo.postalCode,
+                deliveryInstructions: deliveryInfo.deliveryInstructions
+              }}
+            />
+          </CardContent>
+        </Card>
       )}
       
-      {/* Pickup/Delivery Time - Passer le restaurant du panier */}
-      <TimeSlotSelector
-        orderType={deliveryInfo.orderType}
-        onSelect={handleTimeSelection}
-        selectedTime={deliveryInfo.pickupTime}
-        cartRestaurant={cartRestaurant}
-      />
+      {/* Pickup/Delivery Time */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-gold-600" />
+            Horaire de {deliveryInfo.orderType === "delivery" ? "livraison" : "retrait"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TimeSlotSelector
+            orderType={deliveryInfo.orderType}
+            onSelect={handleTimeSelection}
+            selectedTime={deliveryInfo.pickupTime}
+            cartRestaurant={cartRestaurant}
+          />
+        </CardContent>
+      </Card>
       
       {/* Special Instructions */}
-      <div className="space-y-2">
-        <Label htmlFor="notes">Instructions spéciales</Label>
-        <Textarea
-          id="notes"
-          name="notes"
-          value={deliveryInfo.notes || ""}
-          onChange={handleChange}
-          placeholder="Instructions spéciales pour votre commande..."
-          className="h-24"
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-gold-600" />
+            Instructions spéciales
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            id="notes"
+            name="notes"
+            value={deliveryInfo.notes || ""}
+            onChange={handleChange}
+            placeholder="Instructions spéciales pour votre commande..."
+            className="h-24 resize-none"
+          />
+        </CardContent>
+      </Card>
       
       {/* Allergies */}
-      <AllergiesSelector
-        allergies={allergies}
-        toggleAllergy={(allergyId) => {
-          if (allergies.includes(allergyId)) {
-            setAllergies(allergies.filter(a => a !== allergyId));
-          } else {
-            setAllergies([...allergies, allergyId]);
-          }
-        }}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            Allergies et intolérances
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AllergiesSelector
+            allergies={allergies}
+            toggleAllergy={(allergyId) => {
+              if (allergies.includes(allergyId)) {
+                setAllergies(allergies.filter(a => a !== allergyId));
+              } else {
+                setAllergies([...allergies, allergyId]);
+              }
+            }}
+          />
+        </CardContent>
+      </Card>
       
       {/* Navigation Buttons */}
       <div className="flex justify-between pt-6">
         <Button 
           onClick={handlePreviousStep}
           variant="outline"
+          className="px-6 py-3"
         >
           Retour au panier
         </Button>
         <Button 
           onClick={handleContinueToPayment}
-          className="bg-gold-500 hover:bg-gold-600 text-black"
+          className="bg-gold-500 hover:bg-gold-600 text-black px-6 py-3 font-medium"
           disabled={isContinueButtonDisabled()}
         >
+          <CheckCircle2 className="w-4 h-4 mr-2" />
           Continuer au paiement
         </Button>
       </div>
