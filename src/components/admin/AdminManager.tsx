@@ -78,14 +78,14 @@ const AdminManager = () => {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white shadow-sm border-b">
+        <div className="bg-white shadow-sm border-b relative z-10">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden mr-3"
+                className="lg:hidden mr-3 relative z-50"
               >
                 <Menu className="h-5 w-5" />
               </Button>
