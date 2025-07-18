@@ -1,21 +1,38 @@
+
 import { useEffect, useState } from "react";
 import { CheckCircle, Package, Truck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 const CommandeConfirmee = () => {
   const [searchParams] = useSearchParams();
+  const { orderId } = useParams();
   const sessionId = searchParams.get("session_id");
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
+  const [finalOrderId, setFinalOrderId] = useState<string | null>(orderId || null);
   const { toast } = useToast();
 
   // Vérifier et créer la commande via l'edge function
   useEffect(() => {
     const verifyAndCreateOrder = async () => {
+      // Si on a déjà un orderId dans l'URL, on considère que la commande est déjà créée
+      if (orderId) {
+        setOrderCreated(true);
+        setFinalOrderId(orderId);
+        
+        // Vider le panier localStorage
+        localStorage.removeItem('cart-storage');
+        localStorage.removeItem('delivery-info');
+        
+        console.log('✅ Commande déjà créée avec ID:', orderId);
+        return;
+      }
+
+      // Sinon, on procède avec la vérification du paiement Stripe
       if (!sessionId || orderCreated || isCreatingOrder) return;
 
       setIsCreatingOrder(true);
@@ -32,6 +49,7 @@ const CommandeConfirmee = () => {
 
         if (data.success) {
           setOrderCreated(true);
+          setFinalOrderId(data.orderId);
           
           // Vider le panier localStorage
           localStorage.removeItem('cart-storage');
@@ -60,7 +78,7 @@ const CommandeConfirmee = () => {
     };
 
     verifyAndCreateOrder();
-  }, [sessionId, orderCreated, isCreatingOrder, toast]);
+  }, [sessionId, orderId, orderCreated, isCreatingOrder, toast]);
 
   if (isCreatingOrder) {
     return (
@@ -87,15 +105,20 @@ const CommandeConfirmee = () => {
           </p>
         </div>
 
-        {sessionId && (
+        {finalOrderId && (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="text-lg">Détails de votre commande</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">
-                Numéro de session : <span className="font-mono">{sessionId}</span>
+                Numéro de commande : <span className="font-mono font-bold">{finalOrderId}</span>
               </p>
+              {sessionId && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Session : <span className="font-mono">{sessionId}</span>
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
