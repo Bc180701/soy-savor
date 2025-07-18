@@ -15,7 +15,8 @@ const CommandeConfirmee = () => {
   const [orderCreated, setOrderCreated] = useState(false);
   const [finalOrderId, setFinalOrderId] = useState<string | null>(null);
   const [verificationAttempts, setVerificationAttempts] = useState(0);
-  const [maxAttempts] = useState(5); // Augmenté à 5 tentatives
+  const [maxAttempts] = useState(3);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
   const { toast } = useToast();
 
   // Vérifier et créer la commande via l'edge function
@@ -23,6 +24,8 @@ const CommandeConfirmee = () => {
     const verifyAndCreateOrder = async () => {
       // Si on a un orderId valide dans l'URL (pas juste le paramètre ":orderId")
       if (orderId && orderId !== ':orderId' && !orderId.startsWith(':')) {
+        console.log('✅ Order ID trouvé dans URL:', orderId);
+        await fetchOrderDetails(orderId);
         setOrderCreated(true);
         setFinalOrderId(orderId);
         
@@ -30,20 +33,16 @@ const CommandeConfirmee = () => {
         localStorage.removeItem('cart-storage');
         localStorage.removeItem('delivery-info');
         
-        console.log('✅ Commande déjà créée avec ID:', orderId);
         return;
       }
 
       // Sinon, on procède avec la vérification du paiement Stripe
       if (!sessionId || orderCreated || isCreatingOrder || verificationAttempts >= maxAttempts) {
-        // Si on a dépassé le nombre max de tentatives mais qu'on a un sessionId, 
-        // on considère que le paiement a réussi et on affiche la confirmation
         if (sessionId && verificationAttempts >= maxAttempts) {
           console.log('⚠️ Vérification échouée après', maxAttempts, 'tentatives, affichage confirmation');
           setOrderCreated(true);
           setFinalOrderId(sessionId);
           
-          // Vider le panier localStorage
           localStorage.removeItem('cart-storage');
           localStorage.removeItem('delivery-info');
           
@@ -71,6 +70,8 @@ const CommandeConfirmee = () => {
         }
 
         if (data.success) {
+          console.log('✅ Commande créée:', data.orderId);
+          await fetchOrderDetails(data.orderId);
           setOrderCreated(true);
           setFinalOrderId(data.orderId);
           
@@ -83,7 +84,8 @@ const CommandeConfirmee = () => {
             description: `Votre commande #${data.orderId} a été créée avec succès.`,
           });
 
-          console.log('✅ Commande créée:', data.orderId);
+          // Rediriger vers l'URL avec l'orderId
+          window.history.replaceState(null, '', `/commande-confirmee/${data.orderId}`);
         } else {
           throw new Error(data.error || 'Erreur lors de la vérification du paiement');
         }
@@ -91,13 +93,11 @@ const CommandeConfirmee = () => {
       } catch (error) {
         console.error('❌ Erreur vérification paiement (tentative', verificationAttempts + 1, '):', error);
         
-        // Si c'est la dernière tentative, on affiche quand même la confirmation
         if (verificationAttempts + 1 >= maxAttempts) {
-          console.log('⚠️ Dernière tentative échouée, affichage confirmation de fallback');
+          console.log('⚠️ Dernière tentative échouée');
           setOrderCreated(true);
           setFinalOrderId(sessionId);
           
-          // Vider le panier localStorage
           localStorage.removeItem('cart-storage');
           localStorage.removeItem('delivery-info');
           
@@ -107,8 +107,8 @@ const CommandeConfirmee = () => {
             variant: "default",
           });
         } else {
-          // Sinon on réessaie après un délai progressif
-          const delay = Math.min(2000 * verificationAttempts, 10000); // Max 10 secondes
+          // Délai progressif entre les tentatives
+          const delay = Math.min(2000 * verificationAttempts, 5000);
           setTimeout(() => {
             setIsCreatingOrder(false);
           }, delay);
@@ -122,6 +122,46 @@ const CommandeConfirmee = () => {
 
     verifyAndCreateOrder();
   }, [sessionId, orderId, orderCreated, isCreatingOrder, verificationAttempts, maxAttempts, toast]);
+
+  // Fonction pour récupérer les détails de la commande
+  const fetchOrderDetails = async (orderIdToFetch: string) => {
+    try {
+      console.log('📋 Récupération détails commande:', orderIdToFetch);
+      
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderIdToFetch)
+        .single();
+
+      if (orderError) {
+        console.error('❌ Erreur récupération commande:', orderError);
+        return;
+      }
+
+      const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select(`
+          *,
+          products(name, description, price)
+        `)
+        .eq('order_id', orderIdToFetch);
+
+      if (itemsError) {
+        console.error('❌ Erreur récupération articles:', itemsError);
+      }
+
+      const orderWithItems = {
+        ...order,
+        items: orderItems || []
+      };
+
+      console.log('✅ Détails commande récupérés:', orderWithItems);
+      setOrderDetails(orderWithItems);
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des détails:', error);
+    }
+  };
 
   if (isCreatingOrder) {
     return (
@@ -157,14 +197,45 @@ const CommandeConfirmee = () => {
               <CardTitle className="text-lg">Détails de votre commande</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600">
-                Numéro de commande : <span className="font-mono font-bold">{finalOrderId}</span>
-              </p>
-              {sessionId && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Session : <span className="font-mono">{sessionId}</span>
+              <div className="text-left space-y-2">
+                <p className="text-sm text-gray-600">
+                  Numéro de commande : <span className="font-mono font-bold">{finalOrderId}</span>
                 </p>
-              )}
+                
+                {orderDetails && (
+                  <>
+                    <p className="text-sm text-gray-600">
+                      Type : <span className="font-medium">
+                        {orderDetails.order_type === 'delivery' ? 'Livraison' : 
+                         orderDetails.order_type === 'pickup' ? 'À emporter' : 'Sur place'}
+                      </span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Total : <span className="font-bold">{orderDetails.total}€</span>
+                    </p>
+                    
+                    {orderDetails.items && orderDetails.items.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-medium text-sm mb-2">Articles commandés :</h4>
+                        <div className="space-y-1">
+                          {orderDetails.items.map((item: any, index: number) => (
+                            <div key={index} className="text-xs text-gray-600 flex justify-between">
+                              <span>{item.quantity}x {item.products?.name || `Article ${item.product_id.slice(0, 8)}...`}</span>
+                              <span>{(item.price * item.quantity).toFixed(2)}€</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {sessionId && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Session : <span className="font-mono">{sessionId}</span>
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
@@ -183,9 +254,12 @@ const CommandeConfirmee = () => {
           <Card>
             <CardContent className="pt-6">
               <Truck className="w-12 h-12 text-green-600 mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Livraison</h3>
+              <h3 className="font-semibold mb-2">
+                {orderDetails?.order_type === 'delivery' ? 'Livraison' : 'Récupération'}
+              </h3>
               <p className="text-sm text-gray-600">
-                Vous recevrez une notification quand votre commande sera prête ou en cours de livraison.
+                Vous recevrez une notification quand votre commande sera prête
+                {orderDetails?.order_type === 'delivery' ? ' ou en cours de livraison' : ' à récupérer'}.
               </p>
             </CardContent>
           </Card>
