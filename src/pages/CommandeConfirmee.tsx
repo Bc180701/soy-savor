@@ -13,14 +13,14 @@ const CommandeConfirmee = () => {
   const sessionId = searchParams.get("session_id");
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
-  const [finalOrderId, setFinalOrderId] = useState<string | null>(orderId || null);
+  const [finalOrderId, setFinalOrderId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Vérifier et créer la commande via l'edge function
   useEffect(() => {
     const verifyAndCreateOrder = async () => {
-      // Si on a déjà un orderId dans l'URL, on considère que la commande est déjà créée
-      if (orderId) {
+      // Si on a un orderId valide dans l'URL (pas juste le paramètre ":orderId")
+      if (orderId && orderId !== ':orderId' && !orderId.startsWith(':')) {
         setOrderCreated(true);
         setFinalOrderId(orderId);
         
