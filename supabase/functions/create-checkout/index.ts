@@ -14,7 +14,27 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Début create-checkout');
+    console.log('🚀 [STEP 1] Début create-checkout - Method:', req.method);
+    
+    // Parse request body
+    let requestBody;
+    try {
+      const bodyText = await req.text();
+      console.log('🚀 [STEP 2] Body reçu (longueur):', bodyText.length);
+      requestBody = JSON.parse(bodyText);
+      console.log('🚀 [STEP 3] Body parsé avec succès');
+    } catch (error) {
+      console.error('❌ [STEP 3] Erreur parsing JSON:', error.message);
+      return new Response(JSON.stringify({ 
+        error: 'Invalid JSON in request body',
+        details: error.message
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    console.log('🚀 [STEP 4] Validation des champs requis...');
     
     const { 
       items, 
@@ -34,117 +54,318 @@ serve(async (req) => {
       deliveryPostalCode,
       customerNotes,
       scheduledFor,
-      restaurantId, // Important: récupérer l'ID du restaurant
+      restaurantId,
       successUrl,
       cancelUrl
-    } = await req.json();
+    } = requestBody;
 
-    console.log('📋 Données reçues:', { 
-      items: items?.length, 
+    console.log('🚀 [STEP 5] Données extraites:', { 
+      itemsCount: items?.length || 0, 
       subtotal, 
       total, 
       restaurantId,
-      clientEmail 
+      clientEmail,
+      orderType
     });
 
-    // Utiliser le restaurant fourni ou le restaurant par défaut (Châteaurenard)
-    const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
-    console.log('🏪 Création checkout pour restaurant:', targetRestaurantId);
-
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    console.log('🔑 Vérification clé Stripe:', stripeSecretKey ? 'Présente' : 'MANQUANTE');
-    
-    if (!stripeSecretKey) {
-      throw new Error('STRIPE_SECRET_KEY non configurée');
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      console.error('❌ [STEP 6] Panier vide ou invalide');
+      return new Response(JSON.stringify({ 
+        error: 'Panier vide ou invalide',
+        details: 'Le panier doit contenir au moins un article'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
     }
 
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
+    if (!clientEmail || !clientName || !orderType) {
+      console.error('❌ [STEP 7] Données client manquantes:', { clientEmail, clientName, orderType });
+      return new Response(JSON.stringify({ 
+        error: 'Informations client manquantes',
+        details: 'Email, nom et type de commande sont obligatoires'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    console.log('🔧 Supabase URL:', supabaseUrl ? 'Présent' : 'MANQUANT');
-    console.log('🔧 Service Role Key:', supabaseServiceRoleKey ? 'Présent' : 'MANQUANT');
+    // Utiliser le restaurant fourni ou le restaurant par défaut
+    const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
+    console.log('🏪 [STEP 8] Restaurant cible:', targetRestaurantId);
+
+    // Initialize Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('❌ [STEP 9] Configuration Supabase manquante');
+      return new Response(JSON.stringify({ 
+        error: 'Configuration serveur manquante',
+        details: 'Variables d\'environnement Supabase non configurées'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
     
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    console.log('🚀 [STEP 10] Client Supabase initialisé');
+
+    // Récupérer la clé Stripe
+    console.log('🔑 [STEP 11] Récupération clé Stripe pour restaurant:', targetRestaurantId);
+    let restaurantData;
+    try {
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('settings')
+        .eq('id', targetRestaurantId)
+        .single();
+
+      if (restaurantError) {
+        console.error('❌ [STEP 12] Erreur récupération restaurant:', restaurantError);
+        return new Response(JSON.stringify({ 
+          error: 'Restaurant non trouvé',
+          details: restaurantError.message
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 404,
+        });
+      }
+      
+      restaurantData = restaurant;
+      console.log('🏪 [STEP 13] Restaurant récupéré:', restaurantData ? 'Oui' : 'Non');
+    } catch (error) {
+      console.error('❌ [STEP 13] Exception lors récupération restaurant:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Erreur lors de la récupération du restaurant',
+        details: error.message
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Utiliser la clé spécifique au restaurant ou la clé par défaut
+    let stripeSecretKey = restaurantData?.settings?.stripe_secret_key;
+    
+    if (!stripeSecretKey) {
+      console.log('⚠️ [STEP 14] Pas de clé spécifique, utilisation clé par défaut');
+      stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+    } else {
+      console.log('✅ [STEP 14] Clé spécifique au restaurant trouvée');
+    }
+    
+    if (!stripeSecretKey) {
+      console.error('❌ [STEP 15] Aucune clé Stripe disponible');
+      return new Response(JSON.stringify({ 
+        error: 'Configuration Stripe manquante',
+        details: 'Aucune clé Stripe configurée pour ce restaurant'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Valider le format de la clé
+    if (!stripeSecretKey.startsWith('sk_live_') && !stripeSecretKey.startsWith('sk_test_')) {
+      console.error('❌ [STEP 16] Format de clé invalide:', stripeSecretKey.substring(0, 10) + '...');
+      return new Response(JSON.stringify({ 
+        error: 'Clé Stripe invalide',
+        details: 'Format de clé incorrect'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    console.log('🔧 [STEP 17] Initialisation Stripe...');
+    let stripe;
+    try {
+      stripe = new Stripe(stripeSecretKey, {
+        apiVersion: '2023-10-16',
+      });
+      console.log('✅ [STEP 18] Stripe initialisé avec succès');
+    } catch (error) {
+      console.error('❌ [STEP 18] Erreur initialisation Stripe:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Erreur configuration Stripe',
+        details: error.message
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
 
     // Créer les line items pour Stripe
-    const lineItems = items.map((item: any) => ({
-      price_data: {
-        currency: 'eur',
-        product_data: {
-          name: item.menuItem.name,
-          description: item.menuItem.description || '',
-        },
-        unit_amount: Math.round(item.menuItem.price * 100), // Prix en centimes
-      },
-      quantity: item.quantity,
+    const lineItems = [];
+    
+    try {
+      console.log('📦 [STEP 19] Création des line items...');
+      
+      for (const item of items) {
+        console.log('📦 [STEP 19.1] Traitement item:', item);
+        
+        if (!item.menuItem || !item.menuItem.name || typeof item.menuItem.price !== 'number' || !item.quantity) {
+          console.error('❌ [STEP 19.2] Item invalide:', item);
+          continue;
+        }
+
+        const lineItem = {
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: item.menuItem.name,
+              description: item.menuItem.description || '',
+            },
+            unit_amount: Math.round(item.menuItem.price * 100),
+          },
+          quantity: item.quantity,
+        };
+        
+        lineItems.push(lineItem);
+        console.log('📦 [STEP 19.3] Line item ajouté:', item.menuItem.name, '-', item.menuItem.price, '€');
+      }
+
+      // Ajouter les frais de livraison
+      if (deliveryFee > 0) {
+        lineItems.push({
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: 'Frais de livraison',
+            },
+            unit_amount: Math.round(deliveryFee * 100),
+          },
+          quantity: 1,
+        });
+        console.log('📦 [STEP 19.4] Frais de livraison ajoutés:', deliveryFee, '€');
+      }
+
+      // Ajouter le pourboire
+      if (tip > 0) {
+        lineItems.push({
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: 'Pourboire',
+            },
+            unit_amount: Math.round(tip * 100),
+          },
+          quantity: 1,
+        });
+        console.log('📦 [STEP 19.5] Pourboire ajouté:', tip, '€');
+      }
+
+      console.log('📦 [STEP 20] Total line items créés:', lineItems.length);
+
+      if (lineItems.length === 0) {
+        console.error('❌ [STEP 21] Aucun line item valide');
+        return new Response(JSON.stringify({ 
+          error: 'Panier invalide',
+          details: 'Aucun article valide dans le panier'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ [STEP 20] Erreur création line items:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Erreur traitement panier',
+        details: error.message
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Créer un résumé simplifié des articles pour les métadonnées
+    const itemsSummary = items.map(item => ({
+      id: item.menuItem.id,
+      name: item.menuItem.name,
+      price: item.menuItem.price,
+      quantity: item.quantity
     }));
 
-    // Ajouter les frais de livraison si applicable
-    if (deliveryFee > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: 'Frais de livraison',
-          },
-          unit_amount: Math.round(deliveryFee * 100),
+    console.log('📝 [STEP 21] Résumé articles créé:', itemsSummary.length, 'articles');
+
+    // Créer la session Stripe
+    console.log('💳 [STEP 22] Création session Stripe...');
+    let session;
+    try {
+      const sessionData = {
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        mode: 'payment',
+        success_url: successUrl ? `${successUrl}?session_id={CHECKOUT_SESSION_ID}` : `${req.headers.get('origin')}/commande-confirmee?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancelUrl || `${req.headers.get('origin')}/panier`,
+        customer_email: clientEmail,
+        metadata: {
+          restaurant_id: targetRestaurantId,
+          order_type: orderType,
+          client_name: clientName,
+          client_phone: clientPhone || '',
+          client_email: clientEmail,
+          delivery_street: deliveryStreet || '',
+          delivery_city: deliveryCity || '',
+          delivery_postal_code: deliveryPostalCode || '',
+          customer_notes: customerNotes || '',
+          scheduled_for: scheduledFor || '',
+          subtotal: subtotal?.toString() || '0',
+          tax: tax?.toString() || '0',
+          delivery_fee: deliveryFee?.toString() || '0',
+          tip: tip?.toString() || '0',
+          discount: discount?.toString() || '0',
+          promo_code: promoCode || '',
+          total: total?.toString() || '0',
+          items_count: items.length.toString(),
+          items_summary: JSON.stringify(itemsSummary).substring(0, 450), // Limiter à 450 caractères
         },
-        quantity: 1,
+      };
+
+      console.log('💳 [STEP 23] Configuration session:', {
+        mode: sessionData.mode,
+        lineItemsCount: sessionData.line_items.length,
+        customerEmail: sessionData.customer_email,
+        restaurantId: sessionData.metadata.restaurant_id,
+        metadataSize: JSON.stringify(sessionData.metadata).length
+      });
+
+      session = await stripe.checkout.sessions.create(sessionData);
+      console.log('✅ [STEP 24] Session Stripe créée avec succès:', session.id);
+      
+    } catch (error) {
+      console.error('❌ [STEP 24] Erreur création session Stripe:', {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+        param: error.param,
+        stack: error.stack
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: 'Erreur création session de paiement',
+        details: error.message,
+        stripeError: {
+          type: error.type,
+          code: error.code,
+          param: error.param
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       });
     }
 
-    // Ajouter le pourboire si applicable
-    if (tip > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: 'Pourboire',
-          },
-          unit_amount: Math.round(tip * 100),
-        },
-        quantity: 1,
-      });
-    }
-
-    // Créer la session Stripe avec TOUTES les données dans les métadonnées
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl,
-      customer_email: clientEmail,
-      metadata: {
-        restaurant_id: targetRestaurantId,
-        order_type: orderType,
-        client_name: clientName,
-        client_phone: clientPhone,
-        client_email: clientEmail,
-        delivery_street: deliveryStreet || '',
-        delivery_city: deliveryCity || '',
-        delivery_postal_code: deliveryPostalCode || '',
-        customer_notes: customerNotes || '',
-        scheduled_for: scheduledFor || '',
-        subtotal: subtotal.toString(),
-        tax: tax.toString(),
-        delivery_fee: deliveryFee.toString(),
-        tip: tip.toString(),
-        discount: discount.toString(),
-        promo_code: promoCode || '',
-        total: total.toString(),
-        // Stocker les items comme JSON string
-        items: JSON.stringify(items)
-      },
+    console.log('✅ [STEP 25] Réponse finale:', {
+      sessionId: session.id,
+      url: session.url,
+      restaurantId: targetRestaurantId
     });
 
-    console.log('💳 Session Stripe créée:', session.id);
-
-    // Retourner immédiatement sans créer la commande
-    // La commande sera créée par le webhook une fois le paiement confirmé
     return new Response(JSON.stringify({ 
       url: session.url,
       sessionId: session.id,
@@ -155,14 +376,17 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Erreur détaillée dans create-checkout:', {
+    console.error('❌ [CRITICAL ERROR] Erreur générale dans create-checkout:', {
       message: error.message,
       stack: error.stack,
-      name: error.name
+      name: error.name,
+      cause: error.cause
     });
+    
     return new Response(JSON.stringify({ 
-      error: error.message,
-      details: 'Voir les logs pour plus de détails'
+      error: 'Erreur interne du serveur',
+      details: error.message,
+      stack: error.stack
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
