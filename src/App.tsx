@@ -47,7 +47,6 @@ const App = () => (
               <Route path="register" element={<Register />} />
               <Route path="reset-password" element={<ResetPassword />} />
               <Route path="update-password" element={<UpdatePassword />} />
-              <Route path="commande-confirmee" element={<CommandeConfirmee />} />
               <Route path="commande-confirmee/:orderId" element={<CommandeConfirmee />} />
               <Route path="admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
