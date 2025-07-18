@@ -53,30 +53,27 @@ serve(async (req) => {
       body: { restaurantId: '11111111-1111-1111-1111-111111111111' }
     });
 
-    if (keyError || !stripeKeyData?.secretKey) {
+    if (keyError || !stripeKeyData?.stripeKey) {
       console.error('❌ Erreur récupération clé Stripe:', keyError);
       throw new Error('Clé Stripe non disponible');
     }
 
     console.log('✅ Clé Stripe récupérée');
 
-    const stripe = new Stripe(stripeKeyData.secretKey, {
+    const stripe = new Stripe(stripeKeyData.stripeKey, {
       apiVersion: '2023-10-16',
     });
 
-    console.log('💳 Récupération session Stripe avec expand...');
-    // Récupérer la session Stripe avec tous les détails
-    const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['line_items', 'line_items.data.price.product']
-    });
+    console.log('💳 Récupération session Stripe...');
+    // Récupérer la session Stripe
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
     
     console.log('📊 Session récupérée:', {
       id: session.id,
       payment_status: session.payment_status,
       amount_total: session.amount_total,
       customer_email: session.customer_email,
-      metadata_keys: Object.keys(session.metadata || {}),
-      line_items_count: session.line_items?.data?.length || 0
+      metadata_keys: Object.keys(session.metadata || {})
     });
 
     if (session.payment_status !== 'paid') {
@@ -96,7 +93,7 @@ serve(async (req) => {
       console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', session.customer_email);
     }
 
-    // Créer la commande avec les données disponibles
+    // Créer la commande avec les données des métadonnées
     const orderData = {
       stripe_session_id: sessionId,
       restaurant_id: metadata.restaurant_id || '11111111-1111-1111-1111-111111111111',
@@ -105,7 +102,7 @@ serve(async (req) => {
       tax: parseFloat(metadata.tax || '0'),
       delivery_fee: parseFloat(metadata.delivery_fee || '0'),
       tip: parseFloat(metadata.tip || '0'),
-      total: session.amount_total ? session.amount_total / 100 : parseFloat(metadata.total || '0'),
+      total: parseFloat(metadata.total || '0'),
       discount: parseFloat(metadata.discount || '0'),
       promo_code: metadata.promo_code || null,
       order_type: metadata.order_type || 'pickup',
@@ -114,8 +111,8 @@ serve(async (req) => {
       payment_status: 'paid',
       scheduled_for: metadata.scheduled_for || new Date().toISOString(),
       client_name: metadata.client_name || session.customer_details?.name || 'Client',
-      client_email: metadata.client_email || session.customer_email || 'client@example.com',
-      client_phone: metadata.client_phone || session.customer_details?.phone || '',
+      client_email: metadata.client_email || session.customer_email || '',
+      client_phone: metadata.client_phone || '',
       delivery_street: metadata.delivery_street || null,
       delivery_city: metadata.delivery_city || null,
       delivery_postal_code: metadata.delivery_postal_code || null,
@@ -142,20 +139,18 @@ serve(async (req) => {
 
     console.log('✅ Commande créée:', order.id);
 
-    // Ajouter les articles depuis les métadonnées ou line_items
-    let itemsCreated = false;
-    
-    if (metadata.items) {
+    // Ajouter les articles depuis items_summary dans les métadonnées
+    if (metadata.items_summary) {
       try {
-        const items = JSON.parse(metadata.items);
-        console.log('📦 Ajout articles depuis métadonnées:', items.length);
+        const items = JSON.parse(metadata.items_summary);
+        console.log('📦 Ajout articles depuis items_summary:', items.length);
 
         const orderItems = items.map((item: any) => ({
           order_id: order.id,
-          product_id: item.menuItem.id,
+          product_id: item.id,
           quantity: item.quantity,
-          price: item.menuItem.price,
-          special_instructions: item.specialInstructions || null,
+          price: item.price,
+          special_instructions: null,
         }));
 
         const { error: itemsError } = await supabase
@@ -163,46 +158,16 @@ serve(async (req) => {
           .insert(orderItems);
 
         if (itemsError) {
-          console.error('❌ Erreur ajout articles métadonnées:', itemsError);
-        } else {
-          console.log('✅ Articles ajoutés depuis métadonnées');
-          itemsCreated = true;
+          console.error('❌ Erreur ajout articles:', itemsError);
+          throw itemsError;
         }
+
+        console.log('✅ Articles ajoutés depuis items_summary');
       } catch (error) {
-        console.error('❌ Erreur parsing métadonnées items:', error);
+        console.error('❌ Erreur parsing items_summary:', error);
       }
-    }
-
-    // Si pas d'articles depuis métadonnées, essayer line_items
-    if (!itemsCreated && session.line_items?.data?.length > 0) {
-      try {
-        console.log('📦 Ajout articles depuis line_items Stripe:', session.line_items.data.length);
-        
-        const orderItems = session.line_items.data.map((lineItem: any, index: number) => ({
-          order_id: order.id,
-          product_id: `stripe-item-${index}-${Date.now()}`,
-          quantity: lineItem.quantity || 1,
-          price: lineItem.price?.unit_amount ? lineItem.price.unit_amount / 100 : 0,
-          special_instructions: lineItem.description || null,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-
-        if (itemsError) {
-          console.error('❌ Erreur ajout articles line_items:', itemsError);
-        } else {
-          console.log('✅ Articles ajoutés depuis line_items');
-          itemsCreated = true;
-        }
-      } catch (error) {
-        console.error('❌ Erreur traitement line_items:', error);
-      }
-    }
-
-    if (!itemsCreated) {
-      console.log('⚠️ Aucun article ajouté - commande créée sans articles');
+    } else {
+      console.log('⚠️ Aucun items_summary trouvé dans les métadonnées');
     }
 
     return new Response(JSON.stringify({ 
