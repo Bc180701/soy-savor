@@ -29,18 +29,23 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Vérifier si la commande existe déjà
-    const { data: existingOrder } = await supabase
+    const { data: existingOrder, error: existingOrderError } = await supabase
       .from('orders')
-      .select('id')
+      .select('id, status, total, client_email, order_type')
       .eq('stripe_session_id', sessionId)
       .maybeSingle();
+
+    if (existingOrderError) {
+      console.error('❌ Erreur lors de la vérification commande existante:', existingOrderError);
+    }
 
     if (existingOrder) {
       console.log('✅ Commande déjà existante:', existingOrder.id);
       return new Response(JSON.stringify({ 
         success: true, 
         orderId: existingOrder.id,
-        message: 'Commande déjà créée'
+        message: 'Commande déjà créée',
+        orderDetails: existingOrder
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -65,8 +70,14 @@ serve(async (req) => {
     });
 
     console.log('💳 Récupération session Stripe...');
-    // Récupérer la session Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    
+    let session;
+    try {
+      session = await stripe.checkout.sessions.retrieve(sessionId);
+    } catch (stripeError) {
+      console.error('❌ Erreur Stripe lors de la récupération de session:', stripeError);
+      throw new Error(`Erreur Stripe: ${stripeError.message}`);
+    }
     
     console.log('📊 Session récupérée:', {
       id: session.id,
@@ -173,7 +184,14 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true, 
       orderId: order.id,
-      message: 'Commande créée avec succès'
+      message: 'Commande créée avec succès',
+      orderDetails: {
+        id: order.id,
+        status: order.status,
+        total: order.total,
+        client_email: order.client_email,
+        order_type: order.order_type
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

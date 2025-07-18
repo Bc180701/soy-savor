@@ -37,20 +37,23 @@ const CommandeConfirmee = () => {
       }
 
       // Sinon, on procède avec la vérification du paiement Stripe
-      if (!sessionId || orderCreated || isCreatingOrder || verificationAttempts >= maxAttempts) {
-        if (sessionId && verificationAttempts >= maxAttempts) {
-          console.log('⚠️ Vérification échouée après', maxAttempts, 'tentatives, affichage confirmation');
-          setOrderCreated(true);
-          setFinalOrderId(sessionId);
-          
-          localStorage.removeItem('cart-storage');
-          localStorage.removeItem('delivery-info');
-          
-          toast({
-            title: "Commande confirmée !",
-            description: "Votre paiement a été traité avec succès.",
-          });
-        }
+      if (!sessionId || orderCreated || isCreatingOrder) {
+        return;
+      }
+
+      // Limiter le nombre de tentatives
+      if (verificationAttempts >= maxAttempts) {
+        console.log('⚠️ Nombre maximum de tentatives atteint');
+        setOrderCreated(true);
+        setFinalOrderId(sessionId);
+        
+        localStorage.removeItem('cart-storage');
+        localStorage.removeItem('delivery-info');
+        
+        toast({
+          title: "Commande confirmée !",
+          description: "Votre paiement a été traité avec succès.",
+        });
         return;
       }
 
@@ -70,8 +73,14 @@ const CommandeConfirmee = () => {
         }
 
         if (data.success) {
-          console.log('✅ Commande créée:', data.orderId);
-          await fetchOrderDetails(data.orderId);
+          console.log('✅ Commande traitée:', data.orderId, '- Message:', data.message);
+          
+          if (data.orderDetails) {
+            setOrderDetails(data.orderDetails);
+          } else {
+            await fetchOrderDetails(data.orderId);
+          }
+          
           setOrderCreated(true);
           setFinalOrderId(data.orderId);
           
@@ -81,7 +90,7 @@ const CommandeConfirmee = () => {
           
           toast({
             title: "Commande confirmée !",
-            description: `Votre commande #${data.orderId} a été créée avec succès.`,
+            description: data.message || `Votre commande #${data.orderId} a été traitée avec succès.`,
           });
 
           // Rediriger vers l'URL avec l'orderId
@@ -94,7 +103,7 @@ const CommandeConfirmee = () => {
         console.error('❌ Erreur vérification paiement (tentative', verificationAttempts + 1, '):', error);
         
         if (verificationAttempts + 1 >= maxAttempts) {
-          console.log('⚠️ Dernière tentative échouée');
+          console.log('⚠️ Dernière tentative échouée, affichage confirmation quand même');
           setOrderCreated(true);
           setFinalOrderId(sessionId);
           
@@ -106,17 +115,9 @@ const CommandeConfirmee = () => {
             description: "Votre paiement a été effectué. Vous recevrez un email de confirmation.",
             variant: "default",
           });
-        } else {
-          // Délai progressif entre les tentatives
-          const delay = Math.min(2000 * verificationAttempts, 5000);
-          setTimeout(() => {
-            setIsCreatingOrder(false);
-          }, delay);
         }
       } finally {
-        if (verificationAttempts + 1 >= maxAttempts) {
-          setIsCreatingOrder(false);
-        }
+        setIsCreatingOrder(false);
       }
     };
 
