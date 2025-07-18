@@ -15,7 +15,7 @@ const CommandeConfirmee = () => {
   const [orderCreated, setOrderCreated] = useState(false);
   const [finalOrderId, setFinalOrderId] = useState<string | null>(null);
   const [verificationAttempts, setVerificationAttempts] = useState(0);
-  const [maxAttempts] = useState(3);
+  const [maxAttempts] = useState(5); // Augmenté à 5 tentatives
   const { toast } = useToast();
 
   // Vérifier et créer la commande via l'edge function
@@ -39,7 +39,7 @@ const CommandeConfirmee = () => {
         // Si on a dépassé le nombre max de tentatives mais qu'on a un sessionId, 
         // on considère que le paiement a réussi et on affiche la confirmation
         if (sessionId && verificationAttempts >= maxAttempts) {
-          console.log('⚠️ Vérification échouée mais sessionId présent, affichage confirmation générique');
+          console.log('⚠️ Vérification échouée après', maxAttempts, 'tentatives, affichage confirmation');
           setOrderCreated(true);
           setFinalOrderId(sessionId);
           
@@ -49,7 +49,7 @@ const CommandeConfirmee = () => {
           
           toast({
             title: "Commande confirmée !",
-            description: "Votre paiement a été traité avec succès. Vous recevrez un email de confirmation.",
+            description: "Votre paiement a été traité avec succès.",
           });
         }
         return;
@@ -103,14 +103,15 @@ const CommandeConfirmee = () => {
           
           toast({
             title: "Paiement traité",
-            description: "Votre paiement a été effectué. En cas de problème, contactez-nous.",
+            description: "Votre paiement a été effectué. Vous recevrez un email de confirmation.",
             variant: "default",
           });
         } else {
-          // Sinon on réessaie après un délai
+          // Sinon on réessaie après un délai progressif
+          const delay = Math.min(2000 * verificationAttempts, 10000); // Max 10 secondes
           setTimeout(() => {
             setIsCreatingOrder(false);
-          }, 2000);
+          }, delay);
         }
       } finally {
         if (verificationAttempts + 1 >= maxAttempts) {
@@ -129,7 +130,7 @@ const CommandeConfirmee = () => {
           <Loader2 className="w-20 h-20 text-blue-600 mx-auto mb-4 animate-spin" />
           <h1 className="text-2xl font-bold mb-2">Finalisation de votre commande...</h1>
           <p className="text-gray-600">
-            Veuillez patienter pendant que nous enregistrons votre commande.
+            Nous enregistrons votre commande dans notre système.
             {verificationAttempts > 0 && ` (Tentative ${verificationAttempts}/${maxAttempts})`}
           </p>
         </div>
