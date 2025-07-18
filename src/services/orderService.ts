@@ -1,7 +1,7 @@
-
 import { CartItem, Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { sendOrderStatusSMS } from "./smsService";
 
 export type OrderResponse = {
   orders: Order[];
@@ -359,17 +359,36 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
       return { success: false, error: error.message };
     }
 
-    // Envoyer notification au client
+    // Envoyer notifications au client
     const clientEmail = order.client_email;
     const clientPhone = order.client_phone;
+    const clientName = order.client_name;
     
+    // Notification par email
     if (clientEmail) {
-      await sendStatusUpdateEmail(clientEmail, order.client_name || "Client", status, orderId);
+      await sendStatusUpdateEmail(clientEmail, clientName || "Client", status, orderId);
     }
     
-    if (clientPhone) {
-      // À implémenter si vous souhaitez envoyer des SMS
-      // await sendStatusUpdateSMS(clientPhone, status, orderId);
+    // Notification par SMS pour les statuts critiques
+    if (clientPhone && shouldSendSMS(status, order.order_type)) {
+      try {
+        const smsResult = await sendOrderStatusSMS({
+          phoneNumber: clientPhone,
+          orderId,
+          orderType: order.order_type as 'delivery' | 'pickup' | 'dine-in',
+          status,
+          customerName: clientName || "Client"
+        });
+        
+        if (!smsResult.success) {
+          console.error("❌ Échec envoi SMS:", smsResult.error);
+        } else {
+          console.log("✅ SMS envoyé avec succès pour la commande", orderId);
+        }
+      } catch (smsError) {
+        console.error("❌ Erreur lors de l'envoi du SMS:", smsError);
+        // Ne pas faire échouer la mise à jour du statut même si le SMS échoue
+      }
     }
 
     return { success: true };
@@ -379,6 +398,23 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
       success: false, 
       error: error instanceof Error ? error.message : "Une erreur inattendue s'est produite lors de la mise à jour du statut de la commande." 
     };
+  }
+};
+
+// Fonction pour déterminer si un SMS doit être envoyé selon le statut
+const shouldSendSMS = (status: string, orderType: string): boolean => {
+  // Envoyer SMS pour les transitions importantes
+  switch (status) {
+    case 'out-for-delivery':
+      return orderType === 'delivery'; // SMS uniquement pour les livraisons
+    case 'ready':
+      return orderType === 'pickup'; // SMS uniquement pour les retraits
+    case 'delivered':
+      return orderType === 'delivery'; // Confirmation de livraison
+    case 'completed':
+      return orderType === 'pickup'; // Confirmation de retrait
+    default:
+      return false;
   }
 };
 
