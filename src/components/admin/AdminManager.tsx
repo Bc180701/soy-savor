@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
 import AdminInviteManager from "./AdminInviteManager";
 import StripeKeysManager from "./StripeKeysManager";
+import SMSTestManager from "./SMSTestManager";
 import AdminSidebar from "./AdminSidebar";
 
 const AdminManager = () => {
@@ -46,6 +46,7 @@ const AdminManager = () => {
             <OpeningHoursManager />
             <DeliveryZonesManager />
             <IngredientsManager />
+            <SMSTestManager />
           </div>
         );
       default:
