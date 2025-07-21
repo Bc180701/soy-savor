@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { sendOrderStatusSMS } from "@/services/smsService";
 import { Loader2, Send, Phone } from "lucide-react";
@@ -13,6 +14,9 @@ const SMSTestManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [orderType, setOrderType] = useState<'delivery' | 'pickup' | 'dine-in'>('delivery');
+  const [status, setStatus] = useState('ready');
+  const [restaurantId, setRestaurantId] = useState('11111111-1111-1111-1111-111111111111'); // Châteaurenard par défaut
   const [testMessage, setTestMessage] = useState("");
   const { toast } = useToast();
 
@@ -31,9 +35,10 @@ const SMSTestManager = () => {
       const result = await sendOrderStatusSMS({
         phoneNumber: phoneNumber.trim(),
         orderId: "TEST-" + Date.now().toString().slice(-6),
-        orderType: 'delivery',
-        status: 'ready',
-        customerName: customerName.trim() || "Client Test"
+        orderType,
+        status,
+        customerName: customerName.trim() || "Client Test",
+        restaurantId
       });
 
       if (result.success) {
@@ -78,7 +83,7 @@ const SMSTestManager = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkeWtlZ25tb215eXVjYmhzbG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NjA2NjUsImV4cCI6MjA1ODMzNjY2NX0.88jbkZIkFiFXudHvqe0l2DhqQGh2V9JIThv9FFFagas`
         },
         body: JSON.stringify({
           phoneNumber: phoneNumber.trim(),
@@ -149,11 +154,51 @@ const SMSTestManager = () => {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="orderType">Type de commande</Label>
+            <Select value={orderType} onValueChange={(value: 'delivery' | 'pickup' | 'dine-in') => setOrderType(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="delivery">Livraison</SelectItem>
+                <SelectItem value="pickup">À emporter</SelectItem>
+                <SelectItem value="dine-in">Sur place</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Statut</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ready">Prêt</SelectItem>
+                <SelectItem value="out-for-delivery">En livraison</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="restaurant">Restaurant</Label>
+            <Select value={restaurantId} onValueChange={setRestaurantId}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="11111111-1111-1111-1111-111111111111">Châteaurenard</SelectItem>
+                <SelectItem value="22222222-2222-2222-2222-222222222222">Saint Martin de Crau</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="space-y-4">
           <div>
             <h4 className="font-medium mb-2">Test avec message automatique</h4>
             <p className="text-sm text-gray-600 mb-3">
-              Envoie un SMS de test avec le message automatique pour "commande prête"
+              Envoie un SMS de test avec le message automatique selon le type et statut sélectionnés
             </p>
             <Button
               onClick={handleTestSMS}
