@@ -18,44 +18,43 @@ const detectRestaurantFromCategory = (category: string): string | null => {
 };
 
 export const useCartRestaurant = () => {
-  const { items } = useCart();
+  const { items, selectedRestaurantId } = useCart();
   const [cartRestaurant, setCartRestaurant] = useState<Restaurant | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const detectRestaurantFromCart = async () => {
-      if (items.length === 0) {
+      console.log("🔍 Détection restaurant - Items:", items.length, "Selected restaurant:", selectedRestaurantId);
+      
+      if (items.length === 0 && !selectedRestaurantId) {
         setCartRestaurant(null);
         return;
       }
 
-      // Prendre le premier article du panier
-      const firstItem = items[0];
       let restaurantId: string | null = null;
 
-      // Essayer d'abord avec restaurant_id si disponible
-      if (firstItem.menuItem.restaurant_id) {
-        restaurantId = firstItem.menuItem.restaurant_id;
-        console.log("🔍 Restaurant ID trouvé directement:", restaurantId);
-      } else {
-        // Sinon, détecter depuis la catégorie
-        restaurantId = detectRestaurantFromCategory(firstItem.menuItem.category);
-        console.log("🔍 Restaurant ID détecté depuis catégorie:", restaurantId);
+      // Priorité 1: utiliser selectedRestaurantId du panier
+      if (selectedRestaurantId) {
+        restaurantId = selectedRestaurantId;
+        console.log("🔍 Restaurant ID du panier:", restaurantId);
+      } 
+      // Priorité 2: prendre le restaurant_id du premier article
+      else if (items.length > 0) {
+        const firstItem = items[0];
+        if (firstItem.menuItem.restaurant_id) {
+          restaurantId = firstItem.menuItem.restaurant_id;
+          console.log("🔍 Restaurant ID depuis article:", restaurantId);
+        } else {
+          // Priorité 3: détecter depuis la catégorie
+          restaurantId = detectRestaurantFromCategory(firstItem.menuItem.category);
+          console.log("🔍 Restaurant ID détecté depuis catégorie:", restaurantId);
+        }
       }
 
       if (!restaurantId) {
-        console.warn("❌ Impossible de détecter le restaurant pour:", firstItem);
+        console.warn("❌ Impossible de détecter le restaurant");
+        setCartRestaurant(null);
         return;
-      }
-
-      // Vérifier que tous les articles du panier sont du même restaurant
-      const allSameRestaurant = items.every(item => {
-        const itemRestaurantId = item.menuItem.restaurant_id || detectRestaurantFromCategory(item.menuItem.category);
-        return itemRestaurantId === restaurantId;
-      });
-      
-      if (!allSameRestaurant) {
-        console.warn("⚠️ Articles de restaurants différents dans le panier");
       }
 
       setIsLoading(true);
@@ -67,16 +66,18 @@ export const useCartRestaurant = () => {
           setCartRestaurant(restaurant);
         } else {
           console.warn("❌ Restaurant non trouvé pour ID:", restaurantId);
+          setCartRestaurant(null);
         }
       } catch (error) {
         console.error("❌ Erreur détection restaurant:", error);
+        setCartRestaurant(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     detectRestaurantFromCart();
-  }, [items]);
+  }, [items, selectedRestaurantId]);
 
   return { cartRestaurant, isLoading };
 };

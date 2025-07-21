@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MenuItem } from '@/types';
@@ -111,29 +112,35 @@ export const useCart = create<CartStore>()(
       },
       
       addItem: (item, quantity, specialInstructions) => {
-        const currentItems = get().items;
-        const existingItem = currentItems.find(cartItem => cartItem.menuItem.id === item.id);
+        console.log("🛒 addItem appelé:", item.name, "quantité:", quantity);
         
-        if (existingItem) {
-          console.log("🛒 Mise à jour quantité article existant:", item.name, "nouvelle quantité:", existingItem.quantity + quantity);
-          set((state) => ({
-            items: state.items.map(cartItem =>
-              cartItem.menuItem.id === item.id
-                ? { ...cartItem, quantity: cartItem.quantity + quantity }
-                : cartItem
-            )
-          }));
-        } else {
-          console.log("🛒 Ajout nouvel article:", item.name, "quantité:", quantity);
-          set((state) => ({
-            items: [...state.items, { menuItem: item, quantity, specialInstructions }]
-          }));
-        }
+        set((state) => {
+          const existingItem = state.items.find(cartItem => cartItem.menuItem.id === item.id);
+          
+          if (existingItem) {
+            console.log("🛒 Mise à jour quantité article existant:", item.name, "nouvelle quantité:", existingItem.quantity + quantity);
+            return {
+              ...state,
+              items: state.items.map(cartItem =>
+                cartItem.menuItem.id === item.id
+                  ? { ...cartItem, quantity: cartItem.quantity + quantity }
+                  : cartItem
+              )
+            };
+          } else {
+            console.log("🛒 Ajout nouvel article:", item.name, "quantité:", quantity);
+            return {
+              ...state,
+              items: [...state.items, { menuItem: item, quantity, specialInstructions }]
+            };
+          }
+        });
       },
       
       removeItem: (itemId) => {
         console.log("🛒 Suppression article:", itemId);
         set((state) => ({
+          ...state,
           items: state.items.filter(item => item.menuItem.id !== itemId)
         }));
       },
@@ -146,6 +153,7 @@ export const useCart = create<CartStore>()(
         
         console.log("🛒 Mise à jour quantité:", itemId, "nouvelle quantité:", quantity);
         set((state) => ({
+          ...state,
           items: state.items.map(item =>
             item.menuItem.id === itemId
               ? { ...item, quantity }

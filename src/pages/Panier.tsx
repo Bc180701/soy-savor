@@ -31,7 +31,7 @@ interface DeliveryInfo {
 }
 
 const PanierContent = () => {
-  const { items, clearCart } = useCart();
+  const { items, clearCart, selectedRestaurantId } = useCart();
   const cartTotal = useCartTotal();
   const { toast } = useToast();
   const { cartRestaurant } = useCartRestaurant();
@@ -61,12 +61,16 @@ const PanierContent = () => {
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
   const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
 
-  // Log du restaurant détecté
+  // Log du restaurant détecté et du panier
   useEffect(() => {
-    if (cartRestaurant) {
-      console.log("🏪 Restaurant détecté dans le panier:", cartRestaurant.name, "ID:", cartRestaurant.id);
-    }
-  }, [cartRestaurant]);
+    console.log("🛒 État du panier:", {
+      itemsCount: items.length,
+      items: items,
+      selectedRestaurantId,
+      cartRestaurant: cartRestaurant?.name,
+      cartTotal
+    });
+  }, [items, selectedRestaurantId, cartRestaurant, cartTotal]);
   
   // Check if user is logged in
   useEffect(() => {
@@ -119,7 +123,7 @@ const PanierContent = () => {
   // Calculate total with discount and tip
   const orderTotal = subtotal + tax + deliveryFee + tip - discount;
 
-  console.log("📊 Panier - Calculs:", {
+  console.log("📊 Panier - Calculs détaillés:", {
     subtotal,
     tax,
     deliveryFee,
@@ -127,12 +131,17 @@ const PanierContent = () => {
     tip,
     orderTotal,
     itemsCount: items.length,
-    restaurantId: cartRestaurant?.id
+    itemsQuantity: items.reduce((total, item) => total + item.quantity, 0),
+    restaurantId: cartRestaurant?.id,
+    selectedRestaurantId
   });
 
   const handleNextStep = () => {
+    console.log("🔄 handleNextStep appelé - Step:", currentStep, "Items:", items.length);
+    
     if (currentStep === CheckoutStep.Cart) {
       if (items.length === 0) {
+        console.error("❌ Panier vide détecté");
         toast({
           title: "Panier vide",
           description: "Veuillez ajouter des articles à votre panier.",
@@ -140,6 +149,8 @@ const PanierContent = () => {
         });
         return;
       }
+      
+      console.log("✅ Panier valide, passage à l'étape livraison");
       setCurrentStep(CheckoutStep.DeliveryDetails);
     } else if (currentStep === CheckoutStep.DeliveryDetails) {
       if (!validateDeliveryInfo()) {
