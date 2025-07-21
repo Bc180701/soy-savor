@@ -17,6 +17,8 @@ export const sendOrderStatusSMS = async ({
   customerName = "Client"
 }: SMSNotification): Promise<{ success: boolean; error?: string }> => {
   try {
+    console.log(`📱 Préparation SMS pour ${phoneNumber} - Status: ${status}, Type: ${orderType}`);
+    
     // Générer le message en fonction du statut et du type de commande
     let message = `Bonjour ${customerName}, `;
     
@@ -41,7 +43,7 @@ export const sendOrderStatusSMS = async ({
         message += `le statut de votre commande #${orderId.substring(0, 6)} a été mis à jour. Merci de votre confiance - SushiEats`;
     }
 
-    console.log(`📱 Préparation SMS pour ${phoneNumber}:`, message);
+    console.log(`📱 Message SMS généré:`, message);
 
     // Appeler l'edge function pour envoyer le SMS
     const { data, error } = await supabase.functions.invoke('send-sms-notification', {

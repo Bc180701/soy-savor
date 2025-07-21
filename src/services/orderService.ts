@@ -336,6 +336,8 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
 
 export const updateOrderStatus = async (orderId: string, status: string): Promise<{ success: boolean; error?: string }> => {
   try {
+    console.log(`📱 Mise à jour du statut de la commande ${orderId} vers ${status}`);
+    
     // Récupérer les informations de la commande pour les notifications
     const { data: order, error: fetchError } = await supabase
       .from('orders')
@@ -348,6 +350,14 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
       return { success: false, error: fetchError.message };
     }
 
+    console.log(`📋 Informations commande récupérées:`, {
+      id: order.id,
+      type: order.order_type,
+      phone: order.client_phone,
+      email: order.client_email,
+      name: order.client_name
+    });
+
     // Mise à jour du statut
     const { error } = await supabase
       .from('orders')
@@ -359,6 +369,8 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
       return { success: false, error: error.message };
     }
 
+    console.log(`✅ Statut de la commande ${orderId} mis à jour vers ${status}`);
+
     // Envoyer notifications au client
     const clientEmail = order.client_email;
     const clientPhone = order.client_phone;
@@ -366,11 +378,13 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
     
     // Notification par email
     if (clientEmail) {
+      console.log(`📧 Envoi notification email à ${clientEmail}...`);
       await sendStatusUpdateEmail(clientEmail, clientName || "Client", status, orderId);
     }
     
     // Notification par SMS pour les statuts critiques
     if (clientPhone && shouldSendSMS(status, order.order_type)) {
+      console.log(`📱 Envoi notification SMS à ${clientPhone} pour statut ${status}...`);
       try {
         const smsResult = await sendOrderStatusSMS({
           phoneNumber: clientPhone,
@@ -389,6 +403,8 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
         console.error("❌ Erreur lors de l'envoi du SMS:", smsError);
         // Ne pas faire échouer la mise à jour du statut même si le SMS échoue
       }
+    } else {
+      console.log(`📱 SMS non envoyé - Phone: ${!!clientPhone}, shouldSend: ${shouldSendSMS(status, order.order_type)}`);
     }
 
     return { success: true };
@@ -403,17 +419,28 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
 
 // Fonction pour déterminer si un SMS doit être envoyé selon le statut
 const shouldSendSMS = (status: string, orderType: string): boolean => {
+  console.log(`📋 Vérification envoi SMS - Status: ${status}, OrderType: ${orderType}`);
+  
   // Envoyer SMS pour les transitions importantes
   switch (status) {
     case 'out-for-delivery':
-      return orderType === 'delivery'; // SMS uniquement pour les livraisons
+      const shouldSendDelivery = orderType === 'delivery';
+      console.log(`📱 SMS livraison: ${shouldSendDelivery}`);
+      return shouldSendDelivery;
     case 'ready':
-      return orderType === 'pickup'; // SMS uniquement pour les retraits
+      const shouldSendReady = orderType === 'pickup';
+      console.log(`📱 SMS prêt: ${shouldSendReady}`);
+      return shouldSendReady;
     case 'delivered':
-      return orderType === 'delivery'; // Confirmation de livraison
+      const shouldSendDelivered = orderType === 'delivery';
+      console.log(`📱 SMS livré: ${shouldSendDelivered}`);
+      return shouldSendDelivered;
     case 'completed':
-      return orderType === 'pickup'; // Confirmation de retrait
+      const shouldSendCompleted = orderType === 'pickup';
+      console.log(`📱 SMS récupéré: ${shouldSendCompleted}`);
+      return shouldSendCompleted;
     default:
+      console.log(`📱 SMS non applicable pour le statut: ${status}`);
       return false;
   }
 };
