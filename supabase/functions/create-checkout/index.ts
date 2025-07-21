@@ -62,6 +62,7 @@ serve(async (req) => {
     console.log('🚀 [STEP 5] Données extraites:', { 
       itemsCount: items?.length || 0, 
       subtotal, 
+      tax,
       total, 
       restaurantId,
       clientEmail,
@@ -212,6 +213,9 @@ serve(async (req) => {
           continue;
         }
 
+        // On ajoute la TVA directement au prix de chaque article
+        const priceWithTax = Math.round(item.menuItem.price * 110) / 100; // Ajout de 10% de TVA
+        
         const lineItem = {
           price_data: {
             currency: 'eur',
@@ -219,13 +223,14 @@ serve(async (req) => {
               name: item.menuItem.name,
               description: item.menuItem.description || '',
             },
-            unit_amount: Math.round(item.menuItem.price * 100),
+            // Prix en centimes avec TVA incluse
+            unit_amount: Math.round(priceWithTax * 100),
           },
           quantity: item.quantity,
         };
         
         lineItems.push(lineItem);
-        console.log('📦 [STEP 19.3] Line item ajouté:', item.menuItem.name, '-', item.menuItem.price, '€');
+        console.log('📦 [STEP 19.3] Line item ajouté (avec TVA):', item.menuItem.name, '-', priceWithTax, '€');
       }
 
       // Ajouter les frais de livraison
