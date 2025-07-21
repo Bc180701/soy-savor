@@ -33,12 +33,6 @@ export const sendOrderStatusSMS = async ({
           message += `votre commande #${orderId.substring(0, 6)} est prête ! Merci de votre confiance - SushiEats`;
         }
         break;
-      case 'delivered':
-        message += `votre commande #${orderId.substring(0, 6)} a été livrée ! Nous espérons que vous vous régalerez. Merci de votre confiance - SushiEats`;
-        break;
-      case 'completed':
-        message += `merci d'avoir récupéré votre commande #${orderId.substring(0, 6)} ! Nous espérons que vous vous régalerez. Merci de votre confiance - SushiEats`;
-        break;
       default:
         message += `le statut de votre commande #${orderId.substring(0, 6)} a été mis à jour. Merci de votre confiance - SushiEats`;
     }

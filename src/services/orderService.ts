@@ -421,7 +421,7 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
 const shouldSendSMS = (status: string, orderType: string): boolean => {
   console.log(`📋 Vérification envoi SMS - Status: ${status}, OrderType: ${orderType}`);
   
-  // Envoyer SMS pour les transitions importantes
+  // Envoyer SMS uniquement pour les transitions importantes
   switch (status) {
     case 'out-for-delivery':
       const shouldSendDelivery = orderType === 'delivery';
@@ -431,14 +431,6 @@ const shouldSendSMS = (status: string, orderType: string): boolean => {
       const shouldSendReady = orderType === 'pickup';
       console.log(`📱 SMS prêt: ${shouldSendReady}`);
       return shouldSendReady;
-    case 'delivered':
-      const shouldSendDelivered = orderType === 'delivery';
-      console.log(`📱 SMS livré: ${shouldSendDelivered}`);
-      return shouldSendDelivered;
-    case 'completed':
-      const shouldSendCompleted = orderType === 'pickup';
-      console.log(`📱 SMS récupéré: ${shouldSendCompleted}`);
-      return shouldSendCompleted;
     default:
       console.log(`📱 SMS non applicable pour le statut: ${status}`);
       return false;
