@@ -61,94 +61,140 @@ serve(async (req) => {
     const event = JSON.parse(body);
     console.log('🎯 Événement Stripe reçu:', event.type);
 
-  // Traiter l'événement
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    console.log('💳 Session complétée:', session.id);
-    
-    // Récupérer toutes les données depuis les métadonnées
-    const metadata = session.metadata;
-    const restaurantId = metadata?.restaurant_id;
-    
-    console.log('🏪 Restaurant ID depuis métadonnées:', restaurantId);
-    console.log('📋 Métadonnées complètes:', metadata);
-    
-    if (!restaurantId) {
-      console.error('❌ Restaurant ID manquant dans les métadonnées');
-      return new Response('Restaurant ID manquant', { status: 400 });
-    }
-
-    try {
-      // Créer la commande dans Supabase avec toutes les données
-      const orderData = {
-        stripe_session_id: session.id,
-        restaurant_id: restaurantId,
-        subtotal: parseFloat(metadata.subtotal || '0'),
-        tax: parseFloat(metadata.tax || '0'),
-        delivery_fee: parseFloat(metadata.delivery_fee || '0'),
-        tip: parseFloat(metadata.tip || '0'),
-        total: parseFloat(metadata.total || '0'),
-        discount: parseFloat(metadata.discount || '0'),
-        promo_code: metadata.promo_code || null,
-        order_type: metadata.order_type,
-        status: 'confirmed',
-        payment_method: 'credit-card',
-        payment_status: 'paid',
-        scheduled_for: metadata.scheduled_for,
-        client_name: metadata.client_name,
-        client_email: metadata.client_email,
-        client_phone: metadata.client_phone,
-        delivery_street: metadata.delivery_street || null,
-        delivery_city: metadata.delivery_city || null,
-        delivery_postal_code: metadata.delivery_postal_code || null,
-        customer_notes: metadata.customer_notes || null,
-      };
-
-      console.log('📝 Création commande depuis webhook:', orderData);
-
-      const { data: order, error: orderError } = await supabase
+    // Traiter l'événement
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      console.log('💳 Session complétée:', session.id);
+      
+      // Vérifier si la commande existe déjà
+      const { data: existingOrder, error: existingError } = await supabase
         .from('orders')
-        .insert(orderData)
-        .select()
-        .single();
+        .select('id')
+        .eq('stripe_session_id', session.id)
+        .maybeSingle();
 
-      if (orderError) {
-        console.error('❌ Erreur création commande depuis webhook:', orderError);
-        throw orderError;
+      if (existingError) {
+        console.error('❌ Erreur vérification commande existante:', existingError);
       }
 
-      console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId);
+      if (existingOrder) {
+        console.log('✅ Commande déjà existante:', existingOrder.id);
+        return new Response(JSON.stringify({ received: true, existing: true }), { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' } 
+        });
+      }
+      
+      // Récupérer toutes les données depuis les métadonnées
+      const metadata = session.metadata;
+      const restaurantId = metadata?.restaurant_id || '22222222-2222-2222-2222-222222222222'; // St Martin de Crau par défaut
+      
+      console.log('🏪 Restaurant ID depuis métadonnées:', restaurantId);
+      console.log('📋 Métadonnées complètes:', metadata);
+      
+      if (!restaurantId) {
+        console.error('❌ Restaurant ID manquant dans les métadonnées');
+        return new Response('Restaurant ID manquant', { status: 400 });
+      }
 
-      // Ajouter les articles de la commande
-      if (metadata.items) {
-        try {
-          const items = JSON.parse(metadata.items);
-          console.log('📦 Articles à créer:', items.length);
-
-          const orderItemPromises = items.map((item: any) => {
-            return supabase
-              .from('order_items')
-              .insert({
-                order_id: order.id,
-                product_id: item.menuItem.id,
-                quantity: item.quantity,
-                price: item.menuItem.price,
-                special_instructions: item.specialInstructions || null,
-              });
-          });
-
-          await Promise.all(orderItemPromises);
-          console.log('✅ Articles de commande ajoutés depuis webhook');
-        } catch (itemsError) {
-          console.error('❌ Erreur lors de l\'ajout des articles:', itemsError);
+      // Vérifier si l'utilisateur existe
+      let userId = null;
+      if (session.customer_email) {
+        const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+        if (!usersError) {
+          const user = users?.find(u => u.email === session.customer_email);
+          userId = user?.id || null;
+          console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', session.customer_email);
         }
       }
 
-    } catch (error) {
-      console.error('❌ Erreur lors de la création de la commande depuis webhook:', error);
-      return new Response('Erreur lors de la création de la commande', { status: 500 });
+      try {
+        // Créer la commande dans Supabase avec toutes les données
+        const orderData = {
+          stripe_session_id: session.id,
+          restaurant_id: restaurantId,
+          user_id: userId,
+          subtotal: parseFloat(metadata?.subtotal || '0'),
+          tax: parseFloat(metadata?.tax || '0'),
+          delivery_fee: parseFloat(metadata?.delivery_fee || '0'),
+          tip: parseFloat(metadata?.tip || '0'),
+          total: parseFloat(metadata?.total || session.amount_total ? (session.amount_total / 100).toString() : '0'),
+          discount: parseFloat(metadata?.discount || '0'),
+          promo_code: metadata?.promo_code || null,
+          order_type: metadata?.order_type || 'pickup',
+          status: 'confirmed',
+          payment_method: 'credit-card',
+          payment_status: 'paid',
+          scheduled_for: metadata?.scheduled_for || new Date().toISOString(),
+          client_name: metadata?.client_name || session.customer_details?.name || 'Client',
+          client_email: metadata?.client_email || session.customer_email || '',
+          client_phone: metadata?.client_phone || session.customer_details?.phone || '',
+          delivery_street: metadata?.delivery_street || null,
+          delivery_city: metadata?.delivery_city || null,
+          delivery_postal_code: metadata?.delivery_postal_code || null,
+          customer_notes: metadata?.customer_notes || null,
+        };
+
+        console.log('📝 Création commande depuis webhook:', {
+          restaurant_id: orderData.restaurant_id,
+          total: orderData.total,
+          client_email: orderData.client_email,
+          order_type: orderData.order_type
+        });
+
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert(orderData)
+          .select()
+          .single();
+
+        if (orderError) {
+          console.error('❌ Erreur création commande depuis webhook:', orderError);
+          throw orderError;
+        }
+
+        console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId);
+
+        // Ajouter les articles de la commande
+        const itemsData = metadata?.items_summary || metadata?.items;
+        if (itemsData) {
+          try {
+            const items = JSON.parse(itemsData);
+            console.log('📦 Articles à créer:', items.length);
+
+            let orderItems = [];
+            
+            if (Array.isArray(items)) {
+              orderItems = items.map((item: any) => ({
+                order_id: order.id,
+                product_id: item.id || item.menuItem?.id || item.product_id,
+                quantity: item.quantity || 1,
+                price: item.price || item.menuItem?.price || 0,
+                special_instructions: item.specialInstructions || item.special_instructions || null,
+              }));
+            }
+
+            if (orderItems.length > 0) {
+              const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItems);
+
+              if (itemsError) {
+                console.error('❌ Erreur ajout articles:', itemsError);
+              } else {
+                console.log('✅ Articles de commande ajoutés depuis webhook');
+              }
+            }
+          } catch (itemsError) {
+            console.error('❌ Erreur lors de l\'ajout des articles:', itemsError);
+          }
+        }
+
+      } catch (error) {
+        console.error('❌ Erreur lors de la création de la commande depuis webhook:', error);
+        return new Response('Erreur lors de la création de la commande', { status: 500 });
+      }
     }
-  }
 
     return new Response(JSON.stringify({ received: true }), { 
       status: 200,

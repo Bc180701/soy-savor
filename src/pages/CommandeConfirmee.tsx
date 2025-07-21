@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { CheckCircle, Package, Truck, Loader2 } from "lucide-react";
+import { CheckCircle, Package, Truck, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useSearchParams, useParams } from "react-router-dom";
@@ -15,8 +15,9 @@ const CommandeConfirmee = () => {
   const [orderCreated, setOrderCreated] = useState(false);
   const [finalOrderId, setFinalOrderId] = useState<string | null>(null);
   const [verificationAttempts, setVerificationAttempts] = useState(0);
-  const [maxAttempts] = useState(3);
+  const [maxAttempts] = useState(5); // Augmenté à 5 tentatives
   const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [hasError, setHasError] = useState(false);
   const { toast } = useToast();
 
   // Vérifier et créer la commande via l'edge function
@@ -44,15 +45,12 @@ const CommandeConfirmee = () => {
       // Limiter le nombre de tentatives
       if (verificationAttempts >= maxAttempts) {
         console.log('⚠️ Nombre maximum de tentatives atteint');
-        setOrderCreated(true);
-        setFinalOrderId(sessionId);
-        
-        localStorage.removeItem('cart-storage');
-        localStorage.removeItem('delivery-info');
+        setHasError(true);
         
         toast({
-          title: "Commande confirmée !",
-          description: "Votre paiement a été traité avec succès.",
+          title: "Commande en cours de traitement",
+          description: "Votre paiement a été effectué. La commande sera bientôt disponible dans votre compte.",
+          variant: "default",
         });
         return;
       }
@@ -102,17 +100,18 @@ const CommandeConfirmee = () => {
       } catch (error) {
         console.error('❌ Erreur vérification paiement (tentative', verificationAttempts + 1, '):', error);
         
-        if (verificationAttempts + 1 >= maxAttempts) {
-          console.log('⚠️ Dernière tentative échouée, affichage confirmation quand même');
-          setOrderCreated(true);
-          setFinalOrderId(sessionId);
-          
-          localStorage.removeItem('cart-storage');
-          localStorage.removeItem('delivery-info');
+        // Attendre un peu avant la prochaine tentative
+        if (verificationAttempts + 1 < maxAttempts) {
+          setTimeout(() => {
+            // La prochaine tentative se fera au prochain cycle useEffect
+          }, 2000);
+        } else {
+          console.log('⚠️ Dernière tentative échouée');
+          setHasError(true);
           
           toast({
-            title: "Paiement traité",
-            description: "Votre paiement a été effectué. Vous recevrez un email de confirmation.",
+            title: "Commande en cours de traitement",
+            description: "Votre paiement a été effectué. Veuillez vérifier votre compte dans quelques minutes ou contactez-nous.",
             variant: "default",
           });
         }
@@ -164,6 +163,13 @@ const CommandeConfirmee = () => {
     }
   };
 
+  // Fonction pour réessayer la vérification
+  const retryVerification = () => {
+    setVerificationAttempts(0);
+    setHasError(false);
+    setIsCreatingOrder(false);
+  };
+
   if (isCreatingOrder) {
     return (
       <div className="container mx-auto py-24 px-4">
@@ -174,6 +180,42 @@ const CommandeConfirmee = () => {
             Nous enregistrons votre commande dans notre système.
             {verificationAttempts > 0 && ` (Tentative ${verificationAttempts}/${maxAttempts})`}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasError && !orderCreated) {
+    return (
+      <div className="container mx-auto py-24 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <AlertCircle className="w-20 h-20 text-orange-600 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Commande en cours de traitement</h1>
+          <p className="text-gray-600 mb-6">
+            Votre paiement a été effectué avec succès, mais nous avons besoin de quelques minutes pour finaliser votre commande.
+          </p>
+          
+          <div className="space-y-4">
+            <Button onClick={retryVerification} className="w-full">
+              Réessayer la vérification
+            </Button>
+            
+            <Button variant="outline" asChild className="w-full">
+              <Link to="/compte">
+                Voir mes commandes
+              </Link>
+            </Button>
+          </div>
+          
+          {sessionId && (
+            <Card className="mt-6">
+              <CardContent className="pt-6">
+                <p className="text-sm text-gray-600">
+                  Référence de paiement : <span className="font-mono text-xs">{sessionId}</span>
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );

@@ -31,7 +31,7 @@ serve(async (req) => {
     // Vérifier si la commande existe déjà
     const { data: existingOrder, error: existingOrderError } = await supabase
       .from('orders')
-      .select('id, status, total, client_email, order_type')
+      .select('id, status, total, client_email, order_type, restaurant_id')
       .eq('stripe_session_id', sessionId)
       .maybeSingle();
 
@@ -41,11 +41,29 @@ serve(async (req) => {
 
     if (existingOrder) {
       console.log('✅ Commande déjà existante:', existingOrder.id);
+      
+      // Récupérer les détails complets de la commande existante
+      const { data: orderDetails, error: detailsError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            *,
+            products (name, description, price)
+          )
+        `)
+        .eq('id', existingOrder.id)
+        .single();
+
+      if (detailsError) {
+        console.error('❌ Erreur récupération détails commande:', detailsError);
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
         orderId: existingOrder.id,
         message: 'Commande déjà créée',
-        orderDetails: existingOrder
+        orderDetails: orderDetails || existingOrder
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -55,7 +73,7 @@ serve(async (req) => {
     // Récupérer la clé Stripe depuis la fonction get-stripe-key
     console.log('🔑 Récupération clé Stripe...');
     const { data: stripeKeyData, error: keyError } = await supabase.functions.invoke('get-stripe-key', {
-      body: { restaurantId: '11111111-1111-1111-1111-111111111111' }
+      body: { restaurantId: '22222222-2222-2222-2222-222222222222' } // St Martin de Crau par défaut
     });
 
     if (keyError || !stripeKeyData?.stripeKey) {
@@ -98,22 +116,28 @@ serve(async (req) => {
     // Vérifier si l'utilisateur est connecté
     let userId = null;
     if (session.customer_email) {
-      const { data: userData } = await supabase.auth.admin.listUsers();
-      const user = userData.users?.find(u => u.email === session.customer_email);
-      userId = user?.id || null;
-      console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', session.customer_email);
+      const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+      if (!usersError) {
+        const user = users?.find(u => u.email === session.customer_email);
+        userId = user?.id || null;
+        console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', session.customer_email);
+      }
     }
+
+    // Déterminer le restaurant ID depuis les métadonnées ou utiliser St Martin de Crau par défaut
+    const restaurantId = metadata.restaurant_id || '22222222-2222-2222-2222-222222222222';
+    console.log('🏪 Restaurant ID utilisé:', restaurantId);
 
     // Créer la commande avec les données des métadonnées
     const orderData = {
       stripe_session_id: sessionId,
-      restaurant_id: metadata.restaurant_id || '11111111-1111-1111-1111-111111111111',
+      restaurant_id: restaurantId,
       user_id: userId,
       subtotal: parseFloat(metadata.subtotal || '0'),
       tax: parseFloat(metadata.tax || '0'),
       delivery_fee: parseFloat(metadata.delivery_fee || '0'),
       tip: parseFloat(metadata.tip || '0'),
-      total: parseFloat(metadata.total || '0'),
+      total: parseFloat(metadata.total || session.amount_total ? (session.amount_total / 100).toString() : '0'),
       discount: parseFloat(metadata.discount || '0'),
       promo_code: metadata.promo_code || null,
       order_type: metadata.order_type || 'pickup',
@@ -123,7 +147,7 @@ serve(async (req) => {
       scheduled_for: metadata.scheduled_for || new Date().toISOString(),
       client_name: metadata.client_name || session.customer_details?.name || 'Client',
       client_email: metadata.client_email || session.customer_email || '',
-      client_phone: metadata.client_phone || '',
+      client_phone: metadata.client_phone || session.customer_details?.phone || '',
       delivery_street: metadata.delivery_street || null,
       delivery_city: metadata.delivery_city || null,
       delivery_postal_code: metadata.delivery_postal_code || null,
@@ -134,7 +158,8 @@ serve(async (req) => {
       restaurant_id: orderData.restaurant_id,
       total: orderData.total,
       client_email: orderData.client_email,
-      order_type: orderData.order_type
+      order_type: orderData.order_type,
+      payment_status: orderData.payment_status
     });
 
     const { data: order, error: orderError } = await supabase
@@ -150,47 +175,71 @@ serve(async (req) => {
 
     console.log('✅ Commande créée:', order.id);
 
-    // Ajouter les articles depuis items_summary dans les métadonnées
-    if (metadata.items_summary) {
+    // Ajouter les articles depuis items_summary ou items dans les métadonnées
+    const itemsData = metadata.items_summary || metadata.items;
+    if (itemsData) {
       try {
-        const items = JSON.parse(metadata.items_summary);
-        console.log('📦 Ajout articles depuis items_summary:', items.length);
+        const items = JSON.parse(itemsData);
+        console.log('📦 Ajout articles:', items.length);
 
-        const orderItems = items.map((item: any) => ({
-          order_id: order.id,
-          product_id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          special_instructions: null,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
-
-        if (itemsError) {
-          console.error('❌ Erreur ajout articles:', itemsError);
-          throw itemsError;
+        let orderItems = [];
+        
+        if (Array.isArray(items)) {
+          orderItems = items.map((item: any) => ({
+            order_id: order.id,
+            product_id: item.id || item.menuItem?.id || item.product_id,
+            quantity: item.quantity || 1,
+            price: item.price || item.menuItem?.price || 0,
+            special_instructions: item.specialInstructions || item.special_instructions || null,
+          }));
         }
 
-        console.log('✅ Articles ajoutés depuis items_summary');
+        if (orderItems.length > 0) {
+          const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItems);
+
+          if (itemsError) {
+            console.error('❌ Erreur ajout articles:', itemsError);
+          } else {
+            console.log('✅ Articles ajoutés avec succès');
+          }
+        }
       } catch (error) {
-        console.error('❌ Erreur parsing items_summary:', error);
+        console.error('❌ Erreur parsing items:', error);
       }
     } else {
-      console.log('⚠️ Aucun items_summary trouvé dans les métadonnées');
+      console.log('⚠️ Aucun article trouvé dans les métadonnées');
+    }
+
+    // Récupérer les détails complets de la commande créée
+    const { data: fullOrderDetails, error: fullDetailsError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (
+          *,
+          products (name, description, price)
+        )
+      `)
+      .eq('id', order.id)
+      .single();
+
+    if (fullDetailsError) {
+      console.error('❌ Erreur récupération détails complets:', fullDetailsError);
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
       orderId: order.id,
       message: 'Commande créée avec succès',
-      orderDetails: {
+      orderDetails: fullOrderDetails || {
         id: order.id,
         status: order.status,
         total: order.total,
         client_email: order.client_email,
-        order_type: order.order_type
+        order_type: order.order_type,
+        restaurant_id: order.restaurant_id
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
