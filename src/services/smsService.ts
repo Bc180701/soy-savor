@@ -7,6 +7,7 @@ export interface SMSNotification {
   orderType: 'delivery' | 'pickup' | 'dine-in';
   status: string;
   customerName?: string;
+  restaurantId?: string;
 }
 
 export const sendOrderStatusSMS = async ({
@@ -14,27 +15,44 @@ export const sendOrderStatusSMS = async ({
   orderId,
   orderType,
   status,
-  customerName = "Client"
+  customerName = "Client",
+  restaurantId
 }: SMSNotification): Promise<{ success: boolean; error?: string }> => {
   try {
     console.log(`📱 Préparation SMS pour ${phoneNumber} - Status: ${status}, Type: ${orderType}`);
+    
+    // Récupérer le nom du restaurant si un ID est fourni
+    let restaurantName = "";
+    if (restaurantId) {
+      const { data: restaurant } = await supabase
+        .from('restaurants')
+        .select('name')
+        .eq('id', restaurantId)
+        .single();
+      
+      restaurantName = restaurant?.name || "";
+    }
     
     // Générer le message en fonction du statut et du type de commande
     let message = `Bonjour ${customerName}, `;
     
     switch (status) {
       case 'out-for-delivery':
-        message += `votre commande #${orderId.substring(0, 6)} est partie en livraison ! Votre livreur arrive bientôt. Merci de votre confiance - SushiEats`;
+        message += `votre commande part en livraison ! Votre livreur arrive bientôt. Merci de votre confiance - SushiEats`;
         break;
       case 'ready':
         if (orderType === 'pickup') {
-          message += `votre commande #${orderId.substring(0, 6)} est prête ! Vous pouvez venir la récupérer en restaurant. Merci de votre confiance - SushiEats`;
+          if (restaurantName) {
+            message += `votre commande est prête ! Vous pouvez venir la récupérer au restaurant de ${restaurantName}. Merci de votre confiance - SushiEats`;
+          } else {
+            message += `votre commande est prête ! Vous pouvez venir la récupérer en restaurant. Merci de votre confiance - SushiEats`;
+          }
         } else {
-          message += `votre commande #${orderId.substring(0, 6)} est prête ! Merci de votre confiance - SushiEats`;
+          message += `votre commande est prête ! Merci de votre confiance - SushiEats`;
         }
         break;
       default:
-        message += `le statut de votre commande #${orderId.substring(0, 6)} a été mis à jour. Merci de votre confiance - SushiEats`;
+        message += `le statut de votre commande a été mis à jour. Merci de votre confiance - SushiEats`;
     }
 
     console.log(`📱 Message SMS généré:`, message);

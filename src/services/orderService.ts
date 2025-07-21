@@ -355,7 +355,8 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
       type: order.order_type,
       phone: order.client_phone,
       email: order.client_email,
-      name: order.client_name
+      name: order.client_name,
+      restaurantId: order.restaurant_id
     });
 
     // Mise à jour du statut
@@ -391,7 +392,8 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
           orderId,
           orderType: order.order_type as 'delivery' | 'pickup' | 'dine-in',
           status,
-          customerName: clientName || "Client"
+          customerName: clientName || "Client",
+          restaurantId: order.restaurant_id // Passer l'ID du restaurant
         });
         
         if (!smsResult.success) {
