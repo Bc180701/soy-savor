@@ -48,6 +48,7 @@ interface ProfileFormProps {
 export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -63,7 +64,10 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
   });
 
   useEffect(() => {
+    // Ne charger les données qu'une seule fois au montage du composant
     const loadUserProfile = async () => {
+      if (initialDataLoaded) return; // Éviter les rechargements multiples
+      
       setLoading(true);
       try {
         const { profile, address, error } = await getUserProfile();
@@ -73,18 +77,24 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
           return;
         }
 
-        // Mettre à jour le formulaire avec les données récupérées
-        if (profile) {
-          form.setValue("firstName", profile.first_name || "");
-          form.setValue("lastName", profile.last_name || "");
-          form.setValue("phone", profile.phone || "");
-        }
+        // Mettre à jour le formulaire avec les données récupérées seulement si pas encore fait
+        if (profile || address) {
+          console.log("🔄 Chargement initial des données du profil");
+          
+          if (profile) {
+            form.setValue("firstName", profile.first_name || "", { shouldValidate: false });
+            form.setValue("lastName", profile.last_name || "", { shouldValidate: false });
+            form.setValue("phone", profile.phone || "", { shouldValidate: false });
+          }
 
-        if (address) {
-          form.setValue("street", address.street || "");
-          form.setValue("city", address.city || "");
-          form.setValue("postalCode", address.postal_code || "");
-          form.setValue("additionalInfo", address.additional_info || "");
+          if (address) {
+            form.setValue("street", address.street || "", { shouldValidate: false });
+            form.setValue("city", address.city || "", { shouldValidate: false });
+            form.setValue("postalCode", address.postal_code || "", { shouldValidate: false });
+            form.setValue("additionalInfo", address.additional_info || "", { shouldValidate: false });
+          }
+          
+          setInitialDataLoaded(true);
         }
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
@@ -94,7 +104,7 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
     };
 
     loadUserProfile();
-  }, [form]);
+  }, []); // Dépendances vides - ne s'exécute qu'au montage
 
   async function onSubmit(data: ProfileFormValues) {
     setSaving(true);
@@ -117,6 +127,8 @@ export default function ProfileForm({ onProfileUpdated }: ProfileFormProps) {
         return;
       }
 
+      console.log("✅ Profil sauvegardé avec succès");
+      
       // Notifier que le profil a été mis à jour
       if (onProfileUpdated) {
         onProfileUpdated();
