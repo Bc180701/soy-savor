@@ -1,5 +1,4 @@
 
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2.43.0';
 import Stripe from 'https://cdn.skypack.dev/stripe@14.20.0';
@@ -71,16 +70,20 @@ serve(async (req) => {
       });
     }
 
-    // Récupérer la clé Stripe
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeKey) {
-      console.error('❌ Clé Stripe non trouvée dans les variables d\'environnement');
+    // Récupérer la clé Stripe depuis la fonction get-stripe-key
+    console.log('🔑 Récupération clé Stripe...');
+    const { data: stripeKeyData, error: keyError } = await supabase.functions.invoke('get-stripe-key', {
+      body: { restaurantId: '22222222-2222-2222-2222-222222222222' } // St Martin de Crau par défaut
+    });
+
+    if (keyError || !stripeKeyData?.stripeKey) {
+      console.error('❌ Erreur récupération clé Stripe:', keyError);
       throw new Error('Clé Stripe non disponible');
     }
 
-    console.log('✅ Clé Stripe récupérée depuis les variables d\'environnement');
+    console.log('✅ Clé Stripe récupérée');
 
-    const stripe = new Stripe(stripeKey, {
+    const stripe = new Stripe(stripeKeyData.stripeKey, {
       apiVersion: '2023-10-16',
     });
 
@@ -88,9 +91,7 @@ serve(async (req) => {
     
     let session;
     try {
-      session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ['line_items', 'customer', 'payment_intent']
-      });
+      session = await stripe.checkout.sessions.retrieve(sessionId);
     } catch (stripeError) {
       console.error('❌ Erreur Stripe lors de la récupération de session:', stripeError);
       throw new Error(`Erreur Stripe: ${stripeError.message}`);
@@ -114,14 +115,12 @@ serve(async (req) => {
 
     // Vérifier si l'utilisateur est connecté
     let userId = null;
-    const clientEmail = metadata.client_email || session.customer_email || '';
-    
-    if (clientEmail) {
+    if (session.customer_email) {
       const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
       if (!usersError) {
-        const user = users?.find(u => u.email === clientEmail);
+        const user = users?.find(u => u.email === session.customer_email);
         userId = user?.id || null;
-        console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', clientEmail);
+        console.log('👤 Utilisateur trouvé:', userId ? 'Oui' : 'Non', 'pour email:', session.customer_email);
       }
     }
 
@@ -147,7 +146,7 @@ serve(async (req) => {
       payment_status: 'paid',
       scheduled_for: metadata.scheduled_for || new Date().toISOString(),
       client_name: metadata.client_name || session.customer_details?.name || 'Client',
-      client_email: clientEmail,
+      client_email: metadata.client_email || session.customer_email || '',
       client_phone: metadata.client_phone || session.customer_details?.phone || '',
       delivery_street: metadata.delivery_street || null,
       delivery_city: metadata.delivery_city || null,
@@ -213,35 +212,6 @@ serve(async (req) => {
       console.log('⚠️ Aucun article trouvé dans les métadonnées');
     }
 
-    // **NOUVEAU**: Envoyer l'email de confirmation même pour les invités
-    if (clientEmail) {
-      console.log('📧 Tentative d\'envoi d\'email de confirmation pour:', clientEmail);
-      try {
-        const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-welcome-email', {
-          body: {
-            email: clientEmail,
-            name: orderData.client_name,
-            orderId: order.id,
-            orderDetails: {
-              total: orderData.total,
-              order_type: orderData.order_type,
-              scheduled_for: orderData.scheduled_for
-            }
-          }
-        });
-
-        if (emailError) {
-          console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
-        } else {
-          console.log('✅ Email de confirmation envoyé avec succès');
-        }
-      } catch (emailErr) {
-        console.error('❌ Erreur lors de l\'appel de la fonction email:', emailErr);
-      }
-    } else {
-      console.log('⚠️ Aucun email client trouvé pour l\'envoi de confirmation');
-    }
-
     // Récupérer les détails complets de la commande créée
     const { data: fullOrderDetails, error: fullDetailsError } = await supabase
       .from('orders')
@@ -287,4 +257,3 @@ serve(async (req) => {
     });
   }
 });
-
