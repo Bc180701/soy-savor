@@ -70,18 +70,20 @@ serve(async (req) => {
       });
     }
 
-    // Récupérer la clé Stripe depuis les variables d'environnement directement
+    // Récupérer la clé Stripe depuis la fonction get-stripe-key
     console.log('🔑 Récupération clé Stripe...');
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    
-    if (!stripeSecretKey) {
-      console.error('❌ Clé Stripe non disponible dans les variables d\'environnement');
+    const { data: stripeKeyData, error: keyError } = await supabase.functions.invoke('get-stripe-key', {
+      body: { restaurantId: '22222222-2222-2222-2222-222222222222' } // St Martin de Crau par défaut
+    });
+
+    if (keyError || !stripeKeyData?.stripeKey) {
+      console.error('❌ Erreur récupération clé Stripe:', keyError);
       throw new Error('Clé Stripe non disponible');
     }
 
-    console.log('✅ Clé Stripe récupérée depuis les variables d\'environnement');
+    console.log('✅ Clé Stripe récupérée');
 
-    const stripe = new Stripe(stripeSecretKey, {
+    const stripe = new Stripe(stripeKeyData.stripeKey, {
       apiVersion: '2023-10-16',
     });
 
@@ -89,9 +91,7 @@ serve(async (req) => {
     
     let session;
     try {
-      session = await stripe.checkout.sessions.retrieve(sessionId, {
-        expand: ['line_items']
-      });
+      session = await stripe.checkout.sessions.retrieve(sessionId);
     } catch (stripeError) {
       console.error('❌ Erreur Stripe lors de la récupération de session:', stripeError);
       throw new Error(`Erreur Stripe: ${stripeError.message}`);
@@ -124,8 +124,8 @@ serve(async (req) => {
       }
     }
 
-    // Déterminer le restaurant ID depuis les métadonnées ou utiliser Châteaurenard par défaut
-    const restaurantId = metadata.restaurant_id || '11111111-1111-1111-1111-111111111111';
+    // Déterminer le restaurant ID depuis les métadonnées ou utiliser St Martin de Crau par défaut
+    const restaurantId = metadata.restaurant_id || '22222222-2222-2222-2222-222222222222';
     console.log('🏪 Restaurant ID utilisé:', restaurantId);
 
     // Créer la commande avec les données des métadonnées

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -40,8 +39,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("🌐 Envoi via API Resend...");
     
     const emailResponse = await resend.emails.send({
-      from: "SushiEats <contact@emailsend.clwebdesign.fr>",
-      to: ["contact@clwebdesign.fr"],
+      from: "SushiEats <onboarding@resend.dev>",
+      to: ["clweb@hotmail.com"],
       subject: `🍣 Nouveau message de contact: ${subject}`,
       html: `
         <html>
