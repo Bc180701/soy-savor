@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Mail, Phone } from "lucide-react";
+import { Facebook, Instagram, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ContactInfo, useHomepageData } from "@/hooks/useHomepageData";
 
@@ -111,11 +111,6 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/nos-restaurants" className="text-gray-400 hover:text-white transition-colors">
-                  Nos Restaurants
-                </Link>
-              </li>
-              <li>
                 <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">
                   {homepageData?.header_section?.nav_links?.contact || "Contact"}
                 </Link>
@@ -123,24 +118,21 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Nos Restaurants */}
           <div>
             <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">
-              {footerData?.contact_title || "Contact"}
+              Nos Restaurants
             </h4>
             <div className="space-y-3">
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Phone size={18} className="flex-shrink-0" />
-                <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="hover:text-white transition-colors">
-                  {contactInfo.phone}
-                </a>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Mail size={18} className="flex-shrink-0" />
-                <a href={`mailto:${contactInfo.email}`} className="hover:text-white transition-colors">
-                  {contactInfo.email}
-                </a>
-              </div>
+              <Link 
+                to="/nos-restaurants" 
+                className="block text-gray-400 hover:text-white transition-colors"
+              >
+                Découvrir nos établissements
+              </Link>
+              <p className="text-gray-500 text-sm">
+                Retrouvez tous nos restaurants, leurs horaires et leurs coordonnées.
+              </p>
             </div>
           </div>
         </div>
