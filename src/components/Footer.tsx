@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Mail, Phone } from "lucide-react";
+import { Facebook, Instagram, Linkedin, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ContactInfo, useHomepageData } from "@/hooks/useHomepageData";
 
@@ -130,16 +130,13 @@ const Footer = () => {
             </h4>
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-gray-400">
-                <Phone size={18} className="flex-shrink-0" />
-                <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="hover:text-white transition-colors">
-                  {contactInfo.phone}
-                </a>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Mail size={18} className="flex-shrink-0" />
-                <a href={`mailto:${contactInfo.email}`} className="hover:text-white transition-colors">
-                  {contactInfo.email}
-                </a>
+                <MapPin size={18} className="flex-shrink-0" />
+                <Link 
+                  to="/nos-restaurants" 
+                  className="hover:text-white transition-colors"
+                >
+                  Trouvez nos restaurants
+                </Link>
               </div>
             </div>
           </div>
