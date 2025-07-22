@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useCart, useCartTotal } from "@/hooks/use-cart";
 import { useToast } from "@/components/ui/use-toast";
@@ -62,34 +62,50 @@ const PanierContent = () => {
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
   const [contactInfoLoaded, setContactInfoLoaded] = useState<boolean>(false);
 
-  // Log du restaurant détecté et du panier
+  // Log du restaurant détecté et du panier - optimisé avec useMemo
+  const debugInfo = useMemo(() => ({
+    itemsCount: items.length,
+    items: items,
+    selectedRestaurantId,
+    cartRestaurant: cartRestaurant?.name,
+    cartTotal
+  }), [items.length, selectedRestaurantId, cartRestaurant?.name, cartTotal]);
+
   useEffect(() => {
-    console.log("🛒 État du panier:", {
-      itemsCount: items.length,
-      items: items,
-      selectedRestaurantId,
-      cartRestaurant: cartRestaurant?.name,
-      cartTotal
-    });
-  }, [items, selectedRestaurantId, cartRestaurant, cartTotal]);
+    console.log("🛒 État du panier:", debugInfo);
+  }, [debugInfo]);
   
   // Check if user is logged in - only once
   useEffect(() => {
+    let mounted = true;
+    
     const checkLoginStatus = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsLoggedIn(!!data.session);
-      
-      if (data.session) {
-        setUserEmail(data.session.user.email);
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (mounted) {
+          setIsLoggedIn(!!data.session);
+          
+          if (data.session) {
+            setUserEmail(data.session.user.email);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking login status:", error);
       }
     };
     
     checkLoginStatus();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
   
-  // Fetch user contact information - only when needed and not already loaded
+  // Fetch user contact information - optimisé avec useCallback stable
   const fetchUserContactInfo = useCallback(async () => {
     if (contactInfoLoaded || !isLoggedIn) return;
+    
+    console.log("🔍 Chargement informations contact utilisateur");
     
     try {
       const contactInfo = await getUserContactInfo();
@@ -107,42 +123,53 @@ const PanierContent = () => {
     }
   }, [contactInfoLoaded, isLoggedIn]);
 
-  // Load contact info only when moving to delivery step
+  // Load contact info only when moving to delivery step - optimisé
   useEffect(() => {
     if (currentStep === CheckoutStep.DeliveryDetails && isLoggedIn && !contactInfoLoaded) {
       fetchUserContactInfo();
     }
   }, [currentStep, isLoggedIn, contactInfoLoaded, fetchUserContactInfo]);
   
-  // Utiliser le total réactif au lieu de l'ancien système
-  const subtotal = cartTotal;
-  const tax = subtotal * TAX_RATE;
-  const deliveryFee = deliveryInfo.orderType === "delivery" ? calculateDeliveryFee(subtotal) : 0;
-  
-  // Calculate discount if promo code is applied
-  const discount = appliedPromoCode 
-    ? appliedPromoCode.isPercentage 
-      ? (subtotal * appliedPromoCode.discount / 100)
-      : appliedPromoCode.discount
-    : 0;
-  
-  // Calculate total with discount and tip
-  const orderTotal = subtotal + tax + deliveryFee + tip - discount;
+  // Calculs optimisés avec useMemo
+  const calculations = useMemo(() => {
+    const subtotal = cartTotal;
+    const tax = subtotal * TAX_RATE;
+    const deliveryFee = deliveryInfo.orderType === "delivery" ? calculateDeliveryFee(subtotal) : 0;
+    
+    // Calculate discount if promo code is applied
+    const discount = appliedPromoCode 
+      ? appliedPromoCode.isPercentage 
+        ? (subtotal * appliedPromoCode.discount / 100)
+        : appliedPromoCode.discount
+      : 0;
+    
+    // Calculate total with discount and tip
+    const orderTotal = subtotal + tax + deliveryFee + tip - discount;
 
-  console.log("📊 Panier - Calculs détaillés:", {
-    subtotal,
-    tax,
-    deliveryFee,
-    discount,
-    tip,
-    orderTotal,
-    itemsCount: items.length,
-    itemsQuantity: items.reduce((total, item) => total + item.quantity, 0),
-    restaurantId: cartRestaurant?.id,
-    selectedRestaurantId
-  });
+    return {
+      subtotal,
+      tax,
+      deliveryFee,
+      discount,
+      orderTotal
+    };
+  }, [cartTotal, deliveryInfo.orderType, appliedPromoCode, tip]);
 
-  const handleNextStep = () => {
+  const { subtotal, tax, deliveryFee, discount, orderTotal } = calculations;
+
+  // Log des calculs seulement quand ils changent vraiment
+  useEffect(() => {
+    console.log("📊 Panier - Calculs détaillés:", {
+      ...calculations,
+      tip,
+      itemsCount: items.length,
+      itemsQuantity: items.reduce((total, item) => total + item.quantity, 0),
+      restaurantId: cartRestaurant?.id,
+      selectedRestaurantId
+    });
+  }, [calculations, tip, items.length, cartRestaurant?.id, selectedRestaurantId]);
+
+  const handleNextStep = useCallback(() => {
     console.log("🔄 handleNextStep appelé - Step:", currentStep, "Items:", items.length);
     
     if (currentStep === CheckoutStep.Cart) {
@@ -164,17 +191,17 @@ const PanierContent = () => {
       }
       setCurrentStep(CheckoutStep.Payment);
     }
-  };
+  }, [currentStep, items.length, toast]);
 
-  const handlePreviousStep = () => {
+  const handlePreviousStep = useCallback(() => {
     if (currentStep === CheckoutStep.DeliveryDetails) {
       setCurrentStep(CheckoutStep.Cart);
     } else if (currentStep === CheckoutStep.Payment) {
       setCurrentStep(CheckoutStep.DeliveryDetails);
     }
-  };
+  }, [currentStep]);
 
-  const validateDeliveryInfo = () => {
+  const validateDeliveryInfo = useCallback(() => {
     if (!deliveryInfo.name || !deliveryInfo.email || !deliveryInfo.phone) {
       toast({
         title: "Informations manquantes",
@@ -215,7 +242,7 @@ const PanierContent = () => {
     }
 
     return true;
-  };
+  }, [deliveryInfo, toast]);
 
   const handleStripeCheckout = async () => {
     try {
@@ -256,9 +283,6 @@ const PanierContent = () => {
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
       scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       
-      // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
-      const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;
-      
       // Appel à la fonction edge pour créer la session de paiement - avec restaurant ID
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
@@ -269,7 +293,7 @@ const PanierContent = () => {
           tip,
           discount: discount,
           promoCode: appliedPromoCode?.code,
-          total: finalOrderTotal,
+          total: orderTotal,
           orderType: deliveryInfo.orderType,
           clientName: deliveryInfo.name,
           clientEmail: deliveryInfo.email,
@@ -313,8 +337,8 @@ const PanierContent = () => {
   // Formatage de la date du jour
   const formattedCurrentDay = format(new Date(), "EEEE", { locale: fr });
 
-  // Render the current step component
-  const renderStep = () => {
+  // Render the current step component - optimisé avec useMemo
+  const stepComponent = useMemo(() => {
     switch (currentStep) {
       case CheckoutStep.Cart:
         return (
@@ -362,7 +386,25 @@ const PanierContent = () => {
       default:
         return null;
     }
-  };
+  }, [
+    currentStep,
+    items,
+    subtotal,
+    tax,
+    discount,
+    appliedPromoCode,
+    deliveryInfo,
+    allergies,
+    handleNextStep,
+    handlePreviousStep,
+    userEmail,
+    isLoggedIn,
+    cartRestaurant,
+    deliveryFee,
+    loading,
+    handleStripeCheckout,
+    tip
+  ]);
 
   return (
     <div className="container mx-auto py-24 px-4">
@@ -387,7 +429,7 @@ const PanierContent = () => {
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
         >
-          {renderStep()}
+          {stepComponent}
         </motion.div>
       </div>
     </div>
