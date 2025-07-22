@@ -1,15 +1,11 @@
 
 import { useCart } from '@/hooks/use-cart';
-import { useMemo } from 'react';
 
 export const useCartCounter = () => {
-  const { items } = useCart();
-  
-  const itemCount = useMemo(() => {
-    const total = items.reduce((sum, item) => sum + item.quantity, 0);
-    console.log("🔢 Calcul compteur panier:", items.length, "articles distincts,", total, "quantité totale");
-    return total;
-  }, [items]);
+  // Utiliser le sélecteur Zustand pour éviter les re-rendus inutiles
+  const itemCount = useCart(state => 
+    state.items.reduce((sum, item) => sum + item.quantity, 0)
+  );
 
   return { itemCount };
 };

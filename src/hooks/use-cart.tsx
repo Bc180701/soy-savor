@@ -22,15 +22,8 @@ interface CartStore {
   getTotalPrice: () => number;
   setOrderingLocked: (locked: boolean) => void;
   setSelectedRestaurantId: (restaurantId: string | null) => void;
-  // Properties calculées réactives
-  itemCount: number;
-  total: number;
-  plateauCount: number;
-  freeDessertCount: number;
   getRemainingFreeDesserts: () => number;
-  // Nouvelle méthode pour vérifier la compatibilité du restaurant
   checkRestaurantCompatibility: (restaurantId: string) => boolean;
-  // Nouvelle méthode pour ajouter des articles avec un restaurant spécifique
   addItemWithRestaurant: (item: MenuItem, quantity: number, restaurantId: string, specialInstructions?: string) => void;
 }
 
@@ -41,39 +34,20 @@ export const useCart = create<CartStore>()(
       isOrderingLocked: false,
       selectedRestaurantId: null,
       
-      // Computed properties - maintenant calculées à chaque fois de manière réactive
-      get itemCount() {
+      getRemainingFreeDesserts: () => {
         const state = get();
-        const totalQuantity = state.items.reduce((total, item) => total + item.quantity, 0);
-        console.log("🛒 Calcul itemCount:", state.items.length, "articles distincts,", totalQuantity, "quantité totale");
-        return totalQuantity;
-      },
-      
-      get total() {
-        const state = get();
-        const totalPrice = state.items.reduce((total, item) => total + (item.menuItem.price * item.quantity), 0);
-        console.log("💰 Calcul total panier:", totalPrice, "€ pour", state.items.length, "articles");
-        return totalPrice;
-      },
-      
-      get plateauCount() {
-        return get().items.filter(item => 
+        const plateauCount = state.items.filter(item => 
           item.menuItem.category === 'plateaux' || 
           item.menuItem.name.toLowerCase().includes('plateau')
         ).reduce((total, item) => total + item.quantity, 0);
-      },
-      
-      get freeDessertCount() {
-        return get().items.filter(item => 
+        
+        const freeDessertCount = state.items.filter(item => 
           item.menuItem.category === 'desserts' && 
           item.menuItem.price === 0 &&
           item.specialInstructions?.includes('Dessert offert')
         ).reduce((total, item) => total + item.quantity, 0);
-      },
-      
-      getRemainingFreeDesserts: () => {
-        const state = get();
-        return Math.max(0, state.plateauCount - state.freeDessertCount);
+        
+        return Math.max(0, plateauCount - freeDessertCount);
       },
 
       checkRestaurantCompatibility: (restaurantId: string) => {
@@ -191,14 +165,13 @@ export const useCart = create<CartStore>()(
   )
 );
 
-// Hook personnalisé pour obtenir le total de manière réactive
+// Hook personnalisé pour obtenir le total de manière réactive et stable
 export const useCartTotal = () => {
-  const cart = useCart();
+  const items = useCart(state => state.items);
   
-  // Forcer le recalcul en accédant aux items
-  const total = cart.items.reduce((total, item) => total + (item.menuItem.price * item.quantity), 0);
+  // Calcul stable qui ne change que si les items changent vraiment
+  const total = items.reduce((total, item) => total + (item.menuItem.price * item.quantity), 0);
   
-  console.log("💰 useCartTotal - Total calculé:", total, "€");
   return total;
 };
 
