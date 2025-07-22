@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +54,7 @@ export const DeliveryStep = ({
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userAddress, setUserAddress] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
   const { toast } = useToast();
 
   // Charger le profil utilisateur si connecté
@@ -114,47 +114,45 @@ export const DeliveryStep = ({
     loadUserProfile();
   }, [isLoggedIn]);
 
-  // Gérer le pré-remplissage des informations
+  // Gérer le pré-remplissage des informations (seulement quand la case est cochée)
   const handleUseStoredInfoChange = (checked: boolean) => {
     console.log("📋 Changement case à cocher:", checked, "Profil disponible:", !!userProfile);
     setUseStoredInfo(checked);
     
-    if (checked && userProfile) {
+    if (checked && userProfile && !hasPrefilledOnce) {
       console.log("✅ Pré-remplissage avec profil:", userProfile);
       console.log("✅ Pré-remplissage avec adresse:", userAddress);
       
       const fullName = `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
       
-      // Utiliser setTimeout pour s'assurer que la mise à jour se fait après le render
-      setTimeout(() => {
-        setDeliveryInfo(prev => {
-          const newInfo = {
-            ...prev,
-            name: fullName || prev.name,
-            email: userProfile.email || prev.email,
-            phone: userProfile.phone || prev.phone,
-          };
+      setDeliveryInfo(prev => {
+        const newInfo = {
+          ...prev,
+          name: fullName || prev.name,
+          email: userProfile.email || prev.email,
+          phone: userProfile.phone || prev.phone,
+        };
 
-          // Si on a une adresse et que c'est une livraison, pré-remplir l'adresse aussi
-          if (userAddress && prev.orderType === "delivery") {
-            newInfo.street = userAddress.street || prev.street;
-            newInfo.city = userAddress.city || prev.city;
-            newInfo.postalCode = userAddress.postal_code || prev.postalCode;
-            newInfo.deliveryInstructions = userAddress.additional_info || prev.deliveryInstructions;
-          }
+        // Si on a une adresse et que c'est une livraison, pré-remplir l'adresse aussi
+        if (userAddress && prev.orderType === "delivery") {
+          newInfo.street = userAddress.street || prev.street;
+          newInfo.city = userAddress.city || prev.city;
+          newInfo.postalCode = userAddress.postal_code || prev.postalCode;
+          newInfo.deliveryInstructions = userAddress.additional_info || prev.deliveryInstructions;
+        }
 
-          console.log("📋 Nouvelles informations de livraison:", newInfo);
-          return newInfo;
-        });
+        console.log("📋 Nouvelles informations de livraison:", newInfo);
+        return newInfo;
+      });
 
-        toast({
-          title: "Informations pré-remplies",
-          description: "Vos informations enregistrées ont été chargées",
-        });
-      }, 100);
+      setHasPrefilledOnce(true);
+      
+      toast({
+        title: "Informations pré-remplies",
+        description: "Vos informations enregistrées ont été chargées",
+      });
     } else if (!checked) {
       console.log("❌ Décoché - vidage des champs");
-      // Vider les champs quand on décoche
       setDeliveryInfo(prev => ({
         ...prev,
         name: "",
@@ -165,6 +163,8 @@ export const DeliveryStep = ({
         postalCode: "",
         deliveryInstructions: ""
       }));
+      
+      setHasPrefilledOnce(false);
       
       toast({
         title: "Informations réinitialisées",
@@ -369,7 +369,6 @@ export const DeliveryStep = ({
                 placeholder="Votre nom"
                 required
                 className="mt-1"
-                key={`name-${deliveryInfo.name}`}
               />
             </div>
             <div>
@@ -386,7 +385,6 @@ export const DeliveryStep = ({
                 placeholder="votre@email.com"
                 required
                 className="mt-1"
-                key={`email-${deliveryInfo.email}`}
               />
             </div>
             <div>
@@ -402,7 +400,6 @@ export const DeliveryStep = ({
                 placeholder="06 XX XX XX XX"
                 required
                 className="mt-1"
-                key={`phone-${deliveryInfo.phone}`}
               />
             </div>
           </div>
