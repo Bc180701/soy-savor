@@ -1,5 +1,4 @@
 
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -40,20 +39,14 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log("🌐 Envoi via API Resend...");
     
-    // Temporaire : envoyer vers votre email personnel en attendant la vérification du domaine
     const emailResponse = await resend.emails.send({
-      from: "SushiEats <onboarding@resend.dev>",
-      to: ["clweb@hotmail.com"], // Temporaire - votre email personnel
-      subject: `🍣 [POUR: contact@clwebdesign.fr] Nouveau message de contact: ${subject}`,
+      from: "SushiEats <contact@clwebdesign.fr>",
+      to: ["contact@clwebdesign.fr"],
+      subject: `🍣 Nouveau message de contact: ${subject}`,
       html: `
         <html>
           <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
             <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-              <div style="background-color: #e74c3c; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center;">
-                <h3 style="margin: 0;">⚠️ Email temporaire - Destinataire final: contact@clwebdesign.fr</h3>
-                <p style="margin: 5px 0 0 0;">Transférez ce message vers contact@clwebdesign.fr en attendant la vérification du domaine sur Resend</p>
-              </div>
-              
               <h2 style="color: #2c3e50; text-align: center;">🍣 Nouveau message de contact - SushiEats</h2>
               
               <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
@@ -115,4 +108,3 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 serve(handler);
-
