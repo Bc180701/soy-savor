@@ -1,3 +1,4 @@
+
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
@@ -41,26 +42,12 @@ export const CartStep = ({
 }: CartStepProps) => {
   const { 
     removeItem, 
-    updateQuantity,
+    updateQuantity, 
+    plateauCount,
+    freeDessertCount,
     getRemainingFreeDesserts,
     addItem
   } = useCart();
-  
-  // Utiliser des sélecteurs Zustand stables pour éviter les re-rendus
-  const plateauCount = useCart(state => 
-    state.items.filter(item => 
-      item.menuItem.category === 'plateaux' || 
-      item.menuItem.name.toLowerCase().includes('plateau')
-    ).reduce((total, item) => total + item.quantity, 0)
-  );
-  
-  const freeDessertCount = useCart(state =>
-    state.items.filter(item => 
-      item.menuItem.category === 'desserts' && 
-      item.menuItem.price === 0 &&
-      item.specialInstructions?.includes('Dessert offert')
-    ).reduce((total, item) => total + item.quantity, 0)
-  );
   
   const orderTotal = subtotal + tax - discount;
   const isCartEmpty = items.length === 0;
