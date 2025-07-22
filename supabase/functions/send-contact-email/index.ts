@@ -40,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("🌐 Envoi via API Resend...");
     
     const emailResponse = await resend.emails.send({
-      from: "SushiEats <contact@clwebdesign.fr>",
+      from: "SushiEats <contact@emailsend.clwebdesign.fr>",
       to: ["contact@clwebdesign.fr"],
       subject: `🍣 Nouveau message de contact: ${subject}`,
       html: `
