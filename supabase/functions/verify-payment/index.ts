@@ -70,31 +70,65 @@ serve(async (req) => {
       });
     }
 
-    // Récupérer la clé Stripe depuis la fonction get-stripe-key
-    console.log('🔑 Récupération clé Stripe...');
-    const { data: stripeKeyData, error: keyError } = await supabase.functions.invoke('get-stripe-key', {
-      body: { restaurantId: '22222222-2222-2222-2222-222222222222' } // St Martin de Crau par défaut
-    });
+    // Liste des restaurants avec leurs clés Stripe
+    const restaurants = [
+      {
+        id: '11111111-1111-1111-1111-111111111111', // Châteaurenard
+        name: 'Châteaurenard'
+      },
+      {
+        id: '22222222-2222-2222-2222-222222222222', // Saint-Martin-de-Crau
+        name: 'Saint-Martin-de-Crau'
+      }
+    ];
 
-    if (keyError || !stripeKeyData?.stripeKey) {
-      console.error('❌ Erreur récupération clé Stripe:', keyError);
-      throw new Error('Clé Stripe non disponible');
+    let session;
+    let stripeKey;
+    let detectedRestaurantId;
+
+    // Essayer de récupérer la session avec chaque clé Stripe pour déterminer le bon restaurant
+    for (const restaurant of restaurants) {
+      try {
+        console.log(`🔑 Tentative récupération clé Stripe pour ${restaurant.name}...`);
+        const { data: keyData, error: keyError } = await supabase.functions.invoke('get-stripe-key', {
+          body: { restaurantId: restaurant.id }
+        });
+
+        if (keyError || !keyData?.stripeKey) {
+          console.log(`❌ Pas de clé Stripe pour ${restaurant.name}:`, keyError);
+          continue;
+        }
+
+        console.log(`✅ Clé Stripe récupérée pour ${restaurant.name}`);
+
+        const testStripe = new Stripe(keyData.stripeKey, {
+          apiVersion: '2023-10-16',
+        });
+
+        try {
+          console.log(`💳 Test récupération session avec clé ${restaurant.name}...`);
+          const testSession = await testStripe.checkout.sessions.retrieve(sessionId);
+          
+          // Si on arrive ici sans erreur, c'est la bonne clé
+          session = testSession;
+          stripeKey = keyData.stripeKey;
+          detectedRestaurantId = restaurant.id;
+          console.log(`✅ Session trouvée avec la clé ${restaurant.name}`);
+          break;
+          
+        } catch (stripeError) {
+          console.log(`❌ Session non trouvée avec clé ${restaurant.name}:`, stripeError.message);
+          continue;
+        }
+
+      } catch (error) {
+        console.log(`❌ Erreur récupération clé ${restaurant.name}:`, error);
+        continue;
+      }
     }
 
-    console.log('✅ Clé Stripe récupérée');
-
-    const stripe = new Stripe(stripeKeyData.stripeKey, {
-      apiVersion: '2023-10-16',
-    });
-
-    console.log('💳 Récupération session Stripe...');
-    
-    let session;
-    try {
-      session = await stripe.checkout.sessions.retrieve(sessionId);
-    } catch (stripeError) {
-      console.error('❌ Erreur Stripe lors de la récupération de session:', stripeError);
-      throw new Error(`Erreur Stripe: ${stripeError.message}`);
+    if (!session || !stripeKey || !detectedRestaurantId) {
+      throw new Error('Impossible de récupérer la session Stripe avec aucune des clés disponibles');
     }
     
     console.log('📊 Session récupérée:', {
@@ -102,6 +136,7 @@ serve(async (req) => {
       payment_status: session.payment_status,
       amount_total: session.amount_total,
       customer_email: session.customer_email,
+      detected_restaurant: detectedRestaurantId,
       metadata_keys: Object.keys(session.metadata || {})
     });
 
@@ -124,9 +159,9 @@ serve(async (req) => {
       }
     }
 
-    // Déterminer le restaurant ID depuis les métadonnées ou utiliser St Martin de Crau par défaut
-    const restaurantId = metadata.restaurant_id || '22222222-2222-2222-2222-222222222222';
-    console.log('🏪 Restaurant ID utilisé:', restaurantId);
+    // Utiliser le restaurant détecté via la clé Stripe, ou celui des métadonnées en fallback
+    const restaurantId = detectedRestaurantId || metadata.restaurant_id || '22222222-2222-2222-2222-222222222222';
+    console.log('🏪 Restaurant ID utilisé:', restaurantId, '(détecté via clé Stripe:', detectedRestaurantId, ')');
 
     // Créer la commande avec les données des métadonnées
     const orderData = {
