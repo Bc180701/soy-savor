@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,7 @@ interface DeliveryAddressFormProps {
     isPostalCodeValid: boolean;
   }) => void;
   onCancel: () => void;
-  cartRestaurant?: Restaurant | null; // Utiliser le restaurant du panier
+  cartRestaurant?: Restaurant | null;
   initialData?: {
     name?: string;
     email?: string;
@@ -34,25 +35,26 @@ interface DeliveryAddressFormProps {
 
 const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData }: DeliveryAddressFormProps) => {
   const [formData, setFormData] = useState({
-    name: initialData?.name || "",
-    email: initialData?.email || "",
-    phone: initialData?.phone || "",
-    street: initialData?.street || "",
-    city: initialData?.city || "",
-    postalCode: initialData?.postalCode || "",
-    instructions: initialData?.deliveryInstructions || ""
+    name: "",
+    email: "",
+    phone: "",
+    street: "",
+    city: "",
+    postalCode: "",
+    instructions: ""
   });
   
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const [isPostalCodeValid, setIsPostalCodeValid] = useState<boolean | null>(null);
   const [deliveryZones, setDeliveryZones] = useState<{city: string, postalCode: string}[]>([]);
   const [loadingZones, setLoadingZones] = useState(false);
+  const [initialDataSynced, setInitialDataSynced] = useState(false);
   const { toast } = useToast();
 
-  // Synchroniser avec les données initiales quand elles changent
+  // Synchroniser avec les données initiales UNE SEULE FOIS au montage
   useEffect(() => {
-    if (initialData) {
-      console.log("🔄 Synchronisation avec données initiales:", initialData);
+    if (initialData && !initialDataSynced) {
+      console.log("🔄 Synchronisation initiale unique avec données:", initialData);
       setFormData({
         name: initialData.name || "",
         email: initialData.email || "",
@@ -62,50 +64,44 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
         postalCode: initialData.postalCode || "",
         instructions: initialData.deliveryInstructions || ""
       });
-      
-      // Reset la validation du code postal car les données ont changé
+      setInitialDataSynced(true);
       setIsPostalCodeValid(null);
     }
-  }, [initialData]);
+  }, [initialData, initialDataSynced]);
 
   // Charger les zones de livraison quand le restaurant change
-  useEffect(() => {
-    const loadDeliveryZones = async () => {
-      console.log("🔄 Effect déclenché - Restaurant du panier:", cartRestaurant?.name, "ID:", cartRestaurant?.id);
+  const loadDeliveryZones = useCallback(async (restaurantId: string, restaurantName: string) => {
+    console.log("🚚 Chargement zones pour:", restaurantName, "ID:", restaurantId);
+    setLoadingZones(true);
+    
+    try {
+      const zones = await getDeliveryLocations(restaurantId);
+      console.log("✅ Zones récupérées pour", restaurantName, ":", zones);
+      setDeliveryZones(zones);
+      setIsPostalCodeValid(null);
       
-      if (!cartRestaurant?.id) {
-        console.log("⚠️ Pas de restaurant dans le panier, reset des zones");
-        setDeliveryZones([]);
-        setIsPostalCodeValid(null);
-        return;
+      if (zones.length === 0) {
+        console.log("⚠️ Aucune zone trouvée pour", restaurantName);
       }
       
-      console.log("🚚 Chargement zones pour:", cartRestaurant.name, "ID:", cartRestaurant.id);
-      setLoadingZones(true);
-      
-      try {
-        const zones = await getDeliveryLocations(cartRestaurant.id);
-        console.log("✅ Zones récupérées pour", cartRestaurant.name, ":", zones);
-        setDeliveryZones(zones);
-        
-        // Reset la validation du code postal car les zones ont changé
-        setIsPostalCodeValid(null);
-        
-        if (zones.length === 0) {
-          console.log("⚠️ Aucune zone trouvée pour", cartRestaurant.name);
-        }
-        
-      } catch (error) {
-        console.error("❌ Erreur chargement zones pour", cartRestaurant.name, ":", error);
-        setDeliveryZones([]);
-        setIsPostalCodeValid(null);
-      } finally {
-        setLoadingZones(false);
-      }
-    };
+    } catch (error) {
+      console.error("❌ Erreur chargement zones pour", restaurantName, ":", error);
+      setDeliveryZones([]);
+      setIsPostalCodeValid(null);
+    } finally {
+      setLoadingZones(false);
+    }
+  }, []);
 
-    loadDeliveryZones();
-  }, [cartRestaurant?.id, cartRestaurant?.name]);
+  useEffect(() => {
+    if (cartRestaurant?.id) {
+      loadDeliveryZones(cartRestaurant.id, cartRestaurant.name);
+    } else {
+      console.log("⚠️ Pas de restaurant dans le panier, reset des zones");
+      setDeliveryZones([]);
+      setIsPostalCodeValid(null);
+    }
+  }, [cartRestaurant?.id, cartRestaurant?.name, loadDeliveryZones]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -297,7 +293,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
               onChange={handleInputChange}
               placeholder="Votre nom complet"
               required
-              key={`address-name-${formData.name}`}
             />
           </div>
           <div>
@@ -310,7 +305,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
               onChange={handleInputChange}
               placeholder="votre@email.com"
               required
-              key={`address-email-${formData.email}`}
             />
           </div>
         </div>
@@ -324,7 +318,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
             onChange={handleInputChange}
             placeholder="06 XX XX XX XX"
             required
-            key={`address-phone-${formData.phone}`}
           />
         </div>
 
@@ -337,7 +330,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
             onChange={handleInputChange}
             placeholder="Numéro et nom de rue"
             required
-            key={`address-street-${formData.street}`}
           />
         </div>
 
@@ -351,7 +343,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
               onChange={handleInputChange}
               placeholder="Votre ville"
               required
-              key={`address-city-${formData.city}`}
             />
           </div>
           <div>
@@ -365,7 +356,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
                 placeholder="13160"
                 required
                 className={getPostalCodeInputClass()}
-                key={`address-postal-${formData.postalCode}`}
               />
               <Button
                 type="button"
@@ -403,7 +393,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
             onChange={handleInputChange}
             placeholder="Étage, code d'accès, instructions spéciales..."
             className="h-20"
-            key={`address-instructions-${formData.instructions}`}
           />
         </div>
 
