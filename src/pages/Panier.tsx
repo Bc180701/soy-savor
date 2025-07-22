@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useCart, useCartTotal } from "@/hooks/use-cart";
 import { useToast } from "@/components/ui/use-toast";
@@ -59,7 +60,7 @@ const PanierContent = () => {
   
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
-  const [loadingUserProfile, setLoadingUserProfile] = useState<boolean>(false);
+  const [contactInfoLoaded, setContactInfoLoaded] = useState<boolean>(false);
 
   // Log du restaurant détecté et du panier
   useEffect(() => {
@@ -72,25 +73,24 @@ const PanierContent = () => {
     });
   }, [items, selectedRestaurantId, cartRestaurant, cartTotal]);
   
-  // Check if user is logged in
+  // Check if user is logged in - only once
   useEffect(() => {
     const checkLoginStatus = async () => {
       const { data } = await supabase.auth.getSession();
       setIsLoggedIn(!!data.session);
       
-      // If user is logged in, prefetch their contact information
       if (data.session) {
         setUserEmail(data.session.user.email);
-        fetchUserContactInfo();
       }
     };
     
     checkLoginStatus();
   }, []);
   
-  // Fetch user contact information if logged in
-  const fetchUserContactInfo = async () => {
-    setLoadingUserProfile(true);
+  // Fetch user contact information - only when needed and not already loaded
+  const fetchUserContactInfo = useCallback(async () => {
+    if (contactInfoLoaded || !isLoggedIn) return;
+    
     try {
       const contactInfo = await getUserContactInfo();
       if (contactInfo.name || contactInfo.email || contactInfo.phone) {
@@ -101,12 +101,18 @@ const PanierContent = () => {
           phone: contactInfo.phone || prev.phone
         }));
       }
+      setContactInfoLoaded(true);
     } catch (error) {
       console.error("Error fetching user profile:", error);
-    } finally {
-      setLoadingUserProfile(false);
     }
-  };
+  }, [contactInfoLoaded, isLoggedIn]);
+
+  // Load contact info only when moving to delivery step
+  useEffect(() => {
+    if (currentStep === CheckoutStep.DeliveryDetails && isLoggedIn && !contactInfoLoaded) {
+      fetchUserContactInfo();
+    }
+  }, [currentStep, isLoggedIn, contactInfoLoaded, fetchUserContactInfo]);
   
   // Utiliser le total réactif au lieu de l'ancien système
   const subtotal = cartTotal;
