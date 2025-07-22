@@ -1,42 +1,12 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin, Mail, Phone } from "lucide-react";
+import { Facebook, Instagram, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ContactInfo, useHomepageData } from "@/hooks/useHomepageData";
 
 const Footer = () => {
-  const [contactInfo, setContactInfo] = useState<ContactInfo>({
-    address: "16 cours Carnot, 13160 Châteaurenard",
-    phone: "04 90 00 00 00",
-    email: "contact@sushieats.fr"
-  });
   const { data: homepageData } = useHomepageData();
-
-  useEffect(() => {
-    const fetchContactInfo = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('homepage_sections')
-          .select('section_data')
-          .eq('section_name', 'contact_info')
-          .single();
-        
-        if (error) {
-          console.error("Erreur lors de la récupération des coordonnées de contact:", error);
-          return;
-        }
-        
-        if (data && data.section_data) {
-          setContactInfo(data.section_data as unknown as ContactInfo);
-        }
-      } catch (error) {
-        console.error("Exception lors de la récupération des coordonnées de contact:", error);
-      }
-    };
-    
-    fetchContactInfo();
-  }, []);
 
   const footerData = homepageData?.footer_section;
 
@@ -123,24 +93,21 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Nos Restaurants */}
           <div>
             <h4 className="font-medium text-lg mb-4 border-b border-gray-800 pb-2">
-              {footerData?.contact_title || "Contact"}
+              Nos Restaurants
             </h4>
             <div className="space-y-3">
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Phone size={18} className="flex-shrink-0" />
-                <a href={`tel:${contactInfo.phone.replace(/\s/g, '')}`} className="hover:text-white transition-colors">
-                  {contactInfo.phone}
-                </a>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Mail size={18} className="flex-shrink-0" />
-                <a href={`mailto:${contactInfo.email}`} className="hover:text-white transition-colors">
-                  {contactInfo.email}
-                </a>
-              </div>
+              <p className="text-gray-400 text-sm">
+                Découvrez tous nos restaurants et leurs horaires d'ouverture.
+              </p>
+              <Link 
+                to="/nos-restaurants" 
+                className="inline-block text-gold-500 hover:text-gold-400 transition-colors font-medium"
+              >
+                Voir tous nos restaurants →
+              </Link>
             </div>
           </div>
         </div>
