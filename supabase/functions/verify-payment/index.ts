@@ -70,56 +70,31 @@ serve(async (req) => {
       });
     }
 
-    // Récupérer la session Stripe pour obtenir le restaurant_id depuis les métadonnées
-    console.log('💳 Récupération session Stripe pour obtenir restaurant_id...');
-    
-    // D'abord, essayer avec la clé par défaut (Châteaurenard) pour récupérer les métadonnées
-    const { data: defaultStripeKeyData, error: defaultKeyError } = await supabase.functions.invoke('get-stripe-key', {
-      body: { restaurantId: '11111111-1111-1111-1111-111111111111' } // Châteaurenard par défaut
+    // Récupérer la clé Stripe depuis la fonction get-stripe-key
+    console.log('🔑 Récupération clé Stripe...');
+    const { data: stripeKeyData, error: keyError } = await supabase.functions.invoke('get-stripe-key', {
+      body: { restaurantId: '22222222-2222-2222-2222-222222222222' } // St Martin de Crau par défaut
     });
 
-    if (defaultKeyError || !defaultStripeKeyData?.stripeKey) {
-      console.error('❌ Erreur récupération clé Stripe par défaut:', defaultKeyError);
+    if (keyError || !stripeKeyData?.stripeKey) {
+      console.error('❌ Erreur récupération clé Stripe:', keyError);
       throw new Error('Clé Stripe non disponible');
     }
 
-    console.log('🔑 Tentative de récupération session avec clé Châteaurenard...');
+    console.log('✅ Clé Stripe récupérée');
 
-    let stripe = new Stripe(defaultStripeKeyData.stripeKey, {
+    const stripe = new Stripe(stripeKeyData.stripeKey, {
       apiVersion: '2023-10-16',
     });
 
+    console.log('💳 Récupération session Stripe...');
+    
     let session;
-    let actualRestaurantId = '11111111-1111-1111-1111-111111111111'; // Châteaurenard par défaut
-
     try {
       session = await stripe.checkout.sessions.retrieve(sessionId);
-      console.log('✅ Session trouvée avec clé Châteaurenard');
-    } catch (error) {
-      console.log('⚠️ Session non trouvée avec clé Châteaurenard, essai avec Saint-Martin-de-Crau...');
-      
-      // Essayer avec la clé de Saint-Martin-de-Crau
-      const { data: stMartinStripeKeyData, error: stMartinKeyError } = await supabase.functions.invoke('get-stripe-key', {
-        body: { restaurantId: '22222222-2222-2222-2222-222222222222' }
-      });
-
-      if (stMartinKeyError || !stMartinStripeKeyData?.stripeKey) {
-        console.error('❌ Erreur récupération clé Stripe Saint-Martin:', stMartinKeyError);
-        throw new Error('Clé Stripe Saint-Martin non disponible');
-      }
-
-      stripe = new Stripe(stMartinStripeKeyData.stripeKey, {
-        apiVersion: '2023-10-16',
-      });
-
-      try {
-        session = await stripe.checkout.sessions.retrieve(sessionId);
-        actualRestaurantId = '22222222-2222-2222-2222-222222222222'; // Saint-Martin-de-Crau
-        console.log('✅ Session trouvée avec clé Saint-Martin-de-Crau');
-      } catch (finalError) {
-        console.error('❌ Session non trouvée avec aucune clé:', finalError);
-        throw new Error(`Session Stripe non trouvée: ${sessionId}`);
-      }
+    } catch (stripeError) {
+      console.error('❌ Erreur Stripe lors de la récupération de session:', stripeError);
+      throw new Error(`Erreur Stripe: ${stripeError.message}`);
     }
     
     console.log('📊 Session récupérée:', {
@@ -149,9 +124,9 @@ serve(async (req) => {
       }
     }
 
-    // Utiliser le restaurant_id des métadonnées ou le restaurant détecté par la clé Stripe
-    const restaurantId = metadata.restaurant_id || actualRestaurantId;
-    console.log('🏪 Restaurant ID final utilisé:', restaurantId);
+    // Déterminer le restaurant ID depuis les métadonnées ou utiliser St Martin de Crau par défaut
+    const restaurantId = metadata.restaurant_id || '22222222-2222-2222-2222-222222222222';
+    console.log('🏪 Restaurant ID utilisé:', restaurantId);
 
     // Créer la commande avec les données des métadonnées
     const orderData = {
