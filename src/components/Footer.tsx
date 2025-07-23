@@ -138,9 +138,22 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-800 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-500 text-sm">
-            &copy; {new Date().getFullYear()} {footerData?.copyright_text || "SushiEats. Tous droits réservés."}
-          </p>
+          <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4">
+            <p className="text-gray-500 text-sm">
+              &copy; {new Date().getFullYear()} {footerData?.copyright_text || "SushiEats. Tous droits réservés."}
+            </p>
+            <p className="text-gray-500 text-sm">
+              créé par{" "}
+              <a 
+                href="https://www.clwebdesign.fr" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                CL WEB
+              </a>
+            </p>
+          </div>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <Link to="/mentions-legales" className="text-gray-500 text-sm hover:text-white transition-colors">
               {footerData?.legal_links?.mentions_legales || "Mentions légales"}
