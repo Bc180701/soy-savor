@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Linkedin } from "lucide-react";
@@ -143,7 +142,7 @@ const Footer = () => {
               &copy; {new Date().getFullYear()} {footerData?.copyright_text || "SushiEats. Tous droits réservés."}
             </p>
             <p className="text-gray-500 text-sm">
-              créé par{" "}
+              Conçu par{" "}
               <a 
                 href="https://www.clwebdesign.fr" 
                 target="_blank" 
