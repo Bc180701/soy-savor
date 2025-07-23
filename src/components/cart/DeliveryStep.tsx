@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -386,7 +385,6 @@ export const DeliveryStep = ({
                 placeholder="Votre nom"
                 required
                 className="mt-1"
-                key={`name-${deliveryInfo.name}`}
               />
             </div>
             <div>
@@ -404,7 +402,6 @@ export const DeliveryStep = ({
                 placeholder="votre@email.com"
                 required
                 className="mt-1"
-                key={`email-${deliveryInfo.email}`}
               />
             </div>
             <div>
@@ -421,7 +418,6 @@ export const DeliveryStep = ({
                 placeholder="06 XX XX XX XX"
                 required
                 className="mt-1"
-                key={`phone-${deliveryInfo.phone}`}
               />
             </div>
           </div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -297,7 +298,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
               onChange={handleInputChange}
               placeholder="Votre nom complet"
               required
-              key={`address-name-${formData.name}`}
             />
           </div>
           <div>
@@ -310,7 +310,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
               onChange={handleInputChange}
               placeholder="votre@email.com"
               required
-              key={`address-email-${formData.email}`}
             />
           </div>
         </div>
@@ -324,7 +323,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
             onChange={handleInputChange}
             placeholder="06 XX XX XX XX"
             required
-            key={`address-phone-${formData.phone}`}
           />
         </div>
 
@@ -337,7 +335,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
             onChange={handleInputChange}
             placeholder="Numéro et nom de rue"
             required
-            key={`address-street-${formData.street}`}
           />
         </div>
 
@@ -351,7 +348,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
               onChange={handleInputChange}
               placeholder="Votre ville"
               required
-              key={`address-city-${formData.city}`}
             />
           </div>
           <div>
@@ -365,7 +361,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
                 placeholder="13160"
                 required
                 className={getPostalCodeInputClass()}
-                key={`address-postal-${formData.postalCode}`}
               />
               <Button
                 type="button"
@@ -403,7 +398,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
             onChange={handleInputChange}
             placeholder="Étage, code d'accès, instructions spéciales..."
             className="h-20"
-            key={`address-instructions-${formData.instructions}`}
           />
         </div>
 
