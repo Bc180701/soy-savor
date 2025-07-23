@@ -189,6 +189,22 @@ export const DeliveryStep = ({
     }));
   };
 
+  // Nouvelle fonction pour synchroniser les informations de contact vers l'adresse
+  const handleContactFieldBlur = (fieldName: string, value: string) => {
+    console.log("🔄 Synchronisation champ contact:", fieldName, "=", value);
+    
+    // Synchroniser automatiquement vers l'adresse de livraison si c'est une livraison
+    if (deliveryInfo.orderType === "delivery") {
+      setDeliveryInfo(prev => ({
+        ...prev,
+        // Synchroniser vers les champs d'adresse correspondants
+        ...(fieldName === "name" && { name: value }),
+        ...(fieldName === "email" && { email: value }),
+        ...(fieldName === "phone" && { phone: value })
+      }));
+    }
+  };
+
   const handleTimeSelection = (time: string) => {
     setDeliveryInfo(prev => ({
       ...prev,
@@ -366,6 +382,7 @@ export const DeliveryStep = ({
                 name="name"
                 value={deliveryInfo.name}
                 onChange={handleChange}
+                onBlur={(e) => handleContactFieldBlur("name", e.target.value)}
                 placeholder="Votre nom"
                 required
                 className="mt-1"
@@ -383,6 +400,7 @@ export const DeliveryStep = ({
                 type="email"
                 value={deliveryInfo.email}
                 onChange={handleChange}
+                onBlur={(e) => handleContactFieldBlur("email", e.target.value)}
                 placeholder="votre@email.com"
                 required
                 className="mt-1"
@@ -399,6 +417,7 @@ export const DeliveryStep = ({
                 name="phone"
                 value={deliveryInfo.phone}
                 onChange={handleChange}
+                onBlur={(e) => handleContactFieldBlur("phone", e.target.value)}
                 placeholder="06 XX XX XX XX"
                 required
                 className="mt-1"
