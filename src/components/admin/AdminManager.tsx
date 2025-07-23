@@ -1,106 +1,136 @@
+
 import { useState } from "react";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3, Package, Users, ShoppingCart, Settings, MapPin, Calendar, Clock, Gift, Home, Utensils, ChefHat } from "lucide-react";
 import DashboardStats from "./DashboardStats";
 import ProductManager from "./ProductManager";
-import OrderList from "../OrderList";
 import UsersList from "./UsersList";
+import RestaurantsManager from "./RestaurantsManager";
+import DeliveryZonesManager from "./DeliveryZonesManager";
+import OpeningHoursManager from "./OpeningHoursManager";
+import RestaurantClosuresManager from "./RestaurantClosuresManager";
 import PromotionsManager from "./PromotionsManager";
 import HomepageEditor from "./HomepageEditor";
-import OpeningHoursManager from "./OpeningHoursManager";
-import DeliveryZonesManager from "./DeliveryZonesManager";
 import IngredientsManager from "./IngredientsManager";
-import OrderingLockControl from "./OrderingLockControl";
+import FeaturedProductsManager from "./FeaturedProductsManager";
+import AdminSidebar from "./AdminSidebar";
 import AdminInviteManager from "./AdminInviteManager";
 import StripeKeysManager from "./StripeKeysManager";
-import SMSTestManager from "./SMSTestManager";
-import AdminSidebar from "./AdminSidebar";
+import OrderingLockControl from "./OrderingLockControl";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const AdminManager = () => {
-  const [activeSection, setActiveSection] = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const isMobile = useIsMobile();
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case "dashboard":
-        return <DashboardStats />;
-      case "orders":
-        return <OrderList />;
-      case "products":
-        return <ProductManager />;
-      case "users":
-        return <UsersList />;
-      case "promotions":
-        return <PromotionsManager />;
-      case "homepage":
-        return <HomepageEditor />;
-      case "admins":
-        return <AdminInviteManager />;
-      case "stripe-keys":
-        return <StripeKeysManager />;
-      case "settings":
-        return (
-          <div className="grid gap-6">
-            <OrderingLockControl />
-            <OpeningHoursManager />
-            <DeliveryZonesManager />
-            <IngredientsManager />
-            <SMSTestManager />
-          </div>
-        );
-      default:
-        return <DashboardStats />;
-    }
-  };
-
-  const getSectionTitle = () => {
-    const titles = {
-      dashboard: "Tableau de bord",
-      orders: "Commandes",
-      products: "Produits",
-      users: "Utilisateurs",
-      promotions: "Promotions",
-      homepage: "Page d'accueil",
-      admins: "Administrateurs",
-      "stripe-keys": "Clés Stripe",
-      settings: "Paramètres"
-    };
-    return titles[activeSection as keyof typeof titles] || "Administration";
-  };
-
-  return (
-    <div className="flex h-screen bg-gray-50">
-      <AdminSidebar 
-        activeSection={activeSection}
-        onSectionChange={setActiveSection}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white shadow-sm border-b relative">
-          <div className="flex items-center justify-between px-4 py-4">
-            <div className="flex items-center relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden mr-3 relative z-[9999] bg-white hover:bg-gray-100 border shadow-sm"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              <h1 className="text-2xl font-bold text-gray-900 relative z-10">{getSectionTitle()}</h1>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex-1 overflow-auto">
-          <div className="p-6">
-            {renderContent()}
-          </div>
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="p-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Administration
+              </CardTitle>
+              <CardDescription>
+                L'interface d'administration n'est pas disponible sur mobile. Veuillez utiliser un ordinateur pour accéder à toutes les fonctionnalités.
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      
+      <main className="flex-1 p-8 ml-64">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Administration</h1>
+            <p className="text-gray-600">Gérez votre restaurant et vos commandes</p>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="hidden">
+              <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+              <TabsTrigger value="products">Produits</TabsTrigger>
+              <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+              <TabsTrigger value="restaurants">Restaurants</TabsTrigger>
+              <TabsTrigger value="delivery-zones">Zones de livraison</TabsTrigger>
+              <TabsTrigger value="opening-hours">Horaires</TabsTrigger>
+              <TabsTrigger value="closures">Fermetures</TabsTrigger>
+              <TabsTrigger value="promotions">Promotions</TabsTrigger>
+              <TabsTrigger value="homepage">Page d'accueil</TabsTrigger>
+              <TabsTrigger value="ingredients">Ingrédients</TabsTrigger>
+              <TabsTrigger value="featured">Produits phares</TabsTrigger>
+              <TabsTrigger value="admin-users">Administrateurs</TabsTrigger>
+              <TabsTrigger value="stripe">Configuration Stripe</TabsTrigger>
+              <TabsTrigger value="ordering-lock">Verrouillage commandes</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dashboard" className="space-y-6">
+              <DashboardStats />
+            </TabsContent>
+
+            <TabsContent value="products" className="space-y-6">
+              <ProductManager />
+            </TabsContent>
+
+            <TabsContent value="users" className="space-y-6">
+              <UsersList />
+            </TabsContent>
+
+            <TabsContent value="restaurants" className="space-y-6">
+              <RestaurantsManager />
+            </TabsContent>
+
+            <TabsContent value="delivery-zones" className="space-y-6">
+              <DeliveryZonesManager />
+            </TabsContent>
+
+            <TabsContent value="opening-hours" className="space-y-6">
+              <OpeningHoursManager />
+            </TabsContent>
+
+            <TabsContent value="closures" className="space-y-6">
+              <RestaurantClosuresManager />
+            </TabsContent>
+
+            <TabsContent value="promotions" className="space-y-6">
+              <PromotionsManager />
+            </TabsContent>
+
+            <TabsContent value="homepage" className="space-y-6">
+              <HomepageEditor />
+            </TabsContent>
+
+            <TabsContent value="ingredients" className="space-y-6">
+              <IngredientsManager />
+            </TabsContent>
+
+            <TabsContent value="featured" className="space-y-6">
+              <FeaturedProductsManager />
+            </TabsContent>
+
+            <TabsContent value="admin-users" className="space-y-6">
+              <AdminInviteManager />
+            </TabsContent>
+
+            <TabsContent value="stripe" className="space-y-6">
+              <StripeKeysManager />
+            </TabsContent>
+
+            <TabsContent value="ordering-lock" className="space-y-6">
+              <OrderingLockControl />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
     </div>
   );
 };
