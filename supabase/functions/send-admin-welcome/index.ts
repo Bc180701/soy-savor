@@ -102,7 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email via Resend API
     try {
       const emailResponse = await resend.emails.send({
-        from: "SushiEats Admin <admin@clwebdesign.fr>",
+        from: "SushiEats Admin <admin@emailsend.clwebdesign.fr>",
         to: [email],
         subject: subject,
         html: htmlContent,
