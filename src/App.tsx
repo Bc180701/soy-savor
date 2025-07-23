@@ -21,6 +21,7 @@ import CommandeConfirmee from "./pages/CommandeConfirmee";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import NosRestaurants from "./pages/NosRestaurants";
+import MentionsLegales from "./pages/MentionsLegales";
 import { RestaurantProvider } from "./hooks/useRestaurantContext";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="update-password" element={<UpdatePassword />} />
               <Route path="commande-confirmee" element={<CommandeConfirmee />} />
               <Route path="commande-confirmee/:orderId" element={<CommandeConfirmee />} />
+              <Route path="mentions-legales" element={<MentionsLegales />} />
               <Route path="admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Route>
