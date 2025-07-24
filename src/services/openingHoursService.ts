@@ -6,6 +6,7 @@ export interface DayOpeningHours {
   open_time: string;
   close_time: string;
   day_order: number;
+  slot_number?: number;
 }
 
 export interface RestaurantOpeningHours {
@@ -15,6 +16,7 @@ export interface RestaurantOpeningHours {
   is_open: boolean;
   open_time: string;
   close_time: string;
+  slot_number: number;
   created_at: string;
   updated_at: string;
 }
@@ -86,7 +88,8 @@ export const isRestaurantOpenNow = async (restaurantId: string): Promise<boolean
       .from('restaurant_opening_hours')
       .select('*')
       .eq('restaurant_id', restaurantId)
-      .eq('day_of_week', currentDay);
+      .eq('day_of_week', currentDay)
+      .order('slot_number');
 
     console.log("🔍 [DEBUG] Réponse horaires d'ouverture:", { openingHours, error });
 
@@ -101,33 +104,42 @@ export const isRestaurantOpenNow = async (restaurantId: string): Promise<boolean
       return true;
     }
 
-    const todayHours = openingHours[0];
-    console.log("🔍 [DEBUG] Horaires du jour:", todayHours);
+    console.log("🔍 [DEBUG] Horaires du jour trouvés:", openingHours);
 
-    if (!todayHours.is_open) {
-      console.log("❌ [RESULT] Restaurant fermé selon horaires configurés");
-      return false;
+    // Vérifier si au moins un créneau est ouvert
+    let isOpenInAnySlot = false;
+    
+    for (const slot of openingHours) {
+      if (!slot.is_open) {
+        continue;
+      }
+
+      const openTime = slot.open_time;
+      const closeTime = slot.close_time;
+      
+      if (!openTime || !closeTime) {
+        continue;
+      }
+
+      console.log("🔍 [DEBUG] Vérification créneau:", {
+        slot_number: slot.slot_number,
+        currentTime,
+        openTime,
+        closeTime
+      });
+
+      if (currentTime >= openTime && currentTime <= closeTime) {
+        console.log(`✅ [RESULT] Restaurant OUVERT dans le créneau ${slot.slot_number}`);
+        isOpenInAnySlot = true;
+        break;
+      }
     }
 
-    // Nettoyer les heures pour éviter les erreurs de format
-    const openTime = todayHours.open_time;
-    const closeTime = todayHours.close_time;
-    
-    console.log("🔍 [DEBUG] Comparaison horaires:", {
-      currentTime,
-      openTime,
-      closeTime
-    });
-
-    if (!openTime || !closeTime) {
-      console.log("⚠️ [FALLBACK] Horaires non définis, considéré comme ouvert");
-      return true;
+    if (!isOpenInAnySlot) {
+      console.log("❌ [RESULT] Restaurant fermé dans tous les créneaux");
     }
-
-    const isOpen = currentTime >= openTime && currentTime <= closeTime;
-    console.log(`✅ [RESULT] Restaurant ${isOpen ? 'OUVERT' : 'FERMÉ'}`);
     
-    return isOpen;
+    return isOpenInAnySlot;
   } catch (error) {
     console.error("❌ [EXCEPTION] Exception lors de la vérification des horaires:", error);
     console.log("⚠️ [FALLBACK] Erreur, considéré comme ouvert par défaut");
@@ -143,7 +155,8 @@ export const getWeekOpeningHours = async (restaurantId: string): Promise<DayOpen
       .from('restaurant_opening_hours')
       .select('*')
       .eq('restaurant_id', restaurantId)
-      .order('day_of_week');
+      .order('day_of_week', { ascending: true })
+      .order('slot_number', { ascending: true });
 
     if (error) {
       console.error("❌ [ERROR] Erreur lors de la récupération des horaires:", error);
@@ -165,7 +178,8 @@ export const getWeekOpeningHours = async (restaurantId: string): Promise<DayOpen
       is_open: hour.is_open,
       open_time: hour.open_time,
       close_time: hour.close_time,
-      day_order: hour.day_of_week
+      day_order: hour.day_of_week,
+      slot_number: hour.slot_number
     }));
   } catch (error) {
     console.error("❌ [EXCEPTION] Exception lors de la récupération des horaires:", error);
@@ -184,7 +198,8 @@ export const getNextOpenDay = async (restaurantId: string): Promise<DayOpeningHo
       .select('*')
       .eq('restaurant_id', restaurantId)
       .eq('is_open', true)
-      .order('day_of_week');
+      .order('day_of_week', { ascending: true })
+      .order('slot_number', { ascending: true });
 
     if (error || !openingHours || openingHours.length === 0) {
       console.log("Aucune donnée d'horaires trouvée pour le prochain jour ouvert");
@@ -210,7 +225,8 @@ export const getNextOpenDay = async (restaurantId: string): Promise<DayOpeningHo
           is_open: nextOpenDay.is_open,
           open_time: nextOpenDay.open_time,
           close_time: nextOpenDay.close_time,
-          day_order: nextOpenDay.day_of_week
+          day_order: nextOpenDay.day_of_week,
+          slot_number: nextOpenDay.slot_number
         };
       }
     }
@@ -265,7 +281,8 @@ export const saveRestaurantOpeningHours = async (restaurantId: string, hours: Da
         day_of_week: dayMap[hour.day],
         is_open: hour.is_open,
         open_time: openTime,
-        close_time: closeTime
+        close_time: closeTime,
+        slot_number: hour.slot_number || 1
       };
     });
 
@@ -291,13 +308,13 @@ export const saveRestaurantOpeningHours = async (restaurantId: string, hours: Da
 // Fonction utilitaire pour les horaires par défaut
 const getDefaultOpeningHours = (): DayOpeningHours[] => {
   return [
-    { day: "sunday", is_open: false, open_time: "11:00", close_time: "22:00", day_order: 0 },
-    { day: "monday", is_open: false, open_time: "11:00", close_time: "22:00", day_order: 1 },
-    { day: "tuesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 2 },
-    { day: "wednesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 3 },
-    { day: "thursday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 4 },
-    { day: "friday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 5 },
-    { day: "saturday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 6 }
+    { day: "sunday", is_open: false, open_time: "11:00", close_time: "22:00", day_order: 0, slot_number: 1 },
+    { day: "monday", is_open: false, open_time: "11:00", close_time: "22:00", day_order: 1, slot_number: 1 },
+    { day: "tuesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 2, slot_number: 1 },
+    { day: "wednesday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 3, slot_number: 1 },
+    { day: "thursday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 4, slot_number: 1 },
+    { day: "friday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 5, slot_number: 1 },
+    { day: "saturday", is_open: true, open_time: "11:00", close_time: "22:00", day_order: 6, slot_number: 1 }
   ];
 };
 

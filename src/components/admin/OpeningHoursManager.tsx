@@ -20,6 +20,7 @@ interface DayHours {
   isOpen: boolean;
   openTime: string;
   closeTime: string;
+  slotNumber: number;
 }
 
 const OpeningHoursManager = () => {
@@ -27,15 +28,7 @@ const OpeningHoursManager = () => {
   const { currentRestaurant } = useRestaurantContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [openingHours, setOpeningHours] = useState<DayHours[]>([
-    { day: "monday", dayName: "Lundi", isOpen: false, openTime: "11:00", closeTime: "22:00" },
-    { day: "tuesday", dayName: "Mardi", isOpen: true, openTime: "11:00", closeTime: "22:00" },
-    { day: "wednesday", dayName: "Mercredi", isOpen: true, openTime: "11:00", closeTime: "22:00" },
-    { day: "thursday", dayName: "Jeudi", isOpen: true, openTime: "11:00", closeTime: "22:00" },
-    { day: "friday", dayName: "Vendredi", isOpen: true, openTime: "11:00", closeTime: "22:00" },
-    { day: "saturday", dayName: "Samedi", isOpen: true, openTime: "11:00", closeTime: "22:00" },
-    { day: "sunday", dayName: "Dimanche", isOpen: false, openTime: "11:00", closeTime: "22:00" }
-  ]);
+  const [openingHours, setOpeningHours] = useState<DayHours[]>([]);
 
   const fetchOpeningHours = async () => {
     if (!currentRestaurant) {
@@ -57,10 +50,14 @@ const OpeningHoursManager = () => {
           dayName: getDayName(item.day),
           isOpen: item.is_open,
           openTime: item.open_time,
-          closeTime: item.close_time
+          closeTime: item.close_time,
+          slotNumber: item.slot_number || 1
         }));
         
         setOpeningHours(formattedData);
+      } else {
+        // Initialiser avec des horaires par défaut si aucune donnée
+        setOpeningHours(getDefaultDayHours());
       }
     } catch (error) {
       console.error("Erreur lors du chargement des horaires:", error);
@@ -85,6 +82,49 @@ const OpeningHoursManager = () => {
       "sunday": "Dimanche"
     };
     return dayNames[day] || day;
+  };
+
+  const getDefaultDayHours = (): DayHours[] => {
+    const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+    const result: DayHours[] = [];
+    
+    days.forEach(day => {
+      // Créneau par défaut unique
+      result.push({
+        day,
+        dayName: getDayName(day),
+        isOpen: day !== "monday" && day !== "sunday",
+        openTime: "11:00",
+        closeTime: "22:00",
+        slotNumber: 1
+      });
+    });
+    
+    return result;
+  };
+
+  const addTimeSlot = (day: string) => {
+    const daySlots = openingHours.filter(h => h.day === day);
+    const newSlotNumber = Math.max(...daySlots.map(s => s.slotNumber), 0) + 1;
+    
+    const newSlot: DayHours = {
+      day,
+      dayName: getDayName(day),
+      isOpen: true,
+      openTime: "18:00",
+      closeTime: "22:00",
+      slotNumber: newSlotNumber
+    };
+    
+    setOpeningHours([...openingHours, newSlot]);
+  };
+
+  const removeTimeSlot = (day: string, slotNumber: number) => {
+    // Ne pas supprimer s'il n'y a qu'un seul créneau pour ce jour
+    const daySlots = openingHours.filter(h => h.day === day);
+    if (daySlots.length <= 1) return;
+    
+    setOpeningHours(openingHours.filter(h => !(h.day === day && h.slotNumber === slotNumber)));
   };
 
   const handleDayToggle = (index: number) => {
@@ -114,12 +154,13 @@ const OpeningHoursManager = () => {
       console.log("Sauvegarde des horaires pour le restaurant:", currentRestaurant.name);
       
       // Convertir vers le format de l'API
-      const hoursData: DayOpeningHours[] = openingHours.map((item, index) => ({
+      const hoursData: DayOpeningHours[] = openingHours.map((item) => ({
         day: item.day,
-        day_order: index,
+        day_order: getDayOrder(item.day),
         is_open: item.isOpen,
         open_time: item.openTime,
-        close_time: item.closeTime
+        close_time: item.closeTime,
+        slot_number: item.slotNumber
       }));
       
       const success = await saveRestaurantOpeningHours(currentRestaurant.id, hoursData);
@@ -145,6 +186,19 @@ const OpeningHoursManager = () => {
     }
   };
   
+  const getDayOrder = (day: string): number => {
+    const dayOrder: {[key: string]: number} = {
+      "sunday": 0,
+      "monday": 1,
+      "tuesday": 2,
+      "wednesday": 3,
+      "thursday": 4,
+      "friday": 5,
+      "saturday": 6
+    };
+    return dayOrder[day] || 0;
+  };
+
   useEffect(() => {
     fetchOpeningHours();
   }, [currentRestaurant]);
@@ -178,41 +232,93 @@ const OpeningHoursManager = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-4 gap-4 font-semibold pb-2 border-b">
-              <div>Jour</div>
-              <div>Ouvert</div>
-              <div>Heure d'ouverture</div>
-              <div>Heure de fermeture</div>
-            </div>
-            
-            {openingHours.map((day, index) => (
-              <div key={day.day} className="grid grid-cols-4 gap-4 items-center">
-                <div className="font-medium">{day.dayName}</div>
-                <div>
-                  <Checkbox 
-                    checked={day.isOpen} 
-                    onCheckedChange={() => handleDayToggle(index)}
-                    id={`day-${day.day}`}
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="time"
-                    value={day.openTime}
-                    onChange={(e) => handleTimeChange(index, 'openTime', e.target.value)}
-                    disabled={!day.isOpen}
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="time"
-                    value={day.closeTime}
-                    onChange={(e) => handleTimeChange(index, 'closeTime', e.target.value)}
-                    disabled={!day.isOpen}
-                  />
-                </div>
-              </div>
-            ))}
+            {(() => {
+              const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+              return days.map(day => {
+                const daySlots = openingHours.filter(h => h.day === day).sort((a, b) => a.slotNumber - b.slotNumber);
+                const dayName = getDayName(day);
+                
+                return (
+                  <div key={day} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg">{dayName}</h3>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addTimeSlot(day)}
+                        className="text-xs"
+                      >
+                        + Ajouter un créneau
+                      </Button>
+                    </div>
+                    
+                    {daySlots.length === 0 ? (
+                      <div className="text-gray-500 italic">Aucun créneau configuré</div>
+                    ) : (
+                      daySlots.map((slot, slotIndex) => (
+                        <div key={`${slot.day}-${slot.slotNumber}`} className="grid grid-cols-6 gap-4 items-center p-3 border rounded-lg">
+                          <div className="text-sm font-medium">
+                            Créneau {slot.slotNumber}
+                          </div>
+                          <div>
+                            <Checkbox 
+                              checked={slot.isOpen} 
+                              onCheckedChange={() => {
+                                const index = openingHours.findIndex(h => h.day === slot.day && h.slotNumber === slot.slotNumber);
+                                handleDayToggle(index);
+                              }}
+                              id={`day-${slot.day}-${slot.slotNumber}`}
+                            />
+                            <label htmlFor={`day-${slot.day}-${slot.slotNumber}`} className="ml-2 text-sm">
+                              Ouvert
+                            </label>
+                          </div>
+                          <div>
+                            <Input
+                              type="time"
+                              value={slot.openTime}
+                              onChange={(e) => {
+                                const index = openingHours.findIndex(h => h.day === slot.day && h.slotNumber === slot.slotNumber);
+                                handleTimeChange(index, 'openTime', e.target.value);
+                              }}
+                              disabled={!slot.isOpen}
+                              placeholder="Ouverture"
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              type="time"
+                              value={slot.closeTime}
+                              onChange={(e) => {
+                                const index = openingHours.findIndex(h => h.day === slot.day && h.slotNumber === slot.slotNumber);
+                                handleTimeChange(index, 'closeTime', e.target.value);
+                              }}
+                              disabled={!slot.isOpen}
+                              placeholder="Fermeture"
+                            />
+                          </div>
+                          <div className="col-span-2 flex justify-between items-center">
+                            <span className="text-xs text-gray-500">
+                              {slot.isOpen ? `${slot.openTime} - ${slot.closeTime}` : 'Fermé'}
+                            </span>
+                            {daySlots.length > 1 && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeTimeSlot(slot.day, slot.slotNumber)}
+                                className="text-xs h-6 px-2"
+                              >
+                                Supprimer
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                );
+              });
+            })()}
             
             <Separator />
             

@@ -719,6 +719,7 @@ export type Database = {
           is_open: boolean
           open_time: string
           restaurant_id: string
+          slot_number: number
           updated_at: string
         }
         Insert: {
@@ -729,6 +730,7 @@ export type Database = {
           is_open?: boolean
           open_time?: string
           restaurant_id: string
+          slot_number?: number
           updated_at?: string
         }
         Update: {
@@ -739,6 +741,7 @@ export type Database = {
           is_open?: boolean
           open_time?: string
           restaurant_id?: string
+          slot_number?: number
           updated_at?: string
         }
         Relationships: [
