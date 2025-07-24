@@ -149,22 +149,31 @@ const NosRestaurants = () => {
                     <h3 className="font-medium text-gray-900">Horaires d'ouverture</h3>
                   </div>
                   <div className="space-y-2">
-                    {restaurant.hours.map((hour) => (
-                      <div key={hour.day_of_week} className="flex justify-between items-center">
-                        <span className={`font-medium ${hour.day_of_week === 0 || hour.day_of_week === 1 ? 'text-red-500' : 'text-gray-900'}`}>
-                          {dayNames[hour.day_of_week]}:
-                        </span>
-                        {hour.is_open && hour.open_time && hour.close_time ? (
-                          <span className="text-gray-600">
-                            {formatTime(hour.open_time)} - {formatTime(hour.close_time)}
+                    {dayNames.map((dayName, dayIndex) => {
+                      const dayHours = restaurant.hours.filter(hour => hour.day_of_week === dayIndex);
+                      const openSlots = dayHours.filter(hour => hour.is_open && hour.open_time && hour.close_time);
+                      
+                      return (
+                        <div key={dayIndex} className="flex justify-between items-center">
+                          <span className={`font-medium ${dayIndex === 0 || dayIndex === 1 ? 'text-red-500' : 'text-gray-900'}`}>
+                            {dayName}:
                           </span>
-                        ) : (
-                          <Badge variant="secondary" className="text-red-500">
-                            Fermé
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
+                          {openSlots.length > 0 ? (
+                            <div className="text-gray-600 text-right">
+                              {openSlots.map((slot, slotIndex) => (
+                                <div key={slotIndex}>
+                                  {formatTime(slot.open_time!)} - {formatTime(slot.close_time!)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <Badge variant="secondary" className="text-red-500">
+                              Fermé
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </CardContent>
