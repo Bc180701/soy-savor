@@ -30,6 +30,7 @@ interface RestaurantHour {
   is_open: boolean;
   open_time?: string;
   close_time?: string;
+  slot_number?: number;
 }
 
 interface FormHour {
@@ -37,6 +38,12 @@ interface FormHour {
   is_open: boolean;
   open_time: string;
   close_time: string;
+  slot_number: number;
+}
+
+interface DayHours {
+  day_of_week: number;
+  slots: FormHour[];
 }
 
 const dayNames = [
@@ -59,12 +66,16 @@ const RestaurantsManager = () => {
     email: "",
     is_active: true,
     display_order: 0,
-    hours: dayNames.map((_, index) => ({
+    dayHours: dayNames.map((_, index) => ({
       day_of_week: index,
-      is_open: index !== 0 && index !== 1, // Fermé dimanche et lundi par défaut
-      open_time: index !== 0 && index !== 1 ? "11:00" : "",
-      close_time: index !== 0 && index !== 1 ? "22:00" : ""
-    })) as FormHour[]
+      slots: [{
+        day_of_week: index,
+        is_open: index !== 0 && index !== 1, // Fermé dimanche et lundi par défaut
+        open_time: index !== 0 && index !== 1 ? "11:00" : "",
+        close_time: index !== 0 && index !== 1 ? "22:00" : "",
+        slot_number: 1
+      }]
+    })) as DayHours[]
   });
 
   useEffect(() => {
@@ -83,7 +94,7 @@ const RestaurantsManager = () => {
       const { data: hoursData, error: hoursError } = await supabase
         .from('restaurants_info_hours')
         .select('*')
-        .order('day_of_week');
+        .order('day_of_week, slot_number');
 
       if (hoursError) throw hoursError;
 
@@ -117,19 +128,27 @@ const RestaurantsManager = () => {
         email: restaurant.email || "",
         is_active: restaurant.is_active,
         display_order: restaurant.display_order,
-        hours: restaurant.hours.length > 0 
-          ? restaurant.hours.map(hour => ({
-              day_of_week: hour.day_of_week,
-              is_open: hour.is_open,
-              open_time: hour.open_time || "",
-              close_time: hour.close_time || ""
-            }))
-          : dayNames.map((_, index) => ({
-              day_of_week: index,
-              is_open: index !== 0 && index !== 1,
-              open_time: index !== 0 && index !== 1 ? "11:00" : "",
-              close_time: index !== 0 && index !== 1 ? "22:00" : ""
-            }))
+        dayHours: dayNames.map((_, dayIndex) => {
+          const dayHours = restaurant.hours.filter(hour => hour.day_of_week === dayIndex);
+          return {
+            day_of_week: dayIndex,
+            slots: dayHours.length > 0 
+              ? dayHours.map(hour => ({
+                  day_of_week: hour.day_of_week,
+                  is_open: hour.is_open,
+                  open_time: hour.open_time || "",
+                  close_time: hour.close_time || "",
+                  slot_number: hour.slot_number || 1
+                }))
+              : [{
+                  day_of_week: dayIndex,
+                  is_open: dayIndex !== 0 && dayIndex !== 1,
+                  open_time: dayIndex !== 0 && dayIndex !== 1 ? "11:00" : "",
+                  close_time: dayIndex !== 0 && dayIndex !== 1 ? "22:00" : "",
+                  slot_number: 1
+                }]
+          };
+        })
       });
     } else {
       setEditingRestaurant(null);
@@ -142,11 +161,15 @@ const RestaurantsManager = () => {
         email: "",
         is_active: true,
         display_order: Math.max(0, ...restaurants.map(r => r.display_order)) + 1,
-        hours: dayNames.map((_, index) => ({
+        dayHours: dayNames.map((_, index) => ({
           day_of_week: index,
-          is_open: index !== 0 && index !== 1,
-          open_time: index !== 0 && index !== 1 ? "11:00" : "",
-          close_time: index !== 0 && index !== 1 ? "22:00" : ""
+          slots: [{
+            day_of_week: index,
+            is_open: index !== 0 && index !== 1,
+            open_time: index !== 0 && index !== 1 ? "11:00" : "",
+            close_time: index !== 0 && index !== 1 ? "22:00" : "",
+            slot_number: 1
+          }]
         }))
       });
     }
@@ -180,13 +203,16 @@ const RestaurantsManager = () => {
           .eq('restaurant_info_id', editingRestaurant.id);
 
         // Insérer les nouveaux horaires
-        const hoursToInsert = formData.hours.map(hour => ({
-          restaurant_info_id: editingRestaurant.id,
-          day_of_week: hour.day_of_week,
-          is_open: hour.is_open,
-          open_time: hour.is_open ? hour.open_time : null,
-          close_time: hour.is_open ? hour.close_time : null
-        }));
+        const hoursToInsert = formData.dayHours.flatMap(dayHour => 
+          dayHour.slots.map(slot => ({
+            restaurant_info_id: editingRestaurant.id,
+            day_of_week: slot.day_of_week,
+            is_open: slot.is_open,
+            open_time: slot.is_open ? slot.open_time : null,
+            close_time: slot.is_open ? slot.close_time : null,
+            slot_number: slot.slot_number
+          }))
+        );
 
         const { error: hoursError } = await supabase
           .from('restaurants_info_hours')
@@ -218,13 +244,16 @@ const RestaurantsManager = () => {
         if (error) throw error;
 
         // Insérer les horaires
-        const hoursToInsert = formData.hours.map(hour => ({
-          restaurant_info_id: newRestaurant.id,
-          day_of_week: hour.day_of_week,
-          is_open: hour.is_open,
-          open_time: hour.is_open ? hour.open_time : null,
-          close_time: hour.is_open ? hour.close_time : null
-        }));
+        const hoursToInsert = formData.dayHours.flatMap(dayHour => 
+          dayHour.slots.map(slot => ({
+            restaurant_info_id: newRestaurant.id,
+            day_of_week: slot.day_of_week,
+            is_open: slot.is_open,
+            open_time: slot.is_open ? slot.open_time : null,
+            close_time: slot.is_open ? slot.close_time : null,
+            slot_number: slot.slot_number
+          }))
+        );
 
         const { error: hoursError } = await supabase
           .from('restaurants_info_hours')
@@ -276,10 +305,38 @@ const RestaurantsManager = () => {
     }
   };
 
-  const updateHour = (dayIndex: number, field: keyof FormHour, value: any) => {
-    const newHours = [...formData.hours];
-    newHours[dayIndex] = { ...newHours[dayIndex], [field]: value };
-    setFormData({ ...formData, hours: newHours });
+  const updateSlot = (dayIndex: number, slotIndex: number, field: keyof FormHour, value: any) => {
+    const newDayHours = [...formData.dayHours];
+    newDayHours[dayIndex].slots[slotIndex] = { 
+      ...newDayHours[dayIndex].slots[slotIndex], 
+      [field]: value 
+    };
+    setFormData({ ...formData, dayHours: newDayHours });
+  };
+
+  const addSlot = (dayIndex: number) => {
+    const newDayHours = [...formData.dayHours];
+    const newSlotNumber = newDayHours[dayIndex].slots.length + 1;
+    newDayHours[dayIndex].slots.push({
+      day_of_week: dayIndex,
+      is_open: true,
+      open_time: "11:00",
+      close_time: "22:00",
+      slot_number: newSlotNumber
+    });
+    setFormData({ ...formData, dayHours: newDayHours });
+  };
+
+  const removeSlot = (dayIndex: number, slotIndex: number) => {
+    const newDayHours = [...formData.dayHours];
+    if (newDayHours[dayIndex].slots.length > 1) {
+      newDayHours[dayIndex].slots.splice(slotIndex, 1);
+      // Renuméroter les créneaux
+      newDayHours[dayIndex].slots.forEach((slot, index) => {
+        slot.slot_number = index + 1;
+      });
+      setFormData({ ...formData, dayHours: newDayHours });
+    }
   };
 
   if (loading) {
@@ -392,36 +449,67 @@ const RestaurantsManager = () => {
               <div className="space-y-4">
                 <h3 className="font-medium">Horaires d'ouverture</h3>
                 
-                {formData.hours.map((hour, index) => (
-                  <div key={index} className="border rounded-lg p-4 space-y-2">
+                {formData.dayHours.map((dayHour, dayIndex) => (
+                  <div key={dayIndex} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{dayNames[index]}</span>
-                      <Switch
-                        checked={hour.is_open}
-                        onCheckedChange={(checked) => updateHour(index, 'is_open', checked)}
-                      />
+                      <span className="font-medium">{dayNames[dayIndex]}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addSlot(dayIndex)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Ajouter un créneau
+                      </Button>
                     </div>
                     
-                    {hour.is_open && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label>Ouverture</Label>
-                          <Input
-                            type="time"
-                            value={hour.open_time}
-                            onChange={(e) => updateHour(index, 'open_time', e.target.value)}
-                          />
+                    {dayHour.slots.map((slot, slotIndex) => (
+                      <div key={slotIndex} className="border-l-2 border-gray-200 pl-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">
+                            Créneau {slot.slot_number}
+                          </span>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={slot.is_open}
+                              onCheckedChange={(checked) => updateSlot(dayIndex, slotIndex, 'is_open', checked)}
+                            />
+                            {dayHour.slots.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeSlot(dayIndex, slotIndex)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <Label>Fermeture</Label>
-                          <Input
-                            type="time"
-                            value={hour.close_time}
-                            onChange={(e) => updateHour(index, 'close_time', e.target.value)}
-                          />
-                        </div>
+                        
+                        {slot.is_open && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label>Ouverture</Label>
+                              <Input
+                                type="time"
+                                value={slot.open_time}
+                                onChange={(e) => updateSlot(dayIndex, slotIndex, 'open_time', e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <Label>Fermeture</Label>
+                              <Input
+                                type="time"
+                                value={slot.close_time}
+                                onChange={(e) => updateSlot(dayIndex, slotIndex, 'close_time', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
                 ))}
               </div>
@@ -484,7 +572,7 @@ const RestaurantsManager = () => {
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4 text-gray-500" />
                   <span className="text-sm">
-                    {restaurant.hours.filter(h => h.is_open).length} jours d'ouverture
+                    {restaurant.hours.filter(h => h.is_open).length} créneaux d'ouverture
                   </span>
                 </div>
               </div>
