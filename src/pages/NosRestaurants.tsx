@@ -22,7 +22,6 @@ interface RestaurantHour {
   is_open: boolean;
   open_time?: string;
   close_time?: string;
-  slot_number: number;
 }
 
 const dayNames = [
@@ -49,23 +48,14 @@ const NosRestaurants = () => {
         const { data: hoursData, error: hoursError } = await supabase
           .from('restaurants_info_hours')
           .select('*')
-          .order('day_of_week', { ascending: true })
-          .order('slot_number', { ascending: true });
+          .order('day_of_week');
 
         if (hoursError) throw hoursError;
 
         // Associer les horaires aux restaurants
         const restaurantsWithHours = restaurantsData.map(restaurant => ({
           ...restaurant,
-          hours: hoursData
-            .filter(hour => hour.restaurant_info_id === restaurant.id)
-            .map((hour: any) => ({
-              day_of_week: hour.day_of_week,
-              is_open: hour.is_open,
-              open_time: hour.open_time,
-              close_time: hour.close_time,
-              slot_number: hour.slot_number || 1
-            }))
+          hours: hoursData.filter(hour => hour.restaurant_info_id === restaurant.id)
         }));
 
         setRestaurants(restaurantsWithHours);
@@ -81,17 +71,6 @@ const NosRestaurants = () => {
 
   const formatTime = (time: string) => {
     return time.substring(0, 5); // Garde seulement HH:MM
-  };
-
-  const groupHoursByDay = (hours: RestaurantHour[]) => {
-    const grouped: { [key: number]: RestaurantHour[] } = {};
-    hours.forEach(hour => {
-      if (!grouped[hour.day_of_week]) {
-        grouped[hour.day_of_week] = [];
-      }
-      grouped[hour.day_of_week].push(hour);
-    });
-    return grouped;
   };
 
   if (loading) {
@@ -170,36 +149,22 @@ const NosRestaurants = () => {
                     <h3 className="font-medium text-gray-900">Horaires d'ouverture</h3>
                   </div>
                   <div className="space-y-2">
-                    {(() => {
-                      const groupedHours = groupHoursByDay(restaurant.hours);
-                      return Array.from({ length: 7 }, (_, dayIndex) => {
-                        const dayHours = groupedHours[dayIndex] || [];
-                        const openSlots = dayHours.filter(hour => hour.is_open && hour.open_time && hour.close_time);
-                        
-                        return (
-                          <div key={dayIndex} className="flex justify-between items-center">
-                            <span className={`font-medium ${dayIndex === 0 || dayIndex === 1 ? 'text-red-500' : 'text-gray-900'}`}>
-                              {dayNames[dayIndex]}:
-                            </span>
-                            <div className="text-right">
-                              {openSlots.length > 0 ? (
-                                <div className="space-y-1">
-                                  {openSlots.map((slot, index) => (
-                                    <div key={index} className="text-gray-600 text-sm">
-                                      {formatTime(slot.open_time!)} - {formatTime(slot.close_time!)}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <Badge variant="secondary" className="text-red-500">
-                                  Fermé
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
+                    {restaurant.hours.map((hour) => (
+                      <div key={hour.day_of_week} className="flex justify-between items-center">
+                        <span className={`font-medium ${hour.day_of_week === 0 || hour.day_of_week === 1 ? 'text-red-500' : 'text-gray-900'}`}>
+                          {dayNames[hour.day_of_week]}:
+                        </span>
+                        {hour.is_open && hour.open_time && hour.close_time ? (
+                          <span className="text-gray-600">
+                            {formatTime(hour.open_time)} - {formatTime(hour.close_time)}
+                          </span>
+                        ) : (
+                          <Badge variant="secondary" className="text-red-500">
+                            Fermé
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </CardContent>
