@@ -46,7 +46,6 @@ const AdminManager = () => {
             <OpeningHoursManager />
             <DeliveryZonesManager />
             <IngredientsManager />
-            <SMSTestManager />
           </div>
         );
       default:
