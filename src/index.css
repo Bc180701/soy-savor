@@ -87,17 +87,17 @@
     display: none;
   }
   
-  /* Styles de fonts avec Google Fonts */
+  /* Styles de fonts avec Google Fonts - Using semantic color tokens */
   .morning-waves-gold {
     font-family: 'Dancing Script', cursive;
-    color: #FABE00;
+    color: hsl(45 95% 74%); /* gold-500 equivalent */
     font-weight: 700;
   }
   
   .morning-waves-gold-gradient {
     font-family: 'Dancing Script', cursive;
     font-weight: 700;
-    background: linear-gradient(135deg, #FABE00, #E6AB00);
+    background: linear-gradient(135deg, hsl(45 95% 74%), hsl(45 89% 61%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -106,14 +106,14 @@
   /* Alias pour better-times classes */
   .better-times-gold {
     font-family: 'Dancing Script', cursive;
-    color: #FABE00;
+    color: hsl(45 95% 74%); /* gold-500 equivalent */
     font-weight: 700;
   }
   
   .better-times-gold-gradient {
     font-family: 'Dancing Script', cursive;
     font-weight: 700;
-    background: linear-gradient(135deg, #FABE00, #E6AB00);
+    background: linear-gradient(135deg, hsl(45 95% 74%), hsl(45 89% 61%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
