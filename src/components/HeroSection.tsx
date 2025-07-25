@@ -33,7 +33,7 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      <div className="container mx-auto px-4 z-10 relative">
+      <div className="container mx-auto px-4 z-10">
         <div className="max-w-2xl">
           <h1 
             className={`text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 transition-all duration-700 better-times-gold-gradient ${
@@ -51,12 +51,12 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
           </p>
           
           <div 
-            className={`transition-all duration-700 delay-500 relative z-20 ${
+            className={`transition-all duration-700 delay-500 ${
               isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             }`}
           >
-            <Button asChild size="lg" className="bg-gold-300 hover:bg-gold-400 text-gray-800 border-2 border-gold-300 font-semibold relative z-20 cursor-pointer">
-              <Link to="/commander" className="relative z-20">Commander maintenant</Link>
+            <Button asChild size="lg" className="bg-gold-300 hover:bg-gold-400 text-gray-800 border-2 border-gold-300 font-semibold">
+              <Link to="/commander">Commander maintenant</Link>
             </Button>
           </div>
         </div>
