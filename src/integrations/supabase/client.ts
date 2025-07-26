@@ -103,7 +103,7 @@ export const fetchAllMenuData = async (restaurantId?: string) => {
       .from('products')
       .select('*')
       .eq('restaurant_id', targetRestaurantId)
-      .order('name');
+      .order('price', { ascending: true });
     
     if (productsError) {
       console.error("Error fetching all products:", productsError);
@@ -156,7 +156,7 @@ export const fetchProductsByCategory = async (categoryId: string, restaurantId?:
     .select('*')
     .eq('category_id', categoryId)
     .eq('restaurant_id', targetRestaurantId)
-    .order('name');
+    .order('price', { ascending: true });
   
   if (error) {
     console.error("Error fetching products:", error);
@@ -196,7 +196,7 @@ export const fetchAllProducts = async (restaurantId?: string) => {
     .from('products')
     .select('*, categories(name)')
     .eq('restaurant_id', targetRestaurantId)
-    .order('name');
+    .order('price', { ascending: true });
   
   if (error) {
     console.error("Error fetching products:", error);
