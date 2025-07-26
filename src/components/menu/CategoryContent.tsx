@@ -182,7 +182,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                               )}
                               {item.isSpicy && (
                                 <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
-                                  Épicé
+                                  Relevé
                                 </Badge>
                               )}
                               {item.isGlutenFree && (
@@ -336,7 +336,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                                   )}
                                   {item.isSpicy && (
                                     <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
-                                      Épicé
+                                      Relevé
                                     </Badge>
                                   )}
                                   {item.isGlutenFree && (
