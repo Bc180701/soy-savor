@@ -173,16 +173,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                           {/* Contenu */}
                           <div className="p-3 flex flex-col flex-1">
-                            {/* Badges avec noms commerciaux */}
+                            {/* Badges sans badge de catégorie */}
                             <div className="flex gap-1 mb-2 flex-wrap">
-                              {item.category && (
-                                <Badge 
-                                  variant="secondary" 
-                                  className="bg-pink-100 text-pink-600 border-0 text-xs font-medium uppercase tracking-wider"
-                                >
-                                  {categoryDisplayNames[item.category] || item.category}
-                                </Badge>
-                              )}
                               {item.isVegetarian && (
                                 <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
                                   Végétarien
@@ -330,16 +322,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                           <div className="flex-1 p-6">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                {/* Badges avec noms commerciaux */}
+                                {/* Badges sans badge de catégorie */}
                                 <div className="flex gap-2 mb-2 flex-wrap">
-                                  {item.category && (
-                                    <Badge 
-                                      variant="secondary" 
-                                      className="bg-pink-100 text-pink-600 border-0 text-xs font-medium uppercase tracking-wider"
-                                    >
-                                      {categoryDisplayNames[item.category] || item.category}
-                                    </Badge>
-                                  )}
                                   {item.isBestSeller && (
                                     <Badge className="bg-gold-600 text-white text-xs">
                                       Populaire
@@ -509,14 +493,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
               {/* Détails du produit au-dessus */}
               <div className="p-6 bg-white">
                 <div className="mb-4">
-                  {selectedProductDetails.category && (
-                    <Badge 
-                      variant="secondary" 
-                      className="bg-pink-100 text-pink-600 border-0 text-sm font-medium uppercase tracking-wider mb-2"
-                    >
-                      {categoryDisplayNames[selectedProductDetails.category] || selectedProductDetails.category}
-                    </Badge>
-                  )}
+                  {/* Badge de catégorie supprimé */}
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     {selectedProductDetails.name}
                   </h2>

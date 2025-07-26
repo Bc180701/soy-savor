@@ -106,20 +106,8 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
 
                           {/* Contenu */}
                           <div className="p-3 flex flex-col flex-1">
-                            {/* Badges */}
+                            {/* Badges sans badge de catégorie */}
                             <div className="flex gap-1 mb-2 flex-wrap">
-                              {item.category && (
-                                <Badge 
-                                  variant="secondary" 
-                                  className="bg-pink-100 text-pink-600 border-0 text-xs font-medium uppercase tracking-wider"
-                                >
-                                  {item.category === "poke" ? "POKE" : 
-                                   item.category === "custom" ? "SUSHI" :
-                                   item.category === "maki" ? "MAKI" :
-                                   item.category === "plateaux" ? "PLATEAU" :
-                                   item.category}
-                                </Badge>
-                              )}
                               {item.isVegetarian && (
                                 <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
                                   Végétarien
@@ -208,20 +196,8 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                           <div className="flex-1 p-6">
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                {/* Badges */}
+                                {/* Badges sans badge de catégorie */}
                                 <div className="flex gap-2 mb-2 flex-wrap">
-                                  {item.category && (
-                                    <Badge 
-                                      variant="secondary" 
-                                      className="bg-pink-100 text-pink-600 border-0 text-xs font-medium uppercase tracking-wider"
-                                    >
-                                      {item.category === "poke" ? "POKE BOWL" : 
-                                       item.category === "custom" ? "SUSHI" :
-                                       item.category === "maki" ? "MAKI" :
-                                       item.category === "plateaux" ? "PLATEAU" :
-                                       item.category}
-                                    </Badge>
-                                  )}
                                   {item.isBestSeller && (
                                     <Badge className="bg-gold-600 text-white text-xs">
                                       Populaire
@@ -334,18 +310,7 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
               {/* Détails du produit au-dessus */}
               <div className="p-6 bg-white">
                 <div className="mb-4">
-                  {selectedProductDetails.category && (
-                    <Badge 
-                      variant="secondary" 
-                      className="bg-pink-100 text-pink-600 border-0 text-sm font-medium uppercase tracking-wider mb-2"
-                    >
-                      {selectedProductDetails.category === "poke" ? "POKE BOWL" : 
-                       selectedProductDetails.category === "custom" ? "SUSHI" :
-                       selectedProductDetails.category === "maki" ? "MAKI" :
-                       selectedProductDetails.category === "plateaux" ? "PLATEAU" :
-                       selectedProductDetails.category}
-                    </Badge>
-                  )}
+                  {/* Badge de catégorie supprimé */}
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     {selectedProductDetails.name}
                   </h2>
