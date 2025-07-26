@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -17,7 +17,32 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+
+interface Restaurant {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  postal_code: string;
+  phone?: string;
+  email?: string;
+  display_order: number;
+  hours: RestaurantHour[];
+}
+
+interface RestaurantHour {
+  day_of_week: number;
+  is_open: boolean;
+  open_time?: string;
+  close_time?: string;
+}
+
+const dayNames = [
+  "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"
+];
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -36,6 +61,8 @@ const formSchema = z.object({
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,6 +73,47 @@ const Contact = () => {
       message: "",
     },
   });
+
+  useEffect(() => {
+    const fetchRestaurants = async () => {
+      try {
+        // Récupérer les restaurants
+        const { data: restaurantsData, error: restaurantsError } = await supabase
+          .from('restaurants_info')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order');
+
+        if (restaurantsError) throw restaurantsError;
+
+        // Récupérer les horaires pour tous les restaurants
+        const { data: hoursData, error: hoursError } = await supabase
+          .from('restaurants_info_hours')
+          .select('*')
+          .order('day_of_week');
+
+        if (hoursError) throw hoursError;
+
+        // Associer les horaires aux restaurants
+        const restaurantsWithHours = restaurantsData.map(restaurant => ({
+          ...restaurant,
+          hours: hoursData.filter(hour => hour.restaurant_info_id === restaurant.id)
+        }));
+
+        setRestaurants(restaurantsWithHours);
+      } catch (error) {
+        console.error("Erreur lors du chargement des restaurants:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurants();
+  }, []);
+
+  const formatTime = (time: string) => {
+    return time.substring(0, 5); // Garde seulement HH:MM
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -101,84 +169,181 @@ const Contact = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-2xl mx-auto"
+        className="max-w-6xl mx-auto"
       >
         <h1 className="text-4xl font-bold text-center mb-2">Contactez-nous</h1>
         <p className="text-gray-600 text-center mb-12">
           Une question ou une réservation ? N'hésitez pas à nous contacter.
         </p>
 
-        <Card>
-          <CardContent className="pt-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nom</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Votre nom" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="votre.email@exemple.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="subject"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sujet</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Sujet de votre message" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="message"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Message</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Votre message..." 
-                          className="min-h-32" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gold-600 hover:bg-gold-700"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Formulaire de contact */}
+          <div>
+            <h2 className="text-2xl font-semibold mb-6">Envoyez-nous un message</h2>
+            <Card>
+              <CardContent className="pt-6">
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nom</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Votre nom" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="votre.email@exemple.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="subject"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sujet</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Sujet de votre message" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="message"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Message</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Votre message..." 
+                              className="min-h-32" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-gold-600 hover:bg-gold-700"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Informations des restaurants */}
+          <div>
+            <h2 className="text-2xl font-semibold mb-6">Nos restaurants</h2>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {restaurants.map((restaurant) => (
+                  <Card key={restaurant.id} className="shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-xl">{restaurant.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Adresse */}
+                      <div className="flex items-start space-x-3">
+                        <MapPin className="text-gold-500 mt-1 flex-shrink-0" size={18} />
+                        <div>
+                          <p className="font-medium">{restaurant.address}</p>
+                          <p className="text-gray-600 text-sm">{restaurant.postal_code} {restaurant.city}</p>
+                        </div>
+                      </div>
+
+                      {/* Contact */}
+                      <div className="space-y-2">
+                        {restaurant.phone && (
+                          <div className="flex items-center space-x-3">
+                            <Phone className="text-gold-500 flex-shrink-0" size={18} />
+                            <a 
+                              href={`tel:${restaurant.phone.replace(/\s/g, '')}`}
+                              className="text-gray-900 hover:text-gold-500 transition-colors text-sm"
+                            >
+                              {restaurant.phone}
+                            </a>
+                          </div>
+                        )}
+                        {restaurant.email && (
+                          <div className="flex items-center space-x-3">
+                            <Mail className="text-gold-500 flex-shrink-0" size={18} />
+                            <a 
+                              href={`mailto:${restaurant.email}`}
+                              className="text-gray-900 hover:text-gold-500 transition-colors text-sm"
+                            >
+                              {restaurant.email}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Horaires */}
+                      <div>
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Clock className="text-gold-500" size={18} />
+                          <h3 className="font-medium">Horaires d'ouverture</h3>
+                        </div>
+                        <div className="space-y-1">
+                          {dayNames.map((dayName, dayIndex) => {
+                            const dayHours = restaurant.hours.filter(hour => hour.day_of_week === dayIndex);
+                            const openSlots = dayHours.filter(hour => hour.is_open && hour.open_time && hour.close_time);
+                            
+                            return (
+                              <div key={dayIndex} className="flex justify-between items-center text-sm">
+                                <span className={`font-medium ${dayIndex === 0 || dayIndex === 1 ? 'text-red-500' : 'text-gray-900'}`}>
+                                  {dayName}:
+                                </span>
+                                {openSlots.length > 0 ? (
+                                  <div className="text-gray-600 text-right">
+                                    {openSlots.map((slot, slotIndex) => (
+                                      <div key={slotIndex}>
+                                        {formatTime(slot.open_time!)} - {formatTime(slot.close_time!)}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <Badge variant="secondary" className="text-red-500 text-xs">
+                                    Fermé
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </motion.div>
     </div>
   );
