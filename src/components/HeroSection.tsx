@@ -24,9 +24,19 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
     <section
       className="relative min-h-[85vh] flex items-center pt-16 overflow-hidden"
     >
-      {/* Grand logo en arrière-plan à droite */}
+      {/* Image de fond */}
+      <div
+        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-5 ${
+          isLoaded ? "opacity-100" : "opacity-0"
+        }`}
+        style={{ backgroundImage: `url(${background_image})` }}
+      >
+        <div className="absolute inset-0 bg-black/60" />
+      </div>
+
+      {/* Grand logo en arrière-plan à droite - devant l'image */}
       <div 
-        className={`absolute right-0 top-1/2 transform -translate-y-1/2 z-5 transition-all duration-700 ${
+        className={`absolute right-0 top-1/2 transform -translate-y-1/2 z-15 transition-all duration-700 ${
           isLoaded ? "opacity-30" : "opacity-0"
         }`}
       >
@@ -35,15 +45,6 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
           alt="SushiEats Logo Background" 
           className="h-96 md:h-[500px] lg:h-[600px] w-auto"
         />
-      </div>
-
-      <div
-        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-10 ${
-          isLoaded ? "opacity-100" : "opacity-0"
-        }`}
-        style={{ backgroundImage: `url(${background_image})` }}
-      >
-        <div className="absolute inset-0 bg-black/60" />
       </div>
 
       <div className="container mx-auto px-4 relative z-20">
