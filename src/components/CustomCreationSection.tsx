@@ -26,6 +26,15 @@ export const CustomCreationSection = ({ data }: CustomCreationSectionProps) => {
         </div>
       )}
       
+      {/* Logo en arrière-plan */}
+      <div className="absolute inset-0 z-[1] flex items-center justify-center opacity-5">
+        <img 
+          src="/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png" 
+          alt="Logo" 
+          className="w-96 h-auto"
+        />
+      </div>
+      
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-12">
           <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${data.background_image ? 'text-white' : 'text-gray-900'}`}>
