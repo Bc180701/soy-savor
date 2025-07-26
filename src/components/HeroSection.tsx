@@ -35,8 +35,21 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
 
       <div className="container mx-auto px-4 z-10">
         <div className="max-w-2xl">
+          {/* Logo SushiEats sur la page d'accueil */}
+          <div 
+            className={`mb-8 transition-all duration-700 ${
+              isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+            }`}
+          >
+            <img 
+              src="/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png" 
+              alt="SushiEats Logo" 
+              className="h-20 md:h-24 lg:h-28 w-auto"
+            />
+          </div>
+          
           <h1 
-            className={`text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 transition-all duration-700 better-times-gold-gradient ${
+            className={`text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 transition-all duration-700 delay-200 better-times-gold-gradient ${
               isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
             }`}
             dangerouslySetInnerHTML={{ __html: title }}
