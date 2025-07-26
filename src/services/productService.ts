@@ -36,7 +36,7 @@ export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]
       `)
       .eq('restaurant_id', targetRestaurantId)
       .or('is_new.eq.true,is_new.is.null')
-      .order('name');
+      .order('price', { ascending: true });
 
     if (productsError) {
       console.error('Erreur lors de la récupération des produits:', productsError);
