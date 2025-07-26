@@ -37,7 +37,7 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
       {/* Grand logo en arrière-plan à droite - devant l'image */}
       <div 
         className={`absolute right-0 top-1/2 transform -translate-y-1/2 z-15 transition-all duration-700 ${
-          isLoaded ? "opacity-30" : "opacity-0"
+          isLoaded ? "opacity-60" : "opacity-0"
         }`}
       >
         <img 
