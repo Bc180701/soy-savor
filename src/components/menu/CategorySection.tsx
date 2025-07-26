@@ -114,15 +114,8 @@ const CategorySection = ({
 
   return (
     <>
-      {/* Show fixed horizontal scrolling categories on mobile */}
-      {isMobile ? (
-        <MobileCategorySelector 
-          categories={categories} 
-          activeCategory={activeCategory} 
-          onCategoryChange={handleCategoryChange} 
-        />
-      ) : (
-        /* Show vertical categories sidebar on desktop */
+      {/* Show vertical categories sidebar on desktop only */}
+      {!isMobile && (
         <DesktopCategorySelector 
           categories={categories} 
           activeCategory={activeCategory} 
