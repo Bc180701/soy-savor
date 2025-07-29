@@ -1154,6 +1154,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      is_super_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       update_all_products_status: {
         Args: { flag_name: string; flag_value: boolean }
         Returns: undefined
