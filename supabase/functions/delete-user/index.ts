@@ -33,7 +33,42 @@ serve(async (req) => {
 
     console.log(`Attempting to delete user: ${userId}`)
 
-    // Delete the user from auth.users
+    // First, delete related data in the correct order to avoid foreign key constraints
+    
+    // 1. Delete from user_roles table
+    const { error: rolesError } = await supabaseAdmin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId)
+    
+    if (rolesError) {
+      console.error('Error deleting user roles:', rolesError)
+      throw new Error(`Failed to delete user roles: ${rolesError.message}`)
+    }
+    
+    // 2. Delete from profiles table if exists
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', userId)
+    
+    if (profileError) {
+      console.error('Error deleting user profile:', profileError)
+      // Don't throw here as profile might not exist
+    }
+    
+    // 3. Delete from user_addresses table if exists
+    const { error: addressError } = await supabaseAdmin
+      .from('user_addresses')
+      .delete()
+      .eq('user_id', userId)
+    
+    if (addressError) {
+      console.error('Error deleting user addresses:', addressError)
+      // Don't throw here as addresses might not exist
+    }
+    
+    // 4. Finally, delete the user from auth.users
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (error) {
