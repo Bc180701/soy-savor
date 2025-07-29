@@ -28,9 +28,10 @@ const FeaturedProductsEditor = () => {
       const { data, error } = await supabase
         .from('featured_products_settings')
         .select('*')
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
+        console.error('Erreur lors du chargement des paramètres:', error);
         throw error;
       }
 
@@ -57,15 +58,25 @@ const FeaturedProductsEditor = () => {
     try {
       setSaving(true);
       
-      // D'abord essayer de mettre à jour
-      const { data: updateData, error: updateError } = await supabase
+      // Essayer de mettre à jour le premier enregistrement
+      const { data: existingData } = await supabase
         .from('featured_products_settings')
-        .update(newSettings)
-        .select()
-        .single();
+        .select('id')
+        .limit(1)
+        .maybeSingle();
 
-      // Si la mise à jour échoue (pas d'enregistrement), insérer
-      if (updateError && updateError.code === 'PGRST116') {
+      if (existingData) {
+        // Mettre à jour l'enregistrement existant
+        const { error: updateError } = await supabase
+          .from('featured_products_settings')
+          .update(newSettings)
+          .eq('id', existingData.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        // Créer un nouvel enregistrement
         const { error: insertError } = await supabase
           .from('featured_products_settings')
           .insert(newSettings);
@@ -73,8 +84,6 @@ const FeaturedProductsEditor = () => {
         if (insertError) {
           throw insertError;
         }
-      } else if (updateError) {
-        throw updateError;
       }
 
       setSettings(newSettings);
