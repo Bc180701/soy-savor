@@ -19,6 +19,7 @@ import BlockedTimeSlotsManager from "./BlockedTimeSlotsManager";
 import AdminSidebar from "./AdminSidebar";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
+import TestOrderNotification from "./TestOrderNotification";
 
 const AdminManager = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -52,6 +53,10 @@ const AdminManager = () => {
         return (
           <div className="grid gap-6">
             <OrderingLockControl />
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <h3 className="text-lg font-semibold mb-4">Test de notifications</h3>
+              <TestOrderNotification />
+            </div>
             <OpeningHoursManager />
             <DeliveryZonesManager />
             <IngredientsManager />
