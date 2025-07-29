@@ -30,6 +30,7 @@ const ADMIN_SECTIONS = [
   { id: 'ingredients', label: 'Gestion des ingrédients' },
   { id: 'settings', label: 'Paramètres' },
   { id: 'homepage', label: 'Page d\'accueil' },
+  { id: 'stripe-keys', label: 'Gestion des clés Stripe' },
 ];
 
 export default function AdminPermissionsManager() {
