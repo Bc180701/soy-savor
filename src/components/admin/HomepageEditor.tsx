@@ -13,6 +13,7 @@ import ContactInfoEditor from "./homepage-editor/ContactInfoEditor";
 import GoogleReviewsEditor from "./homepage-editor/GoogleReviewsEditor";
 import HeaderSectionEditor from "./homepage-editor/HeaderSectionEditor";
 import FooterSectionEditor from "./homepage-editor/FooterSectionEditor";
+import FeaturedProductsEditor from "./homepage-editor/FeaturedProductsEditor";
 import RestaurantsManager from "./RestaurantsManager";
 import { HomepageData, useHomepageData } from "@/hooks/useHomepageData";
 
@@ -130,6 +131,7 @@ const HomepageEditor = () => {
           <TabsTrigger value="footer">Footer</TabsTrigger>
           <TabsTrigger value="hero">Section Principale</TabsTrigger>
           <TabsTrigger value="custom_creation">Création Personnalisée</TabsTrigger>
+          <TabsTrigger value="featured_products">Produits mis en avant</TabsTrigger>
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="google_reviews">Avis Google</TabsTrigger>
           <TabsTrigger value="contact">Coordonnées</TabsTrigger>
@@ -207,6 +209,10 @@ const HomepageEditor = () => {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="featured_products">
+          <FeaturedProductsEditor />
         </TabsContent>
 
         <TabsContent value="promotions">

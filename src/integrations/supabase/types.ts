@@ -170,6 +170,33 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_products_settings: {
+        Row: {
+          created_at: string
+          id: string
+          show_exclusivites: boolean
+          show_nouveautes: boolean
+          show_populaires: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          show_exclusivites?: boolean
+          show_nouveautes?: boolean
+          show_populaires?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          show_exclusivites?: boolean
+          show_nouveautes?: boolean
+          show_populaires?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       homepage_sections: {
         Row: {
           id: number

@@ -449,6 +449,11 @@ const FeaturedProductsSection = () => {
   const [bestSellerProducts, setBestSellerProducts] = useState<Product[]>([]);
   const [popularProducts, setPopularProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState({
+    show_nouveautes: true,
+    show_populaires: true,
+    show_exclusivites: true
+  });
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -456,6 +461,22 @@ const FeaturedProductsSection = () => {
     const fetchFeaturedProducts = async () => {
       try {
         setLoading(true);
+        
+        // Récupérer les paramètres de visibilité
+        const { data: settingsData, error: settingsError } = await supabase
+          .from('featured_products_settings')
+          .select('*')
+          .single();
+
+        if (settingsError && settingsError.code !== 'PGRST116') {
+          console.error("Erreur lors de la récupération des paramètres:", settingsError);
+        } else if (settingsData) {
+          setSettings({
+            show_nouveautes: settingsData.show_nouveautes,
+            show_populaires: settingsData.show_populaires,
+            show_exclusivites: settingsData.show_exclusivites
+          });
+        }
         
         // Fetch new products - inclure les produits où is_new = true OU is_new = null
         const { data: newProductsData, error: newError } = await supabase
@@ -521,6 +542,24 @@ const FeaturedProductsSection = () => {
     );
   }
 
+  // Vérifier si au moins une section est visible
+  const hasVisibleSections = settings.show_nouveautes || settings.show_populaires || settings.show_exclusivites;
+  
+  if (!hasVisibleSections) {
+    return null; // Ne pas afficher la section si toutes sont masquées
+  }
+
+  // Déterminer quelle section afficher par défaut
+  const getDefaultTab = () => {
+    if (settings.show_nouveautes) return "nouveautes";
+    if (settings.show_populaires) return "populaires";
+    return "exclusivites";
+  };
+
+  // Calculer le nombre de colonnes pour les onglets
+  const visibleTabsCount = [settings.show_nouveautes, settings.show_populaires, settings.show_exclusivites].filter(Boolean).length;
+  const gridColsClass = visibleTabsCount === 3 ? 'grid-cols-3' : visibleTabsCount === 2 ? 'grid-cols-2' : 'grid-cols-1';
+
   return (
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">
@@ -531,60 +570,72 @@ const FeaturedProductsSection = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="nouveautes" className="w-full">
-          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8">
-            <TabsTrigger value="nouveautes" className="rounded-full">
-              NOUVEAUTÉS
-            </TabsTrigger>
-            <TabsTrigger value="populaires" className="rounded-full">
-              POPULAIRES
-            </TabsTrigger>
-            <TabsTrigger value="exclusivites" className="rounded-full">
-              EXCLUSIVITÉS
-            </TabsTrigger>
+        <Tabs defaultValue={getDefaultTab()} className="w-full">
+          <TabsList className={`grid w-full max-w-2xl mx-auto ${gridColsClass} mb-8`}>
+            {settings.show_nouveautes && (
+              <TabsTrigger value="nouveautes" className="rounded-full">
+                NOUVEAUTÉS
+              </TabsTrigger>
+            )}
+            {settings.show_populaires && (
+              <TabsTrigger value="populaires" className="rounded-full">
+                POPULAIRES
+              </TabsTrigger>
+            )}
+            {settings.show_exclusivites && (
+              <TabsTrigger value="exclusivites" className="rounded-full">
+                EXCLUSIVITÉS
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          <TabsContent value="nouveautes">
-            <div className={`${isMobile ? "grid grid-cols-2 gap-3" : "space-y-4"}`}>
-              {newProducts.length > 0 ? (
-                newProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} badgeVariant="new" />
-                ))
-              ) : (
-                <div className="col-span-full text-center p-8 bg-white rounded-lg shadow">
-                  <p className="text-gray-500">Aucun produit en nouveauté disponible actuellement.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+          {settings.show_nouveautes && (
+            <TabsContent value="nouveautes">
+              <div className={`${isMobile ? "grid grid-cols-2 gap-3" : "space-y-4"}`}>
+                {newProducts.length > 0 ? (
+                  newProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} badgeVariant="new" />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center p-8 bg-white rounded-lg shadow">
+                    <p className="text-gray-500">Aucun produit en nouveauté disponible actuellement.</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          )}
 
-          <TabsContent value="populaires">
-            <div className={`${isMobile ? "grid grid-cols-2 gap-3" : "space-y-4"}`}>
-              {popularProducts.length > 0 ? (
-                popularProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} badgeVariant="default" />
-                ))
-              ) : (
-                <div className="col-span-full text-center p-8 bg-white rounded-lg shadow">
-                  <p className="text-gray-500">Aucun produit populaire disponible actuellement.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+          {settings.show_populaires && (
+            <TabsContent value="populaires">
+              <div className={`${isMobile ? "grid grid-cols-2 gap-3" : "space-y-4"}`}>
+                {popularProducts.length > 0 ? (
+                  popularProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} badgeVariant="default" />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center p-8 bg-white rounded-lg shadow">
+                    <p className="text-gray-500">Aucun produit populaire disponible actuellement.</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          )}
 
-          <TabsContent value="exclusivites">
-            <div className={`${isMobile ? "grid grid-cols-2 gap-3" : "space-y-4"}`}>
-              {bestSellerProducts.length > 0 ? (
-                bestSellerProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} badgeVariant="exclusive" />
-                ))
-              ) : (
-                <div className="col-span-full text-center p-8 bg-white rounded-lg shadow">
-                  <p className="text-gray-500">Aucun produit exclusif disponible actuellement.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+          {settings.show_exclusivites && (
+            <TabsContent value="exclusivites">
+              <div className={`${isMobile ? "grid grid-cols-2 gap-3" : "space-y-4"}`}>
+                {bestSellerProducts.length > 0 ? (
+                  bestSellerProducts.map((product) => (
+                    <ProductCard key={product.id} product={product} badgeVariant="exclusive" />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center p-8 bg-white rounded-lg shadow">
+                    <p className="text-gray-500">Aucun produit exclusif disponible actuellement.</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
 
         <div className="mt-12 text-center">
