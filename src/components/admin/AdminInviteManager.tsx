@@ -8,12 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Shield, UserPlus } from "lucide-react";
 import AdminUsersList from "./AdminUsersList";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 
 const AdminInviteManager = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { isSuperAdmin } = useAdminPermissions();
 
   const generateRandomPassword = () => {
     const length = 12;
@@ -178,7 +180,8 @@ const AdminInviteManager = () => {
         </CardContent>
       </Card>
 
-      <AdminUsersList />
+      {/* Masquer la liste des administrateurs pour tous sauf les super-admins */}
+      {isSuperAdmin && <AdminUsersList />}
     </div>
   );
 };
