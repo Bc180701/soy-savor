@@ -31,7 +31,7 @@ const TestOrderNotification = () => {
         delivery_fee: 3.00,
         total: 31.05,
         order_type: 'delivery',
-        payment_method: 'card',
+        payment_method: 'credit-card', // Valeur correcte selon la contrainte
         payment_status: 'pending',
         status: 'pending',
         scheduled_for: new Date().toISOString(),
