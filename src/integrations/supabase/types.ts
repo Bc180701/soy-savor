@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_permissions: {
+        Row: {
+          admin_user_id: string
+          can_access: boolean
+          created_at: string
+          granted_by: string
+          id: string
+          section_name: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          can_access?: boolean
+          created_at?: string
+          granted_by: string
+          id?: string
+          section_name: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          can_access?: boolean
+          created_at?: string
+          granted_by?: string
+          id?: string
+          section_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blocked_time_slots: {
         Row: {
           blocked_date: string
