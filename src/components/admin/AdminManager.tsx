@@ -13,6 +13,7 @@ import DeliveryZonesManager from "./DeliveryZonesManager";
 import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
 import AdminInviteManager from "./AdminInviteManager";
+import AdminPermissionsManager from "./AdminPermissionsManager";
 import StripeKeysManager from "./StripeKeysManager";
 import SMSTestManager from "./SMSTestManager";
 import BlockedTimeSlotsManager from "./BlockedTimeSlotsManager";
@@ -47,6 +48,8 @@ const AdminManager = () => {
         return <HomepageEditor />;
       case "admins":
         return <AdminInviteManager />;
+      case "permissions":
+        return <AdminPermissionsManager />;
       case "stripe-keys":
         return <StripeKeysManager />;
       case "settings":
@@ -78,6 +81,7 @@ const AdminManager = () => {
       promotions: "Promotions",
       homepage: "Page d'accueil",
       admins: "Administrateurs",
+      permissions: "Gestion des permissions",
       "stripe-keys": "Clés Stripe",
       settings: "Paramètres"
     };

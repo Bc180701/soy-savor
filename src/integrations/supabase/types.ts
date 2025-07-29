@@ -1157,6 +1157,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_admin_section: {
+        Args: { user_id: string; section: string }
+        Returns: boolean
+      }
       check_table_exists: {
         Args: { table_name: string }
         Returns: boolean

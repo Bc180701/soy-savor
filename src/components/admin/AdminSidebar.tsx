@@ -13,11 +13,13 @@ import {
   ChefHat,
   Utensils,
   X as XIcon,
-  CreditCard
+  CreditCard,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import RestaurantSelector from "./RestaurantSelector";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 
 interface AdminSidebarProps {
   activeSection: string;
@@ -35,11 +37,13 @@ const navigationItems = [
   { id: "promotions", label: "Promotions", icon: Tag },
   { id: "homepage", label: "Page d'accueil", icon: Home },
   { id: "admins", label: "Administrateurs", icon: UserCheck },
+  { id: "permissions", label: "Permissions", icon: Shield },
   { id: "stripe-keys", label: "Clés Stripe", icon: CreditCard },
   { id: "settings", label: "Paramètres", icon: Settings },
 ];
 
 const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: AdminSidebarProps) => {
+  const { isSuperAdmin, canAccessSection, loading } = useAdminPermissions();
   return (
     <>
       {/* Mobile overlay */}
@@ -75,28 +79,37 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
         
         <nav className="p-4">
           <ul className="space-y-2">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <li key={item.id}>
-                  <button
-                    onClick={() => {
-                      onSectionChange(item.id);
-                      onClose();
-                    }}
-                    className={cn(
-                      "w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-                      activeSection === item.id
-                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 mr-3" />
-                    {item.label}
-                  </button>
-                </li>
-              );
-            })}
+            {navigationItems
+              .filter((item) => {
+                // Les permissions ne sont visibles que pour les super-admins
+                if (item.id === 'permissions') {
+                  return isSuperAdmin;
+                }
+                // Pour les autres sections, vérifier les permissions
+                return canAccessSection(item.id);
+              })
+              .map((item) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => {
+                        onSectionChange(item.id);
+                        onClose();
+                      }}
+                      className={cn(
+                        "w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                        activeSection === item.id
+                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 mr-3" />
+                      {item.label}
+                    </button>
+                  </li>
+                );
+              })}
           </ul>
         </nav>
       </div>
