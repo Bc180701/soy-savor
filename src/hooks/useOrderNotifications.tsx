@@ -6,17 +6,33 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
   const { toast } = useToast();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [hasNewOrders, setHasNewOrders] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   const originalTitleRef = useRef(document.title);
   const blinkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize audio and enable it on first user interaction
+  const enableAudio = async () => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio('/notification-sound.mp3');
+      audioRef.current.volume = 0.5;
+      audioRef.current.load();
+    }
+    
+    try {
+      await audioRef.current.play();
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setAudioEnabled(true);
+      console.log('🔊 Audio notifications activées');
+    } catch (error) {
+      console.warn('❌ Impossible d\'activer le son:', error);
+    }
+  };
 
   useEffect(() => {
     if (!isAdmin) return;
 
-    // Create audio element for notification sound
-    if (!audioRef.current) {
-      audioRef.current = new Audio('/notification-sound.mp3');
-      audioRef.current.volume = 0.5;
-    }
+    console.log('🔗 Configuration des notifications en temps réel pour restaurant:', restaurantId);
 
     const channel = supabase
       .channel('new-orders')
@@ -29,10 +45,10 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
           filter: restaurantId ? `restaurant_id=eq.${restaurantId}` : undefined
         },
         (payload) => {
-          console.log('Nouvelle commande reçue:', payload);
+          console.log('🔔 Nouvelle commande reçue:', payload);
           
-          // Play notification sound
-          if (audioRef.current) {
+          // Play notification sound if enabled
+          if (audioRef.current && audioEnabled) {
             audioRef.current.play().catch(console.error);
           }
 
@@ -48,13 +64,16 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
           startTitleBlink();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Statut subscription:', status);
+      });
 
     return () => {
+      console.log('🔌 Déconnexion du canal de notifications');
       supabase.removeChannel(channel);
       stopTitleBlink();
     };
-  }, [isAdmin, restaurantId, toast]);
+  }, [isAdmin, restaurantId, audioEnabled, toast]);
 
   const startTitleBlink = () => {
     if (blinkIntervalRef.current) return;
@@ -91,6 +110,8 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
 
   return {
     hasNewOrders,
+    audioEnabled,
+    enableAudio,
     clearNotifications: stopTitleBlink
   };
 };

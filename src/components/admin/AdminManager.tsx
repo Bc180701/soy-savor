@@ -27,7 +27,7 @@ const AdminManager = () => {
   const { currentRestaurant } = useRestaurantContext();
   
   // Enable order notifications for admins
-  useOrderNotifications(true, currentRestaurant?.id);
+  const { audioEnabled, enableAudio } = useOrderNotifications(true, currentRestaurant?.id);
 
   const renderContent = () => {
     switch (activeSection) {
@@ -107,6 +107,16 @@ const AdminManager = () => {
               </Button>
               <h1 className="text-2xl font-bold text-gray-900 relative z-10">{getSectionTitle()}</h1>
             </div>
+            {!audioEnabled && (
+              <Button
+                onClick={enableAudio}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                🔊 Activer les notifications sonores
+              </Button>
+            )}
           </div>
         </div>
         
