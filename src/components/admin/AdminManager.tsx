@@ -55,7 +55,7 @@ const AdminManager = () => {
             <OrderingLockControl />
             <div className="bg-white p-6 rounded-lg shadow-sm border">
               <h3 className="text-lg font-semibold mb-4">Test de notifications</h3>
-              <TestOrderNotification />
+              <TestOrderNotification audioEnabled={audioEnabled} enableAudio={enableAudio} />
             </div>
             <OpeningHoursManager />
             <DeliveryZonesManager />
@@ -107,16 +107,6 @@ const AdminManager = () => {
               </Button>
               <h1 className="text-2xl font-bold text-gray-900 relative z-10">{getSectionTitle()}</h1>
             </div>
-            {!audioEnabled && (
-              <Button
-                onClick={enableAudio}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                🔊 Activer les notifications sonores
-              </Button>
-            )}
           </div>
         </div>
         

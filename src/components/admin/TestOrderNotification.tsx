@@ -3,9 +3,17 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
-import { Bell } from "lucide-react";
+import { Bell, Volume2 } from "lucide-react";
 
-const TestOrderNotification = () => {
+interface TestOrderNotificationProps {
+  audioEnabled?: boolean;
+  enableAudio?: () => void;
+}
+
+const TestOrderNotification: React.FC<TestOrderNotificationProps> = ({ 
+  audioEnabled = false, 
+  enableAudio 
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
@@ -76,18 +84,37 @@ const TestOrderNotification = () => {
         Ouvrez plusieurs onglets admin pour voir les notifications apparaître.
       </p>
       
-      <Button 
-        onClick={simulateOrder}
-        disabled={isLoading || !currentRestaurant}
-        className="flex items-center gap-2"
-      >
-        <Bell className="h-4 w-4" />
-        {isLoading ? "Création..." : "Simuler une nouvelle commande"}
-      </Button>
+      <div className="flex gap-3">
+        {enableAudio && !audioEnabled && (
+          <Button 
+            onClick={enableAudio}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Volume2 className="h-4 w-4" />
+            Activer le son
+          </Button>
+        )}
+        
+        <Button 
+          onClick={simulateOrder}
+          disabled={isLoading || !currentRestaurant}
+          className="flex items-center gap-2"
+        >
+          <Bell className="h-4 w-4" />
+          {isLoading ? "Création..." : "Simuler une nouvelle commande"}
+        </Button>
+      </div>
       
       {!currentRestaurant && (
         <p className="text-sm text-orange-600">
           ⚠️ Sélectionnez un restaurant pour pouvoir tester
+        </p>
+      )}
+      
+      {audioEnabled && (
+        <p className="text-sm text-green-600">
+          ✅ Notifications sonores activées
         </p>
       )}
     </div>
