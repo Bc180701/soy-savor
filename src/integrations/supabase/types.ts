@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_time_slots: {
+        Row: {
+          blocked_date: string
+          blocked_time: string
+          created_at: string
+          id: string
+          reason: string | null
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          blocked_date: string
+          blocked_time: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          blocked_date?: string
+          blocked_time?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           description: string | null

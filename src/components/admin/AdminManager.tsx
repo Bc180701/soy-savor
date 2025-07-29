@@ -15,11 +15,14 @@ import OrderingLockControl from "./OrderingLockControl";
 import AdminInviteManager from "./AdminInviteManager";
 import StripeKeysManager from "./StripeKeysManager";
 import SMSTestManager from "./SMSTestManager";
+import BlockedTimeSlotsManager from "./BlockedTimeSlotsManager";
 import AdminSidebar from "./AdminSidebar";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const AdminManager = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { currentRestaurant } = useRestaurantContext();
 
   const renderContent = () => {
     switch (activeSection) {
@@ -31,6 +34,8 @@ const AdminManager = () => {
         return <ProductManager />;
       case "users":
         return <UsersList />;
+      case "blocked-slots":
+        return <BlockedTimeSlotsManager selectedRestaurant={currentRestaurant} />;
       case "promotions":
         return <PromotionsManager />;
       case "homepage":
@@ -60,6 +65,7 @@ const AdminManager = () => {
       orders: "Commandes",
       products: "Produits",
       users: "Utilisateurs",
+      "blocked-slots": "Créneaux bloqués",
       promotions: "Promotions",
       homepage: "Page d'accueil",
       admins: "Administrateurs",

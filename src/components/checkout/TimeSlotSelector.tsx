@@ -140,6 +140,30 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
     }
   };
 
+  const checkSlotBlocked = async (timeSlot: string) => {
+    try {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+      
+      const { data, error } = await supabase
+        .from('blocked_time_slots')
+        .select('id')
+        .eq('restaurant_id', cartRestaurant?.id)
+        .eq('blocked_date', todayString)
+        .eq('blocked_time', timeSlot);
+
+      if (error) {
+        console.error('❌ [TimeSlotSelector] Erreur vérification blocage:', error);
+        return false;
+      }
+
+      return data && data.length > 0;
+    } catch (error) {
+      console.error('❌ [TimeSlotSelector] Erreur vérification blocage:', error);
+      return false;
+    }
+  };
+
   const generateTimeSlots = async () => {
     if (!todayOpeningHours || todayOpeningHours.length === 0) {
       console.log("⚠️ [TimeSlotSelector] Pas d'horaires disponibles");
@@ -200,10 +224,13 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
         const currentOrders = await checkSlotCapacity(timeValue);
         const isSlotFull = currentOrders >= 2;
 
+        // Vérifier si le créneau est bloqué par l'admin
+        const isSlotBlocked = await checkSlotBlocked(timeValue);
+
         slots.push({
           label: format(currentTime, "HH'h'mm", { locale: fr }),
           value: timeValue,
-          disabled: isPassedTime || isSlotFull,
+          disabled: isPassedTime || isSlotFull || isSlotBlocked,
         });
 
         currentTime = addMinutes(currentTime, interval);

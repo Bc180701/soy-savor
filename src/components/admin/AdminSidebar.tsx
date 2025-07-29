@@ -31,6 +31,7 @@ const navigationItems = [
   { id: "orders", label: "Commandes", icon: ShoppingCart },
   { id: "products", label: "Produits", icon: Package },
   { id: "users", label: "Utilisateurs", icon: Users },
+  { id: "blocked-slots", label: "Créneaux bloqués", icon: Clock },
   { id: "promotions", label: "Promotions", icon: Tag },
   { id: "homepage", label: "Page d'accueil", icon: Home },
   { id: "admins", label: "Administrateurs", icon: UserCheck },
