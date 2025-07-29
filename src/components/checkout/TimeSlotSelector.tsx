@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { format, addMinutes, isAfter } from "date-fns";
 import { fr } from "date-fns/locale";
 import { isRestaurantOpenNow, getWeekOpeningHours } from "@/services/openingHoursService";
+import { supabase } from "@/integrations/supabase/client";
 import type { Restaurant } from "@/types/restaurant";
 
 interface TimeOption {
@@ -107,13 +108,39 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
   }, [cartRestaurant]);
 
   useEffect(() => {
-    if (!isLoading && todayOpeningHours) {
+    if (!isLoading && todayOpeningHours && cartRestaurant) {
       console.log("🔍 [TimeSlotSelector] Génération créneaux avec:", todayOpeningHours);
       generateTimeSlots();
     }
-  }, [orderType, isLoading, todayOpeningHours]);
+  }, [orderType, isLoading, todayOpeningHours, cartRestaurant]);
 
-  const generateTimeSlots = () => {
+  const checkSlotCapacity = async (timeSlot: string) => {
+    try {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('pickup_time', timeSlot)
+        .gte('scheduled_for', startOfDay.toISOString())
+        .lt('scheduled_for', endOfDay.toISOString())
+        .eq('restaurant_id', cartRestaurant?.id);
+
+      if (error) {
+        console.error('❌ [TimeSlotSelector] Erreur vérification capacité:', error);
+        return 0;
+      }
+
+      return data?.length || 0;
+    } catch (error) {
+      console.error('❌ [TimeSlotSelector] Erreur vérification capacité:', error);
+      return 0;
+    }
+  };
+
+  const generateTimeSlots = async () => {
     if (!todayOpeningHours || todayOpeningHours.length === 0) {
       console.log("⚠️ [TimeSlotSelector] Pas d'horaires disponibles");
       return;
@@ -166,12 +193,17 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       let currentTime = new Date(startDate);
 
       while (currentTime <= endDate) {
-        const isDisabled = isAfter(minTime, currentTime);
+        const timeValue = format(currentTime, "HH:mm");
+        const isPassedTime = isAfter(minTime, currentTime);
+        
+        // Vérifier la capacité du créneau (2 commandes max)
+        const currentOrders = await checkSlotCapacity(timeValue);
+        const isSlotFull = currentOrders >= 2;
 
         slots.push({
           label: format(currentTime, "HH'h'mm", { locale: fr }),
-          value: format(currentTime, "HH:mm"),
-          disabled: isDisabled,
+          value: timeValue,
+          disabled: isPassedTime || isSlotFull,
         });
 
         currentTime = addMinutes(currentTime, interval);
