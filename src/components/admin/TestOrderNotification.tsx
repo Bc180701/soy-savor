@@ -51,13 +51,19 @@ const TestOrderNotification: React.FC<TestOrderNotificationProps> = ({
         delivery_postal_code: '13000'
       };
 
-      const { error } = await supabase
+      console.log('🔔 Création de la commande de test pour restaurant:', currentRestaurant.id);
+      
+      const { data, error } = await supabase
         .from('orders')
-        .insert(testOrder);
+        .insert(testOrder)
+        .select();
 
       if (error) {
+        console.error('❌ Erreur insertion:', error);
         throw error;
       }
+
+      console.log('✅ Commande de test créée:', data);
 
       toast({
         title: "✅ Commande de test créée",
