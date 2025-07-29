@@ -116,6 +116,13 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
         },
         (payload) => {
           console.log('🔔 Nouvelle commande reçue:', payload);
+          console.log('🔔 Event details:', {
+            event: payload.eventType,
+            table: payload.table,
+            new: payload.new,
+            restaurant_id: payload.new?.restaurant_id,
+            filter_restaurant: restaurantId
+          });
           
           // Play notification sound
           playNotificationSound();
