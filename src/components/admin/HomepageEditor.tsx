@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import HeroSectionEditor from "./homepage-editor/HeroSectionEditor";
 import PromotionsEditor from "./homepage-editor/PromotionsEditor";
 import CustomCreationSectionEditor from "./homepage-editor/CustomCreationSectionEditor";
-import ContactInfoEditor from "./homepage-editor/ContactInfoEditor";
+
 import GoogleReviewsEditor from "./homepage-editor/GoogleReviewsEditor";
 import HeaderSectionEditor from "./homepage-editor/HeaderSectionEditor";
 import FooterSectionEditor from "./homepage-editor/FooterSectionEditor";
@@ -134,7 +134,7 @@ const HomepageEditor = () => {
           <TabsTrigger value="featured_products">Produits mis en avant</TabsTrigger>
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="google_reviews">Avis Google</TabsTrigger>
-          <TabsTrigger value="contact">Coordonnées</TabsTrigger>
+          
           <TabsTrigger value="restaurants">Nos Restaurants</TabsTrigger>
         </TabsList>
 
@@ -256,26 +256,6 @@ const HomepageEditor = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="contact">
-          <Card>
-            <CardHeader>
-              <CardTitle>Coordonnées de contact</CardTitle>
-              <CardDescription>
-                Modifiez les coordonnées de contact affichées sur le site.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ContactInfoEditor 
-                data={homepageData.contact_info || {
-                  address: "16 cours Carnot, 13160 Châteaurenard",
-                  phone: "04 90 00 00 00",
-                  email: "contact@sushieats.fr"
-                }} 
-                onSave={(data) => saveHomepageData('contact_info', data)} 
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="restaurants">
           <Card>
