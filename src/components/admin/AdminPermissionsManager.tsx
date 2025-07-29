@@ -45,45 +45,15 @@ export default function AdminPermissionsManager() {
 
   const fetchAdminUsers = async () => {
     try {
-      // Récupérer tous les administrateurs (sauf les super-admins)
-      const { data: adminRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'administrateur');
+      const { data, error } = await supabase.functions.invoke('get-admin-users-detailed');
 
-      if (rolesError) throw rolesError;
+      if (error) {
+        console.error('Erreur lors de l\'appel à la fonction:', error);
+        throw error;
+      }
 
-      if (adminRoles && adminRoles.length > 0) {
-        const userIds = adminRoles.map(role => role.user_id);
-        
-        // Récupérer les informations des utilisateurs depuis la vue auth_users_view
-        const { data: authUsers, error: authError } = await supabase
-          .from('auth_users_view')
-          .select('id, email')
-          .in('id', userIds);
-
-        if (authError) throw authError;
-
-        // Récupérer les profils pour les noms
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', userIds);
-
-        if (profilesError) throw profilesError;
-
-        // Fusionner les données
-        const users = authUsers?.map(user => {
-          const profile = profiles?.find(p => p.id === user.id);
-          return {
-            id: user.id,
-            email: user.email,
-            first_name: profile?.first_name || '',
-            last_name: profile?.last_name || ''
-          };
-        }) || [];
-
-        setAdminUsers(users);
+      if (data) {
+        setAdminUsers(data);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des administrateurs:', error);
@@ -126,7 +96,6 @@ export default function AdminPermissionsManager() {
 
       if (error) throw error;
 
-      // Mettre à jour l'état local
       setPermissions(prev => {
         const existing = prev.find(p => p.admin_user_id === userId && p.section_name === sectionName);
         if (existing) {
@@ -137,7 +106,7 @@ export default function AdminPermissionsManager() {
           );
         } else {
           return [...prev, {
-            id: '', // sera généré par la DB
+            id: '',
             admin_user_id: userId,
             section_name: sectionName,
             can_access: canAccess
@@ -158,7 +127,6 @@ export default function AdminPermissionsManager() {
     const permission = permissions.find(p => 
       p.admin_user_id === userId && p.section_name === sectionName
     );
-    // Par défaut, l'accès est autorisé si aucune permission spécifique n'est définie
     return permission ? permission.can_access : true;
   };
 
