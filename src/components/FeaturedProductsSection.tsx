@@ -499,12 +499,18 @@ const FeaturedProductsSection = () => {
         if (bestError) throw bestError;
         setBestSellerProducts(bestSellerData || []);
         
-        // Fetch most popular products - basé sur les prix les plus élevés parmi les produits actifs
+        // Fetch most popular products - basé sur les commandes réelles
         const { data: popularData, error: popularError } = await supabase
           .from('products')
-          .select('*, categories(name)')
-          .or('is_new.eq.true,is_new.is.null')
-          .order('price', { ascending: false })
+          .select(`
+            *,
+            categories (name),
+            popular_products!inner (
+              order_count,
+              date
+            )
+          `)
+          .order('popular_products(order_count)', { ascending: false })
           .limit(4);
         
         if (popularError) throw popularError;
