@@ -33,6 +33,27 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
     }
   };
 
+  const startTitleBlink = () => {
+    if (blinkIntervalRef.current) return;
+
+    let isOriginalTitle = true;
+    blinkIntervalRef.current = setInterval(() => {
+      document.title = isOriginalTitle 
+        ? '🔔 NOUVELLE COMMANDE!' 
+        : originalTitleRef.current;
+      isOriginalTitle = !isOriginalTitle;
+    }, 1000);
+  };
+
+  const stopTitleBlink = () => {
+    if (blinkIntervalRef.current) {
+      clearInterval(blinkIntervalRef.current);
+      blinkIntervalRef.current = null;
+    }
+    document.title = originalTitleRef.current;
+    setHasNewOrders(false);
+  };
+
   // Initialize audio context on first user interaction
   const enableAudio = async () => {
     try {
@@ -95,27 +116,6 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
       stopTitleBlink();
     };
   }, [isAdmin, restaurantId, audioEnabled, toast]);
-
-  const startTitleBlink = () => {
-    if (blinkIntervalRef.current) return;
-
-    let isOriginalTitle = true;
-    blinkIntervalRef.current = setInterval(() => {
-      document.title = isOriginalTitle 
-        ? '🔔 NOUVELLE COMMANDE!' 
-        : originalTitleRef.current;
-      isOriginalTitle = !isOriginalTitle;
-    }, 1000);
-  };
-
-  const stopTitleBlink = () => {
-    if (blinkIntervalRef.current) {
-      clearInterval(blinkIntervalRef.current);
-      blinkIntervalRef.current = null;
-    }
-    document.title = originalTitleRef.current;
-    setHasNewOrders(false);
-  };
 
   // Stop blinking when user focuses on the tab
   useEffect(() => {
