@@ -102,7 +102,7 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
   useEffect(() => {
     if (!isAdmin) return;
 
-    console.log('🔗 Configuration des notifications en temps réel pour restaurant:', restaurantId);
+    console.log('🔗 Configuration des notifications en temps réel pour TOUS les restaurants');
 
     const channel = supabase
       .channel('new-orders')
@@ -112,7 +112,7 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
           event: 'INSERT',
           schema: 'public',
           table: 'orders',
-          filter: restaurantId ? `restaurant_id=eq.${restaurantId}` : undefined
+          // Pas de filtre - écouter toutes les commandes de tous les restaurants
         },
         (payload) => {
           console.log('🔔 Nouvelle commande reçue:', payload);
@@ -127,10 +127,11 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
           // Play notification sound
           playNotificationSound();
 
-          // Show toast notification
+          // Show toast notification with restaurant info
+          const restaurantName = payload.new?.restaurant_id === '11111111-1111-1111-1111-111111111111' ? 'Châteaurenard' : 'Autre restaurant';
           toast({
             title: "🔔 Nouvelle commande!",
-            description: `Commande #${payload.new.id.slice(0, 8)}... reçue`,
+            description: `Commande #${payload.new.id.slice(0, 8)}... reçue pour ${restaurantName}`,
             duration: 5000,
           });
 
