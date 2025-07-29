@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Calendar, Clock } from "lucide-react";
@@ -32,7 +32,7 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newSlot, setNewSlot] = useState({
     blocked_date: "",
-    blocked_time: "",
+    blocked_times: [] as string[],
     reason: ""
   });
   const { toast } = useToast();
@@ -69,8 +69,8 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
     }
   };
 
-  const handleAddSlot = async () => {
-    if (!selectedRestaurant || !newSlot.blocked_date || !newSlot.blocked_time) {
+  const handleAddSlots = async () => {
+    if (!selectedRestaurant || !newSlot.blocked_date || newSlot.blocked_times.length === 0) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -80,20 +80,22 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
     }
 
     try {
+      const slotsToInsert = newSlot.blocked_times.map(time => ({
+        restaurant_id: selectedRestaurant.id,
+        blocked_date: newSlot.blocked_date,
+        blocked_time: time,
+        reason: newSlot.reason || null
+      }));
+
       const { error } = await supabase
         .from('blocked_time_slots')
-        .insert([{
-          restaurant_id: selectedRestaurant.id,
-          blocked_date: newSlot.blocked_date,
-          blocked_time: newSlot.blocked_time,
-          reason: newSlot.reason || null
-        }]);
+        .insert(slotsToInsert);
 
       if (error) {
         if (error.code === '23505') {
           toast({
             title: "Erreur",
-            description: "Ce créneau est déjà bloqué",
+            description: "Un ou plusieurs créneaux sont déjà bloqués",
             variant: "destructive",
           });
           return;
@@ -103,17 +105,17 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
 
       toast({
         title: "Succès",
-        description: "Créneau bloqué avec succès",
+        description: `${newSlot.blocked_times.length} créneau(x) bloqué(s) avec succès`,
       });
 
-      setNewSlot({ blocked_date: "", blocked_time: "", reason: "" });
+      setNewSlot({ blocked_date: "", blocked_times: [], reason: "" });
       setIsDialogOpen(false);
       fetchBlockedSlots();
     } catch (error) {
-      console.error('Erreur lors du blocage du créneau:', error);
+      console.error('Erreur lors du blocage des créneaux:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de bloquer le créneau",
+        description: "Impossible de bloquer les créneaux",
         variant: "destructive",
       });
     }
@@ -206,22 +208,30 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
                 />
               </div>
               <div>
-                <Label htmlFor="blocked_time">Heure</Label>
-                <Select
-                  value={newSlot.blocked_time}
-                  onValueChange={(value) => setNewSlot({ ...newSlot, blocked_time: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner une heure" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {generateTimeSlots().map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Créneaux horaires</Label>
+                <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                  {generateTimeSlots().map((time) => (
+                    <div key={time} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={time}
+                        checked={newSlot.blocked_times.includes(time)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setNewSlot({ ...newSlot, blocked_times: [...newSlot.blocked_times, time] });
+                          } else {
+                            setNewSlot({ ...newSlot, blocked_times: newSlot.blocked_times.filter(t => t !== time) });
+                          }
+                        }}
+                      />
+                      <Label htmlFor={time} className="text-sm">{time}</Label>
+                    </div>
+                  ))}
+                </div>
+                {newSlot.blocked_times.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {newSlot.blocked_times.length} créneau(x) sélectionné(s)
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="reason">Raison (optionnel)</Label>
@@ -232,8 +242,8 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
                   onChange={(e) => setNewSlot({ ...newSlot, reason: e.target.value })}
                 />
               </div>
-              <Button onClick={handleAddSlot} className="w-full">
-                Bloquer le créneau
+              <Button onClick={handleAddSlots} className="w-full" disabled={newSlot.blocked_times.length === 0}>
+                Bloquer {newSlot.blocked_times.length > 0 ? `${newSlot.blocked_times.length} créneau(x)` : 'le créneau'}
               </Button>
             </div>
           </DialogContent>
