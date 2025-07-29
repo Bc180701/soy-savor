@@ -11,15 +11,16 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
   const blinkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Create notification sound using Web Audio API
-  const playNotificationSound = () => {
+  const playNotificationSound = (forcePlay = false) => {
     console.log('🔊 Tentative de lecture du son...', { 
       audioContextExists: !!audioContextRef.current,
       audioEnabled,
+      forcePlay,
       audioState: audioContextRef.current?.state 
     });
     
-    if (!audioContextRef.current || !audioEnabled) {
-      console.log('❌ Son non joué:', { audioContext: !!audioContextRef.current, audioEnabled });
+    if (!audioContextRef.current || (!audioEnabled && !forcePlay)) {
+      console.log('❌ Son non joué:', { audioContext: !!audioContextRef.current, audioEnabled, forcePlay });
       return;
     }
     
@@ -88,10 +89,10 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
       setAudioEnabled(true);
       console.log('🔊 Audio notifications activées');
       
-      // Test sound avec un petit délai
+      // Test sound avec un petit délai et forcePlay pour contourner le problème de timing du state
       setTimeout(() => {
         console.log('🎵 Test du son...');
-        playNotificationSound();
+        playNotificationSound(true);
       }, 100);
     } catch (error) {
       console.error('❌ Impossible d\'activer le son:', error);
