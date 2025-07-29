@@ -18,11 +18,15 @@ import SMSTestManager from "./SMSTestManager";
 import BlockedTimeSlotsManager from "./BlockedTimeSlotsManager";
 import AdminSidebar from "./AdminSidebar";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 const AdminManager = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { currentRestaurant } = useRestaurantContext();
+  
+  // Enable order notifications for admins
+  useOrderNotifications(true, currentRestaurant?.id);
 
   const renderContent = () => {
     switch (activeSection) {
