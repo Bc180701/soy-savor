@@ -139,21 +139,34 @@ const ProductsTable = () => {
     }
   };
 
-  // Filtrer les produits par recherche, catégorie et statut
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || product.category_id === categoryFilter;
-    
-    let matchesStatus = true;
-    if (productStatusFilter === "active") {
-      matchesStatus = product.is_new === true;
-    } else if (productStatusFilter === "inactive") {
-      matchesStatus = product.is_new === false;
-    }
-    // Si productStatusFilter === "all", on affiche tous les produits
-    
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  // Filtrer et trier les produits par recherche, catégorie et statut
+  const filteredProducts = products
+    .filter(product => {
+      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = categoryFilter === "all" || product.category_id === categoryFilter;
+      
+      let matchesStatus = true;
+      if (productStatusFilter === "active") {
+        matchesStatus = product.is_new === true;
+      } else if (productStatusFilter === "inactive") {
+        matchesStatus = product.is_new === false;
+      }
+      // Si productStatusFilter === "all", on affiche tous les produits
+      
+      return matchesSearch && matchesCategory && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Trier d'abord par catégorie, puis par prix croissant au sein de chaque catégorie
+      const categoryA = categories.find(c => c.id === a.category_id)?.display_order || 999;
+      const categoryB = categories.find(c => c.id === b.category_id)?.display_order || 999;
+      
+      if (categoryA !== categoryB) {
+        return categoryA - categoryB;
+      }
+      
+      // Si même catégorie, trier par prix croissant
+      return parseFloat(a.price) - parseFloat(b.price);
+    });
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
