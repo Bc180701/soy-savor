@@ -19,7 +19,7 @@ export default function PrintersManager() {
   });
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showDeviceId, setShowDeviceId] = useState(false);
+  const [showDeviceId, setShowDeviceId] = useState(true);
   const [loading, setLoading] = useState(false);
   const [configStatus, setConfigStatus] = useState<"none" | "found" | "error">("none");
   const [testLogs, setTestLogs] = useState("");
