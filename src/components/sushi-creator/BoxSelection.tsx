@@ -33,6 +33,16 @@ export const BoxSelection = ({ selectedBox, boxOptions, onBoxSelect }: BoxSelect
           </div>
         ))}
       </RadioGroup>
+      
+      {/* Image promotionnelle */}
+      <div className="flex justify-center mt-6 mb-4">
+        <img 
+          src="/lovable-uploads/13d05a8a-41b7-4bef-adce-6112f0546d2d.png" 
+          alt="3 créations achetées = 1 offerte"
+          className="max-w-xs w-full h-auto"
+        />
+      </div>
+      
       <p className="text-xs text-gray-500 mt-4">
         Tout supplément au-delà des choix inclus: +1€
       </p>
