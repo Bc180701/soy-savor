@@ -99,7 +99,6 @@ export interface FooterSection {
   social_links: {
     facebook_aria: string;
     instagram_aria: string;
-    linkedin_aria: string;
   };
 }
 
@@ -197,7 +196,6 @@ export const useHomepageData = (): UseHomepageDataResult => {
       social_links: {
         facebook_aria: "Facebook",
         instagram_aria: "Instagram",
-        linkedin_aria: "LinkedIn",
       },
     },
   });

@@ -27,8 +27,7 @@ const FooterSectionEditor = ({ data, onSave }: FooterSectionEditorProps) => {
     },
     social_links: {
       facebook_aria: "Facebook",
-      instagram_aria: "Instagram",
-      linkedin_aria: "LinkedIn"
+      instagram_aria: "Instagram"
     }
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -193,15 +192,6 @@ const FooterSectionEditor = ({ data, onSave }: FooterSectionEditorProps) => {
                 id="instagram-aria"
                 value={formData.social_links.instagram_aria}
                 onChange={(e) => handleSocialLinksChange('instagram_aria', e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="linkedin-aria">LinkedIn (texte alternatif)</Label>
-              <Input
-                id="linkedin-aria"
-                value={formData.social_links.linkedin_aria}
-                onChange={(e) => handleSocialLinksChange('linkedin_aria', e.target.value)}
                 className="mt-1"
               />
             </div>

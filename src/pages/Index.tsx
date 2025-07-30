@@ -129,7 +129,6 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
     social_links: {
       facebook_aria: "Facebook",
       instagram_aria: "Instagram",
-      linkedin_aria: "LinkedIn",
     },
   },
 };

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Linkedin } from "lucide-react";
+import { Facebook, Instagram } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ContactInfo, useHomepageData } from "@/hooks/useHomepageData";
 
@@ -75,15 +75,6 @@ const Footer = () => {
                 aria-label={footerData?.social_links?.instagram_aria || "Instagram"}
               >
                 <Instagram size={20} />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gold-500 transition-colors"
-                aria-label={footerData?.social_links?.linkedin_aria || "LinkedIn"}
-              >
-                <Linkedin size={20} />
               </a>
             </div>
           </div>
