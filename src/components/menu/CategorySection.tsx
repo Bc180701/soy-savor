@@ -114,6 +114,15 @@ const CategorySection = ({
 
   return (
     <>
+      {/* Show horizontal sticky categories on mobile */}
+      {isMobile && (
+        <MobileCategorySelector 
+          categories={categories} 
+          activeCategory={activeCategory} 
+          onCategoryChange={handleCategoryChange} 
+        />
+      )}
+      
       {/* Show vertical categories sidebar on desktop only */}
       {!isMobile && (
         <DesktopCategorySelector 
