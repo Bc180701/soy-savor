@@ -59,7 +59,7 @@ const Footer = () => {
             </p>
             <div className="flex space-x-4 mt-4">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/sushieatschateaurenard"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-gold-500 transition-colors"
