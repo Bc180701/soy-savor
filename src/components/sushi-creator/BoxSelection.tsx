@@ -26,7 +26,20 @@ export const BoxSelection = ({ selectedBox, boxOptions, onBoxSelect }: BoxSelect
             <RadioGroupItem value={box.id} id={box.id} />
             <Label htmlFor={box.id} className="flex-1">
               <div className="flex justify-between">
-                <span>{box.name} ({box.description})</span>
+                <div>
+                  <div>{box.name}</div>
+                  <div className="text-sm">
+                    {box.description?.includes("OFFERTE") ? (
+                      <span>
+                        ({box.description.split("(La 4e création est OFFERTE !)")[0].trim()}
+                        <br />
+                        <span className="text-red-600 font-medium">La 4e création est OFFERTE !</span>)
+                      </span>
+                    ) : (
+                      `(${box.description})`
+                    )}
+                  </div>
+                </div>
                 <span className="font-semibold">{box.price}€</span>
               </div>
             </Label>
