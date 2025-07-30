@@ -136,7 +136,7 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
                       </Badge>
                     )}
                     {menuItem.isSpicy && (
-                      <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                      <Badge variant="outline" className="border-orange-500 text-orange-700 text-xs">
                         Épicé
                       </Badge>
                     )}
@@ -279,7 +279,7 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
                           </Badge>
                         )}
                         {menuItem.isSpicy && (
-                          <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                          <Badge variant="outline" className="border-orange-500 text-orange-700 text-xs">
                             Épicé
                           </Badge>
                         )}

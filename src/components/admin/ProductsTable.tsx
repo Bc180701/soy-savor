@@ -285,7 +285,7 @@ const ProductsTable = () => {
                       </Badge>
                     )}
                     {product.is_spicy && (
-                      <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                      <Badge variant="outline" className="border-orange-500 text-orange-700 text-xs">
                         Épicé
                       </Badge>
                     )}

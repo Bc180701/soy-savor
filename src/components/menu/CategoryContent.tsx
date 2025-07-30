@@ -181,7 +181,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                                 </Badge>
                               )}
                               {item.isSpicy && (
-                                <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                                <Badge variant="outline" className="border-orange-500 text-orange-700 text-xs">
                                   Relevé
                                 </Badge>
                               )}
@@ -335,7 +335,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                                     </Badge>
                                   )}
                                   {item.isSpicy && (
-                                    <Badge variant="outline" className="border-red-500 text-red-700 text-xs">
+                                    <Badge variant="outline" className="border-orange-500 text-orange-700 text-xs">
                                       Relevé
                                     </Badge>
                                   )}
