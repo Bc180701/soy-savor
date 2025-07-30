@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const OrderingLockControl = () => {
   const { toast } = useToast();
-  const { currentRestaurant } = useRestaurantContext();
+  const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
   const [isLocked, setIsLocked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -70,6 +70,16 @@ const OrderingLockControl = () => {
       if (error) throw error;
 
       setIsLocked(locked);
+      
+      // Mettre à jour le contexte restaurant avec les nouvelles données
+      const updatedRestaurant = {
+        ...currentRestaurant,
+        settings: updatedSettings
+      };
+      setCurrentRestaurant(updatedRestaurant);
+      
+      console.log("🔒 Statut de verrouillage mis à jour:", locked, "pour", currentRestaurant.name);
+      
       toast({
         title: locked ? "Commandes verrouillées" : "Commandes déverrouillées",
         description: locked 
