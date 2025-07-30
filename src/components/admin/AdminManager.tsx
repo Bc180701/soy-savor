@@ -15,6 +15,7 @@ import OrderingLockControl from "./OrderingLockControl";
 import AdminInviteManager from "./AdminInviteManager";
 import AdminPermissionsManager from "./AdminPermissionsManager";
 import StripeKeysManager from "./StripeKeysManager";
+import PrintersManager from "./PrintersManager";
 import SMSTestManager from "./SMSTestManager";
 import BlockedTimeSlotsManager from "./BlockedTimeSlotsManager";
 import AdminSidebar from "./AdminSidebar";
@@ -52,6 +53,8 @@ const AdminManager = () => {
         return <AdminPermissionsManager />;
       case "stripe-keys":
         return <StripeKeysManager />;
+      case "printers":
+        return <PrintersManager />;
       case "settings":
         return (
           <div className="grid gap-6">
@@ -83,6 +86,7 @@ const AdminManager = () => {
       admins: "Administrateurs",
       permissions: "Gestion des permissions",
       "stripe-keys": "Clés Stripe",
+      printers: "Imprimantes",
       settings: "Paramètres"
     };
     return titles[activeSection as keyof typeof titles] || "Administration";
