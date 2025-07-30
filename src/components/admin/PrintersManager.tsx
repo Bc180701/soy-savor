@@ -43,6 +43,15 @@ export default function PrintersManager() {
 
   useEffect(() => {
     if (isAuthenticated && currentRestaurant?.id) {
+      // Réinitialiser la configuration quand on change de restaurant
+      setPrinterConfig({
+        ip_address: "",
+        port: "8008",
+        device_id: "",
+        timeout: "30000"
+      });
+      setConfigStatus("none");
+      setTestLogs("");
       loadPrinterConfig();
     }
   }, [isAuthenticated, currentRestaurant?.id]);
