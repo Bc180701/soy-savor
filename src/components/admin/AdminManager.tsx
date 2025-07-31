@@ -22,6 +22,8 @@ import AdminSidebar from "./AdminSidebar";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import TestOrderNotification from "./TestOrderNotification";
+import { RenameProductImages } from "./RenameProductImages";
+import { ReassignProductImages } from "./ReassignProductImages";
 
 const AdminManager = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -66,6 +68,10 @@ const AdminManager = () => {
             <OpeningHoursManager />
             <DeliveryZonesManager />
             <IngredientsManager />
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <RenameProductImages />
+            <ReassignProductImages />
+            </div>
             <SMSTestManager />
           </div>
         );
