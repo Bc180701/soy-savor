@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, Image } from "lucide-react";
+import { Upload, Image, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
@@ -68,6 +68,8 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
   const [previewImage, setPreviewImage] = useState<string | null>(product?.image_url || null);
   const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
   const [bucketImages, setBucketImages] = useState<any[]>([]);
+  const [filteredImages, setFilteredImages] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
 
@@ -162,6 +164,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
         }) || [];
 
       setBucketImages(images);
+      setFilteredImages(images);
     } catch (error) {
       console.error('Erreur lors du chargement des images:', error);
       toast({
@@ -419,12 +422,31 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
                           Médiathèque
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Médiathèque - Images produits</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
-                          {bucketImages.map((image, index) => (
+                       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                         <DialogHeader>
+                           <DialogTitle>Médiathèque - Images produits</DialogTitle>
+                         </DialogHeader>
+                         
+                         {/* Barre de recherche */}
+                         <div className="relative mb-4">
+                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                           <Input
+                             placeholder="Rechercher une image..."
+                             value={searchQuery}
+                             onChange={(e) => {
+                               const query = e.target.value.toLowerCase();
+                               setSearchQuery(query);
+                               const filtered = bucketImages.filter(image => 
+                                 image.name.toLowerCase().includes(query)
+                               );
+                               setFilteredImages(filtered);
+                             }}
+                             className="pl-10"
+                           />
+                         </div>
+                         
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                           {filteredImages.map((image, index) => (
                             <div
                               key={index}
                               className="relative group cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
@@ -447,11 +469,16 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
                               </div>
                             </div>
                           ))}
-                          {bucketImages.length === 0 && (
-                            <div className="col-span-full text-center py-8 text-gray-500">
-                              Aucune image trouvée dans la médiathèque
-                            </div>
-                          )}
+                           {filteredImages.length === 0 && bucketImages.length > 0 && (
+                             <div className="col-span-full text-center py-8 text-gray-500">
+                               Aucune image trouvée pour "{searchQuery}"
+                             </div>
+                           )}
+                           {bucketImages.length === 0 && (
+                             <div className="col-span-full text-center py-8 text-gray-500">
+                               Aucune image trouvée dans la médiathèque
+                             </div>
+                           )}
                         </div>
                       </DialogContent>
                     </Dialog>
