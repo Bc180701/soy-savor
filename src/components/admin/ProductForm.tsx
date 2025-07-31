@@ -145,7 +145,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
       const { data, error } = await supabase.storage
         .from('products')
         .list('', {
-          limit: 100,
+          limit: 1000,
           offset: 0,
         });
 
