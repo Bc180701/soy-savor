@@ -7,10 +7,24 @@ export const generateProductImageUrl = (productName: string, originalUrl?: strin
     return `https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?q=80&w=1000&auto=format&fit=crop&url=${encodeURIComponent(productName)}`;
   }
   
-  // Si c'est une URL Supabase complète, extraire juste le nom du fichier
+  // Si c'est une URL Supabase, garder l'URL complète mais ajouter le paramètre url
   if (originalUrl.includes('supabase.co/storage/v1/object/public/')) {
-    const fileName = originalUrl.split('/').pop()?.split('?')[0] || '';
-    return `${fileName}?url=${encodeURIComponent(productName)}`;
+    // Séparer l'URL de base et les paramètres existants
+    const [baseUrl, existingParams] = originalUrl.split('?');
+    const newUrl = new URL(baseUrl);
+    newUrl.searchParams.set('url', productName);
+    
+    // Ajouter les paramètres existants s'il y en a
+    if (existingParams) {
+      const existingUrlParams = new URLSearchParams(existingParams);
+      existingUrlParams.forEach((value, key) => {
+        if (key !== 'url') {
+          newUrl.searchParams.set(key, value);
+        }
+      });
+    }
+    
+    return newUrl.toString();
   }
   
   // Pour les URLs externes, ajouter le paramètre url si pas présent
