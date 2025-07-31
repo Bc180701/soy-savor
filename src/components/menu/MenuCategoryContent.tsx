@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { generateProductImageUrl, generateProductImageAlt } from "@/utils/productImageUtils";
 
 interface MenuCategoryContentProps {
   category: MenuCategory;
@@ -85,10 +86,10 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                           <div className="w-full h-40 flex-shrink-0 relative overflow-hidden rounded-t-xl">
                             {item.imageUrl && item.imageUrl !== "/placeholder.svg" ? (
                               <img
-                                src={item.imageUrl}
-                                alt={item.name}
+                                src={generateProductImageUrl(item.name, item.imageUrl)}
+                                alt={generateProductImageAlt(item.name)}
                                 className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() => handleImageClick(item.imageUrl, item.name)}
+                                onClick={() => handleImageClick(generateProductImageUrl(item.name, item.imageUrl), item.name)}
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -173,10 +174,10 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                           <div className="w-40 h-40 flex-shrink-0 relative overflow-hidden rounded-l-xl">
                             {item.imageUrl && item.imageUrl !== "/placeholder.svg" ? (
                               <img
-                                src={item.imageUrl}
-                                alt={item.name}
+                                src={generateProductImageUrl(item.name, item.imageUrl)}
+                                alt={generateProductImageAlt(item.name)}
                                 className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() => handleImageClick(item.imageUrl, item.name)}
+                                onClick={() => handleImageClick(generateProductImageUrl(item.name, item.imageUrl), item.name)}
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -342,8 +343,8 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
               <div className="w-full">
                 {selectedProductDetails.imageUrl && selectedProductDetails.imageUrl !== "/placeholder.svg" ? (
                   <img
-                    src={selectedProductDetails.imageUrl}
-                    alt={selectedProductDetails.name}
+                    src={generateProductImageUrl(selectedProductDetails.name, selectedProductDetails.imageUrl)}
+                    alt={generateProductImageAlt(selectedProductDetails.name)}
                     className="w-full h-auto object-contain max-h-[60vh]"
                   />
                 ) : (

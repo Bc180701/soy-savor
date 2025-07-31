@@ -14,6 +14,7 @@ import { Loader2, Plus, Pencil, Heart, Eye } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MenuItem, SushiCategory } from "@/types";
 import { AnimatePresence } from "framer-motion";
+import { generateProductImageUrl, generateProductImageAlt } from "@/utils/productImageUtils";
 
 interface Product {
   id: string;
@@ -96,8 +97,8 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
                 <div className="w-full h-40 flex-shrink-0 relative overflow-hidden rounded-t-xl">
                   {product.image_url && product.image_url !== "/placeholder.svg" ? (
                     <img
-                      src={product.image_url}
-                      alt={product.name}
+                      src={generateProductImageUrl(product.name, product.image_url)}
+                      alt={generateProductImageAlt(product.name)}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -237,8 +238,8 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
                 <div className="w-40 h-40 flex-shrink-0 relative overflow-hidden rounded-l-xl">
                   {product.image_url && product.image_url !== "/placeholder.svg" ? (
                     <img
-                      src={product.image_url}
-                      alt={product.name}
+                      src={generateProductImageUrl(product.name, product.image_url)}
+                      alt={generateProductImageAlt(product.name)}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -426,8 +427,8 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
               <div className="w-full">
                 {selectedProductDetails.image_url && selectedProductDetails.image_url !== "/placeholder.svg" ? (
                   <img
-                    src={selectedProductDetails.image_url}
-                    alt={selectedProductDetails.name}
+                    src={generateProductImageUrl(selectedProductDetails.name, selectedProductDetails.image_url)}
+                    alt={generateProductImageAlt(selectedProductDetails.name)}
                     className="w-full h-auto object-contain max-h-[60vh]"
                   />
                 ) : (

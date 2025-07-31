@@ -10,6 +10,7 @@ import { MenuItem } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { generateProductImageUrl, generateProductImageAlt } from "@/utils/productImageUtils";
 
 interface CartStepProps {
   items: any[];
@@ -239,8 +240,8 @@ export const CartStep = ({
                     {dessert.imageUrl && (
                       <div className="relative h-40 w-full overflow-hidden">
                         <img 
-                          src={dessert.imageUrl} 
-                          alt={dessert.name} 
+                          src={generateProductImageUrl(dessert.name, dessert.imageUrl)} 
+                          alt={generateProductImageAlt(dessert.name)}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { CartItem } from "@/types";
 import { formatEuro } from "@/utils/formatters";
 import { formatCustomProduct } from "@/utils/formatCustomProduct";
+import { generateProductImageUrl, generateProductImageAlt } from "@/utils/productImageUtils";
 
 interface CartItemListProps {
   items: CartItem[];
@@ -30,8 +31,8 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
         <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex items-start border-b py-4">
           {item.menuItem.imageUrl && (
             <img
-              src={item.menuItem.imageUrl}
-              alt={item.menuItem.name}
+              src={generateProductImageUrl(item.menuItem.name, item.menuItem.imageUrl)}
+              alt={generateProductImageAlt(item.menuItem.name)}
               className="w-16 h-16 object-cover rounded mr-4"
             />
           )}
