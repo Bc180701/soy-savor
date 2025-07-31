@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload } from "lucide-react";
+import { Upload, Image } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 // Schéma de validation pour le formulaire
@@ -65,6 +66,8 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(product?.image_url || null);
+  const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
+  const [bucketImages, setBucketImages] = useState<any[]>([]);
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
 
@@ -133,6 +136,51 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const loadBucketImages = async () => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('products')
+        .list('', {
+          limit: 100,
+          offset: 0,
+        });
+
+      if (error) throw error;
+
+      const images = data
+        ?.filter(file => file.metadata?.mimetype?.startsWith('image/'))
+        .map(file => {
+          const { data: publicUrlData } = supabase.storage
+            .from('products')
+            .getPublicUrl(file.name);
+          return {
+            name: file.name,
+            url: publicUrlData.publicUrl,
+          };
+        }) || [];
+
+      setBucketImages(images);
+    } catch (error) {
+      console.error('Erreur lors du chargement des images:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les images de la médiathèque",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const selectImageFromLibrary = (imageUrl: string) => {
+    form.setValue("image_url", imageUrl);
+    setPreviewImage(imageUrl);
+    setMediaLibraryOpen(false);
+    toast({
+      title: "Image sélectionnée",
+      description: "L'image a été sélectionnée depuis la médiathèque",
+      variant: "success",
+    });
   };
 
   const onSubmit = async (data: ProductFormValues) => {
@@ -342,8 +390,8 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
                     value={field.value || ""}
                   />
                   
-                  {/* Bouton de téléchargement */}
-                  <div>
+                  {/* Boutons de téléchargement et médiathèque */}
+                  <div className="flex gap-4">
                     <label htmlFor="image-upload" className="cursor-pointer">
                       <div className="flex items-center gap-2 p-2 border rounded-md hover:bg-gray-50 transition-colors w-fit">
                         <Upload size={16} />
@@ -358,10 +406,59 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
                         disabled={uploadingImage}
                       />
                     </label>
-                    <FormDescription>
-                      Formats acceptés: JPG, PNG, GIF (max 5MB)
-                    </FormDescription>
+                    
+                    <Dialog open={mediaLibraryOpen} onOpenChange={setMediaLibraryOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          onClick={loadBucketImages}
+                          className="flex items-center gap-2"
+                        >
+                          <Image size={16} />
+                          Médiathèque
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Médiathèque - Images produits</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
+                          {bucketImages.map((image, index) => (
+                            <div
+                              key={index}
+                              className="relative group cursor-pointer border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                              onClick={() => selectImageFromLibrary(image.url)}
+                            >
+                              <img
+                                src={image.url}
+                                alt={image.name}
+                                className="w-full h-32 object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                                <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium">
+                                  Sélectionner
+                                </span>
+                              </div>
+                              <div className="p-2">
+                                <p className="text-xs text-gray-600 truncate" title={image.name}>
+                                  {image.name}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                          {bucketImages.length === 0 && (
+                            <div className="col-span-full text-center py-8 text-gray-500">
+                              Aucune image trouvée dans la médiathèque
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
+                  <FormDescription>
+                    Formats acceptés: JPG, PNG, GIF (max 5MB)
+                  </FormDescription>
                 </div>
                 <FormMessage />
               </FormItem>
