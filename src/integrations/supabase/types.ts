@@ -563,6 +563,30 @@ export type Database = {
         }
         Relationships: []
       }
+      product_images_mapping: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          product_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          product_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          product_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           allergens: string[] | null
