@@ -24,6 +24,7 @@ import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import TestOrderNotification from "./TestOrderNotification";
 import { RenameProductImages } from "./RenameProductImages";
 import { ReassignProductImages } from "./ReassignProductImages";
+import RestaurantsManager from "./RestaurantsManager";
 
 const AdminManager = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -61,6 +62,7 @@ const AdminManager = () => {
         return (
           <div className="grid gap-6">
             <OrderingLockControl />
+            <RestaurantsManager />
             <div className="bg-white p-6 rounded-lg shadow-sm border">
               <h3 className="text-lg font-semibold mb-4">Test de notifications</h3>
               <TestOrderNotification audioEnabled={audioEnabled} enableAudio={enableAudio} />
