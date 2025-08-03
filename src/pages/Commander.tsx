@@ -16,6 +16,8 @@ import ProductsDisplay from "@/components/menu/ProductsDisplay";
 import RestaurantSelectionDialog from "@/components/menu/RestaurantSelectionDialog";
 import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
 import { useCart, useCartWithRestaurant } from "@/hooks/use-cart";
+import SEOHead from "@/components/SEOHead";
+import commanderHeroImage from "@/assets/commander-hero.jpg";
 
 const CommanderContent = () => {
   const { toast } = useToast();
@@ -236,24 +238,62 @@ const CommanderContent = () => {
   console.log("🏪 Restaurant panier:", selectedRestaurantId);
   console.log("🏪 Restaurant actuel:", currentRestaurant?.id);
 
-  return (
-    <div className="container mx-auto py-24 px-4">
-      <RestaurantSelectionDialog
-        open={showRestaurantDialog}
-        onOpenChange={setShowRestaurantDialog}
-        onRestaurantSelected={handleRestaurantSelected}
-      />
+  // Structured data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Commander en ligne",
+    "description": "Commandez vos sushis et spécialités japonaises en ligne. Livraison rapide et click & collect disponibles.",
+    "provider": {
+      "@type": "Restaurant",
+      "name": "Sushieats",
+      "servesCuisine": "Japonaise"
+    }
+  };
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-6xl mx-auto"
-      >
-        <h1 className="text-4xl font-bold text-center mb-2">Commander</h1>
-        <p className="text-gray-600 text-center mb-8">
-          Commandez en ligne et récupérez votre repas dans notre restaurant
-        </p>
+  return (
+    <>
+      <SEOHead 
+        title="Commander Sushi en Ligne - Livraison Rapide | Sushieats"
+        description="Commandez vos sushis, makis et poke bowls en ligne. Livraison rapide à domicile ou click & collect dans nos restaurants. Paiement sécurisé."
+        keywords="commander sushi, livraison sushi, click and collect, commande en ligne, livraison rapide, paiement sécurisé"
+        canonical={`${window.location.origin}/commander`}
+        ogImage={commanderHeroImage}
+        ogType="website"
+        structuredData={structuredData}
+      />
+      
+      <div className="container mx-auto py-24 px-4">
+        <RestaurantSelectionDialog
+          open={showRestaurantDialog}
+          onOpenChange={setShowRestaurantDialog}
+          onRestaurantSelected={handleRestaurantSelected}
+        />
+
+        {/* Hero image section */}
+        <div className="mb-12 relative rounded-xl overflow-hidden">
+          <img 
+            src={commanderHeroImage} 
+            alt="Commander sushi en ligne - interface de commande moderne"
+            className="w-full h-64 md:h-80 object-cover"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">Commander</h1>
+              <p className="text-lg md:text-xl max-w-2xl">
+                Commandez en ligne et récupérez votre repas dans notre restaurant
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-6xl mx-auto"
+        >
 
         {currentRestaurant && (
           <div className="text-center mb-8">
@@ -319,8 +359,9 @@ const CommanderContent = () => {
             )}
           </>
         )}
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+    </>
   );
 };
 

@@ -20,6 +20,8 @@ import { toast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import SEOHead from "@/components/SEOHead";
+import contactHeroImage from "@/assets/contact-hero.jpg";
 
 interface Restaurant {
   id: string;
@@ -163,18 +165,61 @@ const Contact = () => {
     }
   }
 
+  // Structured data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "name": "Contact Sushieats",
+    "description": "Contactez-nous pour toute question, réservation ou demande d'information. Formulaire de contact et coordonnées de nos restaurants.",
+    "provider": {
+      "@type": "Restaurant",
+      "name": "Sushieats",
+      "servesCuisine": "Japonaise",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "availableLanguage": ["French"]
+      }
+    }
+  };
+
   return (
-    <div className="container mx-auto py-24 px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-6xl mx-auto"
-      >
-        <h1 className="text-4xl font-bold text-center mb-2">Contactez-nous</h1>
-        <p className="text-gray-600 text-center mb-12">
-          Une question ou une réservation ? N'hésitez pas à nous contacter.
-        </p>
+    <>
+      <SEOHead 
+        title="Contact Restaurant Japonais - Réservation & Questions | Sushieats"
+        description="Contactez-nous pour vos réservations, questions ou demandes spéciales. Formulaire de contact, coordonnées et horaires de nos restaurants japonais."
+        keywords="contact sushi, réservation restaurant, horaires ouverture, téléphone restaurant, email contact, service client"
+        canonical={`${window.location.origin}/contact`}
+        ogImage={contactHeroImage}
+        ogType="website"
+        structuredData={structuredData}
+      />
+      
+      <div className="container mx-auto py-24 px-4">
+        {/* Hero image section */}
+        <div className="mb-12 relative rounded-xl overflow-hidden">
+          <img 
+            src={contactHeroImage} 
+            alt="Service client restaurant japonais - équipe professionnelle"
+            className="w-full h-64 md:h-80 object-cover"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">Contactez-nous</h1>
+              <p className="text-lg md:text-xl max-w-2xl">
+                Une question ou une réservation ? N'hésitez pas à nous contacter.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-6xl mx-auto"
+        >
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Formulaire de contact */}
@@ -344,8 +389,9 @@ const Contact = () => {
             )}
           </div>
         </div>
-      </motion.div>
-    </div>
+        </motion.div>
+      </div>
+    </>
   );
 };
 

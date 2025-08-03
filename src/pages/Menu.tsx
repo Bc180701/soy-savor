@@ -12,6 +12,8 @@ import CategorySection from "@/components/menu/CategorySection";
 import MenuProductsDisplay from "@/components/menu/MenuProductsDisplay";
 import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
 import { RestaurantProvider, useRestaurantContext } from "@/hooks/useRestaurantContext";
+import SEOHead from "@/components/SEOHead";
+import menuHeroImage from "@/assets/menu-hero.jpg";
 
 const MenuContent = () => {
   const { toast } = useToast();
@@ -108,52 +110,95 @@ const MenuContent = () => {
   // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
   const nonEmptyCategories = categories.filter(cat => cat.items.length > 0);
 
+  // Structured data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Menu",
+    "name": "Menu Restaurant Sushieats",
+    "description": "Découvrez notre carte de spécialités japonaises : sushis, makis, sashimis, poke bowls et bien plus",
+    "provider": {
+      "@type": "Restaurant",
+      "name": "Sushieats",
+      "servesCuisine": "Japonaise",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Châteaurenard",
+        "addressCountry": "FR"
+      }
+    }
+  };
+
   return (
-    <div className="container mx-auto py-24 px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-6xl mx-auto"
-      >
-        <h1 className="text-4xl font-bold text-center mb-2">Notre Menu</h1>
-        <p className="text-gray-600 text-center mb-8">
-          Découvrez nos spécialités japonaises préparées avec soin
-        </p>
-
-        {/* Bannière de statut du restaurant */}
-        <RestaurantStatusBanner />
-
-        {!isAuthenticated && <PromotionalBanner />}
-
-        {nonEmptyCategories.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-lg text-gray-600">Aucun produit disponible actuellement.</p>
-            <p className="text-sm text-gray-500 mt-2">
-              Vérifiez que vos produits ont le statut "Actif" dans l'administration.
-            </p>
+    <>
+      <SEOHead 
+        title="Menu Restaurant Japonais - Sushis, Makis & Poke Bowls | Sushieats"
+        description="Découvrez notre carte de spécialités japonaises fraîches : sushis, makis, sashimis, poke bowls, plateaux et desserts. Commandez en ligne ou réservez votre table."
+        keywords="menu sushi, restaurant japonais, makis, sashimis, poke bowl, plateaux sushi, livraison sushi, commande en ligne"
+        canonical={`${window.location.origin}/menu`}
+        ogImage={menuHeroImage}
+        ogType="website"
+        structuredData={structuredData}
+      />
+      
+      <div className="container mx-auto py-24 px-4">
+        {/* Hero image section */}
+        <div className="mb-12 relative rounded-xl overflow-hidden">
+          <img 
+            src={menuHeroImage} 
+            alt="Menu de spécialités japonaises - sushis, makis et poke bowls"
+            className="w-full h-64 md:h-80 object-cover"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">Notre Menu</h1>
+              <p className="text-lg md:text-xl max-w-2xl">
+                Découvrez nos spécialités japonaises préparées avec soin
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="flex flex-col md:flex-row gap-6">
-            <CategorySection
-              categories={nonEmptyCategories}
-              activeCategory={activeCategory}
-              onCategoryChange={setActiveCategory}
-              isCategoryChanging={isCategoryChanging}
-              setIsCategoryChanging={setIsCategoryChanging}
-              setActiveCategory={setActiveCategory}
-              setVisibleSections={setVisibleSections}
-              categoryRefs={categoryRefs}
-            />
-            
-            <MenuProductsDisplay
-              categories={nonEmptyCategories}
-              categoryRefs={categoryRefs}
-            />
-          </div>
-        )}
-      </motion.div>
-    </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-6xl mx-auto"
+        >
+          {/* Bannière de statut du restaurant */}
+          <RestaurantStatusBanner />
+
+          {!isAuthenticated && <PromotionalBanner />}
+
+          {nonEmptyCategories.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-lg text-gray-600">Aucun produit disponible actuellement.</p>
+              <p className="text-sm text-gray-500 mt-2">
+                Vérifiez que vos produits ont le statut "Actif" dans l'administration.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col md:flex-row gap-6">
+              <CategorySection
+                categories={nonEmptyCategories}
+                activeCategory={activeCategory}
+                onCategoryChange={setActiveCategory}
+                isCategoryChanging={isCategoryChanging}
+                setIsCategoryChanging={setIsCategoryChanging}
+                setActiveCategory={setActiveCategory}
+                setVisibleSections={setVisibleSections}
+                categoryRefs={categoryRefs}
+              />
+              
+              <MenuProductsDisplay
+                categories={nonEmptyCategories}
+                categoryRefs={categoryRefs}
+              />
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </>
   );
 };
 
