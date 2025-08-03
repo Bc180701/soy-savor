@@ -11,6 +11,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
 import { Restaurant } from "@/types/restaurant";
+import { PokeIngredient } from "@/types/poke-creator";
+import { calculateTotalPokePrice } from "@/utils/poke-calculator";
 import { ArrowLeft, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { RestaurantSelector } from "@/components/creation/RestaurantSelector";
@@ -19,12 +21,7 @@ interface ComposerPokeState {
   baseItem: MenuItem;
 }
 
-interface IngredientOption {
-  id: string;
-  name: string;
-  price: number;
-  included: boolean;
-}
+// Using PokeIngredient from types
 
 const ComposerPoke = () => {
   const location = useLocation();
@@ -36,14 +33,14 @@ const ComposerPoke = () => {
   
   const [step, setStep] = useState<number>(0); // Commencer à 0 pour la sélection de restaurant
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
-  const [selectedIngredients, setSelectedIngredients] = useState<IngredientOption[]>([]);
-  const [selectedProteins, setSelectedProteins] = useState<IngredientOption[]>([]);
-  const [selectedSauces, setSelectedSauces] = useState<IngredientOption[]>([]);
+  const [selectedIngredients, setSelectedIngredients] = useState<PokeIngredient[]>([]);
+  const [selectedProteins, setSelectedProteins] = useState<PokeIngredient[]>([]);
+  const [selectedSauces, setSelectedSauces] = useState<PokeIngredient[]>([]);
 
   // Ingredient options from database
-  const [ingredientOptions, setIngredientOptions] = useState<IngredientOption[]>([]);
-  const [proteinOptions, setProteinOptions] = useState<IngredientOption[]>([]);
-  const [sauceOptions, setSauceOptions] = useState<IngredientOption[]>([]);
+  const [ingredientOptions, setIngredientOptions] = useState<PokeIngredient[]>([]);
+  const [proteinOptions, setProteinOptions] = useState<PokeIngredient[]>([]);
+  const [sauceOptions, setSauceOptions] = useState<PokeIngredient[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Base price
@@ -98,11 +95,11 @@ const ComposerPoke = () => {
     fetchIngredients();
   }, [toast]);
 
-  // Handle ingredient selection (max 5 for each category)
+  // Handle ingredient selection (unlimited, but cost extra after 6)
   const handleSelectionToggle = (
-    option: IngredientOption, 
-    selectedList: IngredientOption[], 
-    setSelectedList: React.Dispatch<React.SetStateAction<IngredientOption[]>>,
+    option: PokeIngredient, 
+    selectedList: PokeIngredient[], 
+    setSelectedList: React.Dispatch<React.SetStateAction<PokeIngredient[]>>,
     categoryName: string
   ) => {
     const isAlreadySelected = selectedList.some(item => item.id === option.id);
@@ -111,36 +108,14 @@ const ComposerPoke = () => {
       // Remove if already selected
       setSelectedList(selectedList.filter(item => item.id !== option.id));
     } else {
-      // Add if not selected and less than 5 items are selected
-      if (selectedList.length < 5) {
-        setSelectedList([...selectedList, option]);
-      } else {
-        toast({
-          title: `Maximum 5 ${categoryName}`,
-          description: `Vous avez atteint le maximum de 5 ${categoryName}. Veuillez en retirer un pour ajouter un nouveau.`,
-          variant: "destructive",
-        });
-      }
+      // Add the ingredient
+      setSelectedList([...selectedList, option]);
     }
   };
 
-  // Calculate extra costs
-  const calculateExtraCost = () => {
-    let extraCost = 0;
-
-    // Add extra cost for any non-included items
-    [...selectedIngredients, ...selectedProteins, ...selectedSauces].forEach(item => {
-      if (!item.included) {
-        extraCost += item.price;
-      }
-    });
-
-    return extraCost;
-  };
-
-  // Calculate total price
+  // Calculate total price using the new pricing system
   const calculateTotalPrice = () => {
-    return basePrice + calculateExtraCost();
+    return calculateTotalPokePrice(basePrice, selectedIngredients, selectedProteins, selectedSauces);
   };
 
   // Navigate to next step or complete order
@@ -160,20 +135,20 @@ const ComposerPoke = () => {
     }
 
     if (step < 4) {
-      // Validation for each step
-      if (step === 1 && selectedIngredients.length === 0) {
+      // Validation for each step - minimum 6 ingredients
+      if (step === 1 && selectedIngredients.length < 6) {
         toast({
-          title: "Sélection requise",
-          description: "Veuillez sélectionner au moins un ingrédient",
+          title: "Sélection incomplète",
+          description: "Veuillez sélectionner au moins 6 ingrédients",
           variant: "destructive",
         });
         return;
       }
       
-      if (step === 2 && selectedProteins.length === 0) {
+      if (step === 2 && selectedProteins.length < 6) {
         toast({
-          title: "Sélection requise",
-          description: "Veuillez sélectionner au moins une protéine",
+          title: "Sélection incomplète",
+          description: "Veuillez sélectionner au moins 6 protéines",
           variant: "destructive",
         });
         return;
@@ -182,10 +157,10 @@ const ComposerPoke = () => {
       setStep(step + 1);
     } else {
       // Step 3 (sauce) - add to cart and complete
-      if (selectedSauces.length === 0) {
+      if (selectedSauces.length < 6) {
         toast({
-          title: "Sélection requise",
-          description: "Veuillez sélectionner au moins une sauce",
+          title: "Sélection incomplète",
+          description: "Veuillez sélectionner au moins 6 sauces",
           variant: "destructive",
         });
         return;
@@ -230,7 +205,7 @@ const ComposerPoke = () => {
       case 1:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">1 : Ingrédients (5 choix maximum)</h3>
+            <h3 className="text-xl font-bold mb-4">1 : Ingrédients (6 minimum - +1€ par supplémentaire)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {ingredientOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2 mb-2">
@@ -238,7 +213,6 @@ const ComposerPoke = () => {
                     id={`ingredient-${option.id}`} 
                     checked={selectedIngredients.some(item => item.id === option.id)}
                     onCheckedChange={() => handleSelectionToggle(option, selectedIngredients, setSelectedIngredients, "ingrédients")}
-                    disabled={selectedIngredients.length >= 5 && !selectedIngredients.some(item => item.id === option.id)}
                   />
                   <Label htmlFor={`ingredient-${option.id}`}>
                     {option.name}
@@ -249,18 +223,21 @@ const ComposerPoke = () => {
                 </div>
               ))}
             </div>
-            {selectedIngredients.length === 5 && (
-              <p className="text-sm text-gold-600 mt-2">
-                Vous avez sélectionné le maximum de 5 ingrédients.
-              </p>
-            )}
+            <p className="text-sm text-gray-600 mt-2">
+              {selectedIngredients.length < 6 
+                ? `Sélectionnez encore ${6 - selectedIngredients.length} ingrédient(s) minimum`
+                : selectedIngredients.length > 6 
+                ? `+${selectedIngredients.length - 6}€ pour les ingrédients supplémentaires`
+                : "6 ingrédients sélectionnés"
+              }
+            </p>
           </div>
         );
       
       case 2:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">2 : Protéines (5 choix maximum)</h3>
+            <h3 className="text-xl font-bold mb-4">2 : Protéines (6 minimum - +1€ par supplémentaire)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {proteinOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2 mb-2">
@@ -268,7 +245,6 @@ const ComposerPoke = () => {
                     id={`protein-${option.id}`} 
                     checked={selectedProteins.some(item => item.id === option.id)}
                     onCheckedChange={() => handleSelectionToggle(option, selectedProteins, setSelectedProteins, "protéines")}
-                    disabled={selectedProteins.length >= 5 && !selectedProteins.some(item => item.id === option.id)}
                   />
                   <Label htmlFor={`protein-${option.id}`}>
                     {option.name}
@@ -279,18 +255,21 @@ const ComposerPoke = () => {
                 </div>
               ))}
             </div>
-            {selectedProteins.length === 5 && (
-              <p className="text-sm text-gold-600 mt-2">
-                Vous avez sélectionné le maximum de 5 protéines.
-              </p>
-            )}
+            <p className="text-sm text-gray-600 mt-2">
+              {selectedProteins.length < 6 
+                ? `Sélectionnez encore ${6 - selectedProteins.length} protéine(s) minimum`
+                : selectedProteins.length > 6 
+                ? `+${selectedProteins.length - 6}€ pour les protéines supplémentaires`
+                : "6 protéines sélectionnées"
+              }
+            </p>
           </div>
         );
       
       case 3:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">3 : Sauces (5 choix maximum)</h3>
+            <h3 className="text-xl font-bold mb-4">3 : Sauces (6 minimum - +1€ par supplémentaire)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {sauceOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2 mb-2">
@@ -298,7 +277,6 @@ const ComposerPoke = () => {
                     id={`sauce-${option.id}`} 
                     checked={selectedSauces.some(item => item.id === option.id)}
                     onCheckedChange={() => handleSelectionToggle(option, selectedSauces, setSelectedSauces, "sauces")}
-                    disabled={selectedSauces.length >= 5 && !selectedSauces.some(item => item.id === option.id)}
                   />
                   <Label htmlFor={`sauce-${option.id}`}>
                     {option.name}
@@ -309,11 +287,14 @@ const ComposerPoke = () => {
                 </div>
               ))}
             </div>
-            {selectedSauces.length === 5 && (
-              <p className="text-sm text-gold-600 mt-2">
-                Vous avez sélectionné le maximum de 5 sauces.
-              </p>
-            )}
+            <p className="text-sm text-gray-600 mt-2">
+              {selectedSauces.length < 6 
+                ? `Sélectionnez encore ${6 - selectedSauces.length} sauce(s) minimum`
+                : selectedSauces.length > 6 
+                ? `+${selectedSauces.length - 6}€ pour les sauces supplémentaires`
+                : "6 sauces sélectionnées"
+              }
+            </p>
           </div>
         );
       
@@ -339,7 +320,7 @@ const ComposerPoke = () => {
         </Button>
 
         <h1 className="text-3xl font-bold mb-2">POKÉ CRÉA</h1>
-        <p className="text-gray-600 mb-6">Composez votre Poké bowl sur mesure selon vos envies ! (5 choix maximum par catégorie)</p>
+        <p className="text-gray-600 mb-6">Composez votre Poké bowl sur mesure selon vos envies ! (6 choix minimum par catégorie, +1€ par supplémentaire)</p>
 
         {/* Show selected restaurant */}
         {selectedRestaurant && step > 0 && (
