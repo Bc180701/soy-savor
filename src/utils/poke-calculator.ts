@@ -18,6 +18,24 @@ export const calculatePokeExtraCost = (ingredients: PokeIngredient[]) => {
   return extraCost;
 };
 
+export const calculatePokeProteinExtraCost = (proteins: PokeIngredient[]) => {
+  let extraCost = 0;
+
+  // Protéines au-delà de 1 coûtent 1€ chaque
+  if (proteins.length > 1) {
+    extraCost += (proteins.length - 1) * 1;
+  }
+
+  // Ajouter les coûts des protéines premium
+  proteins.forEach(protein => {
+    if (!protein.included) {
+      extraCost += protein.price;
+    }
+  });
+
+  return extraCost;
+};
+
 export const calculateTotalPokePrice = (
   basePrice: number,
   ingredients: PokeIngredient[],
@@ -28,7 +46,7 @@ export const calculateTotalPokePrice = (
   
   // Calculer les coûts supplémentaires pour chaque catégorie
   totalExtraCost += calculatePokeExtraCost(ingredients);
-  totalExtraCost += calculatePokeExtraCost(proteins);
+  totalExtraCost += calculatePokeProteinExtraCost(proteins);
   totalExtraCost += calculatePokeExtraCost(sauces);
 
   return basePrice + totalExtraCost;

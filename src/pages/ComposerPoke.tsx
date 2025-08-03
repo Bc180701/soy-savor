@@ -145,10 +145,10 @@ const ComposerPoke = () => {
         return;
       }
       
-      if (step === 2 && selectedProteins.length < 6) {
+      if (step === 2 && selectedProteins.length < 1) {
         toast({
           title: "Sélection incomplète",
-          description: "Veuillez sélectionner au moins 6 protéines",
+          description: "Veuillez sélectionner au moins 1 protéine",
           variant: "destructive",
         });
         return;
@@ -237,7 +237,7 @@ const ComposerPoke = () => {
       case 2:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">2 : Protéines (6 minimum - +1€ par supplémentaire)</h3>
+            <h3 className="text-xl font-bold mb-4">2 : Protéines (1 minimum - +1€ par supplémentaire)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {proteinOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2 mb-2">
@@ -256,11 +256,11 @@ const ComposerPoke = () => {
               ))}
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {selectedProteins.length < 6 
-                ? `Sélectionnez encore ${6 - selectedProteins.length} protéine(s) minimum`
-                : selectedProteins.length > 6 
-                ? `+${selectedProteins.length - 6}€ pour les protéines supplémentaires`
-                : "6 protéines sélectionnées"
+              {selectedProteins.length < 1 
+                ? `Sélectionnez encore ${1 - selectedProteins.length} protéine minimum`
+                : selectedProteins.length > 1 
+                ? `+${selectedProteins.length - 1}€ pour les protéines supplémentaires`
+                : "1 protéine sélectionnée"
               }
             </p>
           </div>
