@@ -157,10 +157,10 @@ const ComposerPoke = () => {
       setStep(step + 1);
     } else {
       // Step 3 (sauce) - add to cart and complete
-      if (selectedSauces.length < 6) {
+      if (selectedSauces.length < 1) {
         toast({
           title: "Sélection incomplète",
-          description: "Veuillez sélectionner au moins 6 sauces",
+          description: "Veuillez sélectionner au moins 1 sauce",
           variant: "destructive",
         });
         return;
@@ -269,7 +269,7 @@ const ComposerPoke = () => {
       case 3:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">3 : Sauces (6 minimum - +1€ par supplémentaire)</h3>
+            <h3 className="text-xl font-bold mb-4">3 : Sauces (1 minimum - +1€ par supplémentaire)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {sauceOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2 mb-2">
@@ -288,11 +288,11 @@ const ComposerPoke = () => {
               ))}
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {selectedSauces.length < 6 
-                ? `Sélectionnez encore ${6 - selectedSauces.length} sauce(s) minimum`
-                : selectedSauces.length > 6 
-                ? `+${selectedSauces.length - 6}€ pour les sauces supplémentaires`
-                : "6 sauces sélectionnées"
+              {selectedSauces.length < 1 
+                ? `Sélectionnez encore ${1 - selectedSauces.length} sauce minimum`
+                : selectedSauces.length > 1 
+                ? `+${selectedSauces.length - 1}€ pour les sauces supplémentaires`
+                : "1 sauce sélectionnée"
               }
             </p>
           </div>
@@ -320,7 +320,7 @@ const ComposerPoke = () => {
         </Button>
 
         <h1 className="text-3xl font-bold mb-2">POKÉ CRÉA</h1>
-        <p className="text-gray-600 mb-6">Composez votre Poké bowl sur mesure selon vos envies ! (6 choix minimum par catégorie, +1€ par supplémentaire)</p>
+        <p className="text-gray-600 mb-6">Composez votre Poké bowl sur mesure selon vos envies ! (6 ingrédients, 1 protéine, 1 sauce minimum, +1€ par supplémentaire)</p>
 
         {/* Show selected restaurant */}
         {selectedRestaurant && step > 0 && (
