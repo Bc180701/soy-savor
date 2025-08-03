@@ -270,30 +270,16 @@ const CommanderContent = () => {
           onRestaurantSelected={handleRestaurantSelected}
         />
 
-        {/* Hero image section */}
-        <div className="mb-12 relative rounded-xl overflow-hidden">
-          <img 
-            src={commanderHeroImage} 
-            alt="Commander sushi en ligne - interface de commande moderne"
-            className="w-full h-64 md:h-80 object-cover"
-            loading="eager"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-            <div className="text-center text-white">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Commander</h1>
-              <p className="text-lg md:text-xl max-w-2xl">
-                Commandez en ligne et récupérez votre repas dans notre restaurant
-              </p>
-            </div>
-          </div>
-        </div>
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="max-w-6xl mx-auto"
         >
+          <h1 className="text-4xl font-bold text-center mb-2">Commander</h1>
+          <p className="text-gray-600 text-center mb-8">
+            Commandez en ligne et récupérez votre repas dans notre restaurant
+          </p>
 
         {currentRestaurant && (
           <div className="text-center mb-8">
