@@ -19,6 +19,7 @@ interface Restaurant {
   postal_code: string;
   phone?: string;
   email?: string;
+  delivery_phone?: string;
   is_active: boolean;
   display_order: number;
   hours: RestaurantHour[];
@@ -64,6 +65,7 @@ const RestaurantsManager = () => {
     postal_code: "",
     phone: "",
     email: "",
+    delivery_phone: "",
     is_active: true,
     display_order: 0,
     dayHours: dayNames.map((_, index) => ({
@@ -126,6 +128,7 @@ const RestaurantsManager = () => {
         postal_code: restaurant.postal_code,
         phone: restaurant.phone || "",
         email: restaurant.email || "",
+        delivery_phone: restaurant.delivery_phone || "",
         is_active: restaurant.is_active,
         display_order: restaurant.display_order,
         dayHours: dayNames.map((_, dayIndex) => {
@@ -159,6 +162,7 @@ const RestaurantsManager = () => {
         postal_code: "",
         phone: "",
         email: "",
+        delivery_phone: "",
         is_active: true,
         display_order: Math.max(0, ...restaurants.map(r => r.display_order)) + 1,
         dayHours: dayNames.map((_, index) => ({
@@ -189,6 +193,7 @@ const RestaurantsManager = () => {
             postal_code: formData.postal_code,
             phone: formData.phone || null,
             email: formData.email || null,
+            delivery_phone: formData.delivery_phone || null,
             is_active: formData.is_active,
             display_order: formData.display_order
           })
@@ -235,6 +240,7 @@ const RestaurantsManager = () => {
             postal_code: formData.postal_code,
             phone: formData.phone || null,
             email: formData.email || null,
+            delivery_phone: formData.delivery_phone || null,
             is_active: formData.is_active,
             display_order: formData.display_order
           })
@@ -423,6 +429,20 @@ const RestaurantsManager = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                   />
+                </div>
+                
+                <div>
+                  <Label htmlFor="delivery_phone">Téléphone du livreur</Label>
+                  <Input
+                    id="delivery_phone"
+                    type="tel"
+                    placeholder="Ex: +33123456789"
+                    value={formData.delivery_phone}
+                    onChange={(e) => setFormData({...formData, delivery_phone: e.target.value})}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Numéro utilisé pour envoyer des alertes SMS lors des livraisons
+                  </p>
                 </div>
                 
                 <div className="flex items-center space-x-2">

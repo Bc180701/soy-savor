@@ -409,6 +409,48 @@ export const updateOrderStatus = async (orderId: string, status: string): Promis
       console.log(`📱 SMS non envoyé - Phone: ${!!clientPhone}, shouldSend: ${shouldSendSMS(status, order.order_type)}`);
     }
 
+    // Notification SMS au livreur du restaurant quand la commande part en livraison
+    if (status === 'out-for-delivery' && order.order_type === 'delivery') {
+      console.log(`🚚 Tentative d'envoi SMS au livreur pour la commande ${orderId}...`);
+      try {
+        // Récupérer le numéro du livreur du restaurant
+        const { data: restaurant, error: restaurantError } = await supabase
+          .from('restaurants')
+          .select('delivery_phone, name')
+          .eq('id', order.restaurant_id)
+          .single();
+
+        if (restaurantError) {
+          console.error("❌ Erreur lors de la récupération du restaurant:", restaurantError);
+        } else if (restaurant?.delivery_phone) {
+          console.log(`📱 Envoi SMS au livreur ${restaurant.delivery_phone} du restaurant ${restaurant.name}...`);
+          
+          // Préparer le message pour le livreur
+          const deliveryMessage = `🚚 NOUVELLE LIVRAISON! Commande #${orderId.slice(0, 8)} prête pour livraison. Client: ${clientName || 'N/A'}, Tél: ${clientPhone || 'N/A'}, Adresse: ${order.delivery_street || ''} ${order.delivery_city || ''} ${order.delivery_postal_code || ''}. Restaurant: ${restaurant.name}`;
+          
+          // Utiliser directement l'edge function pour le livreur
+          const { error: smsError } = await supabase.functions.invoke('send-sms-notification', {
+            body: {
+              phoneNumber: restaurant.delivery_phone,
+              message: deliveryMessage,
+              orderId: orderId
+            }
+          });
+
+          if (smsError) {
+            console.error("❌ Erreur lors de l'envoi du SMS au livreur:", smsError);
+          } else {
+            console.log(`✅ SMS envoyé avec succès au livreur pour la commande ${orderId}`);
+          }
+        } else {
+          console.log(`📱 Aucun numéro de livreur configuré pour le restaurant ${order.restaurant_id}`);
+        }
+      } catch (deliveryError) {
+        console.error("❌ Erreur lors de l'envoi du SMS au livreur:", deliveryError);
+        // Ne pas faire échouer la mise à jour du statut même si le SMS au livreur échoue
+      }
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Erreur inattendue lors de la mise à jour du statut de la commande:", error);

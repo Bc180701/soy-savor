@@ -870,6 +870,7 @@ export type Database = {
           address: string | null
           city: string | null
           created_at: string | null
+          delivery_phone: string | null
           email: string | null
           id: string
           is_active: boolean
@@ -883,6 +884,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           created_at?: string | null
+          delivery_phone?: string | null
           email?: string | null
           id?: string
           is_active?: boolean
@@ -896,6 +898,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           created_at?: string | null
+          delivery_phone?: string | null
           email?: string | null
           id?: string
           is_active?: boolean
