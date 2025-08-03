@@ -25,6 +25,7 @@ import TestOrderNotification from "./TestOrderNotification";
 import { RenameProductImages } from "./RenameProductImages";
 import { ReassignProductImages } from "./ReassignProductImages";
 import DeliveryPhoneManager from "./DeliveryPhoneManager";
+import SitemapManager from "./SitemapManager";
 
 const AdminManager = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -70,6 +71,7 @@ const AdminManager = () => {
             <OpeningHoursManager />
             <DeliveryZonesManager />
             <IngredientsManager />
+            <SitemapManager />
             <div className="bg-white p-6 rounded-lg shadow-sm border">
             <RenameProductImages />
             <ReassignProductImages />
