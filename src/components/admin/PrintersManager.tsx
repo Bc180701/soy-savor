@@ -9,7 +9,6 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { Eye, EyeOff, Printer, TestTube, RefreshCw } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { loadEPOSScript, EPosPrinter, type PrinterConfig } from "@/utils/epos-print";
 
 export default function PrintersManager() {
   const [printerConfig, setPrinterConfig] = useState({
@@ -204,92 +203,61 @@ export default function PrintersManager() {
   };
 
   const testPrinterConnection = async () => {
-    if (!validatePrinterConfig()) return;
+    if (!currentRestaurant?.id) {
+      toast({
+        title: "Erreur",
+        description: "Aucun restaurant sélectionné",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setTesting(true);
     setTestLogs("🔄 Test de connexion en cours...\n");
-    setTestLogs(prev => prev + "🔧 TEST DIRECT CÔTÉ CLIENT (contourne les limitations serveur)\n\n");
 
     try {
-      const printer = new EPosPrinter(printerConfig as PrinterConfig);
-      const result = await printer.testConnection();
-      
-      if (result.success) {
-        setTestLogs(prev => prev + `✅ ${result.message}\n`);
-        if (result.details) {
-          setTestLogs(prev => prev + `📋 ${result.details}\n`);
-        }
-        setTestLogs(prev => prev + "\n🎉 CONNEXION RÉUSSIE!\n");
-        setTestLogs(prev => prev + "💡 L'imprimante est prête pour l'impression des commandes\n");
-        
+      const { data, error } = await supabase.functions.invoke('test-printer-connection', {
+        body: { restaurantId: currentRestaurant.id }
+      });
+
+      if (error) {
+        const errorMessage = `❌ Échec du test: ${error.message}`;
+        setTestLogs(prev => prev + errorMessage + "\n");
         toast({
-          title: "Test réussi",
-          description: "L'imprimante est configurée et fonctionnelle",
+          title: "Test échoué",
+          description: error.message || "Impossible de tester la connexion",
+          variant: "destructive",
         });
-        
-      } else {
-        setTestLogs(prev => prev + `❌ ${result.message}\n`);
-        if (result.details) {
-          setTestLogs(prev => prev + `📋 ${result.details}\n`);
-        }
-        
-        if (result.message.includes('Mixed Content') || result.details?.includes('CORS')) {
-          showMixedContentInstructions();
-        } else {
-          showTroubleshootingInstructions();
-        }
+        return;
       }
 
-    } catch (error) {
-      console.error('❌ Erreur lors du test:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-      setTestLogs(prev => prev + `❌ Erreur: ${errorMessage}\n`);
-      
-      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch')) {
-        showMixedContentInstructions();
+      if (data?.success) {
+        const successMessage = `✅ Test réussi!\n📋 Détails: ${data.message}`;
+        setTestLogs(prev => prev + successMessage + "\n");
+        toast({
+          title: "Test réussi",
+          description: "La connexion à l'imprimante fonctionne correctement",
+        });
       } else {
-        showTroubleshootingInstructions();
+        const failureMessage = `❌ Test échoué: ${data?.message || "Raison inconnue"}`;
+        setTestLogs(prev => prev + failureMessage + "\n");
+        toast({
+          title: "Test échoué",
+          description: data?.message || "La connexion à l'imprimante a échoué",
+          variant: "destructive",
+        });
       }
-      
+    } catch (error) {
+      const errorMessage = `💥 Erreur inattendue: ${error instanceof Error ? error.message : 'Erreur inconnue'}`;
+      setTestLogs(prev => prev + errorMessage + "\n");
       toast({
-        title: "Erreur de test",
-        description: "Consultez les instructions ci-dessous",
+        title: "Erreur",
+        description: "Une erreur inattendue est survenue",
         variant: "destructive",
       });
     } finally {
       setTesting(false);
     }
-  };
-
-  const showMixedContentInstructions = () => {
-    setTestLogs(prev => prev + "\n🚨 PROBLÈME: Mixed Content (HTTPS/HTTP) bloqué par le navigateur\n");
-    setTestLogs(prev => prev + "\n🔧 SOLUTIONS PAR NAVIGATEUR:\n");
-    setTestLogs(prev => prev + "\n📍 CHROME/EDGE:\n");
-    setTestLogs(prev => prev + "1. Cliquez sur l'icône 🔒 à gauche de l'URL\n");
-    setTestLogs(prev => prev + "2. Cliquez sur 'Paramètres du site'\n");
-    setTestLogs(prev => prev + "3. Trouvez 'Contenu non sécurisé' et changez vers 'Autoriser'\n");
-    setTestLogs(prev => prev + "4. Rechargez la page (F5) et retestez\n");
-    setTestLogs(prev => prev + "\n📍 FIREFOX:\n");
-    setTestLogs(prev => prev + "1. Cliquez sur l'icône 🔒 à gauche de l'URL\n");
-    setTestLogs(prev => prev + "2. Cliquez sur '>' puis 'Connexion non sécurisée autorisée'\n");
-    setTestLogs(prev => prev + "3. Rechargez et retestez\n");
-    setTestLogs(prev => prev + "\n⚡ ALTERNATIVE: Accès direct via http://192.168.1.129:8008\n");
-    setTestLogs(prev => prev + "   Ouvrez un nouvel onglet et allez à cette adresse pour tester\n");
-    
-    toast({
-      title: "Configuration navigateur requise",
-      description: "Consultez les instructions pour autoriser le contenu mixte",
-      variant: "destructive",
-    });
-  };
-
-  const showTroubleshootingInstructions = () => {
-    setTestLogs(prev => prev + "\n🔧 DÉPANNAGE GÉNÉRAL:\n");
-    setTestLogs(prev => prev + "1. Vérifiez que l'imprimante est allumée\n");
-    setTestLogs(prev => prev + "2. Vérifiez la connexion réseau (même WiFi/réseau)\n");
-    setTestLogs(prev => prev + "3. Pingez l'IP depuis un terminal: ping " + printerConfig.ip_address + "\n");
-    setTestLogs(prev => prev + "4. Vérifiez les paramètres réseau de l'imprimante\n");
-    setTestLogs(prev => prev + "5. Redémarrez l'imprimante si nécessaire\n");
   };
 
   if (!isAuthenticated) {
