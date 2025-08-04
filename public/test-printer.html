@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Imprimante - TM-m30III</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .logs {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖨️ Test Imprimante TM-m30III</h1>
+        
+        <div class="form-group">
+            <label for="ip">Adresse IP:</label>
+            <input type="text" id="ip" value="192.168.1.129" placeholder="192.168.1.129">
+        </div>
+        
+        <div class="form-group">
+            <label for="port">Port:</label>
+            <input type="text" id="port" value="8008" placeholder="8008">
+        </div>
+        
+        <div class="form-group">
+            <label for="deviceId">Device ID:</label>
+            <input type="text" id="deviceId" value="EPSONA6BBCD" placeholder="EPSONA6BBCD">
+        </div>
+        
+        <button onclick="testConnection()" id="testBtn">🔄 Tester la Connexion</button>
+        <button onclick="testPrint()" id="printBtn">🖨️ Test d'Impression</button>
+        <button onclick="clearLogs()" id="clearBtn">🗑️ Effacer les Logs</button>
+        
+        <div id="logs" class="logs">📋 Prêt pour les tests...\n</div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.textContent += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').textContent = '📋 Logs effacés...\n';
+        }
+
+        async function testConnection() {
+            const ip = document.getElementById('ip').value;
+            const port = document.getElementById('port').value;
+            const deviceId = document.getElementById('deviceId').value;
+            
+            if (!ip || !port || !deviceId) {
+                log('❌ Veuillez remplir tous les champs', 'error');
+                return;
+            }
+
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            testBtn.textContent = '🔄 Test en cours...';
+
+            try {
+                log('🔄 Test de connexion en cours...', 'info');
+                
+                // Test 1: Connectivité de base
+                log('📡 Test de connectivité de base...', 'info');
+                const baseResponse = await fetch(`http://${ip}:${port}/`);
+                
+                if (baseResponse.ok) {
+                    const result = await baseResponse.text();
+                    log(`✅ Connexion de base réussie!`, 'success');
+                    log(`📋 Réponse: ${result.substring(0, 100)}...`, 'info');
+                    
+                    // Test 2: API ePOS-Print
+                    log('🖨️ Test de l\'API ePOS-Print...', 'info');
+                    const eposResponse = await fetch(`http://${ip}:${port}/rpc/requestid`);
+                    
+                    if (eposResponse.ok) {
+                        const eposResult = await eposResponse.text();
+                        log(`✅ API ePOS-Print accessible!`, 'success');
+                        log(`📋 Réponse: ${eposResult.substring(0, 100)}...`, 'info');
+                        log(`🎉 Test de connexion RÉUSSI!`, 'success');
+                    } else {
+                        log(`⚠️ API ePOS-Print non accessible (statut: ${eposResponse.status})`, 'warning');
+                    }
+                } else {
+                    log(`❌ Connexion échouée (statut: ${baseResponse.status})`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Erreur de connexion: ${error.message}`, 'error');
+                log(`💡 Vérifiez que l'imprimante est allumée et sur le même réseau`, 'info');
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = '🔄 Tester la Connexion';
+            }
+        }
+
+        async function testPrint() {
+            const ip = document.getElementById('ip').value;
+            const port = document.getElementById('port').value;
+            const deviceId = document.getElementById('deviceId').value;
+            
+            if (!ip || !port || !deviceId) {
+                log('❌ Veuillez remplir tous les champs', 'error');
+                return;
+            }
+
+            const printBtn = document.getElementById('printBtn');
+            printBtn.disabled = true;
+            printBtn.textContent = '🖨️ Impression...';
+
+            try {
+                log('🧾 Test d\'impression en cours...', 'info');
+                
+                const printPayload = {
+                    method: "print",
+                    params: {
+                        devid: deviceId,
+                        timeout: 10000
+                    },
+                    id: Date.now()
+                };
+
+                const response = await fetch(`http://${ip}:${port}/rpc/requestid`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(printPayload)
+                });
+
+                if (response.ok) {
+                    const result = await response.text();
+                    log(`✅ Commande d'impression envoyée!`, 'success');
+                    log(`📋 Réponse: ${result}`, 'info');
+                } else {
+                    log(`⚠️ Échec de l'impression (statut: ${response.status})`, 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ Erreur d'impression: ${error.message}`, 'error');
+            } finally {
+                printBtn.disabled = false;
+                printBtn.textContent = '🖨️ Test d\'Impression';
+            }
+        }
+    </script>
+</body>
+</html>
