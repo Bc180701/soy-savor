@@ -73,27 +73,14 @@ serve(async (req) => {
       // Construire l'URL de l'API Epos
       const eposUrl = `http://${ip_address}:${port}/rpc/requestid`
       
-      // Préparer le payload pour le test de connexion
-      const testPayload = {
-        method: "discover",
-        params: {
-          protocol: "simple"
-        },
-        id: "test_connection_" + Date.now()
-      }
+      console.log('Testing simple GET request to:', eposUrl)
 
-      console.log('Sending test request to:', eposUrl)
-
-      // Faire la requête de test avec timeout
+      // Essayer d'abord une requête GET simple pour vérifier l'accessibilité
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), parseInt(timeout))
 
       const response = await fetch(eposUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testPayload),
+        method: 'GET',
         signal: controller.signal
       })
 
@@ -101,24 +88,65 @@ serve(async (req) => {
 
       console.log('Response status:', response.status)
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      if (response.ok || response.status === 200) {
+        const result = await response.text()
+        console.log('GET test successful:', result)
 
-      const result = await response.json()
-      console.log('Test result:', result)
-
-      // Si nous arrivons ici, la connexion fonctionne
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `Connexion réussie à l'imprimante ${device_id} (${ip_address}:${port})`,
-          details: result
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        // Si nous arrivons ici, la connexion fonctionne
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: `Connexion réussie à l'imprimante ${device_id} (${ip_address}:${port})`,
+            details: `API ePOS-Print accessible. Réponse: ${result}`
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      } else {
+        // Si GET échoue, essayer POST avec JSON-RPC
+        console.log('GET failed, trying POST with JSON-RPC')
+        
+        const testPayload = {
+          method: "discover",
+          params: {
+            protocol: "simple"
+          },
+          id: "test_connection_" + Date.now()
         }
-      )
+
+        const controller2 = new AbortController()
+        const timeoutId2 = setTimeout(() => controller2.abort(), 5000)
+
+        const postResponse = await fetch(eposUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(testPayload),
+          signal: controller2.signal
+        })
+
+        clearTimeout(timeoutId2)
+
+        if (postResponse.ok) {
+          const postResult = await postResponse.text()
+          console.log('POST test successful:', postResult)
+
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: `Connexion réussie à l'imprimante ${device_id} (${ip_address}:${port})`,
+              details: `API ePOS-Print accessible via POST. Réponse: ${postResult}`
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          )
+        } else {
+          throw new Error(`Both GET and POST failed. GET status: ${response.status}, POST status: ${postResponse.status}`)
+        }
+      }
 
     } catch (fetchError) {
       console.error('Printer connection test failed:', fetchError)
