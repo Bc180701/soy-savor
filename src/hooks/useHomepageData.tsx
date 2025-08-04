@@ -7,6 +7,7 @@ export interface HeroSection {
   image_url?: string;
   overlay_image?: string;
   background_image: string;
+  mobile_background_image?: string;
 }
 
 export interface CustomCreationSection {

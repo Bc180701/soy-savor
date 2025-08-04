@@ -159,6 +159,7 @@ const Index = () => {
       {/* Hero Section */}
       <HeroSection 
         background_image={homepageData?.hero_section?.background_image || DEFAULT_HOMEPAGE_DATA.hero_section.background_image}
+        mobile_background_image={homepageData?.hero_section?.mobile_background_image}
         title={homepageData?.hero_section?.title || DEFAULT_HOMEPAGE_DATA.hero_section.title}
         subtitle={homepageData?.hero_section?.subtitle || DEFAULT_HOMEPAGE_DATA.hero_section.subtitle}
       />
