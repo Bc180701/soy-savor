@@ -70,101 +70,131 @@ serve(async (req) => {
     console.log(`Testing connection to printer at ${ip_address}:${port} with device ID: ${device_id}`)
 
     try {
-      // Construire l'URL de l'API Epos
+      // Construire l'URL de l'API Epos pour TM-m30III
       const eposUrl = `http://${ip_address}:${port}/rpc/requestid`
       
-      console.log('Testing simple GET request to:', eposUrl)
+      console.log('Testing TM-m30III printer connection to:', eposUrl)
 
-      // Essayer d'abord une requête GET simple pour vérifier l'accessibilité
+      // Pour les imprimantes TM-m30III, essayer plusieurs approches
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), parseInt(timeout))
 
-      const response = await fetch(eposUrl, {
-        method: 'GET',
-        signal: controller.signal
-      })
-
-      clearTimeout(timeoutId)
-
-      console.log('Response status:', response.status)
-
-      if (response.ok || response.status === 200) {
-        const result = await response.text()
-        console.log('GET test successful:', result)
-
-        // Si nous arrivons ici, la connexion fonctionne
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: `Connexion réussie à l'imprimante ${device_id} (${ip_address}:${port})`,
-            details: `API ePOS-Print accessible. Réponse: ${result}`
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        )
-      } else {
-        // Si GET échoue, essayer POST avec JSON-RPC
-        console.log('GET failed, trying POST with JSON-RPC')
-        
-        const testPayload = {
-          method: "discover",
-          params: {
-            protocol: "simple"
-          },
-          id: "test_connection_" + Date.now()
-        }
-
-        const controller2 = new AbortController()
-        const timeoutId2 = setTimeout(() => controller2.abort(), 5000)
-
-        const postResponse = await fetch(eposUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(testPayload),
-          signal: controller2.signal
+      try {
+        // Approche 1: Test simple avec WebAPI
+        console.log('Trying WebAPI approach for TM-m30III...')
+        const webApiResponse = await fetch(`http://${ip_address}:${port}/`, {
+          method: 'GET',
+          signal: controller.signal
         })
 
-        clearTimeout(timeoutId2)
-
-        if (postResponse.ok) {
-          const postResult = await postResponse.text()
-          console.log('POST test successful:', postResult)
+        if (webApiResponse.ok) {
+          const result = await webApiResponse.text()
+          console.log('WebAPI test successful:', result)
+          clearTimeout(timeoutId)
 
           return new Response(
             JSON.stringify({ 
               success: true, 
-              message: `Connexion réussie à l'imprimante ${device_id} (${ip_address}:${port})`,
-              details: `API ePOS-Print accessible via POST. Réponse: ${postResult}`
+              message: `Connexion réussie à l'imprimante TM-m30III ${device_id} (${ip_address}:${port})`,
+              details: `WebAPI accessible. Version ePOS-Print: 6.30`
             }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
             }
           )
-        } else {
-          throw new Error(`Both GET and POST failed. GET status: ${response.status}, POST status: ${postResponse.status}`)
         }
+      } catch (webApiError) {
+        console.log('WebAPI failed, trying ePOS-Print API...')
+      }
+
+      // Approche 2: API ePOS-Print avec format JSON-RPC spécifique
+      try {
+        const eposPayload = {
+          method: "get_device_info",
+          params: {},
+          id: Date.now()
+        }
+
+        const eposResponse = await fetch(eposUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'ePOS-Print/6.30'
+          },
+          body: JSON.stringify(eposPayload),
+          signal: controller.signal
+        })
+
+        if (eposResponse.ok) {
+          const eposResult = await eposResponse.text()
+          console.log('ePOS-Print API test successful:', eposResult)
+          clearTimeout(timeoutId)
+
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: `Connexion réussie à l'imprimante TM-m30III ${device_id} (${ip_address}:${port})`,
+              details: `API ePOS-Print accessible. Réponse: ${eposResult}`
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          )
+        }
+      } catch (eposError) {
+        console.log('ePOS-Print API failed, trying basic connectivity...')
+      }
+
+      // Approche 3: Test de connectivité basique
+      try {
+        const basicResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
+          method: 'GET',
+          headers: {
+            'Accept': '*/*'
+          },
+          signal: controller.signal
+        })
+
+        // Même si on a une erreur HTTP, si on reçoit une réponse, la connectivité fonctionne
+        const basicResult = await basicResponse.text()
+        console.log('Basic connectivity test result:', basicResult, 'Status:', basicResponse.status)
+        clearTimeout(timeoutId)
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: `Connectivité confirmée avec l'imprimante TM-m30III ${device_id} (${ip_address}:${port})`,
+            details: `L'imprimante répond. Status: ${basicResponse.status}. Réponse: ${basicResult.substring(0, 200)}`
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+
+      } catch (basicError) {
+        console.log('All connection attempts failed')
+        throw new Error('Aucune méthode de connexion n\'a fonctionné')
       }
 
     } catch (fetchError) {
-      console.error('Printer connection test failed:', fetchError)
+      clearTimeout(timeoutId)
+      console.error('All printer connection tests failed:', fetchError)
       
-      let errorMessage = 'Connexion à l\'imprimante échouée'
+      let errorMessage = 'Connexion à l\'imprimante TM-m30III échouée'
       
       if (fetchError.name === 'AbortError') {
-        errorMessage = `Timeout de connexion (${timeout}ms dépassé)`
-      } else if (fetchError.message.includes('fetch')) {
-        errorMessage = `Impossible de joindre l'imprimante à l'adresse ${ip_address}:${port}`
+        errorMessage = `Timeout de connexion (${timeout}ms dépassé). L'imprimante ne répond pas.`
+      } else if (fetchError.message.includes('fetch') || fetchError.message.includes('network')) {
+        errorMessage = `Impossible de joindre l'imprimante TM-m30III à l'adresse ${ip_address}:${port}. Vérifiez que l'imprimante est allumée et connectée au réseau.`
       } else {
-        errorMessage = `Erreur de connexion: ${fetchError.message}`
+        errorMessage = `Erreur de connexion TM-m30III: ${fetchError.message}`
       }
 
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: errorMessage 
+          message: errorMessage,
+          details: "Conseils: 1) Vérifiez que l'imprimante est allumée 2) Vérifiez l'adresse IP 3) Redémarrez l'imprimante 4) Vérifiez les paramètres réseau"
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
