@@ -9,6 +9,7 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { Eye, EyeOff, Printer, TestTube, RefreshCw } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { loadEPOSScript, EPosPrinter, type PrinterConfig } from "@/utils/epos-print";
 
 export default function PrintersManager() {
   const [printerConfig, setPrinterConfig] = useState({
@@ -203,144 +204,100 @@ export default function PrintersManager() {
   };
 
   const testPrinterConnection = async () => {
-    if (!currentRestaurant?.id) {
-      toast({
-        title: "Erreur",
-        description: "Aucun restaurant sélectionné",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!validatePrinterConfig()) return;
 
     setTesting(true);
-    setTestLogs("🔄 Test de connexion en cours...\n");
+    setTestLogs("🔄 Initialisation du test ePOS-Print...\n");
 
     try {
-      if (!printerConfig.ip_address || !printerConfig.device_id) {
-        toast({
-          title: "Configuration incomplète",
-          description: "Veuillez renseigner l'adresse IP et l'ID de l'appareil",
-          variant: "destructive",
-        });
+      // Étape 1: Charger le SDK ePOS-Print
+      setTestLogs(prev => prev + "📦 Chargement du SDK ePOS-Print...\n");
+      
+      try {
+        await loadEPOSScript();
+        setTestLogs(prev => prev + "✅ SDK ePOS-Print chargé avec succès!\n");
+      } catch (error) {
+        setTestLogs(prev => prev + "❌ Erreur lors du chargement du SDK ePOS-Print\n");
+        setTestLogs(prev => prev + "⚡ Tentative avec API directe...\n");
+        
+        // Fallback sur l'ancienne méthode si le SDK ne se charge pas
+        const { ip_address, port = "8008" } = printerConfig;
+        
+        try {
+          const response = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
+            method: 'GET'
+          });
+          
+          if (response.ok) {
+            const result = await response.text();
+            setTestLogs(prev => prev + `✅ Connexion directe réussie!\n📋 Réponse: ${result.substring(0, 100)}...\n`);
+            
+            toast({
+              title: "Connexion réussie",
+              description: "L'imprimante répond (méthode directe)",
+            });
+          } else {
+            throw new Error(`HTTP ${response.status}`);
+          }
+        } catch (directError) {
+          setTestLogs(prev => prev + `❌ Connexion directe échouée: ${directError.message}\n`);
+          throw directError;
+        }
         return;
       }
 
-      const { ip_address, port = "8008", device_id, timeout = "10000" } = printerConfig;
+      // Étape 2: Test avec le SDK ePOS-Print
+      setTestLogs(prev => prev + "🖨️ Initialisation de l'imprimante ePOS-Print...\n");
       
-      // Test 1: Vérification de l'accessibilité de base
-      setTestLogs(prev => prev + "📡 Test de connectivité de base...\n");
+      const printer = new EPosPrinter(printerConfig as PrinterConfig);
       
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), parseInt(timeout));
+      // Étape 3: Test de connexion
+      setTestLogs(prev => prev + "🔌 Test de connexion...\n");
       
-      try {
-        const baseResponse = await fetch(`http://${ip_address}:${port}/`, {
-          method: 'GET',
-          signal: controller.signal
+      const testResult = await printer.testConnection();
+      
+      if (testResult.success) {
+        setTestLogs(prev => prev + `✅ ${testResult.message}\n`);
+        if (testResult.details) {
+          setTestLogs(prev => prev + `📋 ${testResult.details}\n`);
+        }
+        
+        toast({
+          title: "Test réussi",
+          description: "L'imprimante ePOS-Print fonctionne correctement",
         });
         
-        clearTimeout(timeoutId);
+        // Proposer un test d'impression de reçu
+        setTestLogs(prev => prev + "💡 Vous pouvez maintenant tester l'impression depuis les commandes!\n");
         
-        if (baseResponse.ok) {
-          const result = await baseResponse.text();
-          setTestLogs(prev => prev + `✅ Connexion de base réussie!\n📋 Réponse: ${result.substring(0, 100)}...\n`);
-          
-          // Test 2: Test de l'API ePOS-Print
-          setTestLogs(prev => prev + "🖨️ Test de l'API ePOS-Print...\n");
-          
-          try {
-            const eposResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
-              method: 'GET'
-            });
-            
-            if (eposResponse.ok || eposResponse.status === 200) {
-              const eposResult = await eposResponse.text();
-              setTestLogs(prev => prev + `✅ API ePOS-Print accessible!\n📋 Réponse: ${eposResult.substring(0, 100)}...\n`);
-              
-              // Test 3: Test d'impression simple
-              setTestLogs(prev => prev + "🧾 Test d'impression...\n");
-              
-              try {
-                const printTestPayload = {
-                  method: "print",
-                  params: {
-                    devid: device_id,
-                    timeout: 10000
-                  },
-                  id: Date.now()
-                };
-
-                const printResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(printTestPayload)
-                });
-
-                const printResult = await printResponse.text();
-                setTestLogs(prev => prev + `✅ Test d'impression envoyé!\n📋 Réponse: ${printResult}\n`);
-                
-                toast({
-                  title: "Test complet réussi",
-                  description: "Connexion et API d'impression fonctionnelles",
-                });
-              } catch (printError) {
-                setTestLogs(prev => prev + `⚠️ Test d'impression: ${printError.message}\n`);
-                
-                toast({
-                  title: "Connexion réussie",
-                  description: "L'imprimante répond, test d'impression échoué",
-                });
-              }
-              
-            } else {
-              setTestLogs(prev => prev + `⚠️ API ePOS-Print non accessible (statut: ${eposResponse.status})\n`);
-              
-              toast({
-                title: "Connexion partielle",
-                description: "L'imprimante répond mais l'API ePOS-Print n'est pas disponible",
-                variant: "destructive",
-              });
-            }
-          } catch (eposError) {
-            setTestLogs(prev => prev + `❌ Erreur API ePOS-Print: ${eposError.message}\n`);
-            
-            toast({
-              title: "Connexion partielle",
-              description: "L'imprimante répond mais l'API ePOS-Print ne fonctionne pas",
-              variant: "destructive",
-            });
-          }
-          
-        } else {
-          throw new Error(`Statut HTTP: ${baseResponse.status}`);
+      } else {
+        setTestLogs(prev => prev + `❌ ${testResult.message}\n`);
+        if (testResult.details) {
+          setTestLogs(prev => prev + `📋 ${testResult.details}\n`);
         }
         
-      } catch (connectError) {
-        clearTimeout(timeoutId);
-        if (connectError.name === 'AbortError') {
-          setTestLogs(prev => prev + `❌ Timeout de connexion (${timeout}ms dépassé)\n`);
-          toast({
-            title: "Test échoué",
-            description: "L'imprimante ne répond pas dans le délai imparti",
-            variant: "destructive",
-          });
-        } else {
-          setTestLogs(prev => prev + `❌ Erreur de connexion: ${connectError.message}\n`);
-          toast({
-            title: "Test échoué",
-            description: "Impossible de joindre l'imprimante. Vérifiez l'adresse IP et que l'imprimante est allumée.",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Test échoué",
+          description: testResult.message,
+          variant: "destructive",
+        });
       }
+
     } catch (error) {
-      const errorMessage = `💥 Erreur inattendue: ${error instanceof Error ? error.message : 'Erreur inconnue'}`;
-      setTestLogs(prev => prev + errorMessage + "\n");
+      console.error('Erreur lors du test ePOS-Print:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      setTestLogs(prev => prev + `❌ Erreur: ${errorMessage}\n`);
+      
+      // Instructions de dépannage
+      setTestLogs(prev => prev + "\n🔧 DÉPANNAGE:\n");
+      setTestLogs(prev => prev + "1. Vérifiez que l'imprimante est allumée\n");
+      setTestLogs(prev => prev + "2. Vérifiez l'adresse IP dans les paramètres réseau\n");
+      setTestLogs(prev => prev + "3. Activez l'API ePOS-Print dans l'interface web de l'imprimante\n");
+      setTestLogs(prev => prev + "4. Autorisez le contenu mixte HTTPS/HTTP dans votre navigateur\n");
+      
       toast({
-        title: "Erreur",
-        description: "Une erreur inattendue est survenue",
+        title: "Test échoué",
+        description: "Erreur lors du test ePOS-Print. Consultez les logs pour plus d'informations.",
         variant: "destructive",
       });
     } finally {
