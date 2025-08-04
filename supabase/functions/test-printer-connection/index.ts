@@ -174,7 +174,7 @@ serve(async (req) => {
       } catch (basicError) {
         console.log('All connection attempts failed:', basicError.message)
         clearTimeout(timeoutId)
-        throw new Error('Aucune méthode de connexion n\'a fonctionné')
+        // Ne pas lancer d'exception ici, plutôt retourner une réponse d'erreur
       }
 
     } catch (fetchError) {
@@ -201,6 +201,18 @@ serve(async (req) => {
         }
       )
     }
+
+    // Si toutes les méthodes ont échoué, retourner une erreur
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        message: `Impossible de se connecter à l'imprimante TM-m30III ${device_id} (${ip_address}:${port})`,
+        details: "Toutes les méthodes de connexion ont échoué. Vérifiez la configuration réseau de l'imprimante."
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
 
   } catch (error) {
     console.error('Error in test-printer-connection function:', error)
