@@ -1,5 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
+import { RestaurantProvider } from "@/hooks/useRestaurantContext";
 
 // Pages principales
 import Index from "@/pages/Index";
@@ -61,9 +66,16 @@ import {
   Sushi13104
 } from "@/pages/geo/PostalCodePages";
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
-    <Router>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <RestaurantProvider>
+          <Toaster />
+          <Sonner />
+          <Router>
       <Routes>
         {/* Pages principales avec Layout */}
         <Route path="/" element={<Layout><Index /></Layout>} />
@@ -128,6 +140,9 @@ function App() {
         <Route path="*" element={<Layout><NotFound /></Layout>} />
       </Routes>
     </Router>
+        </RestaurantProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 
