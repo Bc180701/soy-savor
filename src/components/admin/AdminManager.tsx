@@ -21,7 +21,6 @@ import AdminSidebar from "./AdminSidebar";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import TestOrderNotification from "./TestOrderNotification";
-import { ReassignProductImages } from "./ReassignProductImages";
 import DeliveryPhoneManager from "./DeliveryPhoneManager";
 
 const AdminManager = () => {
@@ -68,9 +67,6 @@ const AdminManager = () => {
             <OpeningHoursManager />
             <DeliveryZonesManager />
             <IngredientsManager />
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <ReassignProductImages />
-            </div>
           </div>
         );
       default:
