@@ -16,13 +16,11 @@ import AdminInviteManager from "./AdminInviteManager";
 import AdminPermissionsManager from "./AdminPermissionsManager";
 import StripeKeysManager from "./StripeKeysManager";
 import PrintersManager from "./PrintersManager";
-import SMSTestManager from "./SMSTestManager";
 import BlockedTimeSlotsManager from "./BlockedTimeSlotsManager";
 import AdminSidebar from "./AdminSidebar";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import TestOrderNotification from "./TestOrderNotification";
-import { RenameProductImages } from "./RenameProductImages";
 import { ReassignProductImages } from "./ReassignProductImages";
 import DeliveryPhoneManager from "./DeliveryPhoneManager";
 
@@ -71,10 +69,8 @@ const AdminManager = () => {
             <DeliveryZonesManager />
             <IngredientsManager />
             <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <RenameProductImages />
             <ReassignProductImages />
             </div>
-            <SMSTestManager />
           </div>
         );
       default:
