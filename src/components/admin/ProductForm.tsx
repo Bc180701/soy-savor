@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -89,8 +89,56 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
   const [bucketImages, setBucketImages] = useState<any[]>([]);
   const [filteredImages, setFilteredImages] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [availableAllergens, setAvailableAllergens] = useState<string[]>(COMMON_ALLERGENS);
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
+
+  // Récupérer tous les allergènes existants dans la base de données
+  useEffect(() => {
+    const fetchExistingAllergens = async () => {
+      if (!currentRestaurant) return;
+      
+      try {
+        const { data: products, error } = await supabase
+          .from('products')
+          .select('allergens')
+          .eq('restaurant_id', currentRestaurant.id)
+          .not('allergens', 'is', null);
+
+        if (error) throw error;
+
+        // Extraire tous les allergènes uniques
+        const existingAllergens = new Set<string>();
+        products?.forEach(product => {
+          if (product.allergens && Array.isArray(product.allergens)) {
+            product.allergens.forEach((allergen: string) => {
+              if (allergen && allergen.trim()) {
+                existingAllergens.add(allergen.trim());
+              }
+            });
+          }
+        });
+
+        // Combiner les allergènes existants avec la liste standard
+        const combinedAllergens = [
+          ...Array.from(existingAllergens).sort(),
+          ...COMMON_ALLERGENS.filter(allergen => 
+            !Array.from(existingAllergens).some(existing => 
+              existing.toLowerCase() === allergen.toLowerCase()
+            )
+          )
+        ];
+
+        setAvailableAllergens(combinedAllergens);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des allergènes:', error);
+        // En cas d'erreur, utiliser la liste par défaut
+        setAvailableAllergens(COMMON_ALLERGENS);
+      }
+    };
+
+    fetchExistingAllergens();
+  }, [currentRestaurant]);
 
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
@@ -576,7 +624,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
                 Sélectionnez les allergènes présents dans ce produit
               </FormDescription>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
-                {COMMON_ALLERGENS.map((allergen) => (
+                {availableAllergens.map((allergen) => (
                   <div key={allergen} className="flex items-center space-x-2">
                     <Checkbox
                       id={`allergen-${allergen}`}
