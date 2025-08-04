@@ -208,17 +208,10 @@ export default function PrintersManager() {
 
     setTesting(true);
     setTestLogs("🔄 Test de connexion en cours...\n");
+    setTestLogs(prev => prev + "⚠️  ATTENTION: Mixed Content détecté - Configurez votre navigateur\n\n");
 
     try {
-      const { ip_address, port = "8008", device_id } = printerConfig;
-      
-      // Test direct via HTTP (contournement du Mixed Content)
-      setTestLogs(prev => prev + "📡 Test de connectivité de base...\n");
-      
-      // Créer une instance de l'imprimante
       const printer = new EPosPrinter(printerConfig as PrinterConfig);
-      
-      // Utiliser la méthode de test simplifiée
       const result = await printer.testConnection();
       
       if (result.success) {
@@ -226,9 +219,7 @@ export default function PrintersManager() {
         if (result.details) {
           setTestLogs(prev => prev + `📋 ${result.details}\n`);
         }
-        
         setTestLogs(prev => prev + "\n🎉 CONNEXION RÉUSSIE!\n");
-        setTestLogs(prev => prev + "💡 L'imprimante est prête pour l'impression des commandes\n");
         
         toast({
           title: "Test réussi",
@@ -240,44 +231,52 @@ export default function PrintersManager() {
         if (result.details) {
           setTestLogs(prev => prev + `📋 ${result.details}\n`);
         }
-        
-        // Instructions de dépannage
-        setTestLogs(prev => prev + "\n🔧 DÉPANNAGE:\n");
-        setTestLogs(prev => prev + "1. Autoriser le contenu mixte HTTPS/HTTP dans votre navigateur\n");
-        setTestLogs(prev => prev + "2. Vérifiez que l'imprimante est allumée et connectée\n");
-        setTestLogs(prev => prev + "3. Vérifiez l'adresse IP dans les paramètres réseau\n");
-        setTestLogs(prev => prev + "4. Activez l'API ePOS-Print sur l'imprimante\n");
-        
-        toast({
-          title: "Test échoué",
-          description: result.message,
-          variant: "destructive",
-        });
+        showTroubleshootingInstructions();
       }
 
     } catch (error) {
-      console.error('Erreur lors du test:', error);
+      console.error('❌ Erreur lors du test:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       setTestLogs(prev => prev + `❌ Erreur: ${errorMessage}\n`);
       
-      // Vérification spécifique du Mixed Content
-      if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
-        setTestLogs(prev => prev + "\n🚨 PROBLÈME DÉTECTÉ: Mixed Content (HTTPS/HTTP)\n");
-        setTestLogs(prev => prev + "🔧 SOLUTION:\n");
-        setTestLogs(prev => prev + "1. Cliquez sur l'icône 🔒 dans la barre d'adresse\n");
-        setTestLogs(prev => prev + "2. Sélectionnez 'Paramètres du site'\n");
-        setTestLogs(prev => prev + "3. Changez 'Contenu non sécurisé' vers 'Autoriser'\n");
-        setTestLogs(prev => prev + "4. Rechargez la page et retestez\n");
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('fetch')) {
+        showMixedContentInstructions();
+      } else {
+        showTroubleshootingInstructions();
       }
       
       toast({
         title: "Erreur de test",
-        description: "Consultez les logs pour diagnostiquer le problème",
+        description: "Consultez les instructions ci-dessous",
         variant: "destructive",
       });
     } finally {
       setTesting(false);
     }
+  };
+
+  const showMixedContentInstructions = () => {
+    setTestLogs(prev => prev + "\n🚨 PROBLÈME: Mixed Content (HTTPS/HTTP) bloqué par le navigateur\n");
+    setTestLogs(prev => prev + "\n🔧 SOLUTIONS:\n");
+    setTestLogs(prev => prev + "\n📍 CHROME/EDGE:\n");
+    setTestLogs(prev => prev + "1. Cliquez sur l'icône 🔒 à gauche de l'URL\n");
+    setTestLogs(prev => prev + "2. Cliquez sur 'Paramètres du site'\n");
+    setTestLogs(prev => prev + "3. Trouvez 'Contenu non sécurisé' et changez vers 'Autoriser'\n");
+    setTestLogs(prev => prev + "4. Rechargez la page (F5) et retestez\n");
+    setTestLogs(prev => prev + "\n📍 FIREFOX:\n");
+    setTestLogs(prev => prev + "1. Cliquez sur l'icône 🔒 à gauche de l'URL\n");
+    setTestLogs(prev => prev + "2. Cliquez sur '>' puis 'Connexion non sécurisée autorisée'\n");
+    setTestLogs(prev => prev + "3. Rechargez et retestez\n");
+    setTestLogs(prev => prev + "\n⚡ ALTERNATIVE: Ouvrez un onglet en http://localhost si disponible\n");
+  };
+
+  const showTroubleshootingInstructions = () => {
+    setTestLogs(prev => prev + "\n🔧 DÉPANNAGE GÉNÉRAL:\n");
+    setTestLogs(prev => prev + "1. Vérifiez que l'imprimante est allumée\n");
+    setTestLogs(prev => prev + "2. Vérifiez la connexion réseau (même WiFi/réseau)\n");
+    setTestLogs(prev => prev + "3. Pingez l'IP depuis un terminal: ping " + printerConfig.ip_address + "\n");
+    setTestLogs(prev => prev + "4. Vérifiez les paramètres réseau de l'imprimante\n");
+    setTestLogs(prev => prev + "5. Redémarrez l'imprimante si nécessaire\n");
   };
 
   if (!isAuthenticated) {
