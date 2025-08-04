@@ -208,7 +208,7 @@ export default function PrintersManager() {
 
     setTesting(true);
     setTestLogs("🔄 Test de connexion en cours...\n");
-    setTestLogs(prev => prev + "⚠️  ATTENTION: Mixed Content détecté - Configurez votre navigateur\n\n");
+    setTestLogs(prev => prev + "🔧 TEST DIRECT CÔTÉ CLIENT (contourne les limitations serveur)\n\n");
 
     try {
       const printer = new EPosPrinter(printerConfig as PrinterConfig);
@@ -220,6 +220,7 @@ export default function PrintersManager() {
           setTestLogs(prev => prev + `📋 ${result.details}\n`);
         }
         setTestLogs(prev => prev + "\n🎉 CONNEXION RÉUSSIE!\n");
+        setTestLogs(prev => prev + "💡 L'imprimante est prête pour l'impression des commandes\n");
         
         toast({
           title: "Test réussi",
@@ -231,7 +232,12 @@ export default function PrintersManager() {
         if (result.details) {
           setTestLogs(prev => prev + `📋 ${result.details}\n`);
         }
-        showTroubleshootingInstructions();
+        
+        if (result.message.includes('Mixed Content') || result.details?.includes('CORS')) {
+          showMixedContentInstructions();
+        } else {
+          showTroubleshootingInstructions();
+        }
       }
 
     } catch (error) {
@@ -257,7 +263,7 @@ export default function PrintersManager() {
 
   const showMixedContentInstructions = () => {
     setTestLogs(prev => prev + "\n🚨 PROBLÈME: Mixed Content (HTTPS/HTTP) bloqué par le navigateur\n");
-    setTestLogs(prev => prev + "\n🔧 SOLUTIONS:\n");
+    setTestLogs(prev => prev + "\n🔧 SOLUTIONS PAR NAVIGATEUR:\n");
     setTestLogs(prev => prev + "\n📍 CHROME/EDGE:\n");
     setTestLogs(prev => prev + "1. Cliquez sur l'icône 🔒 à gauche de l'URL\n");
     setTestLogs(prev => prev + "2. Cliquez sur 'Paramètres du site'\n");
@@ -267,7 +273,14 @@ export default function PrintersManager() {
     setTestLogs(prev => prev + "1. Cliquez sur l'icône 🔒 à gauche de l'URL\n");
     setTestLogs(prev => prev + "2. Cliquez sur '>' puis 'Connexion non sécurisée autorisée'\n");
     setTestLogs(prev => prev + "3. Rechargez et retestez\n");
-    setTestLogs(prev => prev + "\n⚡ ALTERNATIVE: Ouvrez un onglet en http://localhost si disponible\n");
+    setTestLogs(prev => prev + "\n⚡ ALTERNATIVE: Accès direct via http://192.168.1.129:8008\n");
+    setTestLogs(prev => prev + "   Ouvrez un nouvel onglet et allez à cette adresse pour tester\n");
+    
+    toast({
+      title: "Configuration navigateur requise",
+      description: "Consultez les instructions pour autoriser le contenu mixte",
+      variant: "destructive",
+    });
   };
 
   const showTroubleshootingInstructions = () => {

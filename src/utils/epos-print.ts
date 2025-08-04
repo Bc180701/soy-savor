@@ -80,35 +80,83 @@ export class EPosPrinter {
    */
   async testConnection(): Promise<{ success: boolean; message: string; details?: string }> {
     try {
-      console.log('🧪 Test de connexion via proxy Supabase...');
+      console.log('🧪 Test de connexion HTTP direct avec l\'imprimante...');
       
-      // Import du client Supabase
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = window.location.origin.includes('localhost') 
-        ? 'http://localhost:54321' 
-        : 'https://tdykegnmomyyucbhslok.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkeWtlZ25tb215eXVjYmhzbG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NjA2NjUsImV4cCI6MjA1ODMzNjY2NX0.88jbkZIkFiFXudHvqe0l2DhqQGh2V9JIThv9FFFagas';
+      const { ip_address, port, device_id } = this.config;
       
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Appel de la fonction edge pour éviter CORS
-      const { data, error } = await supabase.functions.invoke('test-printer-connection', {
-        body: { printerConfig: this.config }
+      // Test 1: Connectivité de base
+      const baseResponse = await fetch(`http://${ip_address}:${port}/`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
       });
+      
+      if (!baseResponse.ok) {
+        throw new Error(`Connexion de base échouée: HTTP ${baseResponse.status}`);
+      }
+      
+      // Test 2: API ePOS-Print
+      const eposResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000)
+      });
+      
+      if (eposResponse.ok) {
+        const result = await eposResponse.text();
+        
+        // Test 3: Envoi d'une commande d'impression de test simple
+        try {
+          const testPrintPayload = {
+            method: "print",
+            params: {
+              devid: device_id,
+              timeout: 10000
+            },
+            id: Date.now()
+          };
 
-      if (error) {
-        console.error('❌ Erreur edge function:', error);
+          const printResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(testPrintPayload),
+            signal: AbortSignal.timeout(5000)
+          });
+
+          const printResult = await printResponse.text();
+          
+          return {
+            success: true,
+            message: 'Test d\'impression complet réussi',
+            details: `Connexion OK, API accessible, test d'impression envoyé. Device ID validé: ${device_id}`
+          };
+          
+        } catch (printError) {
+          return {
+            success: true,
+            message: 'Connexion réussie, test d\'impression partiel',
+            details: `L'imprimante répond mais le test d'impression a échoué: ${printError.message}`
+          };
+        }
+        
+      } else {
         return {
           success: false,
-          message: 'Erreur du proxy de connexion',
-          details: error.message || 'Erreur inconnue du serveur'
+          message: 'API ePOS-Print non accessible',
+          details: `L'imprimante répond mais l'API ePOS-Print retourne: HTTP ${eposResponse.status}`
         };
       }
-
-      return data;
       
     } catch (error) {
       console.error('❌ Erreur lors du test:', error);
+      
+      if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
+        return {
+          success: false,
+          message: 'Erreur Mixed Content ou réseau',
+          details: 'CORS/Mixed Content bloqué ou imprimante non accessible. Consultez les instructions ci-dessous.'
+        };
+      }
       
       return {
         success: false,
