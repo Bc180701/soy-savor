@@ -119,18 +119,27 @@ export default function PrintersManager() {
   }, [isAuthenticated, currentRestaurant?.id]);
 
   const checkBluetoothSupport = async () => {
+    console.log("=== VÉRIFICATION BLUETOOTH ===");
+    console.log("navigator:", navigator);
+    console.log("navigator.bluetooth:", navigator.bluetooth);
+    console.log("typeof navigator.bluetooth:", typeof navigator.bluetooth);
+    
     if (navigator.bluetooth) {
       try {
+        console.log("Appel à getAvailability()...");
         const available = await navigator.bluetooth.getAvailability();
+        console.log('Bluetooth availability:', available);
         setBluetoothSupported(available);
-        console.log('Bluetooth support:', available);
       } catch (error) {
-        console.log('Bluetooth not supported:', error);
+        console.error('Erreur getAvailability:', error);
         setBluetoothSupported(false);
       }
     } else {
+      console.log("navigator.bluetooth n'existe pas");
       setBluetoothSupported(false);
     }
+    
+    console.log("=== FIN VÉRIFICATION ===");
   };
 
   const loadPrinterConfig = async () => {
