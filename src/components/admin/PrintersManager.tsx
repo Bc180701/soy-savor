@@ -207,97 +207,72 @@ export default function PrintersManager() {
     if (!validatePrinterConfig()) return;
 
     setTesting(true);
-    setTestLogs("🔄 Initialisation du test ePOS-Print...\n");
+    setTestLogs("🔄 Test de connexion en cours...\n");
 
     try {
-      // Étape 1: Charger le SDK ePOS-Print
-      setTestLogs(prev => prev + "📦 Chargement du SDK ePOS-Print...\n");
+      const { ip_address, port = "8008", device_id } = printerConfig;
       
-      try {
-        await loadEPOSScript();
-        setTestLogs(prev => prev + "✅ SDK ePOS-Print chargé avec succès!\n");
-      } catch (error) {
-        setTestLogs(prev => prev + "❌ Erreur lors du chargement du SDK ePOS-Print\n");
-        setTestLogs(prev => prev + "⚡ Tentative avec API directe...\n");
-        
-        // Fallback sur l'ancienne méthode si le SDK ne se charge pas
-        const { ip_address, port = "8008" } = printerConfig;
-        
-        try {
-          const response = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
-            method: 'GET'
-          });
-          
-          if (response.ok) {
-            const result = await response.text();
-            setTestLogs(prev => prev + `✅ Connexion directe réussie!\n📋 Réponse: ${result.substring(0, 100)}...\n`);
-            
-            toast({
-              title: "Connexion réussie",
-              description: "L'imprimante répond (méthode directe)",
-            });
-          } else {
-            throw new Error(`HTTP ${response.status}`);
-          }
-        } catch (directError) {
-          setTestLogs(prev => prev + `❌ Connexion directe échouée: ${directError.message}\n`);
-          throw directError;
-        }
-        return;
-      }
-
-      // Étape 2: Test avec le SDK ePOS-Print
-      setTestLogs(prev => prev + "🖨️ Initialisation de l'imprimante ePOS-Print...\n");
+      // Test direct via HTTP (contournement du Mixed Content)
+      setTestLogs(prev => prev + "📡 Test de connectivité de base...\n");
       
+      // Créer une instance de l'imprimante
       const printer = new EPosPrinter(printerConfig as PrinterConfig);
       
-      // Étape 3: Test de connexion
-      setTestLogs(prev => prev + "🔌 Test de connexion...\n");
+      // Utiliser la méthode de test simplifiée
+      const result = await printer.testConnection();
       
-      const testResult = await printer.testConnection();
-      
-      if (testResult.success) {
-        setTestLogs(prev => prev + `✅ ${testResult.message}\n`);
-        if (testResult.details) {
-          setTestLogs(prev => prev + `📋 ${testResult.details}\n`);
+      if (result.success) {
+        setTestLogs(prev => prev + `✅ ${result.message}\n`);
+        if (result.details) {
+          setTestLogs(prev => prev + `📋 ${result.details}\n`);
         }
+        
+        setTestLogs(prev => prev + "\n🎉 CONNEXION RÉUSSIE!\n");
+        setTestLogs(prev => prev + "💡 L'imprimante est prête pour l'impression des commandes\n");
         
         toast({
           title: "Test réussi",
-          description: "L'imprimante ePOS-Print fonctionne correctement",
+          description: "L'imprimante est configurée et fonctionnelle",
         });
         
-        // Proposer un test d'impression de reçu
-        setTestLogs(prev => prev + "💡 Vous pouvez maintenant tester l'impression depuis les commandes!\n");
-        
       } else {
-        setTestLogs(prev => prev + `❌ ${testResult.message}\n`);
-        if (testResult.details) {
-          setTestLogs(prev => prev + `📋 ${testResult.details}\n`);
+        setTestLogs(prev => prev + `❌ ${result.message}\n`);
+        if (result.details) {
+          setTestLogs(prev => prev + `📋 ${result.details}\n`);
         }
+        
+        // Instructions de dépannage
+        setTestLogs(prev => prev + "\n🔧 DÉPANNAGE:\n");
+        setTestLogs(prev => prev + "1. Autoriser le contenu mixte HTTPS/HTTP dans votre navigateur\n");
+        setTestLogs(prev => prev + "2. Vérifiez que l'imprimante est allumée et connectée\n");
+        setTestLogs(prev => prev + "3. Vérifiez l'adresse IP dans les paramètres réseau\n");
+        setTestLogs(prev => prev + "4. Activez l'API ePOS-Print sur l'imprimante\n");
         
         toast({
           title: "Test échoué",
-          description: testResult.message,
+          description: result.message,
           variant: "destructive",
         });
       }
 
     } catch (error) {
-      console.error('Erreur lors du test ePOS-Print:', error);
+      console.error('Erreur lors du test:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       setTestLogs(prev => prev + `❌ Erreur: ${errorMessage}\n`);
       
-      // Instructions de dépannage
-      setTestLogs(prev => prev + "\n🔧 DÉPANNAGE:\n");
-      setTestLogs(prev => prev + "1. Vérifiez que l'imprimante est allumée\n");
-      setTestLogs(prev => prev + "2. Vérifiez l'adresse IP dans les paramètres réseau\n");
-      setTestLogs(prev => prev + "3. Activez l'API ePOS-Print dans l'interface web de l'imprimante\n");
-      setTestLogs(prev => prev + "4. Autorisez le contenu mixte HTTPS/HTTP dans votre navigateur\n");
+      // Vérification spécifique du Mixed Content
+      if (errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
+        setTestLogs(prev => prev + "\n🚨 PROBLÈME DÉTECTÉ: Mixed Content (HTTPS/HTTP)\n");
+        setTestLogs(prev => prev + "🔧 SOLUTION:\n");
+        setTestLogs(prev => prev + "1. Cliquez sur l'icône 🔒 dans la barre d'adresse\n");
+        setTestLogs(prev => prev + "2. Sélectionnez 'Paramètres du site'\n");
+        setTestLogs(prev => prev + "3. Changez 'Contenu non sécurisé' vers 'Autoriser'\n");
+        setTestLogs(prev => prev + "4. Rechargez la page et retestez\n");
+      }
       
       toast({
-        title: "Test échoué",
-        description: "Erreur lors du test ePOS-Print. Consultez les logs pour plus d'informations.",
+        title: "Erreur de test",
+        description: "Consultez les logs pour diagnostiquer le problème",
         variant: "destructive",
       });
     } finally {

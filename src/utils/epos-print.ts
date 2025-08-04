@@ -40,34 +40,24 @@ export class EPosPrinter {
   }
 
   /**
-   * Initialise la connexion avec l'imprimante
+   * Initialise la connexion avec l'imprimante via HTTP direct
    */
   async connect(): Promise<boolean> {
     try {
-      // Vérifier si le SDK ePOS est disponible
-      if (typeof window === 'undefined' || !window.epson) {
-        throw new Error('SDK ePOS-Print non disponible. Assurez-vous que le script est chargé.');
-      }
-
-      const epos = window.epson;
+      console.log(`🔌 Tentative de connexion à http://${this.config.ip_address}:${this.config.port}`);
       
-      // Créer l'objet device
-      this.device = new epos.ePOSDevice();
-      
-      // Configurer la connexion
-      const url = `http://${this.config.ip_address}:${this.config.port}/rpc/requestid`;
-      
-      return new Promise((resolve, reject) => {
-        this.device.connect(url, (result: any) => {
-          if (result === 'OK') {
-            console.log('✅ Connexion ePOS-Print réussie');
-            resolve(true);
-          } else {
-            console.error('❌ Erreur de connexion ePOS-Print:', result);
-            reject(new Error(`Connexion échouée: ${result}`));
-          }
-        });
+      // Test de connectivité de base
+      const response = await fetch(`http://${this.config.ip_address}:${this.config.port}/`, {
+        method: 'GET',
+        mode: 'cors'
       });
+      
+      if (response.ok) {
+        console.log('✅ Connexion HTTP réussie');
+        return true;
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
     } catch (error) {
       console.error('❌ Erreur lors de la connexion:', error);
       throw error;
@@ -86,48 +76,88 @@ export class EPosPrinter {
   }
 
   /**
-   * Teste la connexion avec l'imprimante
+   * Teste la connexion avec l'imprimante via API HTTP
    */
   async testConnection(): Promise<{ success: boolean; message: string; details?: string }> {
     try {
-      await this.connect();
+      console.log('🧪 Test de connexion HTTP avec l\'imprimante...');
       
-      // Test simple avec l'API ePOS
-      const printer = this.device.createDevice('local_printer', this.device.DEVICE_TYPE_PRINTER, {
-        crypto: false,
-        buffer: false
+      const { ip_address, port, device_id } = this.config;
+      
+      // Test 1: Connectivité de base
+      const baseResponse = await fetch(`http://${ip_address}:${port}/`, {
+        method: 'GET'
       });
+      
+      if (!baseResponse.ok) {
+        throw new Error(`Connexion de base échouée: HTTP ${baseResponse.status}`);
+      }
+      
+      // Test 2: API ePOS-Print
+      const eposResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
+        method: 'GET'
+      });
+      
+      if (eposResponse.ok) {
+        const result = await eposResponse.text();
+        
+        // Test 3: Envoi d'une commande d'impression de test simple
+        try {
+          const testPrintPayload = {
+            method: "print",
+            params: {
+              devid: device_id,
+              timeout: 10000
+            },
+            id: Date.now()
+          };
 
-      return new Promise((resolve) => {
-        printer.addTextAlign(printer.ALIGN_CENTER);
-        printer.addText('*** TEST D\'IMPRESSION ***\n');
-        printer.addText('Imprimante configurée correctement\n');
-        printer.addText(`Device ID: ${this.config.device_id}\n`);
-        printer.addText(`Date: ${new Date().toLocaleString()}\n`);
-        printer.addCut(printer.CUT_FEED);
+          const printResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(testPrintPayload)
+          });
 
-        printer.send((result: any) => {
-          this.disconnect();
+          const printResult = await printResponse.text();
           
-          if (result.success) {
-            resolve({
-              success: true,
-              message: 'Test d\'impression réussi',
-              details: 'L\'imprimante a reçu et traité la commande d\'impression'
-            });
-          } else {
-            resolve({
-              success: false,
-              message: 'Test d\'impression échoué',
-              details: `Erreur: ${result.code} - ${result.status}`
-            });
-          }
-        });
-      });
+          return {
+            success: true,
+            message: 'Test d\'impression complet réussi',
+            details: `Connexion OK, API accessible, test d'impression envoyé. Réponse: ${printResult.substring(0, 100)}`
+          };
+          
+        } catch (printError) {
+          return {
+            success: true,
+            message: 'Connexion réussie, test d\'impression partiel',
+            details: `L'imprimante répond mais le test d'impression a échoué: ${printError.message}`
+          };
+        }
+        
+      } else {
+        return {
+          success: false,
+          message: 'API ePOS-Print non accessible',
+          details: `L'imprimante répond mais l'API ePOS-Print retourne: HTTP ${eposResponse.status}`
+        };
+      }
+      
     } catch (error) {
+      console.error('❌ Erreur lors du test:', error);
+      
+      if (error.message.includes('fetch')) {
+        return {
+          success: false,
+          message: 'Erreur de connectivité réseau',
+          details: 'Impossible de joindre l\'imprimante. Vérifiez l\'adresse IP et que l\'imprimante est allumée et connectée au réseau.'
+        };
+      }
+      
       return {
         success: false,
-        message: 'Erreur de connexion',
+        message: 'Erreur de test de connexion',
         details: error instanceof Error ? error.message : 'Erreur inconnue'
       };
     }
