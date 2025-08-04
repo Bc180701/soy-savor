@@ -216,36 +216,124 @@ export default function PrintersManager() {
     setTestLogs("🔄 Test de connexion en cours...\n");
 
     try {
-      const { data, error } = await supabase.functions.invoke('test-printer-connection', {
-        body: { restaurantId: currentRestaurant.id }
-      });
-
-      if (error) {
-        const errorMessage = `❌ Échec du test: ${error.message}`;
-        setTestLogs(prev => prev + errorMessage + "\n");
+      if (!printerConfig.ip_address || !printerConfig.device_id) {
         toast({
-          title: "Test échoué",
-          description: error.message || "Impossible de tester la connexion",
+          title: "Configuration incomplète",
+          description: "Veuillez renseigner l'adresse IP et l'ID de l'appareil",
           variant: "destructive",
         });
         return;
       }
 
-      if (data?.success) {
-        const successMessage = `✅ Test réussi!\n📋 Détails: ${data.message}`;
-        setTestLogs(prev => prev + successMessage + "\n");
-        toast({
-          title: "Test réussi",
-          description: "La connexion à l'imprimante fonctionne correctement",
+      const { ip_address, port = "8008", device_id, timeout = "10000" } = printerConfig;
+      
+      // Test 1: Vérification de l'accessibilité de base
+      setTestLogs(prev => prev + "📡 Test de connectivité de base...\n");
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), parseInt(timeout));
+      
+      try {
+        const baseResponse = await fetch(`http://${ip_address}:${port}/`, {
+          method: 'GET',
+          signal: controller.signal
         });
-      } else {
-        const failureMessage = `❌ Test échoué: ${data?.message || "Raison inconnue"}`;
-        setTestLogs(prev => prev + failureMessage + "\n");
-        toast({
-          title: "Test échoué",
-          description: data?.message || "La connexion à l'imprimante a échoué",
-          variant: "destructive",
-        });
+        
+        clearTimeout(timeoutId);
+        
+        if (baseResponse.ok) {
+          const result = await baseResponse.text();
+          setTestLogs(prev => prev + `✅ Connexion de base réussie!\n📋 Réponse: ${result.substring(0, 100)}...\n`);
+          
+          // Test 2: Test de l'API ePOS-Print
+          setTestLogs(prev => prev + "🖨️ Test de l'API ePOS-Print...\n");
+          
+          try {
+            const eposResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
+              method: 'GET'
+            });
+            
+            if (eposResponse.ok || eposResponse.status === 200) {
+              const eposResult = await eposResponse.text();
+              setTestLogs(prev => prev + `✅ API ePOS-Print accessible!\n📋 Réponse: ${eposResult.substring(0, 100)}...\n`);
+              
+              // Test 3: Test d'impression simple
+              setTestLogs(prev => prev + "🧾 Test d'impression...\n");
+              
+              try {
+                const printTestPayload = {
+                  method: "print",
+                  params: {
+                    devid: device_id,
+                    timeout: 10000
+                  },
+                  id: Date.now()
+                };
+
+                const printResponse = await fetch(`http://${ip_address}:${port}/rpc/requestid`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(printTestPayload)
+                });
+
+                const printResult = await printResponse.text();
+                setTestLogs(prev => prev + `✅ Test d'impression envoyé!\n📋 Réponse: ${printResult}\n`);
+                
+                toast({
+                  title: "Test complet réussi",
+                  description: "Connexion et API d'impression fonctionnelles",
+                });
+              } catch (printError) {
+                setTestLogs(prev => prev + `⚠️ Test d'impression: ${printError.message}\n`);
+                
+                toast({
+                  title: "Connexion réussie",
+                  description: "L'imprimante répond, test d'impression échoué",
+                });
+              }
+              
+            } else {
+              setTestLogs(prev => prev + `⚠️ API ePOS-Print non accessible (statut: ${eposResponse.status})\n`);
+              
+              toast({
+                title: "Connexion partielle",
+                description: "L'imprimante répond mais l'API ePOS-Print n'est pas disponible",
+                variant: "destructive",
+              });
+            }
+          } catch (eposError) {
+            setTestLogs(prev => prev + `❌ Erreur API ePOS-Print: ${eposError.message}\n`);
+            
+            toast({
+              title: "Connexion partielle",
+              description: "L'imprimante répond mais l'API ePOS-Print ne fonctionne pas",
+              variant: "destructive",
+            });
+          }
+          
+        } else {
+          throw new Error(`Statut HTTP: ${baseResponse.status}`);
+        }
+        
+      } catch (connectError) {
+        clearTimeout(timeoutId);
+        if (connectError.name === 'AbortError') {
+          setTestLogs(prev => prev + `❌ Timeout de connexion (${timeout}ms dépassé)\n`);
+          toast({
+            title: "Test échoué",
+            description: "L'imprimante ne répond pas dans le délai imparti",
+            variant: "destructive",
+          });
+        } else {
+          setTestLogs(prev => prev + `❌ Erreur de connexion: ${connectError.message}\n`);
+          toast({
+            title: "Test échoué",
+            description: "Impossible de joindre l'imprimante. Vérifiez l'adresse IP et que l'imprimante est allumée.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       const errorMessage = `💥 Erreur inattendue: ${error instanceof Error ? error.message : 'Erreur inconnue'}`;
