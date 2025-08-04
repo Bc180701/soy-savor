@@ -10,6 +10,20 @@ import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { Eye, EyeOff, Printer, TestTube, RefreshCw } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
+// Déclarations TypeScript pour l'API ePOS SDK
+declare global {
+  interface Window {
+    epson?: {
+      ePOSDevice: new () => {
+        connect: (url: string, callback: (result: string) => void) => void;
+        disconnect: () => void;
+        createDevice: (deviceId: string, deviceType: any, options: any) => any;
+        DEVICE_TYPE_PRINTER: any;
+      };
+    };
+  }
+}
+
 export default function PrintersManager() {
   const [printerConfig, setPrinterConfig] = useState({
     ip_address: "",
@@ -203,56 +217,117 @@ export default function PrintersManager() {
   };
 
   const testPrinterConnection = async () => {
-    if (!currentRestaurant?.id) {
-      toast({
-        title: "Erreur",
-        description: "Aucun restaurant sélectionné",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!validatePrinterConfig()) return;
 
     setTesting(true);
-    setTestLogs("🔄 Test de connexion en cours...\n");
+    setTestLogs("🔄 Test de connexion via API ePOS SDK en cours...\n");
 
     try {
-      const { data, error } = await supabase.functions.invoke('test-printer-connection', {
-        body: { restaurantId: currentRestaurant.id }
+      // Vérifier si l'API ePOS SDK est disponible
+      if (typeof window === 'undefined' || !window.epson?.ePOSDevice) {
+        setTestLogs(prev => prev + "⚠️ Chargement de l'API ePOS SDK...\n");
+        
+        // Charger l'API ePOS SDK
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = `http://${printerConfig.ip_address}:${printerConfig.port}/js/epos-2.26.0.js`;
+          script.onload = () => {
+            setTestLogs(prev => prev + "✅ API ePOS SDK chargée avec succès\n");
+            resolve();
+          };
+          script.onerror = () => {
+            setTestLogs(prev => prev + "❌ Impossible de charger l'API ePOS SDK\n");
+            reject(new Error('Impossible de charger l\'API ePOS SDK'));
+          };
+          document.head.appendChild(script);
+        });
+      }
+
+      setTestLogs(prev => prev + "🔗 Tentative de connexion à l'imprimante...\n");
+
+      // Créer une instance ePOSDevice
+      const eposDevice = new window.epson.ePOSDevice();
+
+      // Connecter à l'imprimante
+      await new Promise<void>((resolve, reject) => {
+        const connectionTimeout = setTimeout(() => {
+          reject(new Error(`Timeout de connexion (${printerConfig.timeout}ms dépassé)`));
+        }, parseInt(printerConfig.timeout));
+
+        eposDevice.connect(`http://${printerConfig.ip_address}:${printerConfig.port}/cgi-bin/epos/service.cgi?devid=${printerConfig.device_id}&timeout=${printerConfig.timeout}`, (result: any) => {
+          clearTimeout(connectionTimeout);
+          
+          if (result === 'OK') {
+            setTestLogs(prev => prev + "✅ Connexion établie avec succès\n");
+            resolve();
+          } else {
+            setTestLogs(prev => prev + `❌ Échec de connexion: ${result}\n`);
+            reject(new Error(`Échec de connexion: ${result}`));
+          }
+        });
       });
 
-      if (error) {
-        const errorMessage = `❌ Échec du test: ${error.message}`;
-        setTestLogs(prev => prev + errorMessage + "\n");
-        toast({
-          title: "Test échoué",
-          description: error.message || "Impossible de tester la connexion",
-          variant: "destructive",
-        });
-        return;
+      // Créer un objet Printer pour tester l'imprimante
+      setTestLogs(prev => prev + "🖨️ Test de l'imprimante...\n");
+      
+      const printer = eposDevice.createDevice('local_printer', eposDevice.DEVICE_TYPE_PRINTER, {});
+      
+      if (!printer) {
+        throw new Error('Impossible de créer l\'objet imprimante');
       }
 
-      if (data?.success) {
-        const successMessage = `✅ Test réussi!\n📋 Détails: ${data.message}`;
-        setTestLogs(prev => prev + successMessage + "\n");
-        toast({
-          title: "Test réussi",
-          description: "La connexion à l'imprimante fonctionne correctement",
-        });
-      } else {
-        const failureMessage = `❌ Test échoué: ${data?.message || "Raison inconnue"}`;
-        setTestLogs(prev => prev + failureMessage + "\n");
-        toast({
-          title: "Test échoué",
-          description: data?.message || "La connexion à l'imprimante a échoué",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      const errorMessage = `💥 Erreur inattendue: ${error instanceof Error ? error.message : 'Erreur inconnue'}`;
-      setTestLogs(prev => prev + errorMessage + "\n");
+      // Test simple d'impression
+      await new Promise<void>((resolve, reject) => {
+        printer.timeout = parseInt(printerConfig.timeout);
+        
+        printer.onreceive = (response: any) => {
+          if (response.success) {
+            setTestLogs(prev => prev + "✅ Test d'impression réussi\n");
+            setTestLogs(prev => prev + `📋 Statut imprimante: En ligne\n`);
+            resolve();
+          } else {
+            setTestLogs(prev => prev + `❌ Erreur lors du test: ${response.message || 'Erreur inconnue'}\n`);
+            reject(new Error(response.message || 'Test d\'impression échoué'));
+          }
+        };
+
+        printer.onerror = (error: any) => {
+          setTestLogs(prev => prev + `❌ Erreur imprimante: ${error.message || error}\n`);
+          reject(new Error(error.message || 'Erreur de communication avec l\'imprimante'));
+        };
+
+        // Envoyer une commande simple pour tester
+        printer.addText("Test de connexion\n");
+        printer.addCut(printer.CUT_FEED);
+        printer.send();
+      });
+
+      // Déconnecter proprement
+      eposDevice.disconnect();
+      setTestLogs(prev => prev + "🔌 Déconnexion de l'imprimante\n");
+
+      setTestLogs(prev => prev + "🎉 Test de connexion réussi!\n");
       toast({
-        title: "Erreur",
-        description: "Une erreur inattendue est survenue",
+        title: "Test réussi",
+        description: `Connexion réussie à l'imprimante TM-m30III ${printerConfig.device_id}`,
+      });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      setTestLogs(prev => prev + `💥 Test échoué: ${errorMessage}\n`);
+      
+      let userFriendlyMessage = errorMessage;
+      if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+        userFriendlyMessage = "Timeout de connexion. Vérifiez que l'imprimante est allumée et accessible.";
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        userFriendlyMessage = "Problème réseau. Vérifiez l'adresse IP et que l'imprimante est sur le même réseau.";
+      } else if (errorMessage.includes('SDK')) {
+        userFriendlyMessage = "Impossible de charger l'API ePOS. Vérifiez la configuration réseau de l'imprimante.";
+      }
+
+      toast({
+        title: "Test échoué",
+        description: userFriendlyMessage,
         variant: "destructive",
       });
     } finally {
