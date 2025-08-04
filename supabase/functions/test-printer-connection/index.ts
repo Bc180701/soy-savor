@@ -104,7 +104,7 @@ serve(async (req) => {
           )
         }
       } catch (webApiError) {
-        console.log('WebAPI failed, trying ePOS-Print API...')
+        console.log('WebAPI failed, trying ePOS-Print API...', webApiError.message)
       }
 
       // Approche 2: API ePOS-Print avec format JSON-RPC spécifique
@@ -142,7 +142,7 @@ serve(async (req) => {
           )
         }
       } catch (eposError) {
-        console.log('ePOS-Print API failed, trying basic connectivity...')
+        console.log('ePOS-Print API failed, trying basic connectivity...', eposError.message)
       }
 
       // Approche 3: Test de connectivité basique
@@ -172,22 +172,22 @@ serve(async (req) => {
         )
 
       } catch (basicError) {
-        console.log('All connection attempts failed')
+        console.log('All connection attempts failed:', basicError.message)
+        clearTimeout(timeoutId)
         throw new Error('Aucune méthode de connexion n\'a fonctionné')
       }
 
     } catch (fetchError) {
-      clearTimeout(timeoutId)
       console.error('All printer connection tests failed:', fetchError)
       
       let errorMessage = 'Connexion à l\'imprimante TM-m30III échouée'
       
       if (fetchError.name === 'AbortError') {
         errorMessage = `Timeout de connexion (${timeout}ms dépassé). L'imprimante ne répond pas.`
-      } else if (fetchError.message.includes('fetch') || fetchError.message.includes('network')) {
+      } else if (fetchError.message && (fetchError.message.includes('fetch') || fetchError.message.includes('network'))) {
         errorMessage = `Impossible de joindre l'imprimante TM-m30III à l'adresse ${ip_address}:${port}. Vérifiez que l'imprimante est allumée et connectée au réseau.`
       } else {
-        errorMessage = `Erreur de connexion TM-m30III: ${fetchError.message}`
+        errorMessage = `Erreur de connexion TM-m30III: ${fetchError.message || 'Erreur inconnue'}`
       }
 
       return new Response(
