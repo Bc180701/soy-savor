@@ -15,7 +15,8 @@ import CategorySection from "@/components/menu/CategorySection";
 import ProductsDisplay from "@/components/menu/ProductsDisplay";
 import RestaurantSelectionDialog from "@/components/menu/RestaurantSelectionDialog";
 import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
-import { useCart, useCartWithRestaurant } from "@/hooks/use-cart";
+import { useCart } from "@/hooks/use-cart";
+import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
 import SEOHead from "@/components/SEOHead";
 import commanderHeroImage from "@/assets/commander-hero.jpg";
 

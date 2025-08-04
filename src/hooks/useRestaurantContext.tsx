@@ -2,8 +2,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { RestaurantContext, Restaurant } from "@/types/restaurant";
 import { fetchRestaurants } from "@/services/restaurantService";
-import { isRestaurantOpenNow } from "@/services/openingHoursService";
-import { useCart } from "@/hooks/use-cart";
 
 const RestaurantContextObj = createContext<RestaurantContext | undefined>(undefined);
 
@@ -11,7 +9,6 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { setOrderingLocked } = useCart();
 
   useEffect(() => {
     const loadRestaurants = async () => {
@@ -39,14 +36,8 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     loadRestaurants();
   }, []);
 
-  // Synchroniser le statut de verrouillage des commandes avec le store Zustand
-  useEffect(() => {
-    if (currentRestaurant) {
-      const orderingLocked = currentRestaurant.settings?.ordering_locked || false;
-      console.log("🔒 Synchronisation du statut de verrouillage:", orderingLocked, "pour le restaurant:", currentRestaurant.name);
-      setOrderingLocked(orderingLocked);
-    }
-  }, [currentRestaurant, setOrderingLocked]);
+  // Note: The ordering lock synchronization will be handled by individual components
+  // to avoid circular dependency with the cart store
 
   const value: RestaurantContext = {
     currentRestaurant,
