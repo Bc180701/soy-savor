@@ -86,8 +86,8 @@ export class EPosPrinter {
       const { createClient } = await import('@supabase/supabase-js');
       const supabaseUrl = window.location.origin.includes('localhost') 
         ? 'http://localhost:54321' 
-        : 'https://wfdgfxhicojwjjvzusmf.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmZGdmeGhpY29qd2pqdnp1c21mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY1NzUwMzEsImV4cCI6MjA0MjE1MTAzMX0.rz_nEvOAGolKJaM5goBznyQQ5dn3PlS7s7hVRwLKfz8';
+        : 'https://tdykegnmomyyucbhslok.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkeWtlZ25tb215eXVjYmhzbG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NjA2NjUsImV4cCI6MjA1ODMzNjY2NX0.88jbkZIkFiFXudHvqe0l2DhqQGh2V9JIThv9FFFagas';
       
       const supabase = createClient(supabaseUrl, supabaseKey);
       
