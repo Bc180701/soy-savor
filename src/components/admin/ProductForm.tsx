@@ -29,6 +29,24 @@ import { Upload, Image, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
+// Liste des allergènes communs
+const COMMON_ALLERGENS = [
+  "Gluten",
+  "Crustacés", 
+  "Œufs",
+  "Poissons",
+  "Arachides",
+  "Soja",
+  "Lait",
+  "Fruits à coque",
+  "Céleri",
+  "Moutarde",
+  "Graines de sésame",
+  "Anhydride sulfureux et sulfites",
+  "Lupin",
+  "Mollusques"
+];
+
 // Schéma de validation pour le formulaire
 const productFormSchema = z.object({
   name: z.string().min(1, {
@@ -51,6 +69,7 @@ const productFormSchema = z.object({
   is_new: z.boolean().default(false),
   is_best_seller: z.boolean().default(false),
   is_gluten_free: z.boolean().default(false),
+  allergens: z.array(z.string()).default([]),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -86,6 +105,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     is_new: product?.is_new || false,
     is_best_seller: product?.is_best_seller || false,
     is_gluten_free: product?.is_gluten_free || false,
+    allergens: product?.allergens || [],
   };
 
   const form = useForm<ProductFormValues>({
@@ -216,6 +236,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_new: data.is_new,
             is_best_seller: data.is_best_seller,
             is_gluten_free: data.is_gluten_free,
+            allergens: data.allergens,
             updated_at: new Date().toISOString(),
           })
           .eq("id", product.id)
@@ -255,6 +276,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_new: data.is_new,
             is_best_seller: data.is_best_seller,
             is_gluten_free: data.is_gluten_free,
+            allergens: data.allergens,
             restaurant_id: currentRestaurant.id,
           })
           .select();
@@ -543,6 +565,43 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="allergens"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Allergènes</FormLabel>
+              <FormDescription>
+                Sélectionnez les allergènes présents dans ce produit
+              </FormDescription>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
+                {COMMON_ALLERGENS.map((allergen) => (
+                  <div key={allergen} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`allergen-${allergen}`}
+                      checked={field.value?.includes(allergen) || false}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          field.onChange([...(field.value || []), allergen]);
+                        } else {
+                          field.onChange((field.value || []).filter((a: string) => a !== allergen));
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`allergen-${allergen}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {allergen}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <FormField
