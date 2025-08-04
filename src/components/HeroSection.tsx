@@ -34,18 +34,6 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
-      {/* Grand logo en arrière-plan à droite - devant l'image */}
-      <div 
-        className={`absolute right-0 top-1/2 transform -translate-y-1/2 z-15 transition-all duration-700 ${
-          isLoaded ? "opacity-60" : "opacity-0"
-        }`}
-      >
-        <img 
-          src="/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png" 
-          alt="SushiEats Logo Background" 
-          className="h-96 md:h-[500px] lg:h-[600px] w-auto"
-        />
-      </div>
 
       <div className="container mx-auto px-4 relative z-20">
         <div className="max-w-2xl">
