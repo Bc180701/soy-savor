@@ -21,6 +21,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 const heroSectionSchema = z.object({
   background_image: z.string().min(1, "L'image de fond est requise"),
+  mobile_background_image: z.string().optional(),
   title: z.string().min(1, "Le titre est requis"),
   subtitle: z.string().min(1, "Le sous-titre est requis"),
   overlay_image: z.string().optional(),
@@ -31,6 +32,7 @@ type HeroSectionData = z.infer<typeof heroSectionSchema>;
 interface HeroSectionEditorProps {
   data: {
     background_image: string;
+    mobile_background_image?: string;
     title: string;
     subtitle: string;
     overlay_image?: string;
@@ -49,6 +51,7 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
     resolver: zodResolver(heroSectionSchema),
     defaultValues: {
       background_image: data?.background_image || "",
+      mobile_background_image: data?.mobile_background_image || "",
       title: data?.title || "",
       subtitle: data?.subtitle || "",
       overlay_image: data?.overlay_image || "",
@@ -122,6 +125,26 @@ const HeroSectionEditor = ({ data, onSave }: HeroSectionEditorProps) => {
                         onChange={field.onChange}
                         accept="image/*"
                         buttonText="Changer l'image de fond"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="mobile_background_image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image de fond pour mobile (optionnel)</FormLabel>
+                    <FormControl>
+                      <FileUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                        accept="image/*"
+                        buttonText="Changer l'image mobile"
+                        allowRemove={true}
                       />
                     </FormControl>
                     <FormMessage />

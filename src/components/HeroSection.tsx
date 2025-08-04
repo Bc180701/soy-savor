@@ -5,11 +5,12 @@ import { Link } from "react-router-dom";
 
 interface HeroSectionProps {
   background_image: string;
+  mobile_background_image?: string;
   title: string;
   subtitle: string;
 }
 
-export const HeroSection = ({ background_image, title, subtitle }: HeroSectionProps) => {
+export const HeroSection = ({ background_image, mobile_background_image, title, subtitle }: HeroSectionProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -24,12 +25,22 @@ export const HeroSection = ({ background_image, title, subtitle }: HeroSectionPr
     <section
       className="relative min-h-[85vh] flex items-center pt-16 overflow-hidden"
     >
-      {/* Image de fond */}
+      {/* Image de fond - Desktop */}
       <div
-        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-5 ${
+        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-5 hidden md:block ${
           isLoaded ? "opacity-100" : "opacity-0"
         }`}
         style={{ backgroundImage: `url(${background_image})` }}
+      >
+        <div className="absolute inset-0 bg-black/60" />
+      </div>
+
+      {/* Image de fond - Mobile */}
+      <div
+        className={`absolute inset-0 bg-cover bg-center transition-opacity duration-700 z-5 block md:hidden ${
+          isLoaded ? "opacity-100" : "opacity-0"
+        }`}
+        style={{ backgroundImage: `url(${mobile_background_image || background_image})` }}
       >
         <div className="absolute inset-0 bg-black/60" />
       </div>
