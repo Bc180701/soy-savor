@@ -22,6 +22,7 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import TestOrderNotification from "./TestOrderNotification";
 import DeliveryPhoneManager from "./DeliveryPhoneManager";
+import { BluetoothManager } from "./BluetoothManager";
 
 const AdminManager = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -55,6 +56,8 @@ const AdminManager = () => {
         return <StripeKeysManager />;
       case "printers":
         return <PrintersManager />;
+      case "bluetooth":
+        return <BluetoothManager />;
       case "settings":
         return (
           <div className="grid gap-6">
@@ -87,6 +90,7 @@ const AdminManager = () => {
       permissions: "Gestion des permissions",
       "stripe-keys": "Clés Stripe",
       printers: "Imprimantes",
+      bluetooth: "Bluetooth Mobile",
       settings: "Paramètres"
     };
     return titles[activeSection as keyof typeof titles] || "Administration";

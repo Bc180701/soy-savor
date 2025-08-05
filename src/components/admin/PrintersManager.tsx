@@ -10,40 +10,19 @@ import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { Eye, EyeOff, Printer, TestTube, RefreshCw, Bluetooth } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
-// Déclarations TypeScript pour les APIs Bluetooth et ePOS SDK
-declare global {
-  interface Navigator {
-    bluetooth?: {
-      requestDevice: (options: {
-        filters?: Array<{ services?: string[]; name?: string; namePrefix?: string }>;
-        optionalServices?: string[];
-        acceptAllDevices?: boolean;
-      }) => Promise<BluetoothDevice>;
-      getAvailability: () => Promise<boolean>;
-    };
-  }
-
-  interface BluetoothDevice {
-    id: string;
-    name?: string;
-    gatt?: BluetoothRemoteGATT;
-  }
-
-  interface BluetoothRemoteGATT {
+// Types pour le Bluetooth mobile
+interface MobileBluetoothDevice {
+  id: string;
+  name?: string;
+  gatt?: {
     connected: boolean;
-    connect: () => Promise<BluetoothRemoteGATT>;
+    connect: () => Promise<any>;
     disconnect: () => void;
-    getPrimaryService: (service: string) => Promise<BluetoothRemoteGATTService>;
-  }
+    getPrimaryService: (service: string) => Promise<any>;
+  };
+}
 
-  interface BluetoothRemoteGATTService {
-    getCharacteristic: (characteristic: string) => Promise<BluetoothRemoteGATTCharacteristic>;
-  }
-
-  interface BluetoothRemoteGATTCharacteristic {
-    writeValue: (value: ArrayBuffer) => Promise<void>;
-  }
-
+declare global {
   interface Window {
     epson?: {
       ePOSDevice: new () => {
@@ -570,7 +549,7 @@ export default function PrintersManager() {
     }
   };
 
-  const testBluetoothPrint = async (server: BluetoothRemoteGATT) => {
+  const testBluetoothPrint = async (server: any) => {
     try {
       setTestLogs(prev => prev + "🖨️ Test d'impression Bluetooth...\n");
       

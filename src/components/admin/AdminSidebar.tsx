@@ -15,7 +15,8 @@ import {
   X as XIcon,
   CreditCard,
   Shield,
-  Printer
+  Printer,
+  Bluetooth
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const navigationItems = [
   { id: "permissions", label: "Permissions", icon: Shield },
   { id: "stripe-keys", label: "Clés Stripe", icon: CreditCard },
   { id: "printers", label: "Imprimantes", icon: Printer },
+  { id: "bluetooth", label: "Bluetooth Mobile", icon: Bluetooth },
   { id: "settings", label: "Paramètres", icon: Settings },
 ];
 
