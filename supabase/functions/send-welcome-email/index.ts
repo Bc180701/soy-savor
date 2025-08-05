@@ -80,7 +80,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Préparer les données pour l'API Resend
     const emailData = {
-      from: "SushiEats <bienvenue@sushieats.fr>",
+      from: "SushiEats <bienvenue@emailsend.clwebdesign.fr>",
       to: [email],
       subject: subject,
       html: htmlContent,
