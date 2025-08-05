@@ -6,7 +6,11 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
   const { toast } = useToast();
   const audioContextRef = useRef<AudioContext | null>(null);
   const [hasNewOrders, setHasNewOrders] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(() => {
+    // Récupérer l'état depuis localStorage
+    const saved = localStorage.getItem('admin-audio-enabled');
+    return saved === 'true';
+  });
   const originalTitleRef = useRef(document.title);
   const blinkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -87,6 +91,8 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
       console.log('🎵 État AudioContext après reprise:', audioContextRef.current.state);
       
       setAudioEnabled(true);
+      // Sauvegarder l'état dans localStorage
+      localStorage.setItem('admin-audio-enabled', 'true');
       console.log('🔊 Audio notifications activées');
       
       // Test sound avec un petit délai et forcePlay pour contourner le problème de timing du state
@@ -98,6 +104,14 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
       console.error('❌ Impossible d\'activer le son:', error);
     }
   };
+
+  // Réinitialiser l'AudioContext si l'audio était activé avant l'actualisation
+  useEffect(() => {
+    if (audioEnabled && !audioContextRef.current) {
+      console.log('🔄 Réinitialisation de l\'AudioContext après actualisation...');
+      enableAudio();
+    }
+  }, []);
 
   useEffect(() => {
     if (!isAdmin) return;
