@@ -110,17 +110,19 @@ const UsersList = () => {
         throw profilesError;
       }
 
-      // Récupérer les informations auth pour chaque utilisateur
-      const { data: authData, error: authError } = await supabase
-        .from('auth_users_view')
-        .select('id, email, created_at, last_sign_in_at');
-
-      if (authError) {
-        console.error("❌ Erreur auth_users_view:", authError);
-        // On continue même si on ne peut pas récupérer les infos auth
+      // Récupérer les informations auth pour chaque utilisateur - ignore les erreurs
+      let authData: any[] = [];
+      try {
+        const { data } = await supabase
+          .from('auth_users_view')
+          .select('id, email, created_at, last_sign_in_at');
+        if (data) authData = data;
+      } catch (error) {
+        console.log("⚠️ Impossible de récupérer auth_users_view, utilisation des IDs uniquement");
       }
 
       console.log("✅ Profils récupérés:", profilesData?.length || 0);
+      console.log("✅ Auth data récupérées:", authData?.length || 0);
 
       if (!profilesData || profilesData.length === 0) {
         console.log("ℹ️ Aucun utilisateur trouvé");
