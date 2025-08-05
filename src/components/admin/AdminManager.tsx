@@ -76,7 +76,7 @@ const AdminManager = () => {
       case "dashboard":
         return <DashboardStats />;
       case "orders":
-        return <OrderList defaultTab="kitchen" />;
+        return <OrderList defaultTab={searchParams.get("tab") || "kitchen"} />;
       case "products":
         return <ProductManager />;
       case "users":

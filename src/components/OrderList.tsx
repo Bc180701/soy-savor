@@ -10,6 +10,7 @@ import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { useSearchParams } from "react-router-dom";
 
 interface OrderListProps {
   defaultTab?: string;
@@ -20,9 +21,18 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>(defaultTab);
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { currentRestaurant } = useRestaurantContext();
+
+  // Fonction pour mettre à jour l'onglet dans l'URL
+  const handleTabChange = (newTab: string) => {
+    setActiveView(newTab);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", newTab);
+    setSearchParams(newParams);
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -111,7 +121,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
           <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
         </div>
       ) : (
-        <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
+        <Tabs value={activeView} onValueChange={handleTabChange} className="w-full">
           <TabsList 
             variant={isMobile ? "horizontal" : "default"} 
             className={`${isMobile ? 'w-full rounded-none border-b bg-white p-0 h-auto' : 'mb-6 w-full'}`}
