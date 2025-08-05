@@ -18,6 +18,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Compte from "@/pages/Compte";
 import Admin from "@/pages/Admin";
+import AdminCommandes from "@/pages/AdminCommandes";
 import CommandeConfirmee from "@/pages/CommandeConfirmee";
 import MentionsLegales from "@/pages/MentionsLegales";
 import NosRestaurants from "@/pages/NosRestaurants";
@@ -87,6 +88,7 @@ function App() {
         <Route path="/composer-poke" element={<Layout><ComposerPoke /></Layout>} />
         <Route path="/compte" element={<Layout><Compte /></Layout>} />
         <Route path="/admin" element={<Layout><Admin /></Layout>} />
+        <Route path="/admin/commandes" element={<AdminCommandes />} />
         <Route path="/commande-confirmee" element={<Layout><CommandeConfirmee /></Layout>} />
         <Route path="/mentions-legales" element={<Layout><MentionsLegales /></Layout>} />
         <Route path="/nos-restaurants" element={<Layout><NosRestaurants /></Layout>} />

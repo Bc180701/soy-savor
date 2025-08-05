@@ -11,11 +11,15 @@ import OrdersDeliveryView from "./orders/OrdersDeliveryView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
-const OrderList = () => {
+interface OrderListProps {
+  defaultTab?: string;
+}
+
+const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [activeView, setActiveView] = useState<string>("accounting");
+  const [activeView, setActiveView] = useState<string>(defaultTab);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { currentRestaurant } = useRestaurantContext();
