@@ -120,10 +120,17 @@ const Register = () => {
       });
       
       if (error) {
+        let errorMessage = error.message;
+        
+        // Gestion spécifique pour l'utilisateur déjà enregistré
+        if (error.message.includes("User already registered") || error.message.includes("already")) {
+          errorMessage = "Cette adresse email est déjà utilisée. Vous avez déjà un compte ? Connectez-vous ou utilisez une autre adresse email.";
+        }
+        
         toast({
           variant: "destructive",
           title: "Erreur d'inscription",
-          description: error.message,
+          description: errorMessage,
         });
       } else {
         // Récupérer le code promo
