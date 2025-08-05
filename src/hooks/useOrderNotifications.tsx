@@ -104,8 +104,15 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
 
     console.log('🔗 Configuration des notifications en temps réel pour TOUS les restaurants');
 
+    // Configuration plus robuste du canal
+    const channelName = `new-orders-${Date.now()}`;
     const channel = supabase
-      .channel('new-orders')
+      .channel(channelName, {
+        config: {
+          broadcast: { self: true },
+          presence: { key: 'admin' }
+        }
+      })
       .on(
         'postgres_changes',
         {
