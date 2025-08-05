@@ -114,53 +114,52 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
     }
   }, [orderType, isLoading, todayOpeningHours, cartRestaurant]);
 
-  const checkSlotCapacity = async (timeSlot: string) => {
+  const getSlotDataBatch = async () => {
     try {
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      const todayString = today.toISOString().split('T')[0];
       
-      const { data, error } = await supabase
+      // Récupérer toutes les commandes du jour en une seule requête
+      const ordersPromise = supabase
         .from('orders')
-        .select('id')
-        .eq('pickup_time', timeSlot)
+        .select('pickup_time')
         .gte('scheduled_for', startOfDay.toISOString())
         .lt('scheduled_for', endOfDay.toISOString())
         .eq('restaurant_id', cartRestaurant?.id);
 
-      if (error) {
-        console.error('❌ [TimeSlotSelector] Erreur vérification capacité:', error);
-        return 0;
-      }
-
-      return data?.length || 0;
-    } catch (error) {
-      console.error('❌ [TimeSlotSelector] Erreur vérification capacité:', error);
-      return 0;
-    }
-  };
-
-  const checkSlotBlocked = async (timeSlot: string) => {
-    try {
-      const today = new Date();
-      const todayString = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
-      
-      const { data, error } = await supabase
+      // Récupérer tous les créneaux bloqués du jour en une seule requête
+      const blockedSlotsPromise = supabase
         .from('blocked_time_slots')
-        .select('id')
+        .select('blocked_time')
         .eq('restaurant_id', cartRestaurant?.id)
-        .eq('blocked_date', todayString)
-        .eq('blocked_time', timeSlot);
+        .eq('blocked_date', todayString);
 
-      if (error) {
-        console.error('❌ [TimeSlotSelector] Erreur vérification blocage:', error);
-        return false;
+      const [ordersResult, blockedResult] = await Promise.all([ordersPromise, blockedSlotsPromise]);
+
+      if (ordersResult.error) {
+        console.error('❌ [TimeSlotSelector] Erreur récupération commandes:', ordersResult.error);
+      }
+      if (blockedResult.error) {
+        console.error('❌ [TimeSlotSelector] Erreur récupération créneaux bloqués:', blockedResult.error);
       }
 
-      return data && data.length > 0;
+      // Compter les commandes par créneau
+      const orderCounts: Record<string, number> = {};
+      (ordersResult.data || []).forEach(order => {
+        if (order.pickup_time) {
+          orderCounts[order.pickup_time] = (orderCounts[order.pickup_time] || 0) + 1;
+        }
+      });
+
+      // Créer un Set des créneaux bloqués pour une recherche rapide
+      const blockedSlots = new Set((blockedResult.data || []).map(slot => slot.blocked_time));
+
+      return { orderCounts, blockedSlots };
     } catch (error) {
-      console.error('❌ [TimeSlotSelector] Erreur vérification blocage:', error);
-      return false;
+      console.error('❌ [TimeSlotSelector] Erreur récupération données:', error);
+      return { orderCounts: {}, blockedSlots: new Set() };
     }
   };
 
@@ -184,6 +183,9 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       setTimeSlots([]);
       return;
     }
+
+    // Récupérer toutes les données en une seule fois
+    const { orderCounts, blockedSlots } = await getSlotDataBatch();
 
     // Générer des créneaux pour chaque slot d'ouverture
     for (const timeSlot of openSlots) {
@@ -221,11 +223,11 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
         const isPassedTime = isAfter(minTime, currentTime);
         
         // Vérifier la capacité du créneau (2 commandes max)
-        const currentOrders = await checkSlotCapacity(timeValue);
+        const currentOrders = orderCounts[timeValue] || 0;
         const isSlotFull = currentOrders >= 2;
 
         // Vérifier si le créneau est bloqué par l'admin
-        const isSlotBlocked = await checkSlotBlocked(timeValue);
+        const isSlotBlocked = blockedSlots.has(timeValue);
 
         slots.push({
           label: format(currentTime, "HH'h'mm", { locale: fr }),
