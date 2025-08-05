@@ -1,5 +1,7 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,15 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Email et code promo requis");
     }
     
-    // Récupérer la clé API Brevo depuis les variables d'environnement
-    const brevoApiKey = Deno.env.get("BREVO_API_KEY");
-    
-    if (!brevoApiKey) {
-      console.error("❌ Clé API Brevo manquante dans les variables d'environnement");
-      throw new Error("Erreur de configuration: clé API Brevo manquante");
-    }
-    
-    console.log("🔑 Clé API Brevo trouvée");
+    console.log("🔑 Utilisation de la clé API Resend existante");
     
     // Formater le nom si disponible, sinon utiliser l'email
     const userName = name || email.split('@')[0];
@@ -84,55 +78,25 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
     
-    // Préparer les données pour l'API Brevo
+    // Préparer les données pour l'API Resend
     const emailData = {
-      sender: {
-        name: "SushiEats",
-        email: "bienvenue@clwebdesign.fr",
-      },
-      to: [
-        {
-          email: email,
-          name: userName,
-        },
-      ],
+      from: "SushiEats <bienvenue@sushieats.fr>",
+      to: [email],
       subject: subject,
-      htmlContent: htmlContent,
+      html: htmlContent,
     };
     
-    console.log("🌐 Envoi via API Brevo...");
+    console.log("🌐 Envoi via API Resend...");
     console.log("📧 Destinataire:", email);
     
-    // Envoyer l'email via l'API Brevo
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": brevoApiKey,
-      },
-      body: JSON.stringify(emailData),
-    });
+    // Envoyer l'email via l'API Resend
+    const emailResponse = await resend.emails.send(emailData);
     
-    console.log("📡 Statut de la réponse Brevo:", response.status);
-    
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = await response.json();
-        console.error("❌ Erreur détaillée de Brevo:", JSON.stringify(errorData, null, 2));
-      } catch (parseError) {
-        console.error("❌ Impossible de parser la réponse d'erreur de Brevo");
-        errorData = { status: response.status, statusText: response.statusText };
-      }
-      throw new Error(`Erreur Brevo: ${response.status} - ${JSON.stringify(errorData)}`);
-    }
-    
-    const responseData = await response.json();
-    console.log("✅ Email de bienvenue envoyé avec succès:", JSON.stringify(responseData, null, 2));
+    console.log("✅ Email de bienvenue envoyé avec succès:", emailResponse);
     
     return new Response(JSON.stringify({ 
       success: true, 
-      messageId: responseData.messageId,
+      messageId: emailResponse.data?.id,
       message: "Email de bienvenue envoyé avec succès"
     }), {
       status: 200,

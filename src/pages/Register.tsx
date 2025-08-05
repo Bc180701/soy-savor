@@ -33,15 +33,23 @@ const Register = () => {
     const fetchPromotion = async () => {
       try {
         const { data, error } = await supabase
-          .from('promotions')
+          .from('promotion_codes')
           .select('*')
-          .eq('title', '-10% sur votre première commande')
+          .eq('code', 'BIENVENUE')
+          .eq('is_active', true)
           .single();
         
         if (error) {
           console.error("Erreur lors de la récupération de la promotion:", error);
-        } else {
-          setPromotion(data);
+        } else if (data) {
+          setPromotion({
+            id: data.id,
+            title: "Bienvenue chez SushiEats",
+            description: `Profitez de ${data.discount_percentage}% de réduction sur votre première commande`,
+            discount: data.discount_percentage,
+            image_url: null,
+            code: data.code
+          });
         }
       } catch (error) {
         console.error("Erreur inattendue:", error);
@@ -134,7 +142,7 @@ const Register = () => {
         });
       } else {
         // Récupérer le code promo
-        const promoCode = promotion?.code || "BIENVENUE10";
+        const promoCode = promotion?.code || "BIENVENUE";
         
         // Envoyer l'email de bienvenue avec le code promo
         await sendWelcomeEmail(email, promoCode);

@@ -718,6 +718,39 @@ export type Database = {
         }
         Relationships: []
       }
+      promotion_codes: {
+        Row: {
+          code: string
+          created_at: string
+          discount_percentage: number
+          id: string
+          is_active: boolean
+          updated_at: string
+          usage_limit: number | null
+          used_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_percentage: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Relationships: []
+      }
       promotions: {
         Row: {
           applicable_categories: string[] | null
@@ -1127,6 +1160,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_promotion_usage: {
+        Row: {
+          id: string
+          order_id: string | null
+          promotion_code: string
+          used_at: string
+          user_email: string
+        }
+        Insert: {
+          id?: string
+          order_id?: string | null
+          promotion_code: string
+          used_at?: string
+          user_email: string
+        }
+        Update: {
+          id?: string
+          order_id?: string | null
+          promotion_code?: string
+          used_at?: string
+          user_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_promotion_usage_promotion_code_fkey"
+            columns: ["promotion_code"]
+            isOneToOne: false
+            referencedRelation: "promotion_codes"
+            referencedColumns: ["code"]
           },
         ]
       }
