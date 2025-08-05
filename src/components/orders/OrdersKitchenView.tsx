@@ -130,7 +130,10 @@ const OrdersKitchenView = ({
                   </CardTitle>
                   <div className="flex items-center space-x-1 text-gray-600">
                     <Clock className="h-4 w-4" />
-                    <span className="text-sm">{formatTime(order.scheduledFor)}</span>
+                    <span className="text-sm">
+                      {order.orderType === 'delivery' ? 'Livraison: ' : 'Retrait: '}
+                      {formatTime(order.scheduledFor)}
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center mt-1">
@@ -169,24 +172,6 @@ const OrdersKitchenView = ({
                   </ul>
                 </div>
 
-                {/* Section informations client */}
-                <div className="border-t pt-3">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Informations client:</h4>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Nom:</span>
-                      <span>{order.clientName || 'Non renseigné'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Téléphone:</span>
-                      <span>{order.clientPhone || 'Non renseigné'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Email:</span>
-                      <span>{order.clientEmail || 'Non renseigné'}</span>
-                    </div>
-                  </div>
-                </div>
 
                 {order.customerNotes && (
                   <div className="mt-3 p-2 bg-amber-50 rounded-md text-sm">
