@@ -143,29 +143,53 @@ const OrdersKitchenView = ({
               </CardHeader>
               
               <CardContent className="py-2">
-                <ul className="space-y-3">
-                  {order.items.map((item, index) => (
-                    <li key={index} className="text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-medium">
-                          {item.quantity}× {item.menuItem.name}
-                        </span>
-                      </div>
-                      
-                      {/* Afficher les détails des produits personnalisés */}
-                      {formatCustomProduct(item.menuItem.description)}
-                      
-                      {/* Afficher les instructions spéciales s'il y en a */}
-                      {item.specialInstructions && (
-                        <div className="mt-1 text-xs italic text-gray-600">
-                          Note: {item.specialInstructions}
+                {/* Section produits commandés */}
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Produits commandés:</h4>
+                  <ul className="space-y-3">
+                    {order.items.map((item, index) => (
+                      <li key={index} className="text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-medium">
+                            {item.quantity}× {item.menuItem.name}
+                          </span>
                         </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                        
+                        {/* Afficher les détails des produits personnalisés */}
+                        {formatCustomProduct(item.menuItem.description)}
+                        
+                        {/* Afficher les instructions spéciales s'il y en a */}
+                        {item.specialInstructions && (
+                          <div className="mt-1 text-xs italic text-gray-600">
+                            Note: {item.specialInstructions}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Section informations client */}
+                <div className="border-t pt-3">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Informations client:</h4>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Nom:</span>
+                      <span>{order.clientName || 'Non renseigné'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Téléphone:</span>
+                      <span>{order.clientPhone || 'Non renseigné'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Email:</span>
+                      <span>{order.clientEmail || 'Non renseigné'}</span>
+                    </div>
+                  </div>
+                </div>
+
                 {order.customerNotes && (
-                  <div className="mt-2 p-2 bg-amber-50 rounded-md text-sm">
+                  <div className="mt-3 p-2 bg-amber-50 rounded-md text-sm">
                     <span className="font-medium">Note:</span> {order.customerNotes}
                   </div>
                 )}
