@@ -74,7 +74,7 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
   };
 
   // Initialize audio context on first user interaction
-  const enableAudio = async () => {
+  const enableAudio = async (playTestSound = true) => {
     console.log('🎵 Initialisation de l\'audio...');
     
     try {
@@ -95,11 +95,13 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
       localStorage.setItem('admin-audio-enabled', 'true');
       console.log('🔊 Audio notifications activées');
       
-      // Test sound avec un petit délai et forcePlay pour contourner le problème de timing du state
-      setTimeout(() => {
-        console.log('🎵 Test du son...');
-        playNotificationSound(true);
-      }, 100);
+      // Test sound seulement si demandé (activation manuelle)
+      if (playTestSound) {
+        setTimeout(() => {
+          console.log('🎵 Test du son...');
+          playNotificationSound(true);
+        }, 100);
+      }
     } catch (error) {
       console.error('❌ Impossible d\'activer le son:', error);
     }
@@ -109,7 +111,7 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
   useEffect(() => {
     if (audioEnabled && !audioContextRef.current) {
       console.log('🔄 Réinitialisation de l\'AudioContext après actualisation...');
-      enableAudio();
+      enableAudio(false); // Ne pas jouer le son de test lors de la réinitialisation
     }
   }, []);
 
@@ -182,10 +184,15 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
     return () => window.removeEventListener('focus', handleFocus);
   }, [hasNewOrders]);
 
+  // Wrapper pour l'activation manuelle du son (avec test sonore)
+  const handleEnableAudio = () => {
+    enableAudio(true);
+  };
+
   return {
     hasNewOrders,
     audioEnabled,
-    enableAudio,
+    enableAudio: handleEnableAudio,
     clearNotifications: stopTitleBlink
   };
 };
