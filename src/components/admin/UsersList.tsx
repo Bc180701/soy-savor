@@ -95,8 +95,8 @@ const UsersList = () => {
     try {
       console.log("🔍 Récupération des utilisateurs depuis la table users...");
       
-      // Récupérer directement depuis la table profiles avec enrichissement
-      const { data: usersData, error: usersError } = await supabase
+      // Récupérer les profils avec les informations d'authentification
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           *,
@@ -105,14 +105,24 @@ const UsersList = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (usersError) {
-        console.error("❌ Erreur table users:", usersError);
-        throw usersError;
+      if (profilesError) {
+        console.error("❌ Erreur table profiles:", profilesError);
+        throw profilesError;
       }
 
-      console.log("✅ Utilisateurs récupérés:", usersData?.length || 0);
+      // Récupérer les informations auth pour chaque utilisateur
+      const { data: authData, error: authError } = await supabase
+        .from('auth_users_view')
+        .select('id, email, created_at, last_sign_in_at');
 
-      if (!usersData || usersData.length === 0) {
+      if (authError) {
+        console.error("❌ Erreur auth_users_view:", authError);
+        // On continue même si on ne peut pas récupérer les infos auth
+      }
+
+      console.log("✅ Profils récupérés:", profilesData?.length || 0);
+
+      if (!profilesData || profilesData.length === 0) {
         console.log("ℹ️ Aucun utilisateur trouvé");
         setUsers([]);
         setFilteredUsers([]);
@@ -120,26 +130,35 @@ const UsersList = () => {
         return;
       }
 
+      // Créer un map des informations auth par ID pour un accès rapide
+      const authMap = new Map();
+      if (authData) {
+        authData.forEach(auth => {
+          authMap.set(auth.id, auth);
+        });
+      }
+
       // Transformer les données pour le format attendu
-      const enrichedUsers = usersData.map((user: any) => {
-        const addresses = user.user_addresses || [];
-        const orders = user.orders || [];
+      const enrichedUsers = profilesData.map((profile: any) => {
+        const addresses = profile.user_addresses || [];
+        const orders = profile.orders || [];
+        const authInfo = authMap.get(profile.id) || {};
 
         // Calculer les statistiques
         const totalSpent = orders.reduce((sum: number, order: any) => sum + (order.total || 0), 0);
         const totalOrders = orders.length;
 
         return {
-          id: user.id,
-          email: user.email || "",
-          first_name: user.first_name || "",
-          last_name: user.last_name || "",
-          phone: user.phone || "",
+          id: profile.id,
+          email: authInfo.email || "",
+          first_name: profile.first_name || "",
+          last_name: profile.last_name || "",
+          phone: profile.phone || "",
           addresses: addresses,
           orders: orders.slice(0, 10), // Limiter à 10 commandes pour l'affichage
-          created_at: user.created_at,
-          loyalty_points: user.loyalty_points || 0,
-          last_sign_in_at: user.last_sign_in_at,
+          created_at: authInfo.created_at || profile.created_at,
+          loyalty_points: profile.loyalty_points || 0,
+          last_sign_in_at: authInfo.last_sign_in_at,
           totalSpent,
           totalOrders
         };
