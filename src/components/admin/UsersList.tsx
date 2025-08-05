@@ -93,51 +93,53 @@ const UsersList = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      console.log("🔍 Récupération des utilisateurs...");
+      console.log("🔍 Récupération des utilisateurs via fonction edge...");
       
-      // 1. Récupération des utilisateurs depuis auth_users_view
-      const { data: authUsers, error: authError } = await supabase
-        .from("auth_users_view")
-        .select("*");
+      // Utiliser la fonction edge pour récupérer les utilisateurs détaillés
+      const { data: usersData, error: usersError } = await supabase.functions.invoke('get-admin-users-detailed');
 
-      if (authError) {
-        console.error("❌ Erreur auth_users_view:", authError);
-        throw authError;
+      if (usersError) {
+        console.error("❌ Erreur fonction edge:", usersError);
+        throw usersError;
       }
 
-      console.log("✅ Utilisateurs auth trouvés:", authUsers?.length || 0);
+      if (!usersData?.success) {
+        throw new Error(usersData?.error || "Erreur lors de la récupération des utilisateurs");
+      }
 
-      if (!authUsers || authUsers.length === 0) {
-        console.log("ℹ️ Aucun utilisateur trouvé dans auth_users_view");
+      console.log("✅ Utilisateurs récupérés:", usersData.users?.length || 0);
+
+      if (!usersData.users || usersData.users.length === 0) {
+        console.log("ℹ️ Aucun utilisateur trouvé");
         setUsers([]);
         setFilteredUsers([]);
         setLoading(false);
         return;
       }
 
-      // 2. Pour chaque utilisateur, enrichir avec profile, adresses et statistiques
+      // Enrichir chaque utilisateur avec ses adresses et commandes
       const enrichedUsers = await Promise.all(
-        authUsers.map(async (authUser) => {
-          console.log(`🔍 Enrichissement utilisateur: ${authUser.email}`);
+        usersData.users.map(async (user: any) => {
+          console.log(`🔍 Enrichissement utilisateur: ${user.email}`);
           
           // Informations profil
           const { data: profile } = await supabase
             .from("profiles")
             .select("*")
-            .eq("id", authUser.id)
+            .eq("id", user.id)
             .maybeSingle();
           
           // Adresses
           const { data: addresses } = await supabase
             .from("user_addresses")
             .select("*")
-            .eq("user_id", authUser.id);
+            .eq("user_id", user.id);
            
           // Commandes avec statistiques
           const { data: orders } = await supabase
             .from("orders")
             .select("id, created_at, total, status, payment_status")
-            .eq("user_id", authUser.id)
+            .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(10);
 
@@ -146,21 +148,21 @@ const UsersList = () => {
           const totalOrders = orders?.length || 0;
 
           const userResult = {
-            id: authUser.id,
-            email: authUser.email,
+            id: user.id,
+            email: user.email,
             first_name: profile?.first_name || "",
             last_name: profile?.last_name || "",
             phone: profile?.phone || "",
             addresses: addresses || [],
             orders: orders || [],
-            created_at: authUser.created_at,
+            created_at: user.created_at,
             loyalty_points: profile?.loyalty_points || 0,
-            last_sign_in_at: authUser.last_sign_in_at,
+            last_sign_in_at: user.last_sign_in_at,
             totalSpent,
             totalOrders
           };
 
-          console.log(`✅ Utilisateur enrichi: ${authUser.email}`, userResult);
+          console.log(`✅ Utilisateur enrichi: ${user.email}`);
           return userResult;
         })
       );
