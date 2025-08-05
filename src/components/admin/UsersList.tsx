@@ -93,23 +93,26 @@ const UsersList = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      console.log("🔍 Récupération des utilisateurs via fonction edge...");
+      console.log("🔍 Récupération des utilisateurs depuis la table users...");
       
-      // Utiliser la nouvelle fonction edge pour récupérer tous les utilisateurs
-      const { data: usersData, error: usersError } = await supabase.functions.invoke('get-all-users');
+      // Récupérer directement depuis la table profiles avec enrichissement
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_addresses(*),
+          orders(id, created_at, total, status, payment_status)
+        `)
+        .order('created_at', { ascending: false });
 
       if (usersError) {
-        console.error("❌ Erreur fonction edge:", usersError);
+        console.error("❌ Erreur table users:", usersError);
         throw usersError;
       }
 
-      if (!usersData?.success) {
-        throw new Error(usersData?.error || "Erreur lors de la récupération des utilisateurs");
-      }
+      console.log("✅ Utilisateurs récupérés:", usersData?.length || 0);
 
-      console.log("✅ Utilisateurs récupérés:", usersData.users?.length || 0);
-
-      if (!usersData.users || usersData.users.length === 0) {
+      if (!usersData || usersData.length === 0) {
         console.log("ℹ️ Aucun utilisateur trouvé");
         setUsers([]);
         setFilteredUsers([]);
@@ -117,55 +120,30 @@ const UsersList = () => {
         return;
       }
 
-      // Enrichir chaque utilisateur avec ses adresses et commandes
-      const enrichedUsers = await Promise.all(
-        usersData.users.map(async (user: any) => {
-          console.log(`🔍 Enrichissement utilisateur: ${user.email}`);
-          
-          // Informations profil
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
-          
-          // Adresses
-          const { data: addresses } = await supabase
-            .from("user_addresses")
-            .select("*")
-            .eq("user_id", user.id);
-           
-          // Commandes avec statistiques
-          const { data: orders } = await supabase
-            .from("orders")
-            .select("id, created_at, total, status, payment_status")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(10);
+      // Transformer les données pour le format attendu
+      const enrichedUsers = usersData.map((user: any) => {
+        const addresses = user.user_addresses || [];
+        const orders = user.orders || [];
 
-          // Calculer les statistiques
-          const totalSpent = orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
-          const totalOrders = orders?.length || 0;
+        // Calculer les statistiques
+        const totalSpent = orders.reduce((sum: number, order: any) => sum + (order.total || 0), 0);
+        const totalOrders = orders.length;
 
-          const userResult = {
-            id: user.id,
-            email: user.email,
-            first_name: profile?.first_name || "",
-            last_name: profile?.last_name || "",
-            phone: profile?.phone || "",
-            addresses: addresses || [],
-            orders: orders || [],
-            created_at: user.created_at,
-            loyalty_points: profile?.loyalty_points || 0,
-            last_sign_in_at: user.last_sign_in_at,
-            totalSpent,
-            totalOrders
-          };
-
-          console.log(`✅ Utilisateur enrichi: ${user.email}`);
-          return userResult;
-        })
-      );
+        return {
+          id: user.id,
+          email: user.email || "",
+          first_name: user.first_name || "",
+          last_name: user.last_name || "",
+          phone: user.phone || "",
+          addresses: addresses,
+          orders: orders.slice(0, 10), // Limiter à 10 commandes pour l'affichage
+          created_at: user.created_at,
+          loyalty_points: user.loyalty_points || 0,
+          last_sign_in_at: user.last_sign_in_at,
+          totalSpent,
+          totalOrders
+        };
+      });
       
       console.log("🎯 RÉSULTAT FINAL:", {
         totalUsers: enrichedUsers.length,
