@@ -61,7 +61,9 @@ const AdminManager = () => {
   }, [clearNotifications]);
 
   const handleSectionChange = (section: string) => {
-    setSearchParams({ section });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("section", section);
+    setSearchParams(newParams);
   };
 
   const handleManualRefresh = () => {
@@ -143,9 +145,9 @@ const AdminManager = () => {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white shadow-sm border-b relative">
-          <div className="flex items-center justify-between px-4 py-4">
-            <div className="flex items-center relative gap-4">
+        <div className="bg-white shadow-sm border-b">
+          <div className="px-4 py-4">
+            <div className="flex items-center relative gap-4 mb-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -170,7 +172,7 @@ const AdminManager = () => {
             </div>
             
             {activeSection === "orders" && (
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4 pt-2 border-t">
                 {!audioEnabled && (
                   <Button 
                     onClick={enableAudio}

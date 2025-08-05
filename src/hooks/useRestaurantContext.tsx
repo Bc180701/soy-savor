@@ -1,11 +1,13 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { RestaurantContext, Restaurant } from "@/types/restaurant";
 import { fetchRestaurants } from "@/services/restaurantService";
 
 const RestaurantContextObj = createContext<RestaurantContext | undefined>(undefined);
 
 export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,9 +23,15 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
         
         setRestaurants(restaurantsList);
         
-        // Ne pas sélectionner automatiquement un restaurant par défaut
-        // Laisser l'utilisateur choisir parmi les restaurants disponibles
-        console.log("Aucun restaurant sélectionné par défaut - l'utilisateur devra choisir");
+        // Récupérer le restaurant depuis les URL params
+        const restaurantId = searchParams.get("restaurant");
+        if (restaurantId && restaurantsList.length > 0) {
+          const savedRestaurant = restaurantsList.find(r => r.id === restaurantId);
+          if (savedRestaurant) {
+            console.log("Restaurant restauré depuis URL:", savedRestaurant.name);
+            setCurrentRestaurant(savedRestaurant);
+          }
+        }
         
       } catch (error) {
         console.error("Erreur lors du chargement des restaurants:", error);
@@ -34,7 +42,21 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadRestaurants();
-  }, []);
+  }, [searchParams]);
+
+  // Fonction pour changer de restaurant et persister dans l'URL
+  const handleSetCurrentRestaurant = (restaurant: Restaurant | null) => {
+    setCurrentRestaurant(restaurant);
+    
+    // Persister dans les URL params
+    const newParams = new URLSearchParams(searchParams);
+    if (restaurant) {
+      newParams.set("restaurant", restaurant.id);
+    } else {
+      newParams.delete("restaurant");
+    }
+    setSearchParams(newParams);
+  };
 
   // Note: The ordering lock synchronization will be handled by individual components
   // to avoid circular dependency with the cart store
@@ -42,7 +64,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const value: RestaurantContext = {
     currentRestaurant,
     restaurants,
-    setCurrentRestaurant,
+    setCurrentRestaurant: handleSetCurrentRestaurant,
     isLoading,
   };
 
