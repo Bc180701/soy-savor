@@ -77,7 +77,7 @@ function App() {
           <RestaurantProvider>
             <Toaster />
             <Sonner />
-      <Routes>
+            <Routes>
         {/* Pages principales avec Layout */}
         <Route path="/" element={<Layout><Index /></Layout>} />
         <Route path="/menu" element={<Layout><Menu /></Layout>} />
