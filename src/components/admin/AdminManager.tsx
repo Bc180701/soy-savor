@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Menu } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Menu, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import DashboardStats from "./DashboardStats";
@@ -25,19 +26,55 @@ import DeliveryPhoneManager from "./DeliveryPhoneManager";
 import { BluetoothManager } from "./BluetoothManager";
 
 const AdminManager = () => {
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
   const { currentRestaurant } = useRestaurantContext();
   
+  // Get active section from URL params or default to dashboard
+  const activeSection = searchParams.get("section") || "dashboard";
+  
   // Enable order notifications for admins
-  const { audioEnabled, enableAudio } = useOrderNotifications(true, currentRestaurant?.id);
+  const { hasNewOrders, audioEnabled, enableAudio, clearNotifications } = useOrderNotifications(true, currentRestaurant?.id);
+
+  // Auto-refresh for orders section every 30 seconds
+  useEffect(() => {
+    if (!autoRefresh || activeSection !== "orders") return;
+
+    const interval = setInterval(() => {
+      setLastRefresh(new Date());
+      window.location.reload();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, activeSection]);
+
+  // Clear notifications when page is focused
+  useEffect(() => {
+    const handleFocus = () => {
+      clearNotifications();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [clearNotifications]);
+
+  const handleSectionChange = (section: string) => {
+    setSearchParams({ section });
+  };
+
+  const handleManualRefresh = () => {
+    setLastRefresh(new Date());
+    window.location.reload();
+  };
 
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
         return <DashboardStats />;
       case "orders":
-        return <OrderList />;
+        return <OrderList defaultTab="kitchen" />;
       case "products":
         return <ProductManager />;
       case "users":
@@ -100,7 +137,7 @@ const AdminManager = () => {
     <div className="flex h-screen bg-gray-50">
       <AdminSidebar 
         activeSection={activeSection}
-        onSectionChange={setActiveSection}
+        onSectionChange={handleSectionChange}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -108,7 +145,7 @@ const AdminManager = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="bg-white shadow-sm border-b relative">
           <div className="flex items-center justify-between px-4 py-4">
-            <div className="flex items-center relative">
+            <div className="flex items-center relative gap-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -117,8 +154,58 @@ const AdminManager = () => {
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <h1 className="text-2xl font-bold text-gray-900 relative z-10">{getSectionTitle()}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 relative z-10">
+                {getSectionTitle()}
+                {activeSection === "orders" && hasNewOrders && (
+                  <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 animate-pulse">
+                    Nouvelles commandes !
+                  </span>
+                )}
+              </h1>
+              {currentRestaurant && (
+                <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                  {currentRestaurant.name}
+                </span>
+              )}
             </div>
+            
+            {activeSection === "orders" && (
+              <div className="flex items-center gap-4">
+                {!audioEnabled && (
+                  <Button 
+                    onClick={enableAudio}
+                    variant="outline"
+                    size="sm"
+                    className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                  >
+                    Activer le son
+                  </Button>
+                )}
+                
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>Dernière mise à jour: {lastRefresh.toLocaleTimeString()}</span>
+                  <Button
+                    onClick={handleManualRefresh}
+                    variant="ghost"
+                    size="sm"
+                    className="p-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-gray-600">Auto-actualisation:</label>
+                  <Button
+                    onClick={() => setAutoRefresh(!autoRefresh)}
+                    variant={autoRefresh ? "default" : "outline"}
+                    size="sm"
+                  >
+                    {autoRefresh ? "ON" : "OFF"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
