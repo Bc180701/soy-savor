@@ -73,10 +73,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <RestaurantProvider>
-          <Toaster />
-          <Sonner />
-          <Router>
+        <Router>
+          <RestaurantProvider>
+            <Toaster />
+            <Sonner />
       <Routes>
         {/* Pages principales avec Layout */}
         <Route path="/" element={<Layout><Index /></Layout>} />
@@ -141,8 +141,8 @@ function App() {
         {/* 404 - Doit être en dernier */}
         <Route path="*" element={<Layout><NotFound /></Layout>} />
       </Routes>
-    </Router>
-        </RestaurantProvider>
+          </RestaurantProvider>
+        </Router>
       </TooltipProvider>
     </QueryClientProvider>
   );
