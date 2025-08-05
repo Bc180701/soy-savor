@@ -95,8 +95,8 @@ const UsersList = () => {
     try {
       console.log("🔍 Récupération des utilisateurs via fonction edge...");
       
-      // Utiliser la fonction edge pour récupérer les utilisateurs détaillés
-      const { data: usersData, error: usersError } = await supabase.functions.invoke('get-admin-users-detailed');
+      // Utiliser la nouvelle fonction edge pour récupérer tous les utilisateurs
+      const { data: usersData, error: usersError } = await supabase.functions.invoke('get-all-users');
 
       if (usersError) {
         console.error("❌ Erreur fonction edge:", usersError);
