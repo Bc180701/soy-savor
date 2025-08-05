@@ -93,140 +93,51 @@ const UsersList = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      console.log("🔍 DÉBUT - Récupération de tous les utilisateurs...");
+      console.log("🔍 Récupération des utilisateurs...");
       
-      // 1. Récupération depuis auth_users_view
-      console.log("🔍 Étape 1: Récupération auth_users_view...");
+      // 1. Récupération des utilisateurs depuis auth_users_view
       const { data: authUsers, error: authError } = await supabase
         .from("auth_users_view")
         .select("*");
 
-      console.log("✅ auth_users_view résultats:", {
-        count: authUsers?.length || 0,
-        users: authUsers,
-        error: authError
-      });
-
-      // 2. Récupération de tous les profils
-      console.log("🔍 Étape 2: Récupération profiles...");
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*");
-      
-      console.log("✅ profiles résultats:", {
-        count: profiles?.length || 0,
-        profiles: profiles,
-        error: profilesError
-      });
-
-      // 3. Récupération des rôles utilisateurs
-      console.log("🔍 Étape 3: Récupération user_roles...");
-      const { data: userRoles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id");
-
-      console.log("✅ user_roles résultats:", {
-        count: userRoles?.length || 0,
-        roles: userRoles,
-        error: rolesError
-      });
-
-      // 4. Récupération des commandes pour avoir les emails clients
-      console.log("🔍 Étape 4: Récupération orders pour emails...");
-      const { data: ordersWithEmails, error: ordersError } = await supabase
-        .from("orders")
-        .select("user_id, client_email")
-        .not("client_email", "is", null);
-
-      console.log("✅ orders avec emails résultats:", {
-        count: ordersWithEmails?.length || 0,
-        orders: ordersWithEmails,
-        error: ordersError
-      });
-
-      // Collecter tous les IDs utilisateurs uniques
-      let allUserIds: string[] = [];
-      
-      if (authUsers && !authError) {
-        authUsers.forEach(user => {
-          if (user.id && !allUserIds.includes(user.id)) {
-            allUserIds.push(user.id);
-          }
-        });
+      if (authError) {
+        console.error("❌ Erreur auth_users_view:", authError);
+        throw authError;
       }
 
-      if (profiles) {
-        profiles.forEach(profile => {
-          if (profile.id && !allUserIds.includes(profile.id)) {
-            allUserIds.push(profile.id);
-          }
-        });
-      }
+      console.log("✅ Utilisateurs auth trouvés:", authUsers?.length || 0);
 
-      if (userRoles) {
-        userRoles.forEach(role => {
-          if (role.user_id && !allUserIds.includes(role.user_id)) {
-            allUserIds.push(role.user_id);
-          }
-        });
-      }
-
-      if (ordersWithEmails) {
-        ordersWithEmails.forEach(order => {
-          if (order.user_id && !allUserIds.includes(order.user_id)) {
-            allUserIds.push(order.user_id);
-          }
-        });
-      }
-
-      console.log("🔍 Tous les IDs utilisateurs collectés:", allUserIds);
-
-      if (allUserIds.length === 0) {
-        console.log("❌ Aucun ID utilisateur trouvé");
+      if (!authUsers || authUsers.length === 0) {
+        console.log("ℹ️ Aucun utilisateur trouvé dans auth_users_view");
         setUsers([]);
         setFilteredUsers([]);
         setLoading(false);
         return;
       }
 
-      // Recherche spécifique pour baptiste@firten.com
-      console.log("🔍 RECHERCHE SPÉCIFIQUE pour baptiste@firten.com...");
-      
-      // Vérifier dans auth_users_view
-      const baptisteInAuth = authUsers?.find(u => u.email === "baptiste@firten.com");
-      console.log("👤 baptiste@firten.com dans auth_users_view:", baptisteInAuth);
-
-      // Vérifier dans les commandes
-      const baptisteInOrders = ordersWithEmails?.find(o => o.client_email === "baptiste@firten.com");
-      console.log("👤 baptiste@firten.com dans orders:", baptisteInOrders);
-
-      // Pour chaque utilisateur, récupérer toutes ses informations
-      console.log("🔍 Étape 5: Enrichissement des données utilisateurs...");
+      // 2. Pour chaque utilisateur, enrichir avec profile, adresses et statistiques
       const enrichedUsers = await Promise.all(
-        allUserIds.map(async (userId) => {
-          console.log(`🔍 Traitement utilisateur ID: ${userId}`);
-          
-          // Informations auth
-          const authUser = authUsers?.find(u => u.id === userId);
+        authUsers.map(async (authUser) => {
+          console.log(`🔍 Enrichissement utilisateur: ${authUser.email}`);
           
           // Informations profil
           const { data: profile } = await supabase
             .from("profiles")
             .select("*")
-            .eq("id", userId)
-            .single();
+            .eq("id", authUser.id)
+            .maybeSingle();
           
           // Adresses
           const { data: addresses } = await supabase
             .from("user_addresses")
             .select("*")
-            .eq("user_id", userId);
-          
+            .eq("user_id", authUser.id);
+           
           // Commandes avec statistiques
           const { data: orders } = await supabase
             .from("orders")
-            .select("id, created_at, total, status, payment_status, client_email")
-            .eq("user_id", userId)
+            .select("id, created_at, total, status, payment_status")
+            .eq("user_id", authUser.id)
             .order("created_at", { ascending: false })
             .limit(10);
 
@@ -234,47 +145,33 @@ const UsersList = () => {
           const totalSpent = orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
           const totalOrders = orders?.length || 0;
 
-          // Email de fallback
-          let email = authUser?.email || "";
-          if (!email && orders && orders.length > 0) {
-            const orderWithEmail = orders.find(o => o.client_email);
-            email = orderWithEmail?.client_email || "";
-          }
-
           const userResult = {
-            id: userId,
-            email: email,
+            id: authUser.id,
+            email: authUser.email,
             first_name: profile?.first_name || "",
             last_name: profile?.last_name || "",
             phone: profile?.phone || "",
             addresses: addresses || [],
             orders: orders || [],
-            created_at: authUser?.created_at || profile?.created_at || new Date().toISOString(),
+            created_at: authUser.created_at,
             loyalty_points: profile?.loyalty_points || 0,
-            last_sign_in_at: authUser?.last_sign_in_at || null,
+            last_sign_in_at: authUser.last_sign_in_at,
             totalSpent,
             totalOrders
           };
 
-          console.log(`✅ Utilisateur ${userId} enrichi:`, userResult);
+          console.log(`✅ Utilisateur enrichi: ${authUser.email}`, userResult);
           return userResult;
         })
       );
       
-      // Filtrer les utilisateurs qui ont au moins un email ou des données
-      const validUsers = enrichedUsers.filter(user => 
-        user.email || user.first_name || user.last_name || user.phone || user.addresses.length > 0
-      );
-      
       console.log("🎯 RÉSULTAT FINAL:", {
-        totalEnriched: enrichedUsers.length,
-        validUsers: validUsers.length,
-        users: validUsers,
-        baptisteFound: validUsers.find(u => u.email === "baptiste@firten.com") ? "✅ TROUVÉ" : "❌ PAS TROUVÉ"
+        totalUsers: enrichedUsers.length,
+        users: enrichedUsers
       });
       
-      setUsers(validUsers);
-      setFilteredUsers(validUsers);
+      setUsers(enrichedUsers);
+      setFilteredUsers(enrichedUsers);
       
     } catch (error) {
       console.error("❌ ERREUR lors de la récupération des utilisateurs:", error);
