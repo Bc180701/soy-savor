@@ -95,7 +95,9 @@ const UsersList = () => {
     try {
       console.log("🔍 Récupération des utilisateurs depuis la table users...");
       
-      // Récupérer les profils avec les informations d'authentification
+      console.log("🔍 Récupération des utilisateurs depuis la table profiles...");
+      
+      // Récupérer les profils avec leurs relations
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -110,19 +112,23 @@ const UsersList = () => {
         throw profilesError;
       }
 
-      // Récupérer les informations auth pour chaque utilisateur - ignore les erreurs
-      let authData: any[] = [];
+      // Récupérer les emails via la fonction edge qui a les bonnes permissions
+      let emailsData: any[] = [];
       try {
-        const { data } = await supabase
-          .from('auth_users_view')
-          .select('id, email, created_at, last_sign_in_at');
-        if (data) authData = data;
+        console.log("🔍 Récupération des emails via fonction edge...");
+        const { data: emailsResponse, error: emailsError } = await supabase.functions.invoke('get-all-users');
+        
+        if (emailsError) {
+          console.error("❌ Erreur fonction edge emails:", emailsError);
+        } else if (emailsResponse?.success && emailsResponse?.users) {
+          emailsData = emailsResponse.users;
+          console.log("✅ Emails récupérés:", emailsData.length);
+        }
       } catch (error) {
-        console.log("⚠️ Impossible de récupérer auth_users_view, utilisation des IDs uniquement");
+        console.log("⚠️ Impossible de récupérer les emails via edge function");
       }
 
       console.log("✅ Profils récupérés:", profilesData?.length || 0);
-      console.log("✅ Auth data récupérées:", authData?.length || 0);
 
       if (!profilesData || profilesData.length === 0) {
         console.log("ℹ️ Aucun utilisateur trouvé");
@@ -132,11 +138,11 @@ const UsersList = () => {
         return;
       }
 
-      // Créer un map des informations auth par ID pour un accès rapide
-      const authMap = new Map();
-      if (authData) {
-        authData.forEach(auth => {
-          authMap.set(auth.id, auth);
+      // Créer un map des informations emails par ID pour un accès rapide
+      const emailMap = new Map();
+      if (emailsData) {
+        emailsData.forEach(user => {
+          emailMap.set(user.id, user);
         });
       }
 
@@ -144,7 +150,7 @@ const UsersList = () => {
       const enrichedUsers = profilesData.map((profile: any) => {
         const addresses = profile.user_addresses || [];
         const orders = profile.orders || [];
-        const authInfo = authMap.get(profile.id) || {};
+        const emailInfo = emailMap.get(profile.id) || {};
 
         // Calculer les statistiques
         const totalSpent = orders.reduce((sum: number, order: any) => sum + (order.total || 0), 0);
@@ -152,15 +158,15 @@ const UsersList = () => {
 
         return {
           id: profile.id,
-          email: authInfo.email || "",
+          email: emailInfo.email || "",
           first_name: profile.first_name || "",
           last_name: profile.last_name || "",
           phone: profile.phone || "",
           addresses: addresses,
           orders: orders.slice(0, 10), // Limiter à 10 commandes pour l'affichage
-          created_at: authInfo.created_at || profile.created_at,
+          created_at: emailInfo.created_at || profile.created_at,
           loyalty_points: profile.loyalty_points || 0,
-          last_sign_in_at: authInfo.last_sign_in_at,
+          last_sign_in_at: emailInfo.last_sign_in_at,
           totalSpent,
           totalOrders
         };
