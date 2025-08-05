@@ -104,22 +104,15 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
 
     console.log('🔗 Configuration des notifications en temps réel pour TOUS les restaurants');
 
-    // Configuration plus robuste du canal
-    const channelName = `new-orders-${Date.now()}`;
+    // Configuration plus simple et robuste du canal
     const channel = supabase
-      .channel(channelName, {
-        config: {
-          broadcast: { self: true },
-          presence: { key: 'admin' }
-        }
-      })
+      .channel('order-notifications')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'orders',
-          // Pas de filtre - écouter toutes les commandes de tous les restaurants
+          table: 'orders'
         },
         (payload) => {
           console.log('🔔 Nouvelle commande reçue:', payload);
@@ -135,7 +128,7 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
           playNotificationSound();
 
           // Show toast notification with restaurant info
-          const restaurantName = payload.new?.restaurant_id === '11111111-1111-1111-1111-111111111111' ? 'Châteaurenard' : 'Autre restaurant';
+          const restaurantName = payload.new?.restaurant_id === '11111111-1111-1111-1111-111111111111' ? 'Châteaurenard' : 'St Martin de Crau';
           toast({
             title: "🔔 Nouvelle commande!",
             description: `Commande #${payload.new.id.slice(0, 8)}... reçue pour ${restaurantName}`,
@@ -149,6 +142,11 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
       )
       .subscribe((status) => {
         console.log('📡 Statut subscription:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Canal Real-time connecté avec succès');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Erreur de connexion au canal Real-time');
+        }
       });
 
     return () => {
@@ -156,7 +154,7 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
       supabase.removeChannel(channel);
       stopTitleBlink();
     };
-  }, [isAdmin, restaurantId, audioEnabled, toast]);
+  }, [isAdmin, restaurantId, toast]);
 
   // Stop blinking when user focuses on the tab
   useEffect(() => {
