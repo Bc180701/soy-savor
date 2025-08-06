@@ -28,10 +28,6 @@ export const OrderSummary = ({
         <span>Sous-total</span>
         <span>{formatEuro(subtotal)}</span>
       </div>
-      <div className="flex justify-between mb-2">
-        <span>TVA (10%)</span>
-        <span>{formatEuro(tax)}</span>
-      </div>
       
       {deliveryFee > 0 && (
         <div className="flex justify-between mb-2">
@@ -56,7 +52,7 @@ export const OrderSummary = ({
       
       <div className="flex justify-between font-bold text-lg mt-4">
         <span>Total</span>
-        <span>{formatEuro(subtotal + tax + deliveryFee + (tip || 0) - discount)}</span>
+        <span>{formatEuro(subtotal + deliveryFee + (tip || 0) - discount)}</span>
       </div>
     </div>
   );

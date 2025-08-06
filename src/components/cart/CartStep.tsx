@@ -50,7 +50,7 @@ export const CartStep = ({
     addItem
   } = useCart();
   
-  const orderTotal = subtotal + tax - discount;
+  const orderTotal = subtotal - discount;
   const isCartEmpty = items.length === 0;
   
   // Free dessert promotion
@@ -172,10 +172,6 @@ export const CartStep = ({
               <div className="flex justify-between">
                 <span>Sous-total</span>
                 <span className="font-medium">{formatEuro(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>TVA (10%)</span>
-                <span>{formatEuro(tax)}</span>
               </div>
               
               {discount > 0 && (

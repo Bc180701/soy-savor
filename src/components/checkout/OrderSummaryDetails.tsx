@@ -43,7 +43,7 @@ export const OrderSummaryDetails = ({
   deliveryInfo,
   allergyOptions
 }: OrderSummaryDetailsProps) => {
-  const orderTotal = subtotal + tax + deliveryFee + (tip || 0) - discount; // Include tip in orderTotal
+  const orderTotal = subtotal + deliveryFee + (tip || 0) - discount; // TVA incluse dans les prix
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -137,10 +137,6 @@ export const OrderSummaryDetails = ({
         <div className="flex justify-between mb-2">
           <span>Sous-total</span>
           <span>{formatEuro(subtotal)}</span>
-        </div>
-        <div className="flex justify-between mb-2">
-          <span>TVA (10%)</span>
-          <span>{formatEuro(tax)}</span>
         </div>
         {deliveryInfo.orderType === "delivery" && (
           <div className="flex justify-between mb-2">
