@@ -67,23 +67,51 @@ const OrdersKitchenView = ({
 
       console.log("Envoi de la notification de retard pour la commande:", selectedOrderId);
 
-      const { data, error } = await supabase.functions.invoke('notify-order-delay', {
-        body: {
-          orderId: selectedOrderId,
-          customerEmail: selectedOrder.clientEmail,
-          customerName: selectedOrder.clientName || "Client",
-          delayMinutes,
-          delayReason,
-          orderType: selectedOrder.orderType
+      // Préparer le message commun (pour SMS éventuel)
+      const delayMsg = `⏰ Retard de ${delayMinutes} min pour votre commande #${selectedOrderId.slice(0,8)}. Raison: ${delayReason}. Merci de votre compréhension.`;
+
+      if (selectedOrder.clientEmail) {
+        // Envoi par email via l'edge function dédiée
+        const { data, error } = await supabase.functions.invoke('notify-order-delay', {
+          body: {
+            orderId: selectedOrderId,
+            customerEmail: selectedOrder.clientEmail,
+            customerName: selectedOrder.clientName || "Client",
+            delayMinutes,
+            delayReason,
+            orderType: selectedOrder.orderType
+          }
+        });
+
+        if (error) {
+          console.error("Erreur lors de l'envoi de la notification email:", error);
+          throw error;
         }
-      });
+        console.log("Notification email de retard envoyée avec succès:", data);
+      } else if (selectedOrder.clientPhone) {
+        // Fallback invité: envoi par SMS si pas d'email
+        const { data: smsData, error: smsError } = await supabase.functions.invoke('send-sms-notification', {
+          body: {
+            phoneNumber: selectedOrder.clientPhone,
+            message: delayMsg,
+            orderId: selectedOrderId,
+          }
+        });
+        if (smsError) {
+          console.error("Erreur lors de l'envoi du SMS de retard:", smsError);
+          throw smsError;
+        }
+        console.log("SMS de retard envoyé:", smsData);
 
-      if (error) {
-        console.error("Erreur lors de l'envoi de la notification:", error);
-        throw error;
+        // Aligner avec le comportement de l'email: consigner la note sur la commande
+        const { error: updateErr } = await supabase
+          .from('orders')
+          .update({ customer_notes: `${delayReason} (Retard de ${delayMinutes} min signalé)` })
+          .eq('id', selectedOrderId);
+        if (updateErr) console.warn("Impossible d'ajouter la note de retard sur la commande:", updateErr);
+      } else {
+        throw new Error("Aucun moyen de contact (email ou téléphone) n'est disponible pour cette commande");
       }
-
-      console.log("Notification de retard envoyée avec succès:", data);
 
       toast({
         title: "Client notifié",
@@ -232,7 +260,7 @@ const OrdersKitchenView = ({
           <DialogHeader>
             <DialogTitle>Signaler un retard</DialogTitle>
             <DialogDescription>
-              Informez le client que sa commande sera retardée. Un email sera envoyé.
+              Informez le client que sa commande sera retardée. Un message sera envoyé (email ou SMS).
             </DialogDescription>
           </DialogHeader>
           
