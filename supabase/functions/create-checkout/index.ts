@@ -213,8 +213,8 @@ serve(async (req) => {
           continue;
         }
 
-        // On ajoute la TVA directement au prix de chaque article
-        const priceWithTax = Math.round(item.menuItem.price * 110) / 100; // Ajout de 10% de TVA
+        // Les prix incluent déjà la TVA (10%), on ne majore plus
+        const unitAmount = Math.round(item.menuItem.price * 100);
         
         const lineItem = {
           price_data: {
@@ -223,14 +223,14 @@ serve(async (req) => {
               name: item.menuItem.name,
               description: item.menuItem.description || '',
             },
-            // Prix en centimes avec TVA incluse
-            unit_amount: Math.round(priceWithTax * 100),
+            // Prix en centimes TTC (déjà inclus dans item.menuItem.price)
+            unit_amount: unitAmount,
           },
           quantity: item.quantity,
         };
         
         lineItems.push(lineItem);
-        console.log('📦 [STEP 19.3] Line item ajouté (avec TVA):', item.menuItem.name, '-', priceWithTax, '€');
+        console.log('📦 [STEP 19.3] Line item ajouté (TTC inclus, sans majoration):', item.menuItem.name, '-', item.menuItem.price, '€');
       }
 
       // Ajouter les frais de livraison
