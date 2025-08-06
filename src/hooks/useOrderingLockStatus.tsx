@@ -33,8 +33,8 @@ export const useOrderingLockStatus = () => {
         return;
       }
 
-      const settings = data?.settings || {};
-      const locked = settings.ordering_locked || false;
+      const settings = (data?.settings as Record<string, any>) ?? {};
+      const locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
       
       console.log("🔒 Statut récupéré:", locked);
       setIsOrderingLocked(locked);
@@ -69,8 +69,8 @@ export const useOrderingLockStatus = () => {
         },
         (payload) => {
           console.log("🔒 Changement détecté en temps réel:", payload);
-          const settings = payload.new.settings || {};
-          const locked = settings.ordering_locked || false;
+          const settings = (payload.new?.settings as Record<string, any>) ?? {};
+          const locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
           console.log("🔒 Nouveau statut:", locked);
           setIsOrderingLocked(locked);
         }

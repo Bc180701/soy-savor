@@ -40,8 +40,8 @@ const OrderingLockControl = () => {
         throw error;
       }
 
-      const settings = restaurantData?.settings || {};
-      const orderingLocked = settings.ordering_locked || false;
+      const settings = (restaurantData?.settings as Record<string, any>) ?? {};
+      const orderingLocked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
       
       console.log("🔒 Paramètres récupérés depuis DB:", settings);
       console.log("🔒 État du verrouillage:", orderingLocked);
@@ -87,11 +87,8 @@ const OrderingLockControl = () => {
       }
 
       // Fusionner avec les nouveaux paramètres
-      const currentSettings = currentData?.settings || {};
-      const updatedSettings = {
-        ...currentSettings,
-        ordering_locked: locked
-      };
+      const currentSettings = (currentData?.settings as Record<string, any>) ?? {};
+      const updatedSettings = { ...currentSettings, ordering_locked: locked };
 
       console.log("🔒 Anciens paramètres:", currentSettings);
       console.log("🔒 Nouveaux paramètres:", updatedSettings);
