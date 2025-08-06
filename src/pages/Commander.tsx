@@ -190,6 +190,15 @@ const CommanderContent = () => {
   const handleAddToCart = (item: MenuItem) => {
     console.log("🛒 Tentative d'ajout au panier:", item.name, "Restaurant:", currentRestaurant?.name);
     
+    if (isOrderingLocked) {
+      toast({
+        title: "Commandes verrouillées",
+        description: "Ce restaurant n'accepte pas de nouvelles commandes pour le moment.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!currentRestaurant) {
       toast({
         title: "Erreur",
@@ -235,7 +244,7 @@ const CommanderContent = () => {
   }, [isOrderingLocked, setOrderingLocked]);
 
   // Si les commandes sont verrouillées, afficher un message au lieu du menu
-  if (isOrderingLocked) {
+  if (isOrderingStatusLoading || isOrderingLocked) {
     return <OrderingLockedMessage />;
   }
   
