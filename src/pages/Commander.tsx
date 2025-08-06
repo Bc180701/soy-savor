@@ -20,11 +20,13 @@ import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
 import SEOHead from "@/components/SEOHead";
 import commanderHeroImage from "@/assets/commander-hero.jpg";
 import PokeSauceDialog from "@/components/menu/PokeSauceDialog";
+import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
 
 const CommanderContent = () => {
   const { toast } = useToast();
   const { addItem: addToCart, checkRestaurantCompatibility, clearCart, selectedRestaurantId } = useCartWithRestaurant();
-  const { isOrderingLocked } = useCart();
+  const { setOrderingLocked } = useCart();
+  const { isOrderingLocked, isLoading: isOrderingStatusLoading } = useOrderingLockStatus();
   const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
   const [showRestaurantDialog, setShowRestaurantDialog] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
@@ -227,6 +229,10 @@ const CommanderContent = () => {
       description: `${item.name} a été ajouté à votre panier`,
     });
   };
+
+  useEffect(() => {
+    setOrderingLocked(isOrderingLocked);
+  }, [isOrderingLocked, setOrderingLocked]);
 
   // Si les commandes sont verrouillées, afficher un message au lieu du menu
   if (isOrderingLocked) {

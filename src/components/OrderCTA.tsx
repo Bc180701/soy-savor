@@ -2,11 +2,11 @@
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useCart } from "@/hooks/use-cart";
+import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const OrderCTA = () => {
-  const { isOrderingLocked } = useCart();
+  const { isOrderingLocked } = useOrderingLockStatus();
 
   if (isOrderingLocked) {
     return (
