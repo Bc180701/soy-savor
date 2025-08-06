@@ -18,6 +18,7 @@ const OrderingLockControl = () => {
 
   const fetchLockStatus = async () => {
     if (!currentRestaurant) {
+      console.log("🔒 Pas de restaurant sélectionné");
       setLoading(false);
       return;
     }
@@ -25,14 +26,29 @@ const OrderingLockControl = () => {
     try {
       setLoading(true);
       
-      // Récupérer les paramètres du restaurant
-      const settings = currentRestaurant.settings || {};
+      console.log("🔒 Récupération du statut pour restaurant:", currentRestaurant.name, currentRestaurant.id);
+      
+      // Récupérer les paramètres directement depuis la base de données pour être sûr
+      const { data: restaurantData, error } = await supabase
+        .from('restaurants')
+        .select('settings')
+        .eq('id', currentRestaurant.id)
+        .single();
+
+      if (error) {
+        console.error("🔒 Erreur récupération restaurant:", error);
+        throw error;
+      }
+
+      const settings = restaurantData?.settings || {};
       const orderingLocked = settings.ordering_locked || false;
       
-      console.log("État du verrouillage des commandes:", orderingLocked);
+      console.log("🔒 Paramètres récupérés depuis DB:", settings);
+      console.log("🔒 État du verrouillage:", orderingLocked);
+      
       setIsLocked(orderingLocked);
     } catch (error) {
-      console.error("Erreur lors de la récupération du statut:", error);
+      console.error("🔒 Erreur lors de la récupération du statut:", error);
       toast({
         title: "Erreur",
         description: "Impossible de récupérer le statut des commandes",
@@ -56,19 +72,46 @@ const OrderingLockControl = () => {
     try {
       setSaving(true);
       
-      // Mettre à jour les paramètres du restaurant
+      console.log("🔒 Mise à jour du statut de verrouillage:", locked, "pour", currentRestaurant.name);
+      
+      // Récupérer d'abord les paramètres actuels
+      const { data: currentData, error: fetchError } = await supabase
+        .from('restaurants')
+        .select('settings')
+        .eq('id', currentRestaurant.id)
+        .single();
+
+      if (fetchError) {
+        console.error("🔒 Erreur récupération paramètres actuels:", fetchError);
+        throw fetchError;
+      }
+
+      // Fusionner avec les nouveaux paramètres
+      const currentSettings = currentData?.settings || {};
       const updatedSettings = {
-        ...currentRestaurant.settings,
+        ...currentSettings,
         ordering_locked: locked
       };
 
-      const { error } = await supabase
+      console.log("🔒 Anciens paramètres:", currentSettings);
+      console.log("🔒 Nouveaux paramètres:", updatedSettings);
+
+      // Mettre à jour en base de données
+      const { data: updatedData, error } = await supabase
         .from('restaurants')
         .update({ settings: updatedSettings })
-        .eq('id', currentRestaurant.id);
+        .eq('id', currentRestaurant.id)
+        .select('*')
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("🔒 Erreur mise à jour:", error);
+        throw error;
+      }
 
+      console.log("🔒 Restaurant mis à jour:", updatedData);
+
+      // Mettre à jour l'état local
       setIsLocked(locked);
       
       // Mettre à jour le contexte restaurant avec les nouvelles données
@@ -78,7 +121,7 @@ const OrderingLockControl = () => {
       };
       setCurrentRestaurant(updatedRestaurant);
       
-      console.log("🔒 Statut de verrouillage mis à jour:", locked, "pour", currentRestaurant.name);
+      console.log("🔒 Statut de verrouillage mis à jour avec succès:", locked, "pour", currentRestaurant.name);
       
       toast({
         title: locked ? "Commandes verrouillées" : "Commandes déverrouillées",
@@ -86,21 +129,36 @@ const OrderingLockControl = () => {
           ? "Les nouvelles commandes sont maintenant bloquées" 
           : "Les nouvelles commandes sont maintenant autorisées",
       });
+
+      // Vérifier immédiatement après la mise à jour
+      setTimeout(() => {
+        fetchLockStatus();
+      }, 500);
+
     } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error);
+      console.error("🔒 Erreur lors de la mise à jour:", error);
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour le statut des commandes",
         variant: "destructive",
       });
+      
+      // Remettre l'état précédent en cas d'erreur
+      setIsLocked(!locked);
     } finally {
       setSaving(false);
     }
   };
 
   useEffect(() => {
+    console.log("🔒 useEffect déclenché, restaurant:", currentRestaurant?.name);
     fetchLockStatus();
   }, [currentRestaurant]);
+
+  // Log de l'état actuel pour debug
+  useEffect(() => {
+    console.log("🔒 État actuel - isLocked:", isLocked, "loading:", loading, "saving:", saving);
+  }, [isLocked, loading, saving]);
 
   if (!currentRestaurant) {
     return (
@@ -145,6 +203,10 @@ const OrderingLockControl = () => {
                     ? "Les nouvelles commandes sont actuellement bloquées" 
                     : "Les nouvelles commandes sont autorisées"
                   }
+                </p>
+                <p className="text-xs text-blue-600">
+                  Debug: État={isLocked ? 'verrouillé' : 'ouvert'}, 
+                  Saving={saving ? 'oui' : 'non'}
                 </p>
               </div>
               <Switch

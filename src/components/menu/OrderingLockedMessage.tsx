@@ -4,8 +4,29 @@ import { Ban, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 const OrderingLockedMessage = () => {
+  const { currentRestaurant } = useRestaurantContext();
+  const { isOrderingLocked, isLoading } = useOrderingLockStatus();
+
+  // Si les commandes ne sont pas verrouillées, ne pas afficher le message
+  if (!isOrderingLocked && !isLoading) {
+    return null;
+  }
+
+  // Afficher un loading pendant la vérification
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-24 px-4">
+        <div className="flex justify-center">
+          <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-24 px-4">
       <motion.div
@@ -24,7 +45,8 @@ const OrderingLockedMessage = () => {
           <AlertTriangle className="h-5 w-5" />
           <AlertTitle>Commandes indisponibles</AlertTitle>
           <AlertDescription>
-            Nous sommes désolés, mais notre service de commande en ligne est temporairement indisponible.
+            Nous sommes désolés, mais notre service de commande en ligne est temporairement indisponible
+            {currentRestaurant && ` pour ${currentRestaurant.name}`}.
             Veuillez réessayer ultérieurement ou nous contacter par téléphone.
           </AlertDescription>
         </Alert>
@@ -42,6 +64,14 @@ const OrderingLockedMessage = () => {
           <Button asChild>
             <Link to="/contact">Nous contacter</Link>
           </Button>
+        </div>
+
+        {/* Debug info en développement */}
+        <div className="mt-8 p-4 bg-gray-100 rounded text-xs text-left">
+          <p><strong>Debug Info:</strong></p>
+          <p>Restaurant: {currentRestaurant?.name || 'Non sélectionné'}</p>
+          <p>Commandes verrouillées: {isOrderingLocked ? 'Oui' : 'Non'}</p>
+          <p>Chargement: {isLoading ? 'Oui' : 'Non'}</p>
         </div>
       </motion.div>
     </div>
