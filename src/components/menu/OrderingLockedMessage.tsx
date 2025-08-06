@@ -66,13 +66,6 @@ const OrderingLockedMessage = () => {
           </Button>
         </div>
 
-        {/* Debug info en développement */}
-        <div className="mt-8 p-4 bg-gray-100 rounded text-xs text-left">
-          <p><strong>Debug Info:</strong></p>
-          <p>Restaurant: {currentRestaurant?.name || 'Non sélectionné'}</p>
-          <p>Commandes verrouillées: {isOrderingLocked ? 'Oui' : 'Non'}</p>
-          <p>Chargement: {isLoading ? 'Oui' : 'Non'}</p>
-        </div>
       </motion.div>
     </div>
   );

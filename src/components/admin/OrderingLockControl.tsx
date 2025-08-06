@@ -201,10 +201,6 @@ const OrderingLockControl = () => {
                     : "Les nouvelles commandes sont autorisées"
                   }
                 </p>
-                <p className="text-xs text-blue-600">
-                  Debug: État={isLocked ? 'verrouillé' : 'ouvert'}, 
-                  Saving={saving ? 'oui' : 'non'}
-                </p>
               </div>
               <Switch
                 id="ordering-lock"
