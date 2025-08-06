@@ -264,6 +264,62 @@ serve(async (req) => {
       console.error('❌ Erreur récupération détails complets:', fullDetailsError);
     }
 
+    // Tentative d'envoi d'un SMS d'alerte au responsable du restaurant
+    try {
+      const { data: restaurantData, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('name, settings')
+        .eq('id', order.restaurant_id)
+        .single();
+
+      if (restaurantError) {
+        console.error('❌ Erreur récupération restaurant pour SMS alerte:', restaurantError);
+      } else {
+        const alertPhone = (restaurantData as any)?.settings?.order_alert_phone as string | undefined;
+        const gatewayApiToken = Deno.env.get('GATEWAYAPI_TOKEN');
+        if (alertPhone && gatewayApiToken) {
+          const clean = alertPhone.replace(/[\s\-\(\)]/g, '');
+          let formattedPhone = clean;
+          if (formattedPhone.startsWith('0')) {
+            formattedPhone = '+33' + formattedPhone.substring(1);
+          } else if (!formattedPhone.startsWith('+')) {
+            formattedPhone = '+33' + formattedPhone;
+          }
+
+          const shortId = order.id?.toString().slice(0, 8) || '';
+          const totalStr = typeof order.total === 'number' ? order.total.toFixed(2) : `${order.total}`;
+          const msg = `🛎️ Nouvelle commande payée #${shortId} (${order.order_type}). Total: ${totalStr}€. Client: ${order.client_name || ''} ${order.client_phone || ''}`.trim();
+
+          const body = {
+            sender: 'SushiEats',
+            message: msg,
+            recipients: [{ msisdn: formattedPhone }],
+          };
+
+          const resp = await fetch('https://gatewayapi.com/rest/mtsms', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${btoa(gatewayApiToken + ':')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          });
+
+          if (!resp.ok) {
+            const txt = await resp.text();
+            console.error('❌ Erreur envoi SMS alerte:', resp.status, txt);
+          } else {
+            const resJson = await resp.json();
+            console.log('✅ SMS alerte envoyé:', resJson);
+          }
+        } else {
+          console.log('ℹ️ Aucun numéro d\'alerte configuré ou token manquant.');
+        }
+      }
+    } catch (notifyErr) {
+      console.error('❌ Erreur lors de l\'envoi du SMS d\'alerte:', notifyErr);
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       orderId: order.id,
