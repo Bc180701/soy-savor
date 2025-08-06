@@ -19,6 +19,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
 import SEOHead from "@/components/SEOHead";
 import commanderHeroImage from "@/assets/commander-hero.jpg";
+import PokeSauceDialog from "@/components/menu/PokeSauceDialog";
 
 const CommanderContent = () => {
   const { toast } = useToast();
@@ -36,6 +37,8 @@ const CommanderContent = () => {
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
   const [visibleSections, setVisibleSections] = useState<{[key: string]: boolean}>({});
   const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const [sauceOpen, setSauceOpen] = useState(false);
+  const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
@@ -204,6 +207,18 @@ const CommanderContent = () => {
       });
       clearCart();
     }
+
+    // Déterminer si c'est un poké (hors création)
+    const name = item.name.toLowerCase();
+    const cat = (item.category || '').toString().toLowerCase();
+    const looksPoke = name.includes('poke') || name.includes('poké') || cat.includes('poke') || cat.includes('poké');
+    const isCustom = cat === 'poke_custom' || name.includes('crea') || name.includes('créa') || name.includes('compose');
+
+    if (looksPoke && !isCustom) {
+      setPendingItem(item);
+      setSauceOpen(true);
+      return;
+    }
     
     addToCart(item, 1);
     
@@ -262,6 +277,19 @@ const CommanderContent = () => {
         ogImage={commanderHeroImage}
         ogType="website"
         structuredData={structuredData}
+      />
+
+      <PokeSauceDialog
+        open={sauceOpen}
+        onClose={() => { setSauceOpen(false); setPendingItem(null); }}
+        onConfirm={(sauce) => {
+          if (pendingItem) {
+            addToCart(pendingItem, 1, `Sauce: ${sauce}`);
+            toast({ title: "Ajouté au panier", description: `${pendingItem.name} - Sauce: ${sauce}` });
+            setPendingItem(null);
+            setSauceOpen(false);
+          }
+        }}
       />
       
       <div className="container mx-auto py-24 px-4">
