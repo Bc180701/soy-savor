@@ -38,7 +38,10 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        console.log("Récupération des commandes pour le restaurant:", currentRestaurant?.id);
+        console.log("🔍 Récupération des commandes pour le restaurant:", currentRestaurant?.id, "Nom:", currentRestaurant?.name);
+        if (!currentRestaurant?.id) {
+          console.warn("⚠️ Aucun restaurant sélectionné, récupération de toutes les commandes");
+        }
         const { orders: fetchedOrders, error } = await getAllOrders(currentRestaurant?.id);
         
         if (error) {

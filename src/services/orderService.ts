@@ -213,7 +213,8 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
 
 export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse> => {
   try {
-    console.log("📋 Début de récupération de toutes les commandes pour le restaurant:", restaurantId);
+    console.log("📋 [getAllOrders] Début de récupération pour le restaurant:", restaurantId);
+    console.log("📋 [getAllOrders] Type de restaurantId:", typeof restaurantId, "Valeur:", restaurantId);
     
     // Construire la requête avec ou sans filtre de restaurant
     let query = supabase
@@ -251,8 +252,10 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
 
     // Ajouter le filtre restaurant si fourni
     if (restaurantId) {
+      console.log("🏪 [getAllOrders] Application du filtrage pour restaurant:", restaurantId);
       query = query.eq('restaurant_id', restaurantId);
-      console.log("🏪 Filtrage par restaurant:", restaurantId);
+    } else {
+      console.log("🌍 [getAllOrders] Aucun filtre restaurant - récupération de TOUTES les commandes");
     }
       
     const response = await query;
