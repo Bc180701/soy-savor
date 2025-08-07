@@ -275,9 +275,10 @@ const PanierContent = () => {
           deliveryStreet: deliveryInfo.street,
           deliveryCity: deliveryInfo.city,
           deliveryPostalCode: deliveryInfo.postalCode,
-          customerNotes: deliveryInfo.notes,
+          customerNotes: `${deliveryInfo.notes || ''}\n\nOptions sélectionnées:\n- Sauces: ${cartExtras?.sauces.join(', ') || 'Aucune'}\n- Accompagnements: ${cartExtras?.accompagnements.join(', ') || 'Aucun'}\n- Baguettes: ${cartExtras?.baguettes || 0} paires`,
           scheduledFor: scheduledForDate.toISOString(),
           restaurantId: cartRestaurant?.id, // Ajout du restaurant ID
+          cartExtras: cartExtras, // Ajout des extras du panier
           successUrl: `${window.location.origin}/commande-confirmee`,
           cancelUrl: `${window.location.origin}/panier`,
         },
@@ -329,19 +330,20 @@ const PanierContent = () => {
               setCartExtras={setCartExtras}
             />
           );
-      case CheckoutStep.DeliveryDetails:
-        return (
-          <DeliveryStep
-            deliveryInfo={deliveryInfo}
-            setDeliveryInfo={setDeliveryInfo}
-            allergies={allergies}
-            setAllergies={setAllergies}
-            handlePreviousStep={handlePreviousStep}
-            handleNextStep={handleNextStep}
-            isLoggedIn={isLoggedIn}
-            cartRestaurant={cartRestaurant} // Passer le restaurant détecté
-          />
-        );
+        case CheckoutStep.DeliveryDetails:
+          return (
+            <DeliveryStep
+              deliveryInfo={deliveryInfo}
+              setDeliveryInfo={setDeliveryInfo}
+              allergies={allergies}
+              setAllergies={setAllergies}
+              handlePreviousStep={handlePreviousStep}
+              handleNextStep={handleNextStep}
+              isLoggedIn={isLoggedIn}
+              cartRestaurant={cartRestaurant}
+              cartExtras={cartExtras}
+            />
+          );
       case CheckoutStep.Payment:
         return (
           <PaymentStep

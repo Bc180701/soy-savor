@@ -13,6 +13,7 @@ import { checkPostalCodeDelivery } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Restaurant } from "@/types/restaurant";
+import { type CartExtras } from "./CartExtrasSection";
 import { User, Mail, Phone, MapPin, Clock, MessageSquare, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface DeliveryStepProps {
@@ -37,6 +38,7 @@ interface DeliveryStepProps {
   handleNextStep: () => void;
   isLoggedIn: boolean;
   cartRestaurant?: Restaurant | null;
+  cartExtras?: CartExtras | null;
 }
 
 export const DeliveryStep = ({
@@ -47,7 +49,8 @@ export const DeliveryStep = ({
   handlePreviousStep,
   handleNextStep,
   isLoggedIn,
-  cartRestaurant
+  cartRestaurant,
+  cartExtras
 }: DeliveryStepProps) => {
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const [useStoredInfo, setUseStoredInfo] = useState(false);
@@ -287,12 +290,34 @@ export const DeliveryStep = ({
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-gray-900">Informations de livraison</h2>
-        <p className="text-gray-600">Renseignez vos coordonnées pour finaliser votre commande</p>
-      </div>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold">Informations de livraison</h2>
+          {isLoggedIn && userProfile && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="use-stored-info"
+                checked={useStoredInfo}
+                onCheckedChange={handleUseStoredInfoChange}
+                disabled={loadingProfile}
+              />
+              <Label htmlFor="use-stored-info" className="text-sm cursor-pointer">
+                {loadingProfile ? "Chargement..." : "Utiliser mes informations enregistrées"}
+              </Label>
+            </div>
+          )}
+        </div>
+
+        {cartExtras && (
+          <div className="bg-gold-50 border border-gold-200 rounded-lg p-4">
+            <h3 className="font-semibold text-gold-800 mb-2">🍜 Vos options sélectionnées :</h3>
+            <div className="space-y-1 text-sm text-gold-700">
+              <p><strong>Sauces :</strong> {cartExtras.sauces.length > 0 ? cartExtras.sauces.join(', ') : 'Aucune'}</p>
+              <p><strong>Accompagnements :</strong> {cartExtras.accompagnements.length > 0 ? cartExtras.accompagnements.join(', ') : 'Aucun'}</p>
+              <p><strong>Baguettes :</strong> {cartExtras.baguettes} paires</p>
+            </div>
+          </div>
+        )}
       
       {/* Restaurant Card */}
       {cartRestaurant && (
