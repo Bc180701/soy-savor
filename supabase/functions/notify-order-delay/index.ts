@@ -113,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (emailResponse.error) {
       console.error("❌ Erreur Resend:", emailResponse.error);
-      throw new Error(`Erreur Resend: ${emailResponse.error.message}`);
+      throw new Error(`Erreur Resend: ${emailResponse.error.error || emailResponse.error.message || 'Erreur inconnue'}`);
     }
     
     console.log("✅ Email de notification de retard envoyé avec succès:", emailResponse.data?.id);
