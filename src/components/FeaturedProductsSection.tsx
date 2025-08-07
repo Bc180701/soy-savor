@@ -181,52 +181,12 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
                     )}
                   </AnimatePresence>
                   
-                  {/* Prix et bouton - En bas de la carte */}
+                  {/* Prix - En bas de la carte */}
                   <div className="mt-auto">
-                    <div className="flex justify-between items-center">
+                    <div className="text-center">
                       <span className="text-sm font-bold text-gray-900">
                         {product.price.toFixed(2)}€
                       </span>
-                      
-                      <div className="relative">
-                        <motion.div
-                          animate={clickedButton === product.id ? {
-                            scale: [1, 0.95, 1.05, 1],
-                            transition: { duration: 0.3, ease: "easeInOut" }
-                          } : {}}
-                        >
-                          <Button
-                            onClick={() => handleAddToCart(menuItem)}
-                            className="bg-gold-500 hover:bg-gold-600 text-black rounded-full px-3 text-xs h-7"
-                            size="sm"
-                          >
-                            <Plus className="mr-1 h-3 w-3" /> Ajouter
-                          </Button>
-                        </motion.div>
-                        
-                        {/* +1 Message Animation */}
-                        <AnimatePresence>
-                          {clickedButton === product.id && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 0, scale: 0.8 }}
-                              animate={{ 
-                                opacity: 1, 
-                                y: -20, 
-                                scale: 1,
-                                transition: { duration: 0.2, ease: "easeOut" }
-                              }}
-                              exit={{ 
-                                opacity: 0, 
-                                y: -30,
-                                transition: { duration: 0.3, ease: "easeIn" }
-                              }}
-                              className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gold-500 text-black px-2 py-1 rounded-full text-xs font-bold shadow-lg z-10"
-                            >
-                              +1
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -325,51 +285,11 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
                       </AnimatePresence>
                     </div>
 
-                    {/* Prix et bouton */}
+                    {/* Prix */}
                     <div className="flex flex-col items-end ml-6">
-                      <span className="text-lg font-bold text-gray-900 mb-4">
+                      <span className="text-lg font-bold text-gray-900">
                         {product.price.toFixed(2)}€
                       </span>
-                      
-                      <div className="relative">
-                        <motion.div
-                          animate={clickedButton === product.id ? {
-                            scale: [1, 0.95, 1.05, 1],
-                            transition: { duration: 0.3, ease: "easeInOut" }
-                          } : {}}
-                        >
-                          <Button
-                            onClick={() => handleAddToCart(menuItem)}
-                            className="bg-gold-500 hover:bg-gold-600 text-black rounded-full px-6"
-                            size="sm"
-                          >
-                            <Plus className="mr-2 h-4 w-4" /> Ajouter
-                          </Button>
-                        </motion.div>
-                        
-                        {/* +1 Message Animation */}
-                        <AnimatePresence>
-                          {clickedButton === product.id && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 0, scale: 0.8 }}
-                              animate={{ 
-                                opacity: 1, 
-                                y: -20, 
-                                scale: 1,
-                                transition: { duration: 0.2, ease: "easeOut" }
-                              }}
-                              exit={{ 
-                                opacity: 0, 
-                                y: -30,
-                                transition: { duration: 0.3, ease: "easeIn" }
-                              }}
-                              className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gold-500 text-black px-2 py-1 rounded-full text-sm font-bold shadow-lg z-10"
-                            >
-                              +1
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
                     </div>
                   </div>
                 </div>
