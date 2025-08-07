@@ -13,6 +13,8 @@ const OrderingLockControl = () => {
   const { toast } = useToast();
   const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
   const [isLocked, setIsLocked] = useState(false);
+  const [deliveryBlocked, setDeliveryBlocked] = useState(false);
+  const [pickupBlocked, setPickupBlocked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -42,11 +44,15 @@ const OrderingLockControl = () => {
 
       const settings = (restaurantData?.settings as Record<string, any>) ?? {};
       const orderingLocked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+      const deliveryBlocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
+      const pickupBlocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
       
       console.log("🔒 Paramètres récupérés depuis DB:", settings);
       console.log("🔒 État du verrouillage:", orderingLocked);
       
       setIsLocked(orderingLocked);
+      setDeliveryBlocked(deliveryBlocked);
+      setPickupBlocked(pickupBlocked);
     } catch (error) {
       console.error("🔒 Erreur lors de la récupération du statut:", error);
       toast({
@@ -59,7 +65,7 @@ const OrderingLockControl = () => {
     }
   };
 
-  const updateLockStatus = async (locked: boolean) => {
+  const updateOrderingSettings = async (settingType: 'general' | 'delivery' | 'pickup', value: boolean) => {
     if (!currentRestaurant) {
       toast({
         title: "Erreur",
@@ -72,7 +78,7 @@ const OrderingLockControl = () => {
     try {
       setSaving(true);
       
-      console.log("🔒 Mise à jour du statut de verrouillage:", locked, "pour", currentRestaurant.name);
+      console.log("🔒 Mise à jour des paramètres:", settingType, value, "pour", currentRestaurant.name);
       
       // Récupérer d'abord les paramètres actuels
       const { data: currentData, error: fetchError } = await supabase
@@ -88,7 +94,9 @@ const OrderingLockControl = () => {
 
       // Fusionner avec les nouveaux paramètres
       const currentSettings = (currentData?.settings as Record<string, any>) ?? {};
-      const updatedSettings = { ...currentSettings, ordering_locked: locked };
+      const settingKey = settingType === 'general' ? 'ordering_locked' : 
+                        settingType === 'delivery' ? 'delivery_blocked' : 'pickup_blocked';
+      const updatedSettings = { ...currentSettings, [settingKey]: value };
 
       console.log("🔒 Anciens paramètres:", currentSettings);
       console.log("🔒 Nouveaux paramètres:", updatedSettings);
@@ -109,7 +117,13 @@ const OrderingLockControl = () => {
       console.log("🔒 Restaurant mis à jour:", updatedData);
 
       // Mettre à jour l'état local
-      setIsLocked(locked);
+      if (settingType === 'general') {
+        setIsLocked(value);
+      } else if (settingType === 'delivery') {
+        setDeliveryBlocked(value);
+      } else if (settingType === 'pickup') {
+        setPickupBlocked(value);
+      }
       
       // Mettre à jour le contexte restaurant avec les nouvelles données
       const updatedRestaurant = {
@@ -118,13 +132,19 @@ const OrderingLockControl = () => {
       };
       setCurrentRestaurant(updatedRestaurant);
       
-      console.log("🔒 Statut de verrouillage mis à jour avec succès:", locked, "pour", currentRestaurant.name);
+      console.log("🔒 Paramètres mis à jour avec succès:", settingType, value, "pour", currentRestaurant.name);
+      
+      const messages = {
+        general: value ? "Commandes verrouillées" : "Commandes déverrouillées",
+        delivery: value ? "Livraisons bloquées" : "Livraisons autorisées", 
+        pickup: value ? "À emporter bloqué" : "À emporter autorisé"
+      };
       
       toast({
-        title: locked ? "Commandes verrouillées" : "Commandes déverrouillées",
-        description: locked 
-          ? "Les nouvelles commandes sont maintenant bloquées" 
-          : "Les nouvelles commandes sont maintenant autorisées",
+        title: messages[settingType],
+        description: value 
+          ? `Les nouvelles commandes ${settingType === 'general' ? '' : settingType === 'delivery' ? 'en livraison' : 'à emporter'} sont maintenant bloquées` 
+          : `Les nouvelles commandes ${settingType === 'general' ? '' : settingType === 'delivery' ? 'en livraison' : 'à emporter'} sont maintenant autorisées`,
       });
 
       // Vérifier immédiatement après la mise à jour
@@ -141,7 +161,13 @@ const OrderingLockControl = () => {
       });
       
       // Remettre l'état précédent en cas d'erreur
-      setIsLocked(!locked);
+      if (settingType === 'general') {
+        setIsLocked(!value);
+      } else if (settingType === 'delivery') {
+        setDeliveryBlocked(!value);
+      } else if (settingType === 'pickup') {
+        setPickupBlocked(!value);
+      }
     } finally {
       setSaving(false);
     }
@@ -154,8 +180,8 @@ const OrderingLockControl = () => {
 
   // Log de l'état actuel pour debug
   useEffect(() => {
-    console.log("🔒 État actuel - isLocked:", isLocked, "loading:", loading, "saving:", saving);
-  }, [isLocked, loading, saving]);
+    console.log("🔒 État actuel - isLocked:", isLocked, "deliveryBlocked:", deliveryBlocked, "pickupBlocked:", pickupBlocked, "loading:", loading, "saving:", saving);
+  }, [isLocked, deliveryBlocked, pickupBlocked, loading, saving]);
 
   if (!currentRestaurant) {
     return (
@@ -187,34 +213,84 @@ const OrderingLockControl = () => {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Verrouillage général */}
             <div className="flex items-center justify-between p-4 border rounded-lg">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   {isLocked ? <Lock className="h-4 w-4 text-red-500" /> : <Unlock className="h-4 w-4 text-green-500" />}
                   <Label htmlFor="ordering-lock" className="text-base font-medium">
-                    Verrouillage des commandes
+                    Verrouillage général des commandes
                   </Label>
                 </div>
                 <p className="text-sm text-gray-600">
                   {isLocked 
-                    ? "Les nouvelles commandes sont actuellement bloquées" 
-                    : "Les nouvelles commandes sont autorisées"
+                    ? "Toutes les nouvelles commandes sont bloquées" 
+                    : "Toutes les commandes sont autorisées"
                   }
                 </p>
               </div>
               <Switch
                 id="ordering-lock"
                 checked={isLocked}
-                onCheckedChange={updateLockStatus}
+                onCheckedChange={(value) => updateOrderingSettings('general', value)}
                 disabled={saving}
               />
             </div>
 
+            {/* Blocage des livraisons */}
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  {deliveryBlocked ? <Lock className="h-4 w-4 text-red-500" /> : <Unlock className="h-4 w-4 text-green-500" />}
+                  <Label htmlFor="delivery-lock" className="text-base font-medium">
+                    Blocage des livraisons
+                  </Label>
+                </div>
+                <p className="text-sm text-gray-600">
+                  {deliveryBlocked 
+                    ? "Les commandes en livraison sont bloquées" 
+                    : "Les commandes en livraison sont autorisées"
+                  }
+                </p>
+              </div>
+              <Switch
+                id="delivery-lock"
+                checked={deliveryBlocked}
+                onCheckedChange={(value) => updateOrderingSettings('delivery', value)}
+                disabled={saving || isLocked}
+              />
+            </div>
+
+            {/* Blocage à emporter */}
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  {pickupBlocked ? <Lock className="h-4 w-4 text-red-500" /> : <Unlock className="h-4 w-4 text-green-500" />}
+                  <Label htmlFor="pickup-lock" className="text-base font-medium">
+                    Blocage à emporter
+                  </Label>
+                </div>
+                <p className="text-sm text-gray-600">
+                  {pickupBlocked 
+                    ? "Les commandes à emporter sont bloquées" 
+                    : "Les commandes à emporter sont autorisées"
+                  }
+                </p>
+              </div>
+              <Switch
+                id="pickup-lock"
+                checked={pickupBlocked}
+                onCheckedChange={(value) => updateOrderingSettings('pickup', value)}
+                disabled={saving || isLocked}
+              />
+            </div>
+
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">À propos du verrouillage</h3>
+              <h3 className="font-semibold text-blue-800 mb-2">À propos des blocages</h3>
               <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Empêche les nouveaux clients de passer commande</li>
-                <li>• Utile en cas de surcharge ou de problème technique</li>
+                <li>• Le verrouillage général désactive tous les types de commandes</li>
+                <li>• Les blocages spécifiques permettent de désactiver uniquement les livraisons ou l'emporter</li>
+                <li>• Utile pour fermer temporairement un service (ex: livraisons le midi)</li>
                 <li>• N'affecte pas les commandes déjà en cours</li>
                 <li>• Peut être activé/désactivé à tout moment</li>
               </ul>
