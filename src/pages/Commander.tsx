@@ -219,13 +219,35 @@ const CommanderContent = () => {
       clearCart();
     }
 
-    // Déterminer si c'est un poké (hors création)
+    // Déterminer si c'est un poké qui nécessite une sélection de sauce
     const name = item.name.toLowerCase();
     const cat = (item.category || '').toString().toLowerCase();
-    const looksPoke = name.includes('poke') || name.includes('poké') || cat.includes('poke') || cat.includes('poké');
-    const isCustom = cat === 'poke_custom' || name.includes('crea') || name.includes('créa') || name.includes('compose');
+    
+    // Identifier si c'est un produit poké
+    const isPoke = (
+      name.includes('poke') || 
+      name.includes('poké') || 
+      cat.includes('poke') || 
+      cat === 'poke'
+    );
+    
+    // Exclure le poké création/créa
+    const isPokeCreation = (
+      name.includes('crea') || 
+      name.includes('créa') || 
+      name.includes('compose') ||
+      cat === 'poke_custom'
+    );
 
-    if (looksPoke && !isCustom) {
+    console.log(`🥢 Analyse du produit "${item.name}":`, {
+      isPoke,
+      isPokeCreation,
+      needsSauceSelection: isPoke && !isPokeCreation
+    });
+
+    // Si c'est un poké (sauf création), demander le choix de sauce
+    if (isPoke && !isPokeCreation) {
+      console.log(`🥢 Ouverture du sélecteur de sauce pour: ${item.name}`);
       setPendingItem(item);
       setSauceOpen(true);
       return;
