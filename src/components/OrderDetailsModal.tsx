@@ -15,6 +15,7 @@ import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircl
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { MissingItemsAlert } from "@/components/admin/MissingItemsAlert";
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -322,6 +323,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                     </Badge>
                   </div>
                 </div>
+                
+                {/* Alert pour les commandes sans articles */}
+                {order && <MissingItemsAlert order={order} />}
                 
                 {/* Produits commandés */}
                 <div className="space-y-2">

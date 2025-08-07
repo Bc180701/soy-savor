@@ -96,7 +96,18 @@ export const createOrder = async (
         });
     });
 
-    await Promise.all(orderItemPromises);
+    const itemResults = await Promise.all(orderItemPromises);
+    
+    // Vérifier si tous les articles ont été correctement insérés
+    const itemErrors = itemResults.filter(result => result.error);
+    if (itemErrors.length > 0) {
+      console.error("❌ Erreurs lors de l'insertion des articles:", itemErrors);
+      // Optionnel: supprimer la commande si les articles n'ont pas pu être créés
+      await supabase.from("orders").delete().eq("id", newOrder.id);
+      return { success: false, error: `Erreur lors de l'insertion des articles: ${itemErrors.map(e => e.error.message).join(', ')}` };
+    }
+
+    console.log(`✅ ${orderInput.items.length} articles ajoutés à la commande ${newOrder.id}`);
 
     // Transform the response to match the Order type
     const orderResult: Order = {
