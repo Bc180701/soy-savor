@@ -118,44 +118,54 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
   useEffect(() => {
     if (!isAdmin) return;
 
-    console.log('🔗 Configuration des notifications en temps réel pour TOUS les restaurants');
+    const restaurantFilterMsg = restaurantId ? `pour le restaurant ${restaurantId}` : 'pour TOUS les restaurants';
+    console.log(`🔗 Configuration des notifications en temps réel ${restaurantFilterMsg}`);
 
-    // Configuration plus simple et robuste du canal
     const channel = supabase
       .channel('order-notifications')
       .on(
         'postgres_changes',
-        {
+        restaurantId ? {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+          filter: `restaurant_id=eq.${restaurantId}`
+        } : {
           event: 'INSERT',
           schema: 'public',
           table: 'orders'
         },
         (payload) => {
-          console.log('🔔 Nouvelle commande reçue:', payload);
-          console.log('🔔 Event details:', {
-            event: payload.eventType,
-            table: payload.table,
-            new: payload.new,
-            restaurant_id: payload.new?.restaurant_id,
-            filter_restaurant: restaurantId
-          });
-          
-          // Play notification sound
-          playNotificationSound();
-
-          // Show toast notification with restaurant info
-          const restaurantName = payload.new?.restaurant_id === '11111111-1111-1111-1111-111111111111' ? 'Châteaurenard' : 'St Martin de Crau';
-          toast({
-            title: "🔔 Nouvelle commande!",
-            description: `Commande #${payload.new.id.slice(0, 8)}... reçue pour ${restaurantName}`,
-            duration: 5000,
-          });
-
-          // Start blinking tab title
-          setHasNewOrders(true);
-          startTitleBlink();
+        console.log('🔔 Nouvelle commande reçue:', payload);
+        console.log('🔔 Event details:', {
+          event: payload.eventType,
+          table: payload.table,
+          new: payload.new,
+          restaurant_id: payload.new?.restaurant_id,
+          filter_restaurant: restaurantId
+        });
+        
+        // Vérifier si la commande correspond au restaurant courant (double vérification)
+        if (restaurantId && payload.new?.restaurant_id !== restaurantId) {
+          console.log('⚠️ Commande ignorée - restaurant différent');
+          return;
         }
-      )
+        
+        // Play notification sound
+        playNotificationSound();
+
+        // Show toast notification with restaurant info
+        const restaurantName = payload.new?.restaurant_id === '11111111-1111-1111-1111-111111111111' ? 'Châteaurenard' : 'St Martin de Crau';
+        toast({
+          title: "🔔 Nouvelle commande!",
+          description: `Commande #${payload.new.id.slice(0, 8)}... reçue pour ${restaurantName}`,
+          duration: 5000,
+        });
+
+        // Start blinking tab title
+        setHasNewOrders(true);
+        startTitleBlink();
+      })
       .subscribe((status) => {
         console.log('📡 Statut subscription:', status);
         if (status === 'SUBSCRIBED') {
