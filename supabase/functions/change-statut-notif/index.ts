@@ -90,7 +90,7 @@ serve(async (req) => {
     console.log("📧 Destinataire:", email);
     
     const emailResponse = await resend.emails.send({
-      from: "SushiEats <onboarding@resend.dev>",
+      from: Deno.env.get("EMAIL_FROM") || "SushiEats <noreply@emailsend.clwebdesign.fr>",
       to: [email],
       subject: subject,
       html: htmlContent,
@@ -100,7 +100,7 @@ serve(async (req) => {
     
     if (emailResponse.error) {
       console.error("❌ Erreur Resend:", emailResponse.error);
-      throw new Error(`Erreur Resend: ${emailResponse.error.message}`);
+      throw new Error(`Erreur Resend: ${emailResponse.error.error || emailResponse.error.message || 'Erreur inconnue'}`);
     }
     
     console.log("✅ Email de notification envoyé avec succès:", emailResponse.data?.id);
