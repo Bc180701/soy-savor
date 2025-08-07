@@ -35,6 +35,12 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   };
 
   useEffect(() => {
+    // Ne pas charger les commandes tant que le restaurant n'est pas défini
+    if (!currentRestaurant?.id) {
+      console.log("⏳ Restaurant pas encore chargé, attente...");
+      return;
+    }
+
     const fetchOrders = async () => {
       setLoading(true);
       try {
@@ -68,7 +74,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     };
 
     fetchOrders();
-  }, [toast, currentRestaurant]);
+  }, [toast, currentRestaurant?.id]); // Dépendance seulement sur l'ID
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     try {
