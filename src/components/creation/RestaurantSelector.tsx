@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Restaurant } from "@/types/restaurant";
 import { fetchRestaurants } from "@/services/restaurantService";
 import { isRestaurantOpenNow } from "@/services/openingHoursService";
+import { useRestaurantOrderingStatus } from "@/hooks/useRestaurantOrderingStatus";
 import { MapPin } from "lucide-react";
 
 interface RestaurantSelectorProps {
@@ -18,6 +19,9 @@ export const RestaurantSelector = ({ selectedRestaurant, onSelectRestaurant }: R
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [restaurantStatus, setRestaurantStatus] = useState<{[key: string]: boolean}>({});
+  
+  // Hook pour vérifier le statut de verrouillage des commandes
+  const { orderingStatus, loading: orderingLoading } = useRestaurantOrderingStatus(restaurants);
 
   useEffect(() => {
     const loadRestaurants = async () => {
@@ -25,7 +29,7 @@ export const RestaurantSelector = ({ selectedRestaurant, onSelectRestaurant }: R
         const data = await fetchRestaurants();
         setRestaurants(data);
         
-        // Vérifier le statut de chaque restaurant
+        // Vérifier le statut d'ouverture de chaque restaurant
         const statusMap: {[key: string]: boolean} = {};
         for (const restaurant of data) {
           const isOpen = await isRestaurantOpenNow(restaurant.id);
@@ -46,13 +50,15 @@ export const RestaurantSelector = ({ selectedRestaurant, onSelectRestaurant }: R
   const handleRestaurantChange = (value: string) => {
     const restaurant = restaurants.find(r => r.id === value);
     const isOpen = restaurantStatus[value];
+    const isOrderingAllowed = orderingStatus[value];
     
-    if (restaurant && isOpen) {
+    // Restaurant disponible seulement s'il est ouvert ET que les commandes ne sont pas verrouillées
+    if (restaurant && isOpen && isOrderingAllowed) {
       onSelectRestaurant(restaurant);
     }
   };
 
-  if (loading) {
+  if (loading || orderingLoading) {
     return (
       <Card>
         <CardHeader>
@@ -86,7 +92,16 @@ export const RestaurantSelector = ({ selectedRestaurant, onSelectRestaurant }: R
         >
           {restaurants.map((restaurant) => {
             const isOpen = restaurantStatus[restaurant.id];
-            const isDisabled = !isOpen;
+            const isOrderingAllowed = orderingStatus[restaurant.id];
+            const isDisabled = !isOpen || !isOrderingAllowed;
+            
+            // Déterminer le message d'état
+            let statusMessage = "";
+            if (!isOpen) {
+              statusMessage = "FERMÉ";
+            } else if (!isOrderingAllowed) {
+              statusMessage = "FERMÉ";
+            }
             
             return (
               <div 
@@ -117,9 +132,9 @@ export const RestaurantSelector = ({ selectedRestaurant, onSelectRestaurant }: R
                         </p>
                       )}
                     </div>
-                    {isDisabled && (
+                    {isDisabled && statusMessage && (
                       <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
-                        FERMÉ
+                        {statusMessage}
                       </span>
                     )}
                   </div>
