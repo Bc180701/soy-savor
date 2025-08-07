@@ -9,6 +9,7 @@ import { CartStep } from "@/components/cart/CartStep";
 import { DeliveryStep } from "@/components/cart/DeliveryStep";
 import { PaymentStep } from "@/components/cart/PaymentStep";
 import { CheckoutSteps, CheckoutStep } from "@/components/cart/CheckoutSteps";
+import { type CartExtras } from "@/components/cart/CartExtrasSection";
 import { RestaurantProvider } from "@/hooks/useRestaurantContext";
 import { useCartRestaurant } from "@/hooks/useCartRestaurant";
 import { format } from "date-fns";
@@ -56,6 +57,9 @@ const PanierContent = () => {
     discount: number;
     isPercentage: boolean;
   } | null>(null);
+  
+  // Cart extras state
+  const [cartExtras, setCartExtras] = useState<CartExtras | null>(null);
   
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined);
@@ -311,18 +315,20 @@ const PanierContent = () => {
   const renderStep = () => {
     switch (currentStep) {
       case CheckoutStep.Cart:
-        return (
-          <CartStep
-            items={items}
-            subtotal={subtotal}
-            tax={tax}
-            discount={discount}
-            appliedPromoCode={appliedPromoCode}
-            setAppliedPromoCode={setAppliedPromoCode}
-            handleNextStep={handleNextStep}
-            userEmail={userEmail}
-          />
-        );
+          return (
+            <CartStep
+              items={items}
+              subtotal={subtotal}
+              tax={tax}
+              discount={discount}
+              appliedPromoCode={appliedPromoCode}
+              setAppliedPromoCode={setAppliedPromoCode}
+              handleNextStep={handleNextStep}
+              userEmail={userEmail}
+              cartExtras={cartExtras}
+              setCartExtras={setCartExtras}
+            />
+          );
       case CheckoutStep.DeliveryDetails:
         return (
           <DeliveryStep

@@ -5,6 +5,7 @@ import { useCart } from "@/hooks/use-cart";
 import { formatEuro } from "@/utils/formatters";
 import { PromoCodeSection } from "./PromoCodeSection";
 import { CartItemList } from "./CartItemList";
+import { CartExtrasSection, type CartExtras } from "./CartExtrasSection";
 import { useEffect, useState } from "react";
 import { MenuItem } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,6 +30,8 @@ interface CartStepProps {
   } | null>>;
   handleNextStep: () => void;
   userEmail?: string;
+  cartExtras: CartExtras | null;
+  setCartExtras: (extras: CartExtras) => void;
 }
 
 export const CartStep = ({
@@ -39,7 +42,9 @@ export const CartStep = ({
   appliedPromoCode,
   setAppliedPromoCode,
   handleNextStep,
-  userEmail
+  userEmail,
+  cartExtras,
+  setCartExtras
 }: CartStepProps) => {
   const { 
     removeItem, 
@@ -52,6 +57,9 @@ export const CartStep = ({
   
   const orderTotal = subtotal - discount;
   const isCartEmpty = items.length === 0;
+  
+  // Vérifier si les extras obligatoires sont remplis
+  const areExtrasValid = cartExtras && cartExtras.sauces.length > 0;
   
   // Free dessert promotion
   const [showDessertDialog, setShowDessertDialog] = useState(false);
@@ -161,6 +169,9 @@ export const CartStep = ({
             updateQuantity={updateQuantity}
           />
           
+          {/* Section obligatoire des extras */}
+          <CartExtrasSection onExtrasChange={setCartExtras} />
+          
           <div className="border-t pt-4">
             <PromoCodeSection 
               appliedPromoCode={appliedPromoCode} 
@@ -190,10 +201,16 @@ export const CartStep = ({
             <div className="mt-6 text-center">
               <Button 
                 onClick={handleNextStep}
-                className="w-full md:w-1/2 bg-gold-500 hover:bg-gold-600 text-black py-3"
+                disabled={!areExtrasValid}
+                className="w-full md:w-1/2 bg-gold-500 hover:bg-gold-600 text-black py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continuer
               </Button>
+              {!areExtrasValid && (
+                <p className="text-red-600 text-sm mt-2">
+                  Veuillez compléter les options obligatoires ci-dessus
+                </p>
+              )}
             </div>
           </div>
         </>
