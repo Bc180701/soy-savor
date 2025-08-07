@@ -810,6 +810,27 @@ export type Database = {
           },
         ]
       }
+      push_tokens: {
+        Row: {
+          created_at: string
+          device_type: string
+          id: number
+          token: string
+        }
+        Insert: {
+          created_at: string
+          device_type?: string
+          id?: number
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string
+          id?: number
+          token?: string
+        }
+        Relationships: []
+      }
       restaurant_closures: {
         Row: {
           closure_date: string
