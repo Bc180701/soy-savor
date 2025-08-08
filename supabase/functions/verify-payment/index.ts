@@ -164,6 +164,7 @@ serve(async (req) => {
     console.log('🏪 Restaurant ID utilisé:', restaurantId, '(détecté via clé Stripe:', detectedRestaurantId, ')');
 
     // Créer la commande avec les données des métadonnées
+    const optionsText = `🍜 Options sélectionnées: - Sauces: ${metadata.cart_sauces || 'Aucune'} - Accompagnements: ${metadata.cart_accompagnements || 'Aucun'} - Baguettes: ${metadata.cart_baguettes || '0'} paires`;
     const orderData = {
       stripe_session_id: sessionId,
       restaurant_id: restaurantId,
@@ -186,7 +187,7 @@ serve(async (req) => {
       delivery_street: metadata.delivery_street || null,
       delivery_city: metadata.delivery_city || null,
       delivery_postal_code: metadata.delivery_postal_code || null,
-      customer_notes: metadata.customer_notes || null,
+      customer_notes: optionsText,
     };
 
     console.log('📝 Création commande avec:', {
