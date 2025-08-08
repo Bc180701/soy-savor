@@ -103,6 +103,7 @@ export const fetchAllMenuData = async (restaurantId?: string) => {
       .from('products')
       .select('*')
       .eq('restaurant_id', targetRestaurantId)
+      .eq('is_hidden', false)
       .order('price', { ascending: true });
     
     if (productsError) {
@@ -156,6 +157,7 @@ export const fetchProductsByCategory = async (categoryId: string, restaurantId?:
     .select('*')
     .eq('category_id', categoryId)
     .eq('restaurant_id', targetRestaurantId)
+    .eq('is_hidden', false)
     .order('price', { ascending: true });
   
   if (error) {

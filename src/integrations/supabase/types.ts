@@ -596,7 +596,9 @@ export type Database = {
           id: string
           image_url: string | null
           is_best_seller: boolean | null
+          is_extra: boolean
           is_gluten_free: boolean | null
+          is_hidden: boolean
           is_new: boolean | null
           is_spicy: boolean | null
           is_vegetarian: boolean | null
@@ -615,7 +617,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_best_seller?: boolean | null
+          is_extra?: boolean
           is_gluten_free?: boolean | null
+          is_hidden?: boolean
           is_new?: boolean | null
           is_spicy?: boolean | null
           is_vegetarian?: boolean | null
@@ -634,7 +638,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_best_seller?: boolean | null
+          is_extra?: boolean
           is_gluten_free?: boolean | null
+          is_hidden?: boolean
           is_new?: boolean | null
           is_spicy?: boolean | null
           is_vegetarian?: boolean | null

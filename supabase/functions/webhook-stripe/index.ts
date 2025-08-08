@@ -176,29 +176,77 @@ serve(async (req) => {
         const itemsData = metadata?.items_summary || metadata?.items;
         if (itemsData) {
           try {
-            const items = JSON.parse(itemsData);
-            console.log('📦 Articles à créer:', items.length);
-            // Filtrer uniquement les produits avec un UUID valide (ignorer extras 0€ sans UUID)
+            // Créer/assurer les produits pour les extras sans UUID puis insérer tous les items
             const isUuid = (v: any) => typeof v === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v);
-            let orderItems: any[] = [];
-            let skipped = 0;
-            if (Array.isArray(items)) {
-              orderItems = items
-                .map((item: any) => ({
-                  product_id: item.id || item.menuItem?.id || item.product_id,
-                  quantity: item.quantity || 1,
-                  price: item.price || item.menuItem?.price || 0,
-                  special_instructions: item.specialInstructions || item.special_instructions || null,
-                }))
-                .filter((i) => {
-                  if (!isUuid(i.product_id)) { skipped++; return false; }
-                  return true;
-                })
-                .map((i) => ({ ...i, order_id: order.id }));
-            }
 
-            if (skipped > 0) {
-              console.log(`ℹ️ ${skipped} article(s) sans UUID ignoré(s) (extras 0€)`);
+            const ensureExtrasCategory = async (restaurantId: string): Promise<string> => {
+              const { data: cat } = await supabase
+                .from('categories')
+                .select('id')
+                .eq('id', 'extras')
+                .eq('restaurant_id', restaurantId)
+                .maybeSingle();
+              if (cat?.id) return cat.id as string;
+              const { data: newCat, error: insErr } = await supabase
+                .from('categories')
+                .insert({ id: 'extras', name: 'Extras', description: 'Produits optionnels (non listés)', display_order: 9999, restaurant_id: restaurantId })
+                .select('id')
+                .single();
+              if (insErr) {
+                console.log('⚠️ Création catégorie extras impossible/inutile:', insErr.message);
+                return 'extras';
+              }
+              return newCat.id as string;
+            };
+
+            const getOrCreateExtraProduct = async (name: string, price: number, restaurantId: string): Promise<string> => {
+              const { data: existing } = await supabase
+                .from('products')
+                .select('id')
+                .eq('restaurant_id', restaurantId)
+                .eq('name', name)
+                .eq('is_extra', true)
+                .maybeSingle();
+              if (existing?.id) return existing.id as string;
+              const categoryId = await ensureExtrasCategory(restaurantId);
+              const { data: inserted, error: insErr } = await supabase
+                .from('products')
+                .insert({
+                  name,
+                  description: 'Extra généré automatiquement',
+                  price: price || 0,
+                  category_id: categoryId,
+                  restaurant_id: restaurantId,
+                  is_hidden: true,
+                  is_extra: true,
+                })
+                .select('id')
+                .single();
+              if (insErr) {
+                console.error('❌ Erreur création produit extra:', insErr);
+                throw insErr;
+              }
+              return inserted.id as string;
+            };
+
+            const orderItems: any[] = [];
+            if (Array.isArray(items)) {
+              for (const item of items) {
+                let productId = item.id || item.menuItem?.id || item.product_id;
+                const quantity = item.quantity || 1;
+                const price = item.price || item.menuItem?.price || 0;
+                const special_instructions = item.specialInstructions || item.special_instructions || null;
+                if (!isUuid(productId)) {
+                  const name = item.name || item.menuItem?.name || 'Extra';
+                  try {
+                    productId = await getOrCreateExtraProduct(name, price, order.restaurant_id);
+                  } catch (e) {
+                    console.error('❌ Échec création/lookup produit extra; item ignoré:', e);
+                    continue;
+                  }
+                }
+                orderItems.push({ order_id: order.id, product_id: productId, quantity, price, special_instructions });
+              }
             }
 
             if (orderItems.length > 0) {
