@@ -317,46 +317,36 @@ serve(async (req) => {
     // Système de mapping nom→code lettres pour économiser l'espace
     let itemsSummaryStr = '[]';
     try {
-      const seen = new Set();
       const items = [];
       
-        // Traiter tous les items avec mapping vers codes lettres
-        for (const item of rawItemsSummary) {
-          const key = `${item.name}_${item.price}`;
-          
-          if (!seen.has(key)) {
-            // Obtenir ou créer un code lettre pour ce produit avec description
-            const originalItem = baseSummary.find(base => base.name === item.name);
-            const description = originalItem?.description || '';
-            
-            const { data: codeData, error: codeError } = await supabase
-              .rpc('get_or_create_product_code', {
-                p_item_name: item.name,
-                p_item_type: item.price === 0 ? 'extra' : 'product',
-                p_item_description: description
-              });
+      // Traiter tous les items avec mapping vers codes lettres (sans déduplication)
+      for (const item of rawItemsSummary) {
+        // Obtenir ou créer un code lettre pour ce produit avec description
+        const originalItem = baseSummary.find(base => base.name === item.name);
+        const description = originalItem?.description || '';
+        
+        const { data: codeData, error: codeError } = await supabase
+          .rpc('get_or_create_product_code', {
+            p_item_name: item.name,
+            p_item_type: item.price === 0 ? 'extra' : 'product',
+            p_item_description: description
+          });
 
-          if (codeError) {
-            console.error('Erreur génération code:', codeError);
-            // Fallback : utiliser les premières lettres du nom
-            const fallbackCode = item.name.substring(0, 2).toUpperCase();
-            items.push({
-              n: fallbackCode,
-              p: Math.round(item.price * 100), // Prix en centimes pour économiser l'espace
-              q: item.quantity
-            });
-          } else {
-            items.push({
-              n: codeData, // Code lettre (A, B, C, etc.)
-              p: Math.round(item.price * 100), // Prix en centimes
-              q: item.quantity
-            });
-          }
-          seen.add(key);
+        if (codeError) {
+          console.error('Erreur génération code:', codeError);
+          // Fallback : utiliser les premières lettres du nom
+          const fallbackCode = item.name.substring(0, 2).toUpperCase();
+          items.push({
+            n: fallbackCode,
+            p: Math.round(item.price * 100), // Prix en centimes pour économiser l'espace
+            q: item.quantity
+          });
         } else {
-          // Si le produit existe déjà, augmenter la quantité
-          const existing = items.find(i => `${i.n}_${Math.round(item.price * 100)}` === `${i.n}_${Math.round(item.price * 100)}`);
-          if (existing) existing.q += item.quantity;
+          items.push({
+            n: codeData, // Code lettre (A, B, C, etc.)
+            p: Math.round(item.price * 100), // Prix en centimes
+            q: item.quantity
+          });
         }
       }
       
