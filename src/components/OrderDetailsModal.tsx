@@ -271,29 +271,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                         <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
                         <div className="flex-1">
                           <div className="font-medium">Notes du client:</div>
-                          {orderDetails.customer_notes.includes('Options sélectionnées') ? (
-                            <div className="space-y-2">
-                              {/* Afficher les notes normales */}
-                              {orderDetails.customer_notes.split('\n\n')[0] && (
-                                <div className="text-sm italic">"{orderDetails.customer_notes.split('\n\n')[0]}"</div>
-                              )}
-                              
-                              {/* Afficher les options du panier avec style spécial */}
-                              <div className="bg-gold-50 border border-gold-200 rounded-lg p-3 mt-2">
-                                <div className="font-medium text-gold-800 text-sm mb-1">🍜 Options sélectionnées :</div>
-                                <div className="text-sm text-gold-700 space-y-1">
-                                  {orderDetails.customer_notes
-                                    .split('\n')
-                                    .filter(line => line.includes('Sauces:') || line.includes('Accompagnements:') || line.includes('Baguettes:'))
-                                    .map((line, idx) => (
-                                      <p key={idx} className="font-medium">{line.replace(/^- /, '')}</p>
-                                    ))}
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-sm italic">"{orderDetails.customer_notes}"</div>
-                          )}
+                          <div className="text-sm italic">"{orderDetails.customer_notes || "Aucune note"}"</div>
                         </div>
                       </div>
                     )}
@@ -553,29 +531,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                         <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5" />
                         <div className="flex-1">
                           <div className="font-medium">Notes du client:</div>
-                          {orderDetails.customer_notes.includes('Options sélectionnées') ? (
-                            <div className="space-y-2">
-                              {/* Afficher les notes normales */}
-                              {orderDetails.customer_notes.split('\n\n')[0] && (
-                                <div className="text-sm italic">"{orderDetails.customer_notes.split('\n\n')[0]}"</div>
-                              )}
-                              
-                              {/* Afficher les options du panier avec style spécial */}
-                              <div className="bg-gold-50 border border-gold-200 rounded-lg p-3 mt-2">
-                                <div className="font-medium text-gold-800 text-sm mb-1">🍜 Options sélectionnées :</div>
-                                <div className="text-sm text-gold-700 space-y-1">
-                                  {orderDetails.customer_notes
-                                    .split('\n')
-                                    .filter(line => line.includes('Sauces:') || line.includes('Accompagnements:') || line.includes('Baguettes:'))
-                                    .map((line, idx) => (
-                                      <p key={idx} className="font-medium">{line.replace(/^- /, '')}</p>
-                                    ))}
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="text-sm italic">"{orderDetails.customer_notes}"</div>
-                          )}
+                          <div className="text-sm italic">"{orderDetails.customer_notes || "Aucune note"}"</div>
                         </div>
                       </div>
                     )}

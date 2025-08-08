@@ -271,17 +271,12 @@ const CommandeConfirmee = () => {
                       </div>
                       )}
                     
-                    {/* Affichage des options du panier (sauces, accompagnements, baguettes) */}
-                    {orderDetails.customer_notes && orderDetails.customer_notes.includes('Options sélectionnées') && (
-                      <div className="mt-4 p-3 bg-gold-50 border border-gold-200 rounded-lg">
-                        <h4 className="font-medium text-sm mb-2 text-gold-800">🍜 Vos options sélectionnées :</h4>
-                        <div className="text-xs text-gold-700 space-y-1">
-                          {orderDetails.customer_notes
-                            .split('\n')
-                            .filter(line => line.includes('Sauces:') || line.includes('Accompagnements:') || line.includes('Baguettes:'))
-                            .map((line, idx) => (
-                              <p key={idx} className="whitespace-pre-wrap">{line.replace(/^- /, '')}</p>
-                            ))}
+                    {/* Notes du client */}
+                    {orderDetails.customer_notes && (
+                      <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <h4 className="font-medium text-sm mb-2">📝 Notes :</h4>
+                        <div className="text-xs text-gray-700 whitespace-pre-wrap">
+                          {orderDetails.customer_notes}
                         </div>
                       </div>
                     )}

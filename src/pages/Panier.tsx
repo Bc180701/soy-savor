@@ -275,7 +275,7 @@ const PanierContent = () => {
           deliveryStreet: deliveryInfo.street,
           deliveryCity: deliveryInfo.city,
           deliveryPostalCode: deliveryInfo.postalCode,
-          customerNotes: `${deliveryInfo.notes || ''}\n\nOptions sélectionnées:\n- Sauces: ${cartExtras?.sauces.join(', ') || 'Aucune'}\n- Accompagnements: ${cartExtras?.accompagnements.join(', ') || 'Aucun'}\n- Baguettes: ${cartExtras?.baguettes || 0} paires`,
+          customerNotes: deliveryInfo.notes || '',
           scheduledFor: scheduledForDate.toISOString(),
           restaurantId: cartRestaurant?.id, // Ajout du restaurant ID
           cartExtras: cartExtras, // Ajout des extras du panier
