@@ -44,27 +44,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       const filteredSauces = selectedSauces.filter(s => s !== "Aucune");
       if (checked) {
         newSauces = [...filteredSauces, sauce];
-        // Ajouter la sauce comme article à 0€
-         if (sauce !== "Aucune") {
-           const sauceItem = {
-             id: `sauce-extra-${sauce.toLowerCase().replace(/\s+/g, '-')}`,
-             name: `Sauce ${sauce}`,
-             description: "Sauce d'accompagnement",
-             price: 0,
-             imageUrl: "",
-             category: "Sauce" as const,
-             restaurant_id: getRestaurantId(),
-             isVegetarian: true,
-             isSpicy: false,
-             isNew: false,
-             isBestSeller: false,
-             isGlutenFree: true,
-             allergens: [],
-             pieces: null,
-             prepTime: null
-           };
-           addItem(sauceItem, 1);
-         }
       } else {
         newSauces = filteredSauces.filter(s => s !== sauce);
       }
@@ -92,42 +71,20 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   };
 
   const handleAddAccompagnements = () => {
-    if (selectedAccompagnements.length === 0) return;
-    const item = {
-      id: `accompagnements-${Date.now()}`,
-      name: `Accompagnements: ${selectedAccompagnements.join(', ')}`,
-      description: "Accompagnements pour la commande",
-      price: 0,
-      imageUrl: "",
-      category: "Accompagnement" as const,
-      restaurant_id: getRestaurantId(),
-      isVegetarian: true,
-      isSpicy: false,
-      isNew: false,
-      isBestSeller: false,
-      isGlutenFree: true,
-      allergens: [],
-      pieces: null,
-      prepTime: null
-    };
-    addItem(item, 1);
-    setSelectedAccompagnements([]);
-    onExtrasChange({ sauces: selectedSauces, accompagnements: [], baguettes: baguettesCount });
-  };
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
 
-  const handleBaguettesChange = (change: number) => {
-    const newCount = Math.max(0, baguettesCount + change);
-    
-    // Ajouter les baguettes comme article à 0€ si on augmente
-    if (change > 0) {
-      const baguettesItem = {
-        id: `baguettes-${Date.now()}`,
-        name: `Baguettes (${change} ${change === 1 ? 'paire' : 'paires'})`,
-        description: "Baguettes japonaises",
+    const itemsToAdd: any[] = [];
+
+    if (selectedSauces.length > 0) {
+      itemsToAdd.push({
+        id: `sauces-${Date.now()}`,
+        name: `Sauces: ${selectedSauces.join(', ')}`,
+        description: "Sauces pour la commande",
         price: 0,
         imageUrl: "",
-        category: "Accessoire" as const,
-        restaurant_id: getRestaurantId(),
+        category: "Sauce" as const,
+        restaurant_id: restaurantId,
         isVegetarian: true,
         isSpicy: false,
         isNew: false,
@@ -136,10 +93,61 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         allergens: [],
         pieces: null,
         prepTime: null
-      };
-      addItem(baguettesItem, 1);
+      });
     }
-    
+
+    if (selectedAccompagnements.length > 0) {
+      itemsToAdd.push({
+        id: `accompagnements-${Date.now()}`,
+        name: `Accompagnements: ${selectedAccompagnements.join(', ')}`,
+        description: "Accompagnements pour la commande",
+        price: 0,
+        imageUrl: "",
+        category: "Accompagnement" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      });
+    }
+
+    if (baguettesCount > 0) {
+      itemsToAdd.push({
+        id: `baguettes-${Date.now()}`,
+        name: `Baguettes (${baguettesCount} ${baguettesCount === 1 ? 'paire' : 'paires'})`,
+        description: "Baguettes japonaises",
+        price: 0,
+        imageUrl: "",
+        category: "Accessoire" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      });
+    }
+
+    if (itemsToAdd.length === 0) return;
+
+    itemsToAdd.forEach((it) => addItem(it, 1));
+
+    setSelectedSauces([]);
+    setSelectedAccompagnements([]);
+    setBaguettesCount(0);
+    onExtrasChange({ sauces: [], accompagnements: [], baguettes: 0 });
+  };
+
+  const handleBaguettesChange = (change: number) => {
+    const newCount = Math.max(0, baguettesCount + change);
     setBaguettesCount(newCount);
     onExtrasChange({
       sauces: selectedSauces,
@@ -244,7 +252,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           </div>
         </div>
         <div className="pt-2">
-          <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedAccompagnements.length === 0} className="border-gold-400 hover:bg-gold-100">
+          <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedSauces.length === 0 && selectedAccompagnements.length === 0 && baguettesCount === 0} className="border-gold-400 hover:bg-gold-100">
             Ajouter mes accompagnements
           </Button>
         </div>
