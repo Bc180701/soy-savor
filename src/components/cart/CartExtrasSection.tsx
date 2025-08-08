@@ -19,6 +19,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<string[]>([]);
   const [baguettesCount, setBaguettesCount] = useState<number>(0);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const { addItem, selectedRestaurantId, items } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
@@ -49,6 +50,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       }
     }
     
+    setHasSubmitted(false);
     setSelectedSauces(newSauces);
     onExtrasChange({
       sauces: newSauces,
@@ -62,6 +64,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       ? [...selectedAccompagnements, accompagnement]
       : selectedAccompagnements.filter(a => a !== accompagnement);
     
+    setHasSubmitted(false);
     setSelectedAccompagnements(newAccompagnements);
     onExtrasChange({
       sauces: selectedSauces,
@@ -143,11 +146,12 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     setSelectedSauces([]);
     setSelectedAccompagnements([]);
     setBaguettesCount(0);
-    onExtrasChange({ sauces: [], accompagnements: [], baguettes: 0 });
+    setHasSubmitted(true);
   };
 
   const handleBaguettesChange = (change: number) => {
     const newCount = Math.max(0, baguettesCount + change);
+    setHasSubmitted(false);
     setBaguettesCount(newCount);
     onExtrasChange({
       sauces: selectedSauces,
@@ -194,7 +198,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
               </div>
             ))}
           </div>
-          {selectedSauces.length === 0 && (
+          {selectedSauces.length === 0 && !hasSubmitted && (
             <p className="text-red-600 text-sm">⚠️ Veuillez sélectionner au moins une option</p>
           )}
         </div>
