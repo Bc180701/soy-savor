@@ -358,7 +358,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                         <div key={item.id || index} className="p-4 flex justify-between">
                           <div className="flex-1">
                             <div className="font-medium text-lg">
-                              {item.products?.name || `Produit ${item.product_id?.substring(0, 8) || 'inconnu'}`}
+                              {item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`}
                             </div>
                             {item.special_instructions && (
                               <div className="text-sm text-muted-foreground italic mt-1">
@@ -615,7 +615,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                       <div key={item.id || index} className="p-4 flex justify-between">
                         <div className="flex-1">
                           <div className="font-medium text-lg">
-                            {item.products?.name || `Produit ${item.product_id?.substring(0, 8) || 'inconnu'}`}
+                            {item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`}
                           </div>
                           {item.special_instructions && (
                             <div className="text-sm text-muted-foreground italic mt-1">

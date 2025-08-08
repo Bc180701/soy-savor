@@ -19,7 +19,7 @@ export const fetchOrderWithDetails = async (orderId: string) => {
   }
   
   try {
-    // Fetch order with basic details
+    // Fetch order with basic details including items_summary
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('*')
@@ -28,13 +28,33 @@ export const fetchOrderWithDetails = async (orderId: string) => {
       
     if (orderError) throw orderError;
     
-    // Fetch order items and associated products
-    const { data: orderItems, error: itemsError } = await supabase
-      .from('order_items')
-      .select('*, products(*)')
-      .eq('order_id', orderId);
+    // Process items_summary to group duplicates by name
+    let processedItems = [];
+    if (order.items_summary && Array.isArray(order.items_summary)) {
+      const itemsMap = new Map();
       
-    if (itemsError) throw itemsError;
+      // Group items by name and sum quantities
+      order.items_summary.forEach((item: any) => {
+        const name = item.name;
+        if (itemsMap.has(name)) {
+          const existing = itemsMap.get(name);
+          existing.quantity += (item.quantity || 1);
+          // Keep the highest price if different
+          if (item.price && item.price > existing.price) {
+            existing.price = item.price;
+          }
+        } else {
+          itemsMap.set(name, {
+            id: item.id,
+            name: item.name,
+            price: item.price || 0,
+            quantity: item.quantity || 1
+          });
+        }
+      });
+      
+      processedItems = Array.from(itemsMap.values());
+    }
     
     // Fetch customer profile details
     let customerDetails = null;
@@ -64,10 +84,10 @@ export const fetchOrderWithDetails = async (orderId: string) => {
       }
     }
     
-    // Return complete order details
+    // Return complete order details with processed items from items_summary
     return {
       ...order,
-      order_items: orderItems,
+      order_items: processedItems, // Now using processed items_summary instead of order_items table
       customer: customerDetails,
       delivery_address: addressDetails
     };
