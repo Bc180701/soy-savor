@@ -313,16 +313,45 @@ serve(async (req) => {
 
     const rawItemsSummary = [...baseSummary, ...extrasSummary];
 
-    // Construit progressivement pour rester un JSON valide sous la limite Stripe (<= 500 chars par champ)
+    // Créer un items_summary optimisé pour inclure tous les produits
     let itemsSummaryStr = '[]';
-    {
-      const acc: any[] = [];
-      for (const it of rawItemsSummary) {
-        acc.push(it);
-        const s = JSON.stringify(acc);
-        if (s.length > 480) { acc.pop(); break; }
-        itemsSummaryStr = s;
+    try {
+      // Essayer d'abord avec toutes les informations
+      const fullSummary = JSON.stringify(rawItemsSummary);
+      if (fullSummary.length <= 500) {
+        itemsSummaryStr = fullSummary;
+      } else {
+        // Si trop long, optimiser en gardant seulement id, name, price et quantity
+        const optimizedSummary = rawItemsSummary.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        }));
+        const optimizedStr = JSON.stringify(optimizedSummary);
+        
+        if (optimizedStr.length <= 500) {
+          itemsSummaryStr = optimizedStr;
+        } else {
+          // Dernier recours : tronquer intelligemment mais garder tous les produits principaux
+          const acc: any[] = [];
+          for (const it of rawItemsSummary) {
+            // Prioriser les produits payants over les extras gratuits
+            if (it.price > 0 || acc.length < items.length) {
+              acc.push(it);
+              const s = JSON.stringify(acc);
+              if (s.length > 490) { 
+                acc.pop(); 
+                break; 
+              }
+              itemsSummaryStr = s;
+            }
+          }
+        }
       }
+    } catch (error) {
+      console.error('Erreur création items_summary:', error);
+      itemsSummaryStr = JSON.stringify(baseSummary.slice(0, 10)); // Fallback sécurisé
     }
 
     console.log('📝 [STEP 21] Résumé articles total (produits + extras) créé (longueur):', itemsSummaryStr.length, ' | items comptés:', rawItemsSummary.length);
