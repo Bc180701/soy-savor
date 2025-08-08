@@ -49,7 +49,7 @@ export const DecodedItemsList = ({ items }: DecodedItemsListProps) => {
             // Fallback : utiliser les codes comme noms
             setDecodedItems(items.map((item: any) => ({
               name: item.n || 'Produit inconnu',
-              price: (item.p || 0) / 100, // Convertir centimes en euros
+              price: item.p || 0, // Les prix sont déjà en euros dans les items encodés
               quantity: item.q || 1
             })));
           } else {
