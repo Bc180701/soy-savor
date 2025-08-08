@@ -114,9 +114,9 @@ export const DecodedItemsList = ({ items }: DecodedItemsListProps) => {
             )}
           </div>
           <div className="text-right min-w-[100px]">
-            <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
+            <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2).replace('.', ',')} €</div>
             <div className="font-semibold text-lg">
-              {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
+              {((item.quantity || 1) * (item.price || 0)).toFixed(2).replace('.', ',')} €
             </div>
           </div>
         </div>
