@@ -313,45 +313,48 @@ serve(async (req) => {
 
     const rawItemsSummary = [...baseSummary, ...extrasSummary];
 
-    // Créer un items_summary optimisé pour inclure tous les produits
+    // Créer un items_summary complet pour inclure TOUS les produits
     let itemsSummaryStr = '[]';
     try {
-      // Essayer d'abord avec toutes les informations
-      const fullSummary = JSON.stringify(rawItemsSummary);
-      if (fullSummary.length <= 500) {
-        itemsSummaryStr = fullSummary;
-      } else {
-        // Si trop long, optimiser en gardant seulement id, name, price et quantity
-        const optimizedSummary = rawItemsSummary.map(item => ({
+      // D'abord les produits principaux (obligatoires)
+      const mainProducts = rawItemsSummary.filter(item => item.price > 0 || !item.id.startsWith('extra:'));
+      
+      // Ensuite les extras si il y a de la place
+      const extras = rawItemsSummary.filter(item => item.price === 0 && item.id.startsWith('extra:'));
+      
+      // Commencer par inclure TOUS les produits principaux
+      let finalSummary = [...mainProducts];
+      
+      // Ajouter les extras un par un si possible
+      for (const extra of extras) {
+        const testSummary = [...finalSummary, extra];
+        const testStr = JSON.stringify(testSummary);
+        
+        // Limite généreuse pour éviter de perdre des produits
+        if (testStr.length <= 1000) {
+          finalSummary = testSummary;
+        } else {
+          break; // On s'arrête si on dépasse la limite
+        }
+      }
+      
+      itemsSummaryStr = JSON.stringify(finalSummary);
+      
+      // Si même les produits principaux dépassent la limite, on optimise
+      if (itemsSummaryStr.length > 1000) {
+        const optimizedSummary = mainProducts.map(item => ({
           id: item.id,
-          name: item.name,
+          name: item.name.length > 50 ? item.name.substring(0, 50) + '...' : item.name,
           price: item.price,
           quantity: item.quantity
         }));
-        const optimizedStr = JSON.stringify(optimizedSummary);
-        
-        if (optimizedStr.length <= 500) {
-          itemsSummaryStr = optimizedStr;
-        } else {
-          // Dernier recours : tronquer intelligemment mais garder tous les produits principaux
-          const acc: any[] = [];
-          for (const it of rawItemsSummary) {
-            // Prioriser les produits payants over les extras gratuits
-            if (it.price > 0 || acc.length < items.length) {
-              acc.push(it);
-              const s = JSON.stringify(acc);
-              if (s.length > 490) { 
-                acc.pop(); 
-                break; 
-              }
-              itemsSummaryStr = s;
-            }
-          }
-        }
+        itemsSummaryStr = JSON.stringify(optimizedSummary);
       }
+      
     } catch (error) {
       console.error('Erreur création items_summary:', error);
-      itemsSummaryStr = JSON.stringify(baseSummary.slice(0, 10)); // Fallback sécurisé
+      // Fallback : au minimum les produits principaux
+      itemsSummaryStr = JSON.stringify(baseSummary);
     }
 
     console.log('📝 [STEP 21] Résumé articles total (produits + extras) créé (longueur):', itemsSummaryStr.length, ' | items comptés:', rawItemsSummary.length);
