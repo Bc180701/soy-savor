@@ -319,10 +319,39 @@ const CommanderContent = () => {
       <PokeSauceDialog
         open={sauceOpen}
         onClose={() => { setSauceOpen(false); setPendingItem(null); }}
-        onConfirm={(sauce) => {
+        onConfirm={(sauce, sauceValue) => {
           if (pendingItem) {
-            addToCart(pendingItem, 1, `Sauce: ${sauce}`);
-            toast({ title: "Ajouté au panier", description: `${pendingItem.name} - Sauce: ${sauce}` });
+            // Ajouter le produit principal
+            addToCart(pendingItem, 1);
+            
+            // Ajouter la sauce comme article séparé à 0€ (seulement si ce n'est pas "pas de sauce")
+            if (sauceValue !== "pas_de_sauce") {
+              const sauceItem = {
+                id: `sauce-poke-${sauceValue}`,
+                name: `Sauce ${sauce} (Poké)`,
+                description: `Sauce pour ${pendingItem.name}`,
+                price: 0,
+                imageUrl: "",
+                category: "Sauce" as const,
+                restaurant_id: pendingItem.restaurant_id,
+                isVegetarian: true,
+                isSpicy: false,
+                isNew: false,
+                isBestSeller: false,
+                isGlutenFree: true,
+                allergens: [],
+                pieces: null,
+                prepTime: null
+              };
+              addToCart(sauceItem, 1);
+            }
+            
+            toast({ 
+              title: "Ajouté au panier", 
+              description: sauceValue !== "pas_de_sauce" 
+                ? `${pendingItem.name} + Sauce ${sauce}` 
+                : pendingItem.name 
+            });
             setPendingItem(null);
             setSauceOpen(false);
           }

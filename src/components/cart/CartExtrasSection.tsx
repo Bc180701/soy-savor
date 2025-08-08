@@ -2,7 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
 
 interface CartExtrasSectionProps {
   onExtrasChange: (extras: CartExtras) => void;
@@ -18,6 +19,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<string[]>([]);
   const [baguettesCount, setBaguettesCount] = useState<number>(0);
+  const { addItem, currentRestaurant } = useCartWithRestaurant();
 
   const saucesOptions = [
     "Soja sucrée",
@@ -41,6 +43,27 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       const filteredSauces = selectedSauces.filter(s => s !== "Aucune");
       if (checked) {
         newSauces = [...filteredSauces, sauce];
+        // Ajouter la sauce comme article à 0€
+        if (currentRestaurant && sauce !== "Aucune") {
+          const sauceItem = {
+            id: `sauce-extra-${sauce.toLowerCase().replace(/\s+/g, '-')}`,
+            name: `Sauce ${sauce}`,
+            description: "Sauce d'accompagnement",
+            price: 0,
+            imageUrl: "",
+            category: "Sauce" as const,
+            restaurant_id: currentRestaurant.id,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          };
+          addItem(sauceItem, 1);
+        }
       } else {
         newSauces = filteredSauces.filter(s => s !== sauce);
       }
@@ -59,6 +82,28 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       ? [...selectedAccompagnements, accompagnement]
       : selectedAccompagnements.filter(a => a !== accompagnement);
     
+    // Ajouter l'accompagnement comme article à 0€ si coché
+    if (checked && currentRestaurant) {
+      const accompagnementItem = {
+        id: `accompagnement-${accompagnement.toLowerCase().replace(/\s+/g, '-')}`,
+        name: accompagnement,
+        description: "Accompagnement",
+        price: 0,
+        imageUrl: "",
+        category: "Accompagnement" as const,
+        restaurant_id: currentRestaurant.id,
+        isVegetarian: true,
+        isSpicy: accompagnement === "Wasabi",
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      addItem(accompagnementItem, 1);
+    }
+    
     setSelectedAccompagnements(newAccompagnements);
     onExtrasChange({
       sauces: selectedSauces,
@@ -69,6 +114,29 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
   const handleBaguettesChange = (change: number) => {
     const newCount = Math.max(0, baguettesCount + change);
+    
+    // Ajouter les baguettes comme article à 0€ si on augmente
+    if (change > 0 && currentRestaurant) {
+      const baguettesItem = {
+        id: `baguettes-${Date.now()}`,
+        name: `Baguettes (${change} ${change === 1 ? 'paire' : 'paires'})`,
+        description: "Baguettes japonaises",
+        price: 0,
+        imageUrl: "",
+        category: "Accessoire" as const,
+        restaurant_id: currentRestaurant.id,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      addItem(baguettesItem, 1);
+    }
+    
     setBaguettesCount(newCount);
     onExtrasChange({
       sauces: selectedSauces,

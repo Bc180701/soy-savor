@@ -22,7 +22,10 @@ export type SushiCategory =
   | "boissons"
   | "box_du_midi"
   | "custom"
-  | "poke_custom";
+  | "poke_custom"
+  | "Sauce"
+  | "Accompagnement"
+  | "Accessoire";
 
 export interface MenuItem {
   id: string;

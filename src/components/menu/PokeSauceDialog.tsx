@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 interface PokeSauceDialogProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: (sauceLabel: string) => void;
+  onConfirm: (sauceLabel: string, sauceValue: string) => void;
 }
 
 const PokeSauceDialog = ({ open, onClose, onConfirm }: PokeSauceDialogProps) => {
@@ -25,7 +25,7 @@ const PokeSauceDialog = ({ open, onClose, onConfirm }: PokeSauceDialogProps) => 
   };
 
   const handleConfirm = () => {
-    onConfirm(labelFor(value));
+    onConfirm(labelFor(value), value);
     onClose();
     setValue("pas_de_sauce");
   };
