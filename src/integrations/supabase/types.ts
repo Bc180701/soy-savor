@@ -571,6 +571,7 @@ export type Database = {
           code: string
           created_at: string
           id: string
+          item_description: string | null
           item_name: string
           item_type: string
         }
@@ -578,6 +579,7 @@ export type Database = {
           code: string
           created_at?: string
           id?: string
+          item_description?: string | null
           item_name: string
           item_type?: string
         }
@@ -585,6 +587,7 @@ export type Database = {
           code?: string
           created_at?: string
           id?: string
+          item_description?: string | null
           item_name?: string
           item_type?: string
         }
@@ -1332,7 +1335,13 @@ export type Database = {
         Returns: Json
       }
       get_or_create_product_code: {
-        Args: { p_item_name: string; p_item_type?: string }
+        Args:
+          | { p_item_name: string; p_item_type?: string }
+          | {
+              p_item_name: string
+              p_item_type?: string
+              p_item_description?: string
+            }
         Returns: string
       }
       has_role: {

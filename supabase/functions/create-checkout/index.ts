@@ -292,6 +292,7 @@ serve(async (req) => {
     const baseSummary = items.map((item: any) => ({
       id: item.menuItem.id,
       name: item.menuItem.name,
+      description: item.menuItem.description || '',
       price: item.menuItem.price,
       quantity: item.quantity,
     }));
@@ -319,17 +320,21 @@ serve(async (req) => {
       const seen = new Set();
       const items = [];
       
-      // Traiter tous les items avec mapping vers codes lettres
-      for (const item of rawItemsSummary) {
-        const key = `${item.name}_${item.price}`;
-        
-        if (!seen.has(key)) {
-          // Obtenir ou créer un code lettre pour ce produit
-          const { data: codeData, error: codeError } = await supabase
-            .rpc('get_or_create_product_code', {
-              p_item_name: item.name,
-              p_item_type: item.price === 0 ? 'extra' : 'product'
-            });
+        // Traiter tous les items avec mapping vers codes lettres
+        for (const item of rawItemsSummary) {
+          const key = `${item.name}_${item.price}`;
+          
+          if (!seen.has(key)) {
+            // Obtenir ou créer un code lettre pour ce produit avec description
+            const originalItem = baseSummary.find(base => base.name === item.name);
+            const description = originalItem?.description || '';
+            
+            const { data: codeData, error: codeError } = await supabase
+              .rpc('get_or_create_product_code', {
+                p_item_name: item.name,
+                p_item_type: item.price === 0 ? 'extra' : 'product',
+                p_item_description: description
+              });
 
           if (codeError) {
             console.error('Erreur génération code:', codeError);
