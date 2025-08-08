@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
-import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
+import { useCart } from "@/hooks/use-cart";
 
 interface CartExtrasSectionProps {
   onExtrasChange: (extras: CartExtras) => void;
@@ -19,7 +19,8 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<string[]>([]);
   const [baguettesCount, setBaguettesCount] = useState<number>(0);
-  const { addItem, currentRestaurant } = useCartWithRestaurant();
+  const { addItem, selectedRestaurantId, items } = useCart();
+  const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
   const saucesOptions = [
     "Soja sucrée",
@@ -44,26 +45,26 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       if (checked) {
         newSauces = [...filteredSauces, sauce];
         // Ajouter la sauce comme article à 0€
-        if (currentRestaurant && sauce !== "Aucune") {
-          const sauceItem = {
-            id: `sauce-extra-${sauce.toLowerCase().replace(/\s+/g, '-')}`,
-            name: `Sauce ${sauce}`,
-            description: "Sauce d'accompagnement",
-            price: 0,
-            imageUrl: "",
-            category: "Sauce" as const,
-            restaurant_id: currentRestaurant.id,
-            isVegetarian: true,
-            isSpicy: false,
-            isNew: false,
-            isBestSeller: false,
-            isGlutenFree: true,
-            allergens: [],
-            pieces: null,
-            prepTime: null
-          };
-          addItem(sauceItem, 1);
-        }
+         if (sauce !== "Aucune") {
+           const sauceItem = {
+             id: `sauce-extra-${sauce.toLowerCase().replace(/\s+/g, '-')}`,
+             name: `Sauce ${sauce}`,
+             description: "Sauce d'accompagnement",
+             price: 0,
+             imageUrl: "",
+             category: "Sauce" as const,
+             restaurant_id: getRestaurantId(),
+             isVegetarian: true,
+             isSpicy: false,
+             isNew: false,
+             isBestSeller: false,
+             isGlutenFree: true,
+             allergens: [],
+             pieces: null,
+             prepTime: null
+           };
+           addItem(sauceItem, 1);
+         }
       } else {
         newSauces = filteredSauces.filter(s => s !== sauce);
       }
@@ -91,7 +92,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   };
 
   const handleAddAccompagnements = () => {
-    if (!currentRestaurant) return;
     if (selectedAccompagnements.length === 0) return;
     const item = {
       id: `accompagnements-${Date.now()}`,
@@ -100,7 +100,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       price: 0,
       imageUrl: "",
       category: "Accompagnement" as const,
-      restaurant_id: currentRestaurant.id,
+      restaurant_id: getRestaurantId(),
       isVegetarian: true,
       isSpicy: false,
       isNew: false,
@@ -119,7 +119,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const newCount = Math.max(0, baguettesCount + change);
     
     // Ajouter les baguettes comme article à 0€ si on augmente
-    if (change > 0 && currentRestaurant) {
+    if (change > 0) {
       const baguettesItem = {
         id: `baguettes-${Date.now()}`,
         name: `Baguettes (${change} ${change === 1 ? 'paire' : 'paires'})`,
@@ -127,7 +127,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         price: 0,
         imageUrl: "",
         category: "Accessoire" as const,
-        restaurant_id: currentRestaurant.id,
+        restaurant_id: getRestaurantId(),
         isVegetarian: true,
         isSpicy: false,
         isNew: false,
@@ -212,11 +212,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
               </div>
             ))}
           </div>
-          <div>
-            <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedAccompagnements.length === 0} className="border-gold-400 hover:bg-gold-100">
-              Ajouter mes accompagnements
-            </Button>
-          </div>
         </div>
 
         {/* Baguettes */}
@@ -247,6 +242,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             </Button>
             <span className="text-sm text-gray-600 ml-2">paires</span>
           </div>
+        </div>
+        <div className="pt-2">
+          <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedAccompagnements.length === 0} className="border-gold-400 hover:bg-gold-100">
+            Ajouter mes accompagnements
+          </Button>
         </div>
       </CardContent>
     </Card>
