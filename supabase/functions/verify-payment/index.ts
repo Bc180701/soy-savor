@@ -306,9 +306,6 @@ serve(async (req) => {
         } else {
           console.log('⚠️ Aucun article à insérer');
         }
-        } else {
-          console.log('⚠️ Aucun article insérable (tous sans UUID)');
-        }
       } catch (error) {
         console.error('❌ Erreur parsing items:', error);
       }
