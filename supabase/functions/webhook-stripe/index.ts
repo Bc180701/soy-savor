@@ -96,9 +96,122 @@ serve(async (req) => {
 
       if (existingOrder) {
         console.log('✅ Commande déjà existante:', existingOrder.id);
-        return new Response(JSON.stringify({ received: true, existing: true }), { 
+        // Si aucun article n'est encore lié à cette commande, essayons de les ajouter maintenant
+        const { data: existingItems, error: existingItemsErr } = await supabase
+          .from('order_items')
+          .select('id')
+          .eq('order_id', existingOrder.id)
+          .limit(1);
+
+        if (existingItemsErr) {
+          console.error('⚠️ Erreur vérification des articles existants:', existingItemsErr);
+        }
+
+        const metadata = event?.data?.object?.metadata || {};
+        const restaurantIdForItems = metadata.restaurant_id || '22222222-2222-2222-2222-222222222222';
+
+        if (!existingItemsErr && (!existingItems || existingItems.length === 0)) {
+          console.log('🧩 Aucuns articles liés à la commande existante. Tentative d\'insertion depuis métadonnées...');
+          const itemsData = metadata.items_summary || metadata.items;
+          if (itemsData) {
+            try {
+              const items = JSON.parse(itemsData);
+
+              const isUuid = (v: any) => typeof v === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v);
+
+              const ensureExtrasCategory = async (restaurantId: string): Promise<string> => {
+                const { data: cat } = await supabase
+                  .from('categories')
+                  .select('id')
+                  .eq('id', 'extras')
+                  .eq('restaurant_id', restaurantId)
+                  .maybeSingle();
+                if (cat?.id) return cat.id as string;
+                const { data: newCat, error: insErr } = await supabase
+                  .from('categories')
+                  .insert({ id: 'extras', name: 'Extras', description: 'Produits optionnels (non listés)', display_order: 9999, restaurant_id: restaurantId })
+                  .select('id')
+                  .single();
+                if (insErr) {
+                  console.log('⚠️ Création catégorie extras impossible/inutile:', insErr.message);
+                  return 'extras';
+                }
+                return newCat.id as string;
+              };
+
+              const getOrCreateExtraProduct = async (name: string, price: number, restaurantId: string): Promise<string> => {
+                const { data: existing } = await supabase
+                  .from('products')
+                  .select('id')
+                  .eq('restaurant_id', restaurantId)
+                  .eq('name', name)
+                  .eq('is_extra', true)
+                  .maybeSingle();
+                if (existing?.id) return existing.id as string;
+                const categoryId = await ensureExtrasCategory(restaurantId);
+                const { data: inserted, error: insErr } = await supabase
+                  .from('products')
+                  .insert({
+                    name,
+                    description: 'Extra généré automatiquement',
+                    price: price || 0,
+                    category_id: categoryId,
+                    restaurant_id: restaurantId,
+                    is_hidden: true,
+                    is_extra: true,
+                  })
+                  .select('id')
+                  .single();
+                if (insErr) {
+                  console.error('❌ Erreur création produit extra:', insErr);
+                  throw insErr;
+                }
+                return inserted.id as string;
+              };
+
+              const orderItems: any[] = [];
+              if (Array.isArray(items)) {
+                for (const item of items) {
+                  let productId = item.id || item.menuItem?.id || item.product_id;
+                  const quantity = item.quantity || 1;
+                  const price = item.price || item.menuItem?.price || 0;
+                  const special_instructions = item.specialInstructions || item.special_instructions || null;
+                  if (!isUuid(productId)) {
+                    const name = item.name || item.menuItem?.name || 'Extra';
+                    try {
+                      productId = await getOrCreateExtraProduct(name, price, restaurantIdForItems);
+                    } catch (e) {
+                      console.error('❌ Échec création/lookup produit extra; item ignoré:', e);
+                      continue;
+                    }
+                  }
+                  orderItems.push({ order_id: existingOrder.id, product_id: productId, quantity, price, special_instructions });
+                }
+              }
+
+              if (orderItems.length > 0) {
+                const { error: itemsError } = await supabase
+                  .from('order_items')
+                  .insert(orderItems);
+                if (itemsError) {
+                  console.error('❌ Erreur ajout articles (commande existante):', itemsError);
+                } else {
+                  console.log(`✅ ${orderItems.length} article(s) ajoutés à la commande existante`);
+                }
+              } else {
+                console.log('⚠️ Aucun article insérable pour la commande existante');
+              }
+            } catch (e) {
+              console.error('❌ Erreur parsing des items pour commande existante:', e);
+            }
+          } else {
+            console.log('ℹ️ Pas de items_summary dans les métadonnées pour la commande existante');
+          }
+        }
+
+        return new Response(JSON.stringify({ received: true, existing: true }), {
           status: 200,
-          headers: { 'Content-Type': 'application/json' } 
+          headers: { 'Content-Type': 'application/json' }
         });
       }
       
@@ -149,7 +262,7 @@ serve(async (req) => {
           delivery_street: metadata?.delivery_street || null,
           delivery_city: metadata?.delivery_city || null,
           delivery_postal_code: metadata?.delivery_postal_code || null,
-          customer_notes: `${metadata?.customer_notes || ''}\n\n🍜 Options sélectionnées:\n- Sauces: ${metadata?.cart_sauces || 'Aucune'}\n- Accompagnements: ${metadata?.cart_accompagnements || 'Aucun'}\n- Baguettes: ${metadata?.cart_baguettes || '0'} paires`.trim(),
+          customer_notes: `🍜 Options sélectionnées: - Sauces: ${metadata?.cart_sauces || 'Aucune'} - Accompagnements: ${metadata?.cart_accompagnements || 'Aucun'} - Baguettes: ${metadata?.cart_baguettes || '0'} paires`,
         };
 
         console.log('📝 Création commande depuis webhook:', {

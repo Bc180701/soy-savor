@@ -288,15 +288,27 @@ serve(async (req) => {
       });
     }
 
-    // Créer un résumé simplifié des articles pour les métadonnées
-    const itemsSummary = items.map(item => ({
+    // Créer un résumé simplifié des articles pour les métadonnées (garanti JSON valide <= 450 chars)
+    const rawItemsSummary = items.map(item => ({
       id: item.menuItem.id,
       name: item.menuItem.name,
       price: item.menuItem.price,
       quantity: item.quantity
     }));
 
-    console.log('📝 [STEP 21] Résumé articles créé:', itemsSummary.length, 'articles');
+    // Construit progressivement pour rester un JSON valide sous la limite
+    let itemsSummaryStr = '[]';
+    {
+      const acc: any[] = [];
+      for (const it of rawItemsSummary) {
+        acc.push(it);
+        const s = JSON.stringify(acc);
+        if (s.length > 450) { acc.pop(); break; }
+        itemsSummaryStr = s;
+      }
+    }
+
+    console.log('📝 [STEP 21] Résumé articles créé (longueur):', itemsSummaryStr.length);
 
     // Créer la session Stripe
     console.log('💳 [STEP 22] Création session Stripe...');
@@ -328,7 +340,7 @@ serve(async (req) => {
           promo_code: promoCode || '',
           total: total?.toString() || '0',
           items_count: items.length.toString(),
-          items_summary: JSON.stringify(itemsSummary).substring(0, 450), // Limiter à 450 caractères
+          items_summary: itemsSummaryStr, // JSON valide tronqué intelligemment
           // Nouvelles données du panier
           cart_sauces: cartExtras?.sauces?.join(', ') || '',
           cart_accompagnements: cartExtras?.accompagnements?.join(', ') || '',
@@ -341,7 +353,8 @@ serve(async (req) => {
         lineItemsCount: sessionData.line_items.length,
         customerEmail: sessionData.customer_email,
         restaurantId: sessionData.metadata.restaurant_id,
-        metadataSize: JSON.stringify(sessionData.metadata).length
+        metadataSize: JSON.stringify(sessionData.metadata).length,
+        itemsSummaryLen: itemsSummaryStr.length
       });
 
       session = await stripe.checkout.sessions.create(sessionData);
