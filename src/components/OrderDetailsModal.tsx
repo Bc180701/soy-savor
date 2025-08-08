@@ -17,6 +17,7 @@ import { Order } from "@/types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { MissingItemsAlert } from "@/components/admin/MissingItemsAlert";
 import { formatCustomProduct } from "@/utils/formatCustomProduct";
+import { formatEuro } from "@/utils/formatters";
 import { DecodedItemsList } from "@/components/DecodedItemsList";
 
 interface OrderDetailsModalProps {
@@ -348,9 +349,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                             )}
                           </div>
                           <div className="text-right min-w-[100px]">
-                            <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
+                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
                             <div className="font-semibold text-lg">
-                              {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
+                              {formatEuro((item.quantity || 1) * (item.price || 0))}
                             </div>
                           </div>
                         </div>
@@ -369,9 +370,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                             )}
                           </div>
                           <div className="text-right min-w-[100px]">
-                            <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
+                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
                             <div className="font-semibold text-lg">
-                              {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
+                              {formatEuro((item.quantity || 1) * (item.price || 0))}
                             </div>
                           </div>
                         </div>
@@ -392,8 +393,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                           </div>
                         </div>
                         <div className="text-right min-w-[100px]">
-                          <div className="text-base">1 x 0.00 €</div>
-                          <div className="font-semibold text-lg">0.00 €</div>
+                          <div className="text-base">1 x {formatEuro(0)}</div>
+                          <div className="font-semibold text-lg">{formatEuro(0)}</div>
                         </div>
                       </div>
                     )}
@@ -404,31 +405,31 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2 border-t pt-4">
                   <div className="flex justify-between">
                     <span>Sous-total</span>
-                    <span>{orderDetails.subtotal.toFixed(2)} €</span>
+                    <span>{formatEuro(orderDetails.subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>TVA</span>
-                    <span>{orderDetails.tax.toFixed(2)} €</span>
+                    <span>{formatEuro(orderDetails.tax)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Frais de livraison</span>
-                    <span>{orderDetails.delivery_fee.toFixed(2)} €</span>
+                    <span>{formatEuro(orderDetails.delivery_fee)}</span>
                   </div>
                   {orderDetails.tip > 0 && (
                     <div className="flex justify-between">
                       <span>Pourboire</span>
-                      <span>{orderDetails.tip.toFixed(2)} €</span>
+                      <span>{formatEuro(orderDetails.tip)}</span>
                     </div>
                   )}
                   {orderDetails.discount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Remise {orderDetails.promo_code && `(${orderDetails.promo_code})`}</span>
-                      <span>-{orderDetails.discount.toFixed(2)} €</span>
+                      <span>-{formatEuro(orderDetails.discount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold text-lg pt-2 border-t">
                     <span>Total</span>
-                    <span>{orderDetails.total.toFixed(2)} €</span>
+                    <span>{formatEuro(orderDetails.total)}</span>
                   </div>
                 </div>
               </div>
@@ -606,10 +607,10 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                            )}
                          </div>
                          <div className="text-right min-w-[100px]">
-                           <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
-                           <div className="font-semibold text-lg">
-                             {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
-                           </div>
+                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.price || 0))}
+                            </div>
                          </div>
                        </div>
                      ))
@@ -629,8 +630,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                         </div>
                       </div>
                       <div className="text-right min-w-[100px]">
-                        <div className="text-base">1 x 0.00 €</div>
-                        <div className="font-semibold text-lg">0.00 €</div>
+                        <div className="text-base">1 x {formatEuro(0)}</div>
+                        <div className="font-semibold text-lg">{formatEuro(0)}</div>
                       </div>
                     </div>
                   )}
@@ -641,31 +642,31 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
               <div className="space-y-2 border-t pt-4">
                 <div className="flex justify-between">
                   <span>Sous-total</span>
-                  <span>{orderDetails.subtotal.toFixed(2)} €</span>
+                  <span>{formatEuro(orderDetails.subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>TVA</span>
-                  <span>{orderDetails.tax.toFixed(2)} €</span>
+                  <span>{formatEuro(orderDetails.tax)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Frais de livraison</span>
-                  <span>{orderDetails.delivery_fee.toFixed(2)} €</span>
+                  <span>{formatEuro(orderDetails.delivery_fee)}</span>
                 </div>
                 {orderDetails.tip > 0 && (
                   <div className="flex justify-between">
                     <span>Pourboire</span>
-                    <span>{orderDetails.tip.toFixed(2)} €</span>
+                    <span>{formatEuro(orderDetails.tip)}</span>
                   </div>
                 )}
                 {orderDetails.discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Remise {orderDetails.promo_code && `(${orderDetails.promo_code})`}</span>
-                    <span>-{orderDetails.discount.toFixed(2)} €</span>
+                    <span>-{formatEuro(orderDetails.discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Total</span>
-                  <span>{orderDetails.total.toFixed(2)} €</span>
+                  <span>{formatEuro(orderDetails.total)}</span>
                 </div>
               </div>
             </div>
