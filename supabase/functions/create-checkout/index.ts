@@ -313,59 +313,53 @@ serve(async (req) => {
 
     const rawItemsSummary = [...baseSummary, ...extrasSummary];
 
-    // Créer un items_summary optimisé SANS les IDs longs pour économiser l'espace
+    // Format ultra-compact : 1 lettre par propriété pour économiser l'espace
     let itemsSummaryStr = '[]';
     try {
-      // Déduplication par nom de produit (plus économique que par ID)
-      const seenNames = new Set();
-      const compactItems = [];
+      const seen = new Set();
+      const items = [];
       
-      // Traiter tous les items en supprimant les IDs longs
+      // Traiter tous les items avec format ultra-compact
       for (const item of rawItemsSummary) {
-        const itemKey = `${item.name}_${item.price}`;
+        const key = `${item.name}_${item.price}`;
         
-        if (!seenNames.has(itemKey)) {
-          compactItems.push({
-            // Pas d'ID - on économise ~40 caractères par produit !
-            name: item.name,
-            price: item.price,
-            qty: item.quantity // "qty" au lieu de "quantity" pour économiser
+        if (!seen.has(key)) {
+          items.push({
+            n: item.name.length > 20 ? item.name.substring(0, 20) : item.name, // "n" = name
+            p: item.price, // "p" = price  
+            q: item.quantity // "q" = quantity
           });
-          seenNames.add(itemKey);
+          seen.add(key);
         } else {
-          // Si le produit existe déjà, augmenter la quantité
-          const existing = compactItems.find(i => `${i.name}_${i.price}` === itemKey);
-          if (existing) {
-            existing.qty += item.quantity;
-          }
+          const existing = items.find(i => `${i.n}_${i.p}` === key);
+          if (existing) existing.q += item.quantity;
         }
       }
       
-      itemsSummaryStr = JSON.stringify(compactItems);
+      itemsSummaryStr = JSON.stringify(items);
       
-      // Si encore trop long, raccourcir les noms
+      // Si encore trop long, raccourcir davantage
       if (itemsSummaryStr.length > 490) {
-        const shorterItems = compactItems.map(item => ({
-          name: item.name.length > 25 ? item.name.substring(0, 25) + '...' : item.name,
-          price: item.price,
-          qty: item.qty
+        const shorter = items.map(item => ({
+          n: item.n.length > 15 ? item.n.substring(0, 15) : item.n,
+          p: item.p,
+          q: item.q
         }));
-        itemsSummaryStr = JSON.stringify(shorterItems);
+        itemsSummaryStr = JSON.stringify(shorter);
       }
       
-      // Dernier recours : garder seulement les produits payants
+      // Dernier recours : produits payants seulement
       if (itemsSummaryStr.length > 490) {
-        const paidOnly = compactItems.filter(item => item.price > 0);
-        itemsSummaryStr = JSON.stringify(paidOnly);
+        const paid = items.filter(item => item.p > 0);
+        itemsSummaryStr = JSON.stringify(paid);
       }
       
     } catch (error) {
-      console.error('Erreur création items_summary:', error);
-      // Fallback ultra-compact
-      const fallback = baseSummary.slice(0, 5).map(item => ({
-        name: item.name.substring(0, 20),
-        price: item.price,
-        qty: item.quantity
+      console.error('Erreur items_summary:', error);
+      const fallback = baseSummary.slice(0, 8).map(item => ({
+        n: item.name.substring(0, 15),
+        p: item.price,
+        q: item.quantity
       }));
       itemsSummaryStr = JSON.stringify(fallback);
     }
