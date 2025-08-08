@@ -23,12 +23,12 @@ export const DecodedItemsList = ({ items }: DecodedItemsListProps) => {
       try {
         // Vérifier si les items sont déjà au format décodé (avec des noms complets)
         const firstItem = items[0];
-        if (firstItem && firstItem.name && firstItem.name.length > 5) {
+        if (firstItem && firstItem.name && firstItem.name.length > 5 && !('n' in firstItem)) {
           // Les items semblent déjà décodés
           setDecodedItems(items.map(item => ({
             name: item.name,
-            price: item.price || item.p / 100 || 0,
-            quantity: item.quantity || item.q || 1,
+            price: item.price || 0,
+            quantity: item.quantity || 1,
             description: item.description,
             special_instructions: item.special_instructions
           })));
