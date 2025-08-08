@@ -178,25 +178,47 @@ const OrdersKitchenView = ({
                 <div className="mb-4">
                   <h4 className="text-sm font-semibold text-gray-700 mb-2">Produits commandés:</h4>
                   <ul className="space-y-3">
-                    {order.items.map((item, index) => (
-                      <li key={index} className="text-sm">
-                        <div className="flex justify-between">
-                          <span className="font-medium">
-                            {item.quantity}× {item.menuItem.name}
-                          </span>
-                        </div>
-                        
-                        {/* Afficher les détails des produits personnalisés */}
-                        {formatCustomProduct(item.menuItem.description)}
-                        
-                        {/* Afficher les instructions spéciales s'il y en a */}
-                        {item.specialInstructions && (
-                          <div className="mt-1 text-xs italic text-gray-600">
-                            Note: {item.specialInstructions}
+                    {order.itemsSummary && order.itemsSummary.length > 0 ? (
+                      order.itemsSummary.map((item: any, index: number) => (
+                        <li key={index} className="text-sm">
+                          <div className="flex justify-between">
+                            <span className="font-medium">
+                              {item.quantity}× {item.name}
+                            </span>
                           </div>
-                        )}
-                      </li>
-                    ))}
+                          
+                          {/* Afficher les détails des produits personnalisés */}
+                          {formatCustomProduct(item.description)}
+                          
+                          {/* Afficher les instructions spéciales s'il y en a */}
+                          {item.special_instructions && (
+                            <div className="mt-1 text-xs italic text-gray-600">
+                              Note: {item.special_instructions}
+                            </div>
+                          )}
+                        </li>
+                      ))
+                    ) : (
+                      order.items.map((item, index) => (
+                        <li key={index} className="text-sm">
+                          <div className="flex justify-between">
+                            <span className="font-medium">
+                              {item.quantity}× {item.menuItem.name}
+                            </span>
+                          </div>
+                          
+                          {/* Afficher les détails des produits personnalisés */}
+                          {formatCustomProduct(item.menuItem.description)}
+                          
+                          {/* Afficher les instructions spéciales s'il y en a */}
+                          {item.specialInstructions && (
+                            <div className="mt-1 text-xs italic text-gray-600">
+                              Note: {item.specialInstructions}
+                            </div>
+                          )}
+                        </li>
+                      ))
+                    )}
                   </ul>
                 </div>
 

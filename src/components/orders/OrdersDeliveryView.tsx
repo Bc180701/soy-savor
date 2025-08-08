@@ -162,7 +162,12 @@ const OrdersDeliveryView = ({
                 )}
                 
                 <div className="pt-2 border-t border-dashed">
-                  <p className="text-sm font-medium">{order.items.reduce((acc, item) => acc + item.quantity, 0)} articles</p>
+                  <p className="text-sm font-medium">
+                    {order.itemsSummary && order.itemsSummary.length > 0 
+                      ? order.itemsSummary.reduce((acc: number, item: any) => acc + (item.quantity || 0), 0)
+                      : order.items.reduce((acc, item) => acc + item.quantity, 0)
+                    } articles
+                  </p>
                 </div>
               </CardContent>
               

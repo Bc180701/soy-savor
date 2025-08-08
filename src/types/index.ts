@@ -118,6 +118,7 @@ export interface Order {
   id: string;
   userId?: string;
   items: CartItem[];
+  itemsSummary?: any[]; // Produits du JSON items_summary
   subtotal: number;
   tax: number;
   deliveryFee: number;

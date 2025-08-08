@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { MissingItemsAlert } from "@/components/admin/MissingItemsAlert";
+import { formatCustomProduct } from "@/utils/formatCustomProduct";
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -353,7 +354,29 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.order_items && orderDetails.order_items.length > 0 ? (
+                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                      orderDetails.items_summary.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.name}
+                            </div>
+                            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
+                            {item.special_instructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.special_instructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
+                            <div className="font-semibold text-lg">
+                              {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : orderDetails.order_items && orderDetails.order_items.length > 0 ? (
                       orderDetails.order_items.map((item: any, index: number) => (
                         <div key={item.id || index} className="p-4 flex justify-between">
                           <div className="flex-1">
@@ -606,36 +629,58 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 </div>
               </div>
               
-              {/* Produits commandés */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Produits commandés</h3>
-                <div className="border rounded-md divide-y">
-                  {orderDetails.order_items && orderDetails.order_items.length > 0 ? (
-                    orderDetails.order_items.map((item: any, index: number) => (
-                      <div key={item.id || index} className="p-4 flex justify-between">
-                        <div className="flex-1">
-                          <div className="font-medium text-lg">
-                            {item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`}
-                          </div>
-                          {item.special_instructions && (
-                            <div className="text-sm text-muted-foreground italic mt-1">
-                              "{item.special_instructions}"
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right min-w-[100px]">
-                          <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
-                          <div className="font-semibold text-lg">
-                            {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-center text-muted-foreground">
-                      Aucun produit trouvé
-                    </div>
-                  )}
+               {/* Produits commandés */}
+               <div className="space-y-2">
+                 <h3 className="text-lg font-semibold">Produits commandés</h3>
+                 <div className="border rounded-md divide-y">
+                   {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                     orderDetails.items_summary.map((item: any, index: number) => (
+                       <div key={index} className="p-4 flex justify-between">
+                         <div className="flex-1">
+                           <div className="font-medium text-lg">
+                             {item.name}
+                           </div>
+                           {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
+                           {item.special_instructions && (
+                             <div className="text-sm text-muted-foreground italic mt-1">
+                               "{item.special_instructions}"
+                             </div>
+                           )}
+                         </div>
+                         <div className="text-right min-w-[100px]">
+                           <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
+                           <div className="font-semibold text-lg">
+                             {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
+                           </div>
+                         </div>
+                       </div>
+                     ))
+                   ) : orderDetails.order_items && orderDetails.order_items.length > 0 ? (
+                     orderDetails.order_items.map((item: any, index: number) => (
+                       <div key={item.id || index} className="p-4 flex justify-between">
+                         <div className="flex-1">
+                           <div className="font-medium text-lg">
+                             {item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`}
+                           </div>
+                           {item.special_instructions && (
+                             <div className="text-sm text-muted-foreground italic mt-1">
+                               "{item.special_instructions}"
+                             </div>
+                           )}
+                         </div>
+                         <div className="text-right min-w-[100px]">
+                           <div className="text-base">{item.quantity} x {(item.price || 0).toFixed(2)} €</div>
+                           <div className="font-semibold text-lg">
+                             {((item.quantity || 1) * (item.price || 0)).toFixed(2)} €
+                           </div>
+                         </div>
+                       </div>
+                     ))
+                   ) : (
+                     <div className="p-3 text-center text-muted-foreground">
+                       Aucun produit trouvé
+                     </div>
+                   )}
                   
                   {/* Afficher le produit offert comme un élément distinct dans la liste des produits commandés */}
                   {freeProduct && (
