@@ -288,27 +288,44 @@ serve(async (req) => {
       });
     }
 
-    // Créer un résumé simplifié des articles pour les métadonnées (garanti JSON valide <= 450 chars)
-    const rawItemsSummary = items.map(item => ({
+    // Créer un résumé des articles pour les métadonnées en incluant TOUT le panier (produits + extras)
+    const baseSummary = items.map((item: any) => ({
       id: item.menuItem.id,
       name: item.menuItem.name,
       price: item.menuItem.price,
-      quantity: item.quantity
+      quantity: item.quantity,
     }));
 
-    // Construit progressivement pour rester un JSON valide sous la limite
+    const extrasSummary: any[] = [];
+    if (cartExtras?.sauces?.length) {
+      for (const s of cartExtras.sauces) {
+        extrasSummary.push({ id: `extra:sauce:${s}`, name: `Sauce: ${s}` , price: 0, quantity: 1 });
+      }
+    }
+    if (cartExtras?.accompagnements?.length) {
+      for (const a of cartExtras.accompagnements) {
+        extrasSummary.push({ id: `extra:accompagnement:${a}`, name: `Accompagnement: ${a}`, price: 0, quantity: 1 });
+      }
+    }
+    if (typeof cartExtras?.baguettes === 'number' && cartExtras.baguettes > 0) {
+      extrasSummary.push({ id: 'extra:baguettes', name: 'Baguettes', price: 0, quantity: cartExtras.baguettes });
+    }
+
+    const rawItemsSummary = [...baseSummary, ...extrasSummary];
+
+    // Construit progressivement pour rester un JSON valide sous la limite Stripe (<= 500 chars par champ)
     let itemsSummaryStr = '[]';
     {
       const acc: any[] = [];
       for (const it of rawItemsSummary) {
         acc.push(it);
         const s = JSON.stringify(acc);
-        if (s.length > 450) { acc.pop(); break; }
+        if (s.length > 480) { acc.pop(); break; }
         itemsSummaryStr = s;
       }
     }
 
-    console.log('📝 [STEP 21] Résumé articles créé (longueur):', itemsSummaryStr.length);
+    console.log('📝 [STEP 21] Résumé articles total (produits + extras) créé (longueur):', itemsSummaryStr.length, ' | items comptés:', rawItemsSummary.length);
 
     // Créer la session Stripe
     console.log('💳 [STEP 22] Création session Stripe...');
