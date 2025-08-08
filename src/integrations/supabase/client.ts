@@ -28,9 +28,10 @@ export const fetchOrderWithDetails = async (orderId: string) => {
       
     if (orderError) throw orderError;
     
-    // Process items_summary to group duplicates by name
+    // Process items_summary to group duplicates by name, OR fallback to order_items for old orders
     let processedItems = [];
-    if (order.items_summary && Array.isArray(order.items_summary)) {
+    if (order.items_summary && Array.isArray(order.items_summary) && order.items_summary.length > 0) {
+      // NEW: Use items_summary (from webhook)
       const itemsMap = new Map();
       
       // Group items by name and sum quantities
@@ -54,6 +55,35 @@ export const fetchOrderWithDetails = async (orderId: string) => {
       });
       
       processedItems = Array.from(itemsMap.values());
+    } else {
+      // FALLBACK: Use order_items table for old orders
+      const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*, products(*)')
+        .eq('order_id', orderId);
+        
+      if (!itemsError && orderItems) {
+        // Convert order_items to same format as items_summary
+        const itemsMap = new Map();
+        
+        orderItems.forEach((item: any) => {
+          const name = item.products?.name || `Produit ${item.product_id?.substring(0, 8)}`;
+          if (itemsMap.has(name)) {
+            const existing = itemsMap.get(name);
+            existing.quantity += (item.quantity || 1);
+          } else {
+            itemsMap.set(name, {
+              id: item.id,
+              name: name,
+              price: item.price || 0,
+              quantity: item.quantity || 1,
+              special_instructions: item.special_instructions
+            });
+          }
+        });
+        
+        processedItems = Array.from(itemsMap.values());
+      }
     }
     
     // Fetch customer profile details
