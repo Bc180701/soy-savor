@@ -313,52 +313,57 @@ serve(async (req) => {
 
     const rawItemsSummary = [...baseSummary, ...extrasSummary];
 
-    // Format ultra-compact : 1 lettre par propriété pour économiser l'espace
+    // Système de mapping nom→code lettres pour économiser l'espace
     let itemsSummaryStr = '[]';
     try {
       const seen = new Set();
       const items = [];
       
-      // Traiter tous les items avec format ultra-compact
+      // Traiter tous les items avec mapping vers codes lettres
       for (const item of rawItemsSummary) {
         const key = `${item.name}_${item.price}`;
         
         if (!seen.has(key)) {
-          items.push({
-            n: item.name.length > 20 ? item.name.substring(0, 20) : item.name, // "n" = name
-            p: item.price, // "p" = price  
-            q: item.quantity // "q" = quantity
-          });
+          // Obtenir ou créer un code lettre pour ce produit
+          const { data: codeData, error: codeError } = await supabase
+            .rpc('get_or_create_product_code', {
+              p_item_name: item.name,
+              p_item_type: item.price === 0 ? 'extra' : 'product'
+            });
+
+          if (codeError) {
+            console.error('Erreur génération code:', codeError);
+            // Fallback : utiliser les premières lettres du nom
+            const fallbackCode = item.name.substring(0, 2).toUpperCase();
+            items.push({
+              n: fallbackCode,
+              p: Math.round(item.price * 100), // Prix en centimes pour économiser l'espace
+              q: item.quantity
+            });
+          } else {
+            items.push({
+              n: codeData, // Code lettre (A, B, C, etc.)
+              p: Math.round(item.price * 100), // Prix en centimes
+              q: item.quantity
+            });
+          }
           seen.add(key);
         } else {
-          const existing = items.find(i => `${i.n}_${i.p}` === key);
+          // Si le produit existe déjà, augmenter la quantité
+          const existing = items.find(i => `${i.n}_${Math.round(item.price * 100)}` === `${i.n}_${Math.round(item.price * 100)}`);
           if (existing) existing.q += item.quantity;
         }
       }
       
       itemsSummaryStr = JSON.stringify(items);
-      
-      // Si encore trop long, raccourcir davantage
-      if (itemsSummaryStr.length > 490) {
-        const shorter = items.map(item => ({
-          n: item.n.length > 15 ? item.n.substring(0, 15) : item.n,
-          p: item.p,
-          q: item.q
-        }));
-        itemsSummaryStr = JSON.stringify(shorter);
-      }
-      
-      // Dernier recours : produits payants seulement
-      if (itemsSummaryStr.length > 490) {
-        const paid = items.filter(item => item.p > 0);
-        itemsSummaryStr = JSON.stringify(paid);
-      }
+      console.log(`Items summary créé: ${itemsSummaryStr.length} caractères`);
       
     } catch (error) {
-      console.error('Erreur items_summary:', error);
+      console.error('Erreur creation items_summary:', error);
+      // Fallback ultra-simple en cas d'erreur
       const fallback = baseSummary.slice(0, 8).map(item => ({
-        n: item.name.substring(0, 15),
-        p: item.price,
+        n: item.name.substring(0, 3).toUpperCase(),
+        p: Math.round(item.price * 100),
         q: item.quantity
       }));
       itemsSummaryStr = JSON.stringify(fallback);

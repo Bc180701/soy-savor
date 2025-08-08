@@ -566,6 +566,30 @@ export type Database = {
         }
         Relationships: []
       }
+      product_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          item_name: string
+          item_type: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          item_name: string
+          item_type?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          item_name?: string
+          item_type?: string
+        }
+        Relationships: []
+      }
       product_images_mapping: {
         Row: {
           created_at: string
@@ -1295,9 +1319,21 @@ export type Database = {
         Args: { admin_email: string; admin_password: string }
         Returns: Json
       }
+      decode_items_summary: {
+        Args: { encoded_summary: Json }
+        Returns: Json
+      }
+      generate_product_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_homepage_data: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_or_create_product_code: {
+        Args: { p_item_name: string; p_item_type?: string }
+        Returns: string
       }
       has_role: {
         Args: {
