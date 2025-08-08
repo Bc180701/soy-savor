@@ -367,6 +367,7 @@ export type Database = {
           delivery_street: string | null
           discount: number | null
           id: string
+          items_summary: Json
           order_type: string
           payment_method: string
           payment_status: string
@@ -398,6 +399,7 @@ export type Database = {
           delivery_street?: string | null
           discount?: number | null
           id?: string
+          items_summary?: Json
           order_type: string
           payment_method: string
           payment_status?: string
@@ -429,6 +431,7 @@ export type Database = {
           delivery_street?: string | null
           discount?: number | null
           id?: string
+          items_summary?: Json
           order_type?: string
           payment_method?: string
           payment_status?: string

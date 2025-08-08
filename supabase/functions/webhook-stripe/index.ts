@@ -274,7 +274,9 @@ serve(async (req) => {
       }
 
       try {
-        // Créer la commande dans Supabase avec toutes les données
+        // Créer la commande dans Supabase avec toutes les données + items_summary brut
+        const itemsSummary = metadata?.items_summary ? JSON.parse(metadata.items_summary) : [];
+        
         const orderData = {
           stripe_session_id: session.id,
           restaurant_id: restaurantId,
@@ -298,6 +300,7 @@ serve(async (req) => {
           delivery_city: metadata?.delivery_city || null,
           delivery_postal_code: metadata?.delivery_postal_code || null,
           customer_notes: null,
+          items_summary: itemsSummary,
         };
 
         console.log('📝 Création commande depuis webhook:', {
