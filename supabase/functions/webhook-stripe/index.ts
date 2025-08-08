@@ -149,7 +149,7 @@ serve(async (req) => {
           delivery_street: metadata?.delivery_street || null,
           delivery_city: metadata?.delivery_city || null,
           delivery_postal_code: metadata?.delivery_postal_code || null,
-          customer_notes: metadata?.customer_notes || null,
+          customer_notes: `${metadata?.customer_notes || ''}\n\n🍜 Options sélectionnées:\n- Sauces: ${metadata?.cart_sauces || 'Aucune'}\n- Accompagnements: ${metadata?.cart_accompagnements || 'Aucun'}\n- Baguettes: ${metadata?.cart_baguettes || '0'} paires`.trim(),
         };
 
         console.log('📝 Création commande depuis webhook:', {

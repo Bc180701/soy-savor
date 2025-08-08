@@ -55,6 +55,7 @@ serve(async (req) => {
       customerNotes,
       scheduledFor,
       restaurantId,
+      cartExtras, // Nouvelles données des extras du panier
       successUrl,
       cancelUrl
     } = requestBody;
@@ -328,6 +329,10 @@ serve(async (req) => {
           total: total?.toString() || '0',
           items_count: items.length.toString(),
           items_summary: JSON.stringify(itemsSummary).substring(0, 450), // Limiter à 450 caractères
+          // Nouvelles données du panier
+          cart_sauces: cartExtras?.sauces?.join(', ') || '',
+          cart_accompagnements: cartExtras?.accompagnements?.join(', ') || '',
+          cart_baguettes: cartExtras?.baguettes?.toString() || '0',
         },
       };
 
