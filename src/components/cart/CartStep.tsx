@@ -58,13 +58,14 @@ export const CartStep = ({
   const orderTotal = subtotal - discount;
   const isCartEmpty = items.length === 0;
   
-  // Vérifier si au moins un produit d'options (0€) a été AJOUTÉ au panier
+  // Vérifier qu'une SAUCE (0€) a bien été AJOUTÉE au panier via le bouton "Ajouter mes accompagnements"
   const areExtrasValid = items.some((it) => {
-    const name = it.menuItem?.name || it.name;
-    const category = it.menuItem?.category || it.category;
-    return (
-      (typeof name === 'string' && (name.startsWith('Sauces:') || name.startsWith('Accompagnements:') || name.startsWith('Baguettes')))
-      || (typeof category === 'string' && ['Sauce','Accompagnement','Accessoire'].includes(category as string))
+    const nm = it.menuItem?.name || (it as any).name;
+    const cat = it.menuItem?.category || (it as any).category;
+    const price = it.menuItem?.price ?? (it as any).price;
+    return price === 0 && (
+      (typeof nm === 'string' && nm.startsWith('Sauces:'))
+      || (typeof cat === 'string' && cat === 'Sauce')
     );
   });
   // Free dessert promotion
