@@ -313,48 +313,76 @@ serve(async (req) => {
 
     const rawItemsSummary = [...baseSummary, ...extrasSummary];
 
-    // Créer un items_summary complet pour inclure TOUS les produits
+    // Créer un items_summary optimisé pour respecter la limite Stripe de 500 caractères
     let itemsSummaryStr = '[]';
     try {
-      // D'abord les produits principaux (obligatoires)
-      const mainProducts = rawItemsSummary.filter(item => item.price > 0 || !item.id.startsWith('extra:'));
+      // Déduplication et priorisation des produits
+      const seenIds = new Set();
+      const uniqueItems = [];
       
-      // Ensuite les extras si il y a de la place
-      const extras = rawItemsSummary.filter(item => item.price === 0 && item.id.startsWith('extra:'));
-      
-      // Commencer par inclure TOUS les produits principaux
-      let finalSummary = [...mainProducts];
-      
-      // Ajouter les extras un par un si possible
-      for (const extra of extras) {
-        const testSummary = [...finalSummary, extra];
-        const testStr = JSON.stringify(testSummary);
-        
-        // Limite généreuse pour éviter de perdre des produits
-        if (testStr.length <= 1000) {
-          finalSummary = testSummary;
-        } else {
-          break; // On s'arrête si on dépasse la limite
+      // D'abord les produits payants (priorité absolue)
+      for (const item of rawItemsSummary) {
+        if (item.price > 0 && !seenIds.has(item.id)) {
+          uniqueItems.push({
+            id: item.id,
+            name: item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name,
+            price: item.price,
+            quantity: item.quantity
+          });
+          seenIds.add(item.id);
         }
       }
       
-      itemsSummaryStr = JSON.stringify(finalSummary);
+      // Ensuite les extras gratuits si il y a de la place
+      for (const item of rawItemsSummary) {
+        if (item.price === 0 && !seenIds.has(item.id)) {
+          const shortItem = {
+            id: item.id,
+            name: item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name,
+            price: item.price,
+            quantity: item.quantity
+          };
+          
+          const testStr = JSON.stringify([...uniqueItems, shortItem]);
+          if (testStr.length <= 490) { // Marge de sécurité
+            uniqueItems.push(shortItem);
+            seenIds.add(item.id);
+          } else {
+            break; // Plus de place
+          }
+        }
+      }
       
-      // Si même les produits principaux dépassent la limite, on optimise
-      if (itemsSummaryStr.length > 1000) {
-        const optimizedSummary = mainProducts.map(item => ({
-          id: item.id,
-          name: item.name.length > 50 ? item.name.substring(0, 50) + '...' : item.name,
-          price: item.price,
-          quantity: item.quantity
-        }));
-        itemsSummaryStr = JSON.stringify(optimizedSummary);
+      itemsSummaryStr = JSON.stringify(uniqueItems);
+      
+      // Double vérification de la limite Stripe
+      if (itemsSummaryStr.length > 500) {
+        // Dernière optimisation : garder seulement les produits payants
+        const paidOnly = uniqueItems.filter(item => item.price > 0);
+        itemsSummaryStr = JSON.stringify(paidOnly);
+        
+        // Si même les produits payants dépassent, on raccourcit encore
+        if (itemsSummaryStr.length > 500) {
+          const ultraCompact = paidOnly.map(item => ({
+            id: item.id.substring(0, 8),
+            name: item.name.substring(0, 15),
+            price: item.price,
+            qty: item.quantity
+          }));
+          itemsSummaryStr = JSON.stringify(ultraCompact);
+        }
       }
       
     } catch (error) {
       console.error('Erreur création items_summary:', error);
-      // Fallback : au minimum les produits principaux
-      itemsSummaryStr = JSON.stringify(baseSummary);
+      // Fallback ultra-sécurisé
+      const fallback = baseSummary.slice(0, 3).map(item => ({
+        id: item.id.substring(0, 8),
+        name: item.name.substring(0, 15),
+        price: item.price,
+        qty: item.quantity
+      }));
+      itemsSummaryStr = JSON.stringify(fallback);
     }
 
     console.log('📝 [STEP 21] Résumé articles total (produits + extras) créé (longueur):', itemsSummaryStr.length, ' | items comptés:', rawItemsSummary.length);
