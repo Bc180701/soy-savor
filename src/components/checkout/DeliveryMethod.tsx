@@ -4,18 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ShoppingBag, Truck } from "lucide-react";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { Restaurant } from "@/types/restaurant";
 
 interface DeliveryMethodProps {
   defaultValue?: "delivery" | "pickup";
   onChange: (value: "delivery" | "pickup") => void;
+  restaurant?: Restaurant | null;
 }
 
-const DeliveryMethod = ({ defaultValue = "delivery", onChange }: DeliveryMethodProps) => {
+const DeliveryMethod = ({ defaultValue = "delivery", onChange, restaurant }: DeliveryMethodProps) => {
   const { currentRestaurant } = useRestaurantContext();
-  const settings = (currentRestaurant?.settings as Record<string, any>) ?? {};
+  const r = restaurant ?? currentRestaurant;
+  const settings = (r?.settings as Record<string, any>) ?? {};
   const isDeliveryBlocked = settings?.delivery_blocked === true;
   const isPickupBlocked = settings?.pickup_blocked === true;
-
   const handleSelect = (method: "delivery" | "pickup") => {
     if ((method === "delivery" && isDeliveryBlocked) || (method === "pickup" && isPickupBlocked)) {
       return; // Option indisponible

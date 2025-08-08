@@ -346,7 +346,8 @@ export const DeliveryStep = ({
         <CardContent>
           <DeliveryMethod 
             defaultValue={deliveryInfo.orderType} 
-            onChange={handleOrderTypeChange} 
+            onChange={handleOrderTypeChange}
+            restaurant={cartRestaurant}
           />
         </CardContent>
       </Card>
