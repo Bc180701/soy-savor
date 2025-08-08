@@ -313,72 +313,57 @@ serve(async (req) => {
 
     const rawItemsSummary = [...baseSummary, ...extrasSummary];
 
-    // Créer un items_summary optimisé pour respecter la limite Stripe de 500 caractères
+    // Créer un items_summary optimisé SANS les IDs longs pour économiser l'espace
     let itemsSummaryStr = '[]';
     try {
-      // Déduplication et priorisation des produits
-      const seenIds = new Set();
-      const uniqueItems = [];
+      // Déduplication par nom de produit (plus économique que par ID)
+      const seenNames = new Set();
+      const compactItems = [];
       
-      // D'abord les produits payants (priorité absolue)
+      // Traiter tous les items en supprimant les IDs longs
       for (const item of rawItemsSummary) {
-        if (item.price > 0 && !seenIds.has(item.id)) {
-          uniqueItems.push({
-            id: item.id,
-            name: item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name,
+        const itemKey = `${item.name}_${item.price}`;
+        
+        if (!seenNames.has(itemKey)) {
+          compactItems.push({
+            // Pas d'ID - on économise ~40 caractères par produit !
+            name: item.name,
             price: item.price,
-            quantity: item.quantity
+            qty: item.quantity // "qty" au lieu de "quantity" pour économiser
           });
-          seenIds.add(item.id);
-        }
-      }
-      
-      // Ensuite les extras gratuits si il y a de la place
-      for (const item of rawItemsSummary) {
-        if (item.price === 0 && !seenIds.has(item.id)) {
-          const shortItem = {
-            id: item.id,
-            name: item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name,
-            price: item.price,
-            quantity: item.quantity
-          };
-          
-          const testStr = JSON.stringify([...uniqueItems, shortItem]);
-          if (testStr.length <= 490) { // Marge de sécurité
-            uniqueItems.push(shortItem);
-            seenIds.add(item.id);
-          } else {
-            break; // Plus de place
+          seenNames.add(itemKey);
+        } else {
+          // Si le produit existe déjà, augmenter la quantité
+          const existing = compactItems.find(i => `${i.name}_${i.price}` === itemKey);
+          if (existing) {
+            existing.qty += item.quantity;
           }
         }
       }
       
-      itemsSummaryStr = JSON.stringify(uniqueItems);
+      itemsSummaryStr = JSON.stringify(compactItems);
       
-      // Double vérification de la limite Stripe
-      if (itemsSummaryStr.length > 500) {
-        // Dernière optimisation : garder seulement les produits payants
-        const paidOnly = uniqueItems.filter(item => item.price > 0);
+      // Si encore trop long, raccourcir les noms
+      if (itemsSummaryStr.length > 490) {
+        const shorterItems = compactItems.map(item => ({
+          name: item.name.length > 25 ? item.name.substring(0, 25) + '...' : item.name,
+          price: item.price,
+          qty: item.qty
+        }));
+        itemsSummaryStr = JSON.stringify(shorterItems);
+      }
+      
+      // Dernier recours : garder seulement les produits payants
+      if (itemsSummaryStr.length > 490) {
+        const paidOnly = compactItems.filter(item => item.price > 0);
         itemsSummaryStr = JSON.stringify(paidOnly);
-        
-        // Si même les produits payants dépassent, on raccourcit encore
-        if (itemsSummaryStr.length > 500) {
-          const ultraCompact = paidOnly.map(item => ({
-            id: item.id.substring(0, 8),
-            name: item.name.substring(0, 15),
-            price: item.price,
-            qty: item.quantity
-          }));
-          itemsSummaryStr = JSON.stringify(ultraCompact);
-        }
       }
       
     } catch (error) {
       console.error('Erreur création items_summary:', error);
-      // Fallback ultra-sécurisé
-      const fallback = baseSummary.slice(0, 3).map(item => ({
-        id: item.id.substring(0, 8),
-        name: item.name.substring(0, 15),
+      // Fallback ultra-compact
+      const fallback = baseSummary.slice(0, 5).map(item => ({
+        name: item.name.substring(0, 20),
         price: item.price,
         qty: item.quantity
       }));
