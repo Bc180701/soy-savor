@@ -1,4 +1,3 @@
-
 project_id = "tdykegnmomyyucbhslok"
 
 [auth]
@@ -11,4 +10,8 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.test-email]
+verify_jwt = false
+
+# Stripe webhook must be public (signature is verified inside the function)
+[functions.webhook-stripe]
 verify_jwt = false

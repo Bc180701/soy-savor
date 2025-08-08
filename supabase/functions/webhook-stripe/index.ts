@@ -178,17 +178,27 @@ serve(async (req) => {
           try {
             const items = JSON.parse(itemsData);
             console.log('📦 Articles à créer:', items.length);
-
-            let orderItems = [];
-            
+            // Filtrer uniquement les produits avec un UUID valide (ignorer extras 0€ sans UUID)
+            const isUuid = (v: any) => typeof v === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v);
+            let orderItems: any[] = [];
+            let skipped = 0;
             if (Array.isArray(items)) {
-              orderItems = items.map((item: any) => ({
-                order_id: order.id,
-                product_id: item.id || item.menuItem?.id || item.product_id,
-                quantity: item.quantity || 1,
-                price: item.price || item.menuItem?.price || 0,
-                special_instructions: item.specialInstructions || item.special_instructions || null,
-              }));
+              orderItems = items
+                .map((item: any) => ({
+                  product_id: item.id || item.menuItem?.id || item.product_id,
+                  quantity: item.quantity || 1,
+                  price: item.price || item.menuItem?.price || 0,
+                  special_instructions: item.specialInstructions || item.special_instructions || null,
+                }))
+                .filter((i) => {
+                  if (!isUuid(i.product_id)) { skipped++; return false; }
+                  return true;
+                })
+                .map((i) => ({ ...i, order_id: order.id }));
+            }
+
+            if (skipped > 0) {
+              console.log(`ℹ️ ${skipped} article(s) sans UUID ignoré(s) (extras 0€)`);
             }
 
             if (orderItems.length > 0) {
@@ -199,8 +209,10 @@ serve(async (req) => {
               if (itemsError) {
                 console.error('❌ Erreur ajout articles:', itemsError);
               } else {
-                console.log('✅ Articles de commande ajoutés depuis webhook');
+                console.log(`✅ ${orderItems.length} article(s) ajoutés depuis webhook`);
               }
+            } else {
+              console.log('⚠️ Aucun article insérable (tous sans UUID)');
             }
           } catch (itemsError) {
             console.error('❌ Erreur lors de l\'ajout des articles:', itemsError);
