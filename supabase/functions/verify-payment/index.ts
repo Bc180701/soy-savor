@@ -164,7 +164,6 @@ serve(async (req) => {
     console.log('🏪 Restaurant ID utilisé:', restaurantId, '(détecté via clé Stripe:', detectedRestaurantId, ')');
 
     // Créer la commande avec les données des métadonnées
-    const optionsText = `🍜 Options sélectionnées: - Sauces: ${metadata.cart_sauces || 'Aucune'} - Accompagnements: ${metadata.cart_accompagnements || 'Aucun'} - Baguettes: ${metadata.cart_baguettes || '0'} paires`;
     const orderData = {
       stripe_session_id: sessionId,
       restaurant_id: restaurantId,
@@ -187,7 +186,7 @@ serve(async (req) => {
       delivery_street: metadata.delivery_street || null,
       delivery_city: metadata.delivery_city || null,
       delivery_postal_code: metadata.delivery_postal_code || null,
-      customer_notes: optionsText,
+      customer_notes: null,
     };
 
     console.log('📝 Création commande avec:', {
@@ -242,16 +241,36 @@ serve(async (req) => {
           return newCat.id as string;
         };
 
-        const getOrCreateExtraProduct = async (name: string, price: number, restaurantId: string): Promise<string> => {
-          // Rechercher un produit extra existant par nom
-          const { data: existing, error: exErr } = await supabase
+        const resolveProductId = async (name: string, price: number, restaurantId: string): Promise<string> => {
+          // 1) Rechercher par nom (quel que soit is_extra)
+          const { data: existingByName } = await supabase
             .from('products')
             .select('id')
             .eq('restaurant_id', restaurantId)
             .eq('name', name)
-            .eq('is_extra', true)
             .maybeSingle();
-          if (existing?.id) return existing.id as string;
+          if (existingByName?.id) return existingByName.id as string;
+
+          // 2) Fallback: créer un produit caché dans la catégorie "extras"
+          const ensureExtrasCategory = async (restaurantId: string): Promise<string> => {
+            const { data: cat, error: catErr } = await supabase
+              .from('categories')
+              .select('id')
+              .eq('id', 'extras')
+              .eq('restaurant_id', restaurantId)
+              .maybeSingle();
+            if (cat && cat.id) return cat.id as string;
+            const { data: newCat, error: insErr } = await supabase
+              .from('categories')
+              .insert({ id: 'extras', name: 'Extras', description: 'Produits optionnels (non listés)', display_order: 9999, restaurant_id: restaurantId })
+              .select('id')
+              .single();
+            if (insErr) {
+              console.log('⚠️ Impossible de créer la catégorie extras (peut-être déjà créée):', insErr.message);
+              return 'extras';
+            }
+            return newCat.id as string;
+          };
 
           const categoryId = await ensureExtrasCategory(restaurantId);
           const { data: inserted, error: insErr } = await supabase
@@ -268,7 +287,15 @@ serve(async (req) => {
             .select('id')
             .single();
           if (insErr) {
-            console.error('❌ Erreur création produit extra:', insErr);
+            if ((insErr as any).code === '23505') {
+              const { data: retry } = await supabase
+                .from('products')
+                .select('id')
+                .eq('restaurant_id', restaurantId)
+                .eq('name', name)
+                .maybeSingle();
+              if (retry?.id) return retry.id as string;
+            }
             throw insErr;
           }
           return inserted.id as string;

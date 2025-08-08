@@ -139,34 +139,69 @@ serve(async (req) => {
                 return newCat.id as string;
               };
 
-              const getOrCreateExtraProduct = async (name: string, price: number, restaurantId: string): Promise<string> => {
-                const { data: existing } = await supabase
+              const resolveProductId = async (name: string, price: number, restaurantId: string): Promise<string> => {
+                // 1) Tenter de trouver un produit existant par nom (peu importe is_extra)
+                const { data: existingByName } = await supabase
                   .from('products')
                   .select('id')
                   .eq('restaurant_id', restaurantId)
                   .eq('name', name)
-                  .eq('is_extra', true)
                   .maybeSingle();
-                if (existing?.id) return existing.id as string;
-                const categoryId = await ensureExtrasCategory(restaurantId);
-                const { data: inserted, error: insErr } = await supabase
-                  .from('products')
-                  .insert({
-                    name,
-                    description: 'Extra généré automatiquement',
-                    price: price || 0,
-                    category_id: categoryId,
-                    restaurant_id: restaurantId,
-                    is_hidden: true,
-                    is_extra: true,
-                  })
-                  .select('id')
-                  .single();
-                if (insErr) {
-                  console.error('❌ Erreur création produit extra:', insErr);
-                  throw insErr;
+                if (existingByName?.id) return existingByName.id as string;
+
+                // 2) Créer en fallback dans la catégorie "extras" (caché)
+                const ensureExtrasCategory = async (restaurantId: string): Promise<string> => {
+                  const { data: cat } = await supabase
+                    .from('categories')
+                    .select('id')
+                    .eq('id', 'extras')
+                    .eq('restaurant_id', restaurantId)
+                    .maybeSingle();
+                  if (cat?.id) return cat.id as string;
+                  const { data: newCat, error: insErr } = await supabase
+                    .from('categories')
+                    .insert({ id: 'extras', name: 'Extras', description: 'Produits optionnels (non listés)', display_order: 9999, restaurant_id: restaurantId })
+                    .select('id')
+                    .single();
+                  if (insErr) {
+                    console.log('⚠️ Création catégorie extras impossible/inutile:', insErr.message);
+                    return 'extras';
+                  }
+                  return newCat.id as string;
+                };
+
+                try {
+                  const categoryId = await ensureExtrasCategory(restaurantId);
+                  const { data: inserted, error: insErr } = await supabase
+                    .from('products')
+                    .insert({
+                      name,
+                      description: 'Extra généré automatiquement',
+                      price: price || 0,
+                      category_id: categoryId,
+                      restaurant_id: restaurantId,
+                      is_hidden: true,
+                      is_extra: true,
+                    })
+                    .select('id')
+                    .single();
+                  if (insErr) {
+                    // Conflit d'unicité: récupérer l'ID existant
+                    if ((insErr as any).code === '23505') {
+                      const { data: retry } = await supabase
+                        .from('products')
+                        .select('id')
+                        .eq('restaurant_id', restaurantId)
+                        .eq('name', name)
+                        .maybeSingle();
+                      if (retry?.id) return retry.id as string;
+                    }
+                    throw insErr;
+                  }
+                  return inserted.id as string;
+                } catch (e) {
+                  throw e;
                 }
-                return inserted.id as string;
               };
 
               const orderItems: any[] = [];
@@ -179,9 +214,9 @@ serve(async (req) => {
                   if (!isUuid(productId)) {
                     const name = item.name || item.menuItem?.name || 'Extra';
                     try {
-                      productId = await getOrCreateExtraProduct(name, price, restaurantIdForItems);
+                      productId = await resolveProductId(name, price, restaurantIdForItems);
                     } catch (e) {
-                      console.error('❌ Échec création/lookup produit extra; item ignoré:', e);
+                      console.error('❌ Échec création/lookup produit; item ignoré:', e);
                       continue;
                     }
                   }
@@ -262,7 +297,7 @@ serve(async (req) => {
           delivery_street: metadata?.delivery_street || null,
           delivery_city: metadata?.delivery_city || null,
           delivery_postal_code: metadata?.delivery_postal_code || null,
-          customer_notes: `🍜 Options sélectionnées: - Sauces: ${metadata?.cart_sauces || 'Aucune'} - Accompagnements: ${metadata?.cart_accompagnements || 'Aucun'} - Baguettes: ${metadata?.cart_baguettes || '0'} paires`,
+          customer_notes: null,
         };
 
         console.log('📝 Création commande depuis webhook:', {
@@ -314,34 +349,68 @@ serve(async (req) => {
               return newCat.id as string;
             };
 
-            const getOrCreateExtraProduct = async (name: string, price: number, restaurantId: string): Promise<string> => {
-              const { data: existing } = await supabase
+            const resolveProductId = async (name: string, price: number, restaurantId: string): Promise<string> => {
+              // 1) Tenter de trouver un produit existant par nom (peu importe is_extra)
+              const { data: existingByName } = await supabase
                 .from('products')
                 .select('id')
                 .eq('restaurant_id', restaurantId)
                 .eq('name', name)
-                .eq('is_extra', true)
                 .maybeSingle();
-              if (existing?.id) return existing.id as string;
-              const categoryId = await ensureExtrasCategory(restaurantId);
-              const { data: inserted, error: insErr } = await supabase
-                .from('products')
-                .insert({
-                  name,
-                  description: 'Extra généré automatiquement',
-                  price: price || 0,
-                  category_id: categoryId,
-                  restaurant_id: restaurantId,
-                  is_hidden: true,
-                  is_extra: true,
-                })
-                .select('id')
-                .single();
-              if (insErr) {
-                console.error('❌ Erreur création produit extra:', insErr);
-                throw insErr;
+              if (existingByName?.id) return existingByName.id as string;
+
+              // 2) Créer en fallback dans la catégorie "extras" (caché)
+              const ensureExtrasCategory = async (restaurantId: string): Promise<string> => {
+                const { data: cat } = await supabase
+                  .from('categories')
+                  .select('id')
+                  .eq('id', 'extras')
+                  .eq('restaurant_id', restaurantId)
+                  .maybeSingle();
+                if (cat?.id) return cat.id as string;
+                const { data: newCat, error: insErr } = await supabase
+                  .from('categories')
+                  .insert({ id: 'extras', name: 'Extras', description: 'Produits optionnels (non listés)', display_order: 9999, restaurant_id: restaurantId })
+                  .select('id')
+                  .single();
+                if (insErr) {
+                  console.log('⚠️ Création catégorie extras impossible/inutile:', insErr.message);
+                  return 'extras';
+                }
+                return newCat.id as string;
+              };
+
+              try {
+                const categoryId = await ensureExtrasCategory(restaurantId);
+                const { data: inserted, error: insErr } = await supabase
+                  .from('products')
+                  .insert({
+                    name,
+                    description: 'Extra généré automatiquement',
+                    price: price || 0,
+                    category_id: categoryId,
+                    restaurant_id: restaurantId,
+                    is_hidden: true,
+                    is_extra: true,
+                  })
+                  .select('id')
+                  .single();
+                if (insErr) {
+                  if ((insErr as any).code === '23505') {
+                    const { data: retry } = await supabase
+                      .from('products')
+                      .select('id')
+                      .eq('restaurant_id', restaurantId)
+                      .eq('name', name)
+                      .maybeSingle();
+                    if (retry?.id) return retry.id as string;
+                  }
+                  throw insErr;
+                }
+                return inserted.id as string;
+              } catch (e) {
+                throw e;
               }
-              return inserted.id as string;
             };
 
             const orderItems: any[] = [];
@@ -354,9 +423,9 @@ serve(async (req) => {
                 if (!isUuid(productId)) {
                   const name = item.name || item.menuItem?.name || 'Extra';
                   try {
-                    productId = await getOrCreateExtraProduct(name, price, order.restaurant_id);
+                    productId = await resolveProductId(name, price, order.restaurant_id);
                   } catch (e) {
-                    console.error('❌ Échec création/lookup produit extra; item ignoré:', e);
+                    console.error('❌ Échec création/lookup produit; item ignoré:', e);
                     continue;
                   }
                 }
