@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
 
 interface CartExtrasSectionProps {
@@ -82,34 +82,37 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       ? [...selectedAccompagnements, accompagnement]
       : selectedAccompagnements.filter(a => a !== accompagnement);
     
-    // Ajouter l'accompagnement comme article à 0€ si coché
-    if (checked && currentRestaurant) {
-      const accompagnementItem = {
-        id: `accompagnement-${accompagnement.toLowerCase().replace(/\s+/g, '-')}`,
-        name: accompagnement,
-        description: "Accompagnement",
-        price: 0,
-        imageUrl: "",
-        category: "Accompagnement" as const,
-        restaurant_id: currentRestaurant.id,
-        isVegetarian: true,
-        isSpicy: accompagnement === "Wasabi",
-        isNew: false,
-        isBestSeller: false,
-        isGlutenFree: true,
-        allergens: [],
-        pieces: null,
-        prepTime: null
-      };
-      addItem(accompagnementItem, 1);
-    }
-    
     setSelectedAccompagnements(newAccompagnements);
     onExtrasChange({
       sauces: selectedSauces,
       accompagnements: newAccompagnements,
       baguettes: baguettesCount
     });
+  };
+
+  const handleAddAccompagnements = () => {
+    if (!currentRestaurant) return;
+    if (selectedAccompagnements.length === 0) return;
+    const item = {
+      id: `accompagnements-${Date.now()}`,
+      name: `Accompagnements: ${selectedAccompagnements.join(', ')}`,
+      description: "Accompagnements pour la commande",
+      price: 0,
+      imageUrl: "",
+      category: "Accompagnement" as const,
+      restaurant_id: currentRestaurant.id,
+      isVegetarian: true,
+      isSpicy: false,
+      isNew: false,
+      isBestSeller: false,
+      isGlutenFree: true,
+      allergens: [],
+      pieces: null,
+      prepTime: null
+    };
+    addItem(item, 1);
+    setSelectedAccompagnements([]);
+    onExtrasChange({ sauces: selectedSauces, accompagnements: [], baguettes: baguettesCount });
   };
 
   const handleBaguettesChange = (change: number) => {
@@ -208,6 +211,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                 </label>
               </div>
             ))}
+          </div>
+          <div>
+            <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedAccompagnements.length === 0} className="border-gold-400 hover:bg-gold-100">
+              Ajouter mes accompagnements
+            </Button>
           </div>
         </div>
 
