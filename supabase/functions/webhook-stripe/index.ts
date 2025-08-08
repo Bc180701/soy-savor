@@ -176,6 +176,8 @@ serve(async (req) => {
         const itemsData = metadata?.items_summary || metadata?.items;
         if (itemsData) {
           try {
+            const items = JSON.parse(itemsData);
+            console.log('📦 Articles à créer:', items.length);
             // Créer/assurer les produits pour les extras sans UUID puis insérer tous les items
             const isUuid = (v: any) => typeof v === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v);
 
