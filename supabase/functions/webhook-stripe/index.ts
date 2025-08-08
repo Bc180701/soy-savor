@@ -45,16 +45,33 @@ serve(async (req) => {
 
     const body = await req.text();
     
-    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
-    if (!webhookSecret) {
-      console.error('Clé secrète du webhook non configurée');
-      return new Response('Webhook secret not configured', { status: 500 });
+    // Essayer les deux secrets de webhook (Châteaurenard et St Martin)
+    const webhookSecretChato = Deno.env.get('STRIPE_WEBHOOK_SECRET_CHATEAURENARD');
+    const webhookSecretStMartin = Deno.env.get('STRIPE_WEBHOOK_SECRET_ST_MARTIN');
+    
+    let isValidSignature = false;
+    let usedSecret = '';
+    
+    // Essayer d'abord avec le secret de Châteaurenard
+    if (webhookSecretChato) {
+      isValidSignature = await verifyStripeSignature(body, signature, webhookSecretChato);
+      if (isValidSignature) {
+        usedSecret = 'CHATEAURENARD';
+        console.log('✅ Signature validée avec le secret de Châteaurenard');
+      }
     }
-
-    // Vérifier la signature
-    const isValidSignature = await verifyStripeSignature(body, signature, webhookSecret);
+    
+    // Si ça n'a pas marché, essayer avec le secret de St Martin
+    if (!isValidSignature && webhookSecretStMartin) {
+      isValidSignature = await verifyStripeSignature(body, signature, webhookSecretStMartin);
+      if (isValidSignature) {
+        usedSecret = 'ST_MARTIN';
+        console.log('✅ Signature validée avec le secret de St Martin de Crau');
+      }
+    }
+    
     if (!isValidSignature) {
-      console.error('Signature du webhook invalide');
+      console.error('❌ Signature du webhook invalide avec les deux secrets');
       return new Response('Invalid signature', { status: 400 });
     }
 
