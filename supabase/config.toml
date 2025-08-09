@@ -19,3 +19,7 @@ verify_jwt = false
 # SMS notification function must be public
 [functions.send-sms-notification]
 verify_jwt = false
+
+# Restaurant alert function must be public
+[functions.send-restaurant-alert]
+verify_jwt = false
