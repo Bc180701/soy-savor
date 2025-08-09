@@ -360,7 +360,7 @@ serve(async (req) => {
 
     // Tentative d'envoi d'un SMS d'alerte au responsable du restaurant
     try {
-      console.log('🔔 Début envoi SMS alerte restaurant pour commande:', order.id);
+      console.error('🔔 Début envoi SMS alerte restaurant pour commande:', order.id);
       
       const { data: restaurantData, error: restaurantError } = await supabase
         .from('restaurants')
@@ -371,13 +371,13 @@ serve(async (req) => {
       if (restaurantError) {
         console.error('❌ Erreur récupération restaurant pour SMS alerte:', restaurantError);
       } else {
-        console.log('📍 Restaurant trouvé:', restaurantData?.name, 'Settings:', restaurantData?.settings);
+        console.error('📍 Restaurant trouvé:', restaurantData?.name, 'Settings:', restaurantData?.settings);
         
         const alertPhone = (restaurantData as any)?.settings?.order_alert_phone as string | undefined;
         const gatewayApiToken = Deno.env.get('GATEWAYAPI_TOKEN');
         
-        console.log('📱 Numéro d\'alerte configuré:', alertPhone);
-        console.log('🔑 Token Gateway API présent:', !!gatewayApiToken);
+        console.error('📱 Numéro d\'alerte configuré:', alertPhone);
+        console.error('🔑 Token Gateway API présent:', !!gatewayApiToken);
         
         if (alertPhone && gatewayApiToken) {
           const clean = alertPhone.replace(/[\s\-\(\)]/g, '');
