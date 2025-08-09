@@ -288,31 +288,14 @@ serve(async (req) => {
       });
     }
 
-    // Créer un résumé des articles pour les métadonnées en incluant TOUT le panier (produits + extras)
-    const baseSummary = items.map((item: any) => ({
+    // Créer un résumé des articles pour les métadonnées (les extras sont déjà inclus dans items)
+    const rawItemsSummary = items.map((item: any) => ({
       id: item.menuItem.id,
       name: item.menuItem.name,
       description: item.menuItem.description || '',
       price: item.menuItem.price,
       quantity: item.quantity,
     }));
-
-    const extrasSummary: any[] = [];
-    if (cartExtras?.sauces?.length) {
-      for (const s of cartExtras.sauces) {
-        extrasSummary.push({ id: `extra:sauce:${s}`, name: `Sauce: ${s}` , price: 0, quantity: 1 });
-      }
-    }
-    if (cartExtras?.accompagnements?.length) {
-      for (const a of cartExtras.accompagnements) {
-        extrasSummary.push({ id: `extra:accompagnement:${a}`, name: `Accompagnement: ${a}`, price: 0, quantity: 1 });
-      }
-    }
-    if (typeof cartExtras?.baguettes === 'number' && cartExtras.baguettes > 0) {
-      extrasSummary.push({ id: 'extra:baguettes', name: 'Baguettes', price: 0, quantity: cartExtras.baguettes });
-    }
-
-    const rawItemsSummary = [...baseSummary, ...extrasSummary];
 
     // Système de mapping nom→code lettres pour économiser l'espace
     let itemsSummaryStr = '[]';
@@ -322,8 +305,7 @@ serve(async (req) => {
       // Traiter tous les items avec mapping vers codes lettres (sans déduplication)
       for (const item of rawItemsSummary) {
         // Obtenir ou créer un code lettre pour ce produit avec description
-        const originalItem = baseSummary.find(base => base.name === item.name);
-        const description = originalItem?.description || '';
+        const description = item.description || '';
         
         const { data: codeData, error: codeError } = await supabase
           .rpc('get_or_create_product_code', {
@@ -356,7 +338,7 @@ serve(async (req) => {
     } catch (error) {
       console.error('Erreur creation items_summary:', error);
       // Fallback ultra-simple en cas d'erreur
-      const fallback = baseSummary.slice(0, 8).map(item => ({
+      const fallback = rawItemsSummary.slice(0, 8).map(item => ({
         n: item.name.substring(0, 3).toUpperCase(),
         p: Math.round(item.price * 100),
         q: item.quantity
