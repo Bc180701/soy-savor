@@ -15,3 +15,7 @@ verify_jwt = false
 # Stripe webhook must be public (signature is verified inside the function)
 [functions.webhook-stripe]
 verify_jwt = false
+
+# SMS notification function must be public
+[functions.send-sms-notification]
+verify_jwt = false
