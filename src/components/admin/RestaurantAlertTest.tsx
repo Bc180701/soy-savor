@@ -22,14 +22,45 @@ const RestaurantAlertTest = () => {
 
     setIsLoading(true);
     try {
-      // Générer un ID de commande fictif pour le test
-      const fakeOrderId = crypto.randomUUID();
+      // Créer d'abord une commande de test dans la base
+      console.log('🧪 Création d\'une commande de test pour:', currentRestaurant.name);
       
-      console.log('🧪 Test d\'alerte restaurant pour:', currentRestaurant.name);
+      const testOrder = {
+        restaurant_id: currentRestaurant.id,
+        user_id: null,
+        subtotal: 25.50,
+        tax: 2.55,
+        delivery_fee: 3.00,
+        total: 31.05,
+        order_type: 'delivery' as const,
+        status: 'paid' as const,
+        client_name: 'Test Client',
+        client_phone: '0123456789',
+        client_email: 'test@example.com',
+        delivery_address: 'Adresse de test',
+        delivery_city: 'Ville de test',
+        delivery_postal_code: '13000',
+        items_summary: '[{"n":"TEST","p":2550,"q":1}]',
+        payment_method: 'card' as const,
+        scheduled_for: new Date().toISOString()
+      };
+
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert(testOrder)
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error('❌ Erreur création commande test:', orderError);
+        throw orderError;
+      }
+
+      console.log('✅ Commande test créée:', orderData.id);
       
       const { data, error } = await supabase.functions.invoke('send-restaurant-alert', {
         body: {
-          orderId: fakeOrderId,
+          orderId: orderData.id,
           restaurantId: currentRestaurant.id
         }
       });
