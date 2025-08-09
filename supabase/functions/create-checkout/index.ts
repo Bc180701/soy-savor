@@ -307,45 +307,74 @@ serve(async (req) => {
         // Obtenir ou créer un code lettre pour ce produit avec description
         const description = item.description || '';
         
-        const { data: codeData, error: codeError } = await supabase
-          .rpc('get_or_create_product_code', {
-            p_item_name: item.name,
-            p_item_type: item.price === 0 ? 'extra' : 'product',
-            p_item_description: description
-          });
+        // Pour les créations personnalisées, toujours créer une nouvelle entrée avec timestamp
+        if (item.name === 'Poké Créa' || item.name === 'Sushi Créa') {
+          const uniqueName = `${item.name}-${Date.now()}`;
+          const { data: codeData, error: codeError } = await supabase
+            .rpc('get_or_create_product_code', {
+              p_item_name: uniqueName,
+              p_item_type: 'custom',
+              p_item_description: description
+            });
 
-        if (codeError) {
-          console.error('Erreur génération code:', codeError);
-          
-          // Tentative de récupération si le code existe déjà
-          const { data: existingCode } = await supabase
-            .from('product_codes')
-            .select('code')
-            .eq('item_name', item.name)
-            .single();
-            
-          if (existingCode) {
-            // Utiliser le code existant
+          if (codeError) {
+            console.error('Erreur génération code pour création:', codeError);
+            // Fallback : utiliser les premières lettres du nom avec timestamp
+            const fallbackCode = item.name.substring(0, 2).toUpperCase();
             items.push({
-              n: existingCode.code,
+              n: fallbackCode,
               p: Math.round(item.price * 100),
               q: item.quantity
             });
           } else {
-            // Fallback : utiliser les premières lettres du nom
-            const fallbackCode = item.name.substring(0, 2).toUpperCase();
             items.push({
-              n: fallbackCode,
-              p: Math.round(item.price * 100), // Prix en centimes pour économiser l'espace
+              n: codeData,
+              p: Math.round(item.price * 100),
               q: item.quantity
             });
           }
         } else {
-          items.push({
-            n: codeData, // Code lettre (A, B, C, etc.)
-            p: Math.round(item.price * 100), // Prix en centimes
-            q: item.quantity
-          });
+          // Pour les autres produits, utiliser la logique normale
+          const { data: codeData, error: codeError } = await supabase
+            .rpc('get_or_create_product_code', {
+              p_item_name: item.name,
+              p_item_type: item.price === 0 ? 'extra' : 'product',
+              p_item_description: description
+            });
+
+          if (codeError) {
+            console.error('Erreur génération code:', codeError);
+            
+            // Tentative de récupération si le code existe déjà
+            const { data: existingCode } = await supabase
+              .from('product_codes')
+              .select('code')
+              .eq('item_name', item.name)
+              .maybeSingle();
+              
+            if (existingCode) {
+              // Utiliser le code existant
+              items.push({
+                n: existingCode.code,
+                p: Math.round(item.price * 100),
+                q: item.quantity
+              });
+            } else {
+              // Fallback : utiliser les premières lettres du nom
+              const fallbackCode = item.name.substring(0, 2).toUpperCase();
+              items.push({
+                n: fallbackCode,
+                p: Math.round(item.price * 100), // Prix en centimes pour économiser l'espace
+                q: item.quantity
+              });
+            }
+          } else {
+            items.push({
+              n: codeData, // Code lettre (A, B, C, etc.)
+              p: Math.round(item.price * 100), // Prix en centimes
+              q: item.quantity
+            });
+          }
         }
       }
       
