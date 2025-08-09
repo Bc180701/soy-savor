@@ -316,13 +316,30 @@ serve(async (req) => {
 
         if (codeError) {
           console.error('Erreur génération code:', codeError);
-          // Fallback : utiliser les premières lettres du nom
-          const fallbackCode = item.name.substring(0, 2).toUpperCase();
-          items.push({
-            n: fallbackCode,
-            p: Math.round(item.price * 100), // Prix en centimes pour économiser l'espace
-            q: item.quantity
-          });
+          
+          // Tentative de récupération si le code existe déjà
+          const { data: existingCode } = await supabase
+            .from('product_codes')
+            .select('code')
+            .eq('item_name', item.name)
+            .single();
+            
+          if (existingCode) {
+            // Utiliser le code existant
+            items.push({
+              n: existingCode.code,
+              p: Math.round(item.price * 100),
+              q: item.quantity
+            });
+          } else {
+            // Fallback : utiliser les premières lettres du nom
+            const fallbackCode = item.name.substring(0, 2).toUpperCase();
+            items.push({
+              n: fallbackCode,
+              p: Math.round(item.price * 100), // Prix en centimes pour économiser l'espace
+              q: item.quantity
+            });
+          }
         } else {
           items.push({
             n: codeData, // Code lettre (A, B, C, etc.)
