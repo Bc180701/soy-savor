@@ -358,65 +358,21 @@ serve(async (req) => {
       console.error('❌ Erreur récupération détails complets:', fullDetailsError);
     }
 
-    // Tentative d'envoi d'un SMS d'alerte au responsable du restaurant
+    // Envoi d'un SMS d'alerte au responsable du restaurant via fonction dédiée
     try {
-      console.error('🔔 Début envoi SMS alerte restaurant pour commande:', order.id);
+      console.log('🔔 Début envoi SMS alerte restaurant pour commande:', order.id);
       
-      const { data: restaurantData, error: restaurantError } = await supabase
-        .from('restaurants')
-        .select('name, settings')
-        .eq('id', order.restaurant_id)
-        .single();
-
-      if (restaurantError) {
-        console.error('❌ Erreur récupération restaurant pour SMS alerte:', restaurantError);
-      } else {
-        console.error('📍 Restaurant trouvé:', restaurantData?.name, 'Settings:', restaurantData?.settings);
-        
-        const alertPhone = (restaurantData as any)?.settings?.order_alert_phone as string | undefined;
-        const gatewayApiToken = Deno.env.get('GATEWAYAPI_TOKEN');
-        
-        console.error('📱 Numéro d\'alerte configuré:', alertPhone);
-        console.error('🔑 Token Gateway API présent:', !!gatewayApiToken);
-        
-        if (alertPhone && gatewayApiToken) {
-          const clean = alertPhone.replace(/[\s\-\(\)]/g, '');
-          let formattedPhone = clean;
-          if (formattedPhone.startsWith('0')) {
-            formattedPhone = '+33' + formattedPhone.substring(1);
-          } else if (!formattedPhone.startsWith('+')) {
-            formattedPhone = '+33' + formattedPhone;
-          }
-
-          const shortId = order.id?.toString().slice(0, 8) || '';
-          const totalStr = typeof order.total === 'number' ? order.total.toFixed(2) : `${order.total}`;
-          const msg = `🛎️ Nouvelle commande payée #${shortId} (${order.order_type}). Total: ${totalStr}€. Client: ${order.client_name || ''} ${order.client_phone || ''}`.trim();
-
-          const body = {
-            sender: 'SushiEats',
-            message: msg,
-            recipients: [{ msisdn: formattedPhone }],
-          };
-
-          const resp = await fetch('https://gatewayapi.com/rest/mtsms', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Basic ${btoa(gatewayApiToken + ':')}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-          });
-
-          if (!resp.ok) {
-            const txt = await resp.text();
-            console.error('❌ Erreur envoi SMS alerte:', resp.status, txt);
-          } else {
-            const resJson = await resp.json();
-            console.log('✅ SMS alerte envoyé:', resJson);
-          }
-        } else {
-          console.log('ℹ️ Aucun numéro d\'alerte configuré ou token manquant.');
+      const { data: alertResult, error: alertError } = await supabase.functions.invoke('send-restaurant-alert', {
+        body: { 
+          orderId: order.id, 
+          restaurantId: order.restaurant_id 
         }
+      });
+
+      if (alertError) {
+        console.error('❌ Erreur lors de l\'appel à send-restaurant-alert:', alertError);
+      } else {
+        console.log('✅ Résultat SMS alerte:', alertResult);
       }
     } catch (notifyErr) {
       console.error('❌ Erreur lors de l\'envoi du SMS d\'alerte:', notifyErr);
