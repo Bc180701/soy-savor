@@ -124,7 +124,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       // Récupérer toutes les commandes du jour en une seule requête
       const ordersPromise = supabase
         .from('orders')
-        .select('pickup_time')
+        .select('pickup_time, order_type')
         .gte('scheduled_for', startOfDay.toISOString())
         .lt('scheduled_for', endOfDay.toISOString())
         .eq('restaurant_id', cartRestaurant?.id);
@@ -145,21 +145,32 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
         console.error('❌ [TimeSlotSelector] Erreur récupération créneaux bloqués:', blockedResult.error);
       }
 
-      // Compter les commandes par créneau
+      // Compter les commandes par créneau selon le type
       const orderCounts: Record<string, number> = {};
+      const deliveryCounts: Record<string, number> = {};
+      const pickupCounts: Record<string, number> = {};
+      
       (ordersResult.data || []).forEach(order => {
         if (order.pickup_time) {
+          // Compter toutes les commandes
           orderCounts[order.pickup_time] = (orderCounts[order.pickup_time] || 0) + 1;
+          
+          // Compter selon le type
+          if (order.order_type === 'delivery') {
+            deliveryCounts[order.pickup_time] = (deliveryCounts[order.pickup_time] || 0) + 1;
+          } else {
+            pickupCounts[order.pickup_time] = (pickupCounts[order.pickup_time] || 0) + 1;
+          }
         }
       });
 
       // Créer un Set des créneaux bloqués pour une recherche rapide
       const blockedSlots = new Set((blockedResult.data || []).map(slot => slot.blocked_time));
 
-      return { orderCounts, blockedSlots };
+      return { orderCounts, deliveryCounts, pickupCounts, blockedSlots };
     } catch (error) {
       console.error('❌ [TimeSlotSelector] Erreur récupération données:', error);
-      return { orderCounts: {}, blockedSlots: new Set() };
+      return { orderCounts: {}, deliveryCounts: {}, pickupCounts: {}, blockedSlots: new Set() };
     }
   };
 
@@ -185,7 +196,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
     }
 
     // Récupérer toutes les données en une seule fois
-    const { orderCounts, blockedSlots } = await getSlotDataBatch();
+    const { orderCounts, deliveryCounts, pickupCounts, blockedSlots } = await getSlotDataBatch();
 
     // Générer des créneaux pour chaque slot d'ouverture
     for (const timeSlot of openSlots) {
@@ -222,9 +233,19 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
         const timeValue = format(currentTime, "HH:mm");
         const isPassedTime = isAfter(minTime, currentTime);
         
-        // Vérifier la capacité du créneau (2 commandes max)
+        // Vérifier la capacité du créneau selon le type de commande
         const currentOrders = orderCounts[timeValue] || 0;
-        const isSlotFull = currentOrders >= 2;
+        const currentDeliveries = deliveryCounts[timeValue] || 0;
+        const currentPickups = pickupCounts[timeValue] || 0;
+        
+        let isSlotFull = false;
+        if (orderType === "delivery") {
+          // Pour une livraison : max 1 livraison par créneau par restaurant
+          isSlotFull = currentDeliveries >= 1;
+        } else {
+          // Pour un retrait : max 2 commandes totales par créneau
+          isSlotFull = currentOrders >= 2;
+        }
 
         // Vérifier si le créneau est bloqué par l'admin
         const isSlotBlocked = blockedSlots.has(timeValue);
