@@ -184,7 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Envoyer l'email
     const emailResponse = await resend.emails.send({
-      from: `${order.restaurants?.name || 'Sushi Eats'} <confirmation@emailsend.clwebdesign.fr>`,
+      from: `SushiEats - ${order.restaurants?.name || 'Restaurant'} <confirmation@emailsend.clwebdesign.fr>`,
       to: [order.client_email],
       subject: `SushiEats - Confirmation de commande n° ${order.id.slice(-8).toUpperCase()}`,
       html: emailHTML,
