@@ -220,6 +220,25 @@ serve(async (req) => {
         }
       }
 
+      // Envoyer le SMS d'alerte au restaurant
+      console.log('📱 Envoi SMS alerte restaurant pour commande:', order.id);
+      try {
+        const smsResponse = await supabase.functions.invoke('send-restaurant-alert', {
+          body: { 
+            orderId: order.id,
+            restaurantId: orderData.restaurant_id 
+          }
+        });
+        
+        if (smsResponse.error) {
+          console.error('❌ Erreur envoi SMS restaurant:', smsResponse.error);
+        } else {
+          console.log('✅ SMS alerte restaurant envoyé avec succès');
+        }
+      } catch (smsError) {
+        console.error('❌ Erreur lors de l\'envoi du SMS restaurant:', smsError);
+      }
+
       return new Response(JSON.stringify({ 
         received: true, 
         orderId: order.id,
