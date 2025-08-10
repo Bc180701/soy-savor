@@ -429,6 +429,8 @@ serve(async (req) => {
           cart_sauces: cartExtras?.sauces?.join(', ') || '',
           cart_accompagnements: cartExtras?.accompagnements?.join(', ') || '',
           cart_baguettes: cartExtras?.baguettes?.toString() || '0',
+          cart_couverts: cartExtras?.couverts?.toString() || '0',
+          cart_cuilleres: cartExtras?.cuilleres?.toString() || '0',
         },
       };
 

@@ -315,6 +315,8 @@ export const DeliveryStep = ({
               <p><strong>Sauces :</strong> {cartExtras.sauces.length > 0 ? cartExtras.sauces.join(', ') : 'Aucune'}</p>
               <p><strong>Accompagnements :</strong> {cartExtras.accompagnements.length > 0 ? cartExtras.accompagnements.join(', ') : 'Aucun'}</p>
               <p><strong>Baguettes :</strong> {cartExtras.baguettes} paires</p>
+              <p><strong>Couverts :</strong> {cartExtras.couverts} sets</p>
+              <p><strong>Cuillères :</strong> {cartExtras.cuilleres} cuillères</p>
             </div>
           </div>
         )}

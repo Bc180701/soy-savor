@@ -13,12 +13,16 @@ export interface CartExtras {
   sauces: string[];
   accompagnements: string[];
   baguettes: number;
+  couverts: number;
+  cuilleres: number;
 }
 
 export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) => {
   const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<string[]>([]);
   const [baguettesCount, setBaguettesCount] = useState<number>(0);
+  const [couvertsCount, setCouvertsCount] = useState<number>(0);
+  const [cuilleresCount, setCuilleresCount] = useState<number>(0);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const { addItem, selectedRestaurantId, items } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
@@ -55,7 +59,9 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     onExtrasChange({
       sauces: newSauces,
       accompagnements: selectedAccompagnements,
-      baguettes: baguettesCount
+      baguettes: baguettesCount,
+      couverts: couvertsCount,
+      cuilleres: cuilleresCount
     });
   };
 
@@ -69,7 +75,9 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     onExtrasChange({
       sauces: selectedSauces,
       accompagnements: newAccompagnements,
-      baguettes: baguettesCount
+      baguettes: baguettesCount,
+      couverts: couvertsCount,
+      cuilleres: cuilleresCount
     });
   };
 
@@ -139,6 +147,46 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       });
     }
 
+    if (couvertsCount > 0) {
+      itemsToAdd.push({
+        id: `couverts-${Date.now()}`,
+        name: `Couverts (${couvertsCount} ${couvertsCount === 1 ? 'set' : 'sets'})`,
+        description: "Couteau et fourchette",
+        price: 0,
+        imageUrl: "",
+        category: "Accessoire" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      });
+    }
+
+    if (cuilleresCount > 0) {
+      itemsToAdd.push({
+        id: `cuilleres-${Date.now()}`,
+        name: `Cuillères (${cuilleresCount} ${cuilleresCount === 1 ? 'cuillère' : 'cuillères'})`,
+        description: "Cuillères",
+        price: 0,
+        imageUrl: "",
+        category: "Accessoire" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      });
+    }
+
     if (itemsToAdd.length === 0) return;
 
     itemsToAdd.forEach((it) => addItem(it, 1));
@@ -146,6 +194,8 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     setSelectedSauces([]);
     setSelectedAccompagnements([]);
     setBaguettesCount(0);
+    setCouvertsCount(0);
+    setCuilleresCount(0);
     setHasSubmitted(true);
   };
 
@@ -156,7 +206,35 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     onExtrasChange({
       sauces: selectedSauces,
       accompagnements: selectedAccompagnements,
-      baguettes: newCount
+      baguettes: newCount,
+      couverts: couvertsCount,
+      cuilleres: cuilleresCount
+    });
+  };
+
+  const handleCouvertsChange = (change: number) => {
+    const newCount = Math.max(0, couvertsCount + change);
+    setHasSubmitted(false);
+    setCouvertsCount(newCount);
+    onExtrasChange({
+      sauces: selectedSauces,
+      accompagnements: selectedAccompagnements,
+      baguettes: baguettesCount,
+      couverts: newCount,
+      cuilleres: cuilleresCount
+    });
+  };
+
+  const handleCuilleresChange = (change: number) => {
+    const newCount = Math.max(0, cuilleresCount + change);
+    setHasSubmitted(false);
+    setCuilleresCount(newCount);
+    onExtrasChange({
+      sauces: selectedSauces,
+      accompagnements: selectedAccompagnements,
+      baguettes: baguettesCount,
+      couverts: couvertsCount,
+      cuilleres: newCount
     });
   };
 
@@ -256,9 +334,69 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           </div>
         </div>
         <div className="pt-2">
-          <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedSauces.length === 0 && selectedAccompagnements.length === 0 && baguettesCount === 0} className="border-gold-400 hover:bg-gold-100">
+          <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedSauces.length === 0 && selectedAccompagnements.length === 0 && baguettesCount === 0 && couvertsCount === 0 && cuilleresCount === 0} className="border-gold-400 hover:bg-gold-100">
             Ajouter mes accompagnements
           </Button>
+        </div>
+
+        {/* Couverts */}
+        <div className="space-y-3">
+          <h4 className="font-semibold text-gray-800">🍽️ Couverts (couteau/fourchette)</h4>
+          <div className="flex items-center space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleCouvertsChange(-1)}
+              disabled={couvertsCount <= 0}
+              className="h-8 w-8 p-0 border-gold-400 hover:bg-gold-100"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-semibold min-w-[2rem] text-center">
+              {couvertsCount}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleCouvertsChange(1)}
+              className="h-8 w-8 p-0 border-gold-400 hover:bg-gold-100"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-gray-600 ml-2">sets</span>
+          </div>
+        </div>
+
+        {/* Cuillères */}
+        <div className="space-y-3">
+          <h4 className="font-semibold text-gray-800">🥄 Cuillères</h4>
+          <div className="flex items-center space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleCuilleresChange(-1)}
+              disabled={cuilleresCount <= 0}
+              className="h-8 w-8 p-0 border-gold-400 hover:bg-gold-100"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-semibold min-w-[2rem] text-center">
+              {cuilleresCount}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => handleCuilleresChange(1)}
+              className="h-8 w-8 p-0 border-gold-400 hover:bg-gold-100"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-gray-600 ml-2">cuillères</span>
+          </div>
         </div>
       </CardContent>
     </Card>
