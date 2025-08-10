@@ -202,6 +202,24 @@ serve(async (req) => {
 
       console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId, 'avec', itemsSummary.length, 'articles');
 
+      // Envoyer l'email de confirmation en arrière-plan
+      if (order.client_email) {
+        console.log('📧 Envoi email de confirmation pour:', order.client_email);
+        try {
+          const emailResponse = await supabase.functions.invoke('send-order-confirmation', {
+            body: { orderId: order.id }
+          });
+          
+          if (emailResponse.error) {
+            console.error('❌ Erreur envoi email confirmation:', emailResponse.error);
+          } else {
+            console.log('✅ Email de confirmation envoyé avec succès');
+          }
+        } catch (emailError) {
+          console.error('❌ Erreur lors de l\'envoi de l\'email:', emailError);
+        }
+      }
+
       return new Response(JSON.stringify({ 
         received: true, 
         orderId: order.id,
