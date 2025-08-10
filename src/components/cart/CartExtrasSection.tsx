@@ -333,11 +333,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             <span className="text-sm text-gray-600 ml-2">paires</span>
           </div>
         </div>
-        <div className="pt-2">
-          <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedSauces.length === 0 && selectedAccompagnements.length === 0 && baguettesCount === 0 && couvertsCount === 0 && cuilleresCount === 0} className="border-gold-400 hover:bg-gold-100">
-            Ajouter mes accompagnements
-          </Button>
-        </div>
 
         {/* Couverts */}
         <div className="space-y-3">
@@ -397,6 +392,12 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             </Button>
             <span className="text-sm text-gray-600 ml-2">cuillères</span>
           </div>
+        </div>
+
+        <div className="pt-2">
+          <Button type="button" variant="outline" onClick={handleAddAccompagnements} disabled={selectedSauces.length === 0 && selectedAccompagnements.length === 0 && baguettesCount === 0 && couvertsCount === 0 && cuilleresCount === 0} className="border-gold-400 hover:bg-gold-100">
+            Ajouter mes accompagnements
+          </Button>
         </div>
       </CardContent>
     </Card>
