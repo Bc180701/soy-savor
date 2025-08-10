@@ -238,9 +238,12 @@ const ComposerSushi = () => {
           const basePrice = (selectedBox?.price || 0) / (selectedBox?.creations || 1);
           const finalPrice = basePrice + creationExtraCost;
           
+          // Generate unique ID with timestamp and random component
+          const uniqueId = `custom-sushi-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`;
+          
           const customSushiItem: MenuItem = {
-            id: `custom-sushi-creation-${Date.now()}-${index}`,
-            name: `Sushi Créa - Création ${index + 1}`,
+            id: uniqueId,
+            name: `Sushi Créa ${uniqueId.substr(-5)} - Création ${index + 1}`,
             description: `Enrobage: ${creation.enrobage?.name} | Base: ${creation.base?.name} | Garnitures: ${creation.garnitures.map(g => g.name).join(', ')}${creation.topping ? ` | Topping: ${creation.topping.name}` : ''} | Sauce: ${creation.sauce?.name}`,
             price: finalPrice,
             category: "custom",
