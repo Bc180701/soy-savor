@@ -19,7 +19,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
 import SEOHead from "@/components/SEOHead";
 import commanderHeroImage from "@/assets/commander-hero.jpg";
-import PokeSauceDialog from "@/components/menu/PokeSauceDialog";
+
 import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
 
 const CommanderContent = () => {
@@ -39,8 +39,6 @@ const CommanderContent = () => {
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
   const [visibleSections, setVisibleSections] = useState<{[key: string]: boolean}>({});
   const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
-  const [sauceOpen, setSauceOpen] = useState(false);
-  const [pendingItem, setPendingItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
@@ -219,39 +217,6 @@ const CommanderContent = () => {
       clearCart();
     }
 
-    // Déterminer si c'est un poké qui nécessite une sélection de sauce
-    const name = item.name.toLowerCase();
-    const cat = (item.category || '').toString().toLowerCase();
-    
-    // Identifier si c'est un produit poké
-    const isPoke = (
-      name.includes('poke') || 
-      name.includes('poké') || 
-      cat.includes('poke') || 
-      cat === 'poke'
-    );
-    
-    // Exclure le poké création/créa
-    const isPokeCreation = (
-      name.includes('crea') || 
-      name.includes('créa') || 
-      name.includes('compose') ||
-      cat === 'poke_custom'
-    );
-
-    console.log(`🥢 Analyse du produit "${item.name}":`, {
-      isPoke,
-      isPokeCreation,
-      needsSauceSelection: isPoke && !isPokeCreation
-    });
-
-    // Si c'est un poké (sauf création), demander le choix de sauce
-    if (isPoke && !isPokeCreation) {
-      console.log(`🥢 Ouverture du sélecteur de sauce pour: ${item.name}`);
-      setPendingItem(item);
-      setSauceOpen(true);
-      return;
-    }
     
     addToCart(item, 1);
     
@@ -316,47 +281,6 @@ const CommanderContent = () => {
         structuredData={structuredData}
       />
 
-      <PokeSauceDialog
-        open={sauceOpen}
-        onClose={() => { setSauceOpen(false); setPendingItem(null); }}
-        onConfirm={(sauce, sauceValue) => {
-          if (pendingItem) {
-            // Ajouter le produit principal
-            addToCart(pendingItem, 1);
-            
-            // Ajouter la sauce comme article séparé à 0€ (seulement si ce n'est pas "pas de sauce")
-            if (sauceValue !== "pas_de_sauce") {
-              const sauceItem = {
-                id: `sauce-poke-${sauceValue}`,
-                name: `Sauce ${sauce} (Poké)`,
-                description: `Sauce pour ${pendingItem.name}`,
-                price: 0,
-                imageUrl: "",
-                category: "Sauce" as const,
-                restaurant_id: pendingItem.restaurant_id,
-                isVegetarian: true,
-                isSpicy: false,
-                isNew: false,
-                isBestSeller: false,
-                isGlutenFree: true,
-                allergens: [],
-                pieces: null,
-                prepTime: null
-              };
-              addToCart(sauceItem, 1);
-            }
-            
-            toast({ 
-              title: "Ajouté au panier", 
-              description: sauceValue !== "pas_de_sauce" 
-                ? `${pendingItem.name} + Sauce ${sauce}` 
-                : pendingItem.name 
-            });
-            setPendingItem(null);
-            setSauceOpen(false);
-          }
-        }}
-      />
       
       <div className="container mx-auto py-24 px-4">
         <RestaurantSelectionDialog
