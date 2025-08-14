@@ -226,7 +226,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       });
 
       // Ajuster pour le délai de livraison ou de retrait
-      const interval = orderType === "delivery" ? 30 : 15;
+      const interval = 30; // 30 minutes pour tous les types
       const minDelay = orderType === "delivery" ? 30 : 20;
       const minTime = addMinutes(now, minDelay);
 
