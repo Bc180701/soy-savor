@@ -20,7 +20,7 @@ export const AccompagnementSelector = ({
 
   const accompagnements = [
     {
-      id: `riz-nature-${Date.now()}`,
+      id: 'riz-nature',
       name: "Riz nature",
       description: "Riz blanc japonais",
       price: 0,
@@ -33,7 +33,7 @@ export const AccompagnementSelector = ({
       isGlutenFree: true
     },
     {
-      id: `riz-vinaigre-${Date.now()}`,
+      id: 'riz-vinaigre',
       name: "Riz vinaigré",
       description: "Riz à sushi",
       price: 0,
@@ -46,7 +46,7 @@ export const AccompagnementSelector = ({
       isGlutenFree: true
     },
     {
-      id: `salade-chou-${Date.now()}`,
+      id: 'salade-chou',
       name: "Salade de chou",
       description: "Salade de chou japonaise",
       price: 0,
@@ -59,7 +59,7 @@ export const AccompagnementSelector = ({
       isGlutenFree: true
     },
     {
-      id: `soupe-miso-${Date.now()}`,
+      id: 'soupe-miso',
       name: "Soupe miso",
       description: "Soupe miso traditionnelle",
       price: 0,
