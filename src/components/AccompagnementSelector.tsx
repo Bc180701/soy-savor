@@ -102,31 +102,22 @@ export const AccompagnementSelector = ({
           
           <div className="space-y-3">
             {accompagnements.map((accompagnement) => (
-              <label 
+              <div 
                 key={accompagnement.id} 
-                className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all hover:bg-accent ${
+                className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all hover:bg-accent select-none ${
                   selectedAccompagnement === accompagnement.id 
                     ? 'bg-primary text-primary-foreground border-primary' 
                     : 'border-border hover:border-primary/50'
                 }`}
-                htmlFor={`radio-${accompagnement.id}`}
+                onClick={() => setSelectedAccompagnement(accompagnement.id)}
               >
-                <input 
-                  type="radio"
-                  id={`radio-${accompagnement.id}`}
-                  name="accompagnement"
-                  value={accompagnement.id}
-                  checked={selectedAccompagnement === accompagnement.id}
-                  onChange={() => setSelectedAccompagnement(accompagnement.id)}
-                  className="sr-only"
-                />
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                   selectedAccompagnement === accompagnement.id 
                     ? 'border-primary-foreground bg-primary-foreground' 
-                    : 'border-primary'
+                    : 'border-input bg-background'
                 }`}>
                   {selectedAccompagnement === accompagnement.id && (
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
                   )}
                 </div>
                 <div className="flex-1">
@@ -139,8 +130,8 @@ export const AccompagnementSelector = ({
                     {accompagnement.description}
                   </div>
                 </div>
-                <span className="text-green-600 font-medium text-sm">Gratuit</span>
-              </label>
+                <span className="text-green-600 font-medium text-sm flex-shrink-0">Gratuit</span>
+              </div>
             ))}
           </div>
         </div>
