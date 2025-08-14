@@ -124,7 +124,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       // Récupérer toutes les commandes du jour en une seule requête
       const ordersPromise = supabase
         .from('orders')
-        .select('pickup_time, order_type')
+        .select('scheduled_for, order_type')
         .gte('scheduled_for', startOfDay.toISOString())
         .lt('scheduled_for', endOfDay.toISOString())
         .eq('restaurant_id', cartRestaurant?.id);
@@ -151,15 +151,18 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       const pickupCounts: Record<string, number> = {};
       
       (ordersResult.data || []).forEach(order => {
-        if (order.pickup_time) {
+        if (order.scheduled_for) {
+          // Extraire l'heure de scheduled_for
+          const timeSlot = format(new Date(order.scheduled_for), 'HH:mm');
+          
           // Compter toutes les commandes
-          orderCounts[order.pickup_time] = (orderCounts[order.pickup_time] || 0) + 1;
+          orderCounts[timeSlot] = (orderCounts[timeSlot] || 0) + 1;
           
           // Compter selon le type
           if (order.order_type === 'delivery') {
-            deliveryCounts[order.pickup_time] = (deliveryCounts[order.pickup_time] || 0) + 1;
+            deliveryCounts[timeSlot] = (deliveryCounts[timeSlot] || 0) + 1;
           } else {
-            pickupCounts[order.pickup_time] = (pickupCounts[order.pickup_time] || 0) + 1;
+            pickupCounts[timeSlot] = (pickupCounts[timeSlot] || 0) + 1;
           }
         }
       });
