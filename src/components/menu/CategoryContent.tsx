@@ -122,18 +122,20 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     setClickedButton(item.id);
     
     if (isBoxItem(item)) {
-      console.log("🟩 C'est une box, appel du hook handleBoxAddToCart");
-      // Si c'est une box, utiliser la logique du hook pour ouvrir le popup
+      console.log("🟩 C'est une box, SEULEMENT le hook - PAS onAddToCart !");
+      // Si c'est une box, utiliser SEULEMENT la logique du hook pour ouvrir le popup
       handleBoxAddToCart(item, 1);
-    } else {
-      console.log("🟩 Pas une box, appel de onAddToCart");
-      // Sinon, ajouter directement au panier
-      onAddToCart(item);
-      toast({
-        title: "Ajouté au panier",
-        description: `${item.name} a été ajouté à votre panier`,
-      });
-    }
+      // IMPORTANT: Ne PAS appeler onAddToCart pour les box !
+      return;
+    } 
+    
+    console.log("🟩 Pas une box, appel de onAddToCart");
+    // Sinon, ajouter directement au panier
+    onAddToCart(item);
+    toast({
+      title: "Ajouté au panier",
+      description: `${item.name} a été ajouté à votre panier`,
+    });
     
     // Reset animation after 600ms to allow the +1 message to fade out
     setTimeout(() => {
