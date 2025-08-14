@@ -73,9 +73,6 @@ export const AccompagnementSelector = ({
     }
   ];
 
-  const handleAccompagnementClick = (accompagnementId: string) => {
-    setSelectedAccompagnement(accompagnementId);
-  };
 
   const handleConfirm = () => {
     const selected = accompagnements.find(acc => acc.id === selectedAccompagnement);
@@ -105,16 +102,25 @@ export const AccompagnementSelector = ({
           
           <div className="space-y-3">
             {accompagnements.map((accompagnement) => (
-              <div 
+              <label 
                 key={accompagnement.id} 
                 className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all hover:bg-accent ${
                   selectedAccompagnement === accompagnement.id 
                     ? 'bg-primary text-primary-foreground border-primary' 
                     : 'border-border hover:border-primary/50'
                 }`}
-                onClick={() => handleAccompagnementClick(accompagnement.id)}
+                htmlFor={`radio-${accompagnement.id}`}
               >
-                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                <input 
+                  type="radio"
+                  id={`radio-${accompagnement.id}`}
+                  name="accompagnement"
+                  value={accompagnement.id}
+                  checked={selectedAccompagnement === accompagnement.id}
+                  onChange={() => setSelectedAccompagnement(accompagnement.id)}
+                  className="sr-only"
+                />
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                   selectedAccompagnement === accompagnement.id 
                     ? 'border-primary-foreground bg-primary-foreground' 
                     : 'border-primary'
@@ -134,7 +140,7 @@ export const AccompagnementSelector = ({
                   </div>
                 </div>
                 <span className="text-green-600 font-medium text-sm">Gratuit</span>
-              </div>
+              </label>
             ))}
           </div>
         </div>
