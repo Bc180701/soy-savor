@@ -252,9 +252,7 @@ const CommanderContent = () => {
   // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
   const nonEmptyCategories = categories.filter(cat => cat.items.length > 0);
 
-  console.log("🖼️ Rendu final - Catégories non vides:", nonEmptyCategories.length);
-  console.log("🏪 Restaurant panier:", selectedRestaurantId);
-  console.log("🏪 Restaurant actuel:", currentRestaurant?.id);
+  // Debug logs supprimés pour éviter le spam console
 
   // Structured data for SEO
   const structuredData = {

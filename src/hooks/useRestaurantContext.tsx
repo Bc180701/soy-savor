@@ -27,7 +27,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
         const restaurantId = searchParams.get("restaurant");
         if (restaurantId && restaurantsList.length > 0) {
           const savedRestaurant = restaurantsList.find(r => r.id === restaurantId);
-          if (savedRestaurant) {
+          if (savedRestaurant && (!currentRestaurant || currentRestaurant.id !== savedRestaurant.id)) {
             console.log("Restaurant restauré depuis URL:", savedRestaurant.name);
             setCurrentRestaurant(savedRestaurant);
           }
@@ -42,20 +42,29 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadRestaurants();
-  }, [searchParams]);
+  }, [searchParams.get("restaurant")]);
 
   // Fonction pour changer de restaurant et persister dans l'URL
   const handleSetCurrentRestaurant = (restaurant: Restaurant | null) => {
-    setCurrentRestaurant(restaurant);
+    const currentRestaurantId = searchParams.get("restaurant");
+    const newRestaurantId = restaurant?.id || null;
     
-    // Persister dans les URL params
-    const newParams = new URLSearchParams(searchParams);
-    if (restaurant) {
-      newParams.set("restaurant", restaurant.id);
-    } else {
-      newParams.delete("restaurant");
+    // Ne mettre à jour que si le restaurant a vraiment changé
+    if (currentRestaurantId !== newRestaurantId) {
+      setCurrentRestaurant(restaurant);
+      
+      // Persister dans les URL params
+      const newParams = new URLSearchParams(searchParams);
+      if (restaurant) {
+        newParams.set("restaurant", restaurant.id);
+      } else {
+        newParams.delete("restaurant");
+      }
+      setSearchParams(newParams);
+    } else if (!currentRestaurant && restaurant) {
+      // Mettre à jour l'état local si le restaurant n'est pas encore défini
+      setCurrentRestaurant(restaurant);
     }
-    setSearchParams(newParams);
   };
 
   // Note: The ordering lock synchronization will be handled by individual components
