@@ -23,7 +23,13 @@ export const useCartWithRestaurant = () => {
         cart.setSelectedRestaurantId(currentRestaurant.id);
       }
       
-      cart.addItem(item, quantity, specialInstructions);
+      // Ajouter l'item avec le restaurant_id et déclencher l'accompagnement gratuit si box
+      const itemWithRestaurant = {
+        ...item,
+        restaurant_id: currentRestaurant.id
+      };
+      
+      cart.addItem(itemWithRestaurant, quantity, specialInstructions);
     }
   };
 

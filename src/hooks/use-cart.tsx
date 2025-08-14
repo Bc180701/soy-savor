@@ -31,6 +31,8 @@ interface CartStore {
   checkRestaurantCompatibility: (restaurantId: string) => boolean;
   // Nouvelle méthode pour ajouter des articles avec un restaurant spécifique
   addItemWithRestaurant: (item: MenuItem, quantity: number, restaurantId: string, specialInstructions?: string) => void;
+  // Nouvelle méthode pour ajouter automatiquement un accompagnement gratuit pour les box
+  addFreeAccompagnementIfBox: (item: MenuItem, state: any) => void;
 }
 
 export const useCart = create<CartStore>()(
@@ -118,7 +120,7 @@ export const useCart = create<CartStore>()(
           
           if (existingItem) {
             console.log("🛒 Mise à jour quantité article existant:", item.name, "nouvelle quantité:", existingItem.quantity + quantity);
-            return {
+            const newState = {
               ...state,
               items: state.items.map(cartItem =>
                 cartItem.menuItem.id === item.id
@@ -126,12 +128,20 @@ export const useCart = create<CartStore>()(
                   : cartItem
               )
             };
+            
+            // Ajouter accompagnement gratuit si c'est une box
+            get().addFreeAccompagnementIfBox(item, newState);
+            return newState;
           } else {
             console.log("🛒 Ajout nouvel article:", item.name, "quantité:", quantity);
-            return {
+            const newState = {
               ...state,
               items: [...state.items, { menuItem: item, quantity, specialInstructions }]
             };
+            
+            // Ajouter accompagnement gratuit si c'est une box
+            get().addFreeAccompagnementIfBox(item, newState);
+            return newState;
           }
         });
       },
@@ -181,6 +191,54 @@ export const useCart = create<CartStore>()(
       setSelectedRestaurantId: (restaurantId) => {
         console.log("🏪 Restaurant sélectionné dans le panier:", restaurantId);
         set({ selectedRestaurantId: restaurantId });
+      },
+
+      addFreeAccompagnementIfBox: (item, currentState) => {
+        // Vérifier si l'article est une box
+        const isBox = item.category === 'box' || 
+                      item.category === 'box_du_midi' || 
+                      item.category.includes('box_du_midi') ||
+                      item.name.toLowerCase().includes('box');
+        
+        if (!isBox) return;
+        
+        console.log("🎁 Ajout accompagnement gratuit pour box:", item.name);
+        
+        // Liste des accompagnements disponibles à 0€
+        const accompagnements = [
+          'Riz nature',
+          'Riz vinaigré', 
+          'Salade de chou',
+          'Soupe miso'
+        ];
+        
+        // Sélectionner un accompagnement aléatoire
+        const randomAccompagnement = accompagnements[Math.floor(Math.random() * accompagnements.length)];
+        
+        // Créer l'article accompagnement gratuit
+        const freeAccompagnement: MenuItem = {
+          id: `free-accompagnement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: randomAccompagnement,
+          description: "Accompagnement offert avec votre box",
+          price: 0,
+          category: 'accompagnements' as any,
+          restaurant_id: item.restaurant_id || currentState.selectedRestaurantId,
+          isVegetarian: randomAccompagnement.includes('Riz') || randomAccompagnement.includes('Salade'),
+          isSpicy: false,
+          isNew: true,
+          isBestSeller: false,
+          isGlutenFree: randomAccompagnement.includes('Riz') || randomAccompagnement.includes('Salade')
+        };
+
+        // Ajouter l'accompagnement au panier avec une instruction spéciale
+        set((state) => ({
+          ...state,
+          items: [...state.items, { 
+            menuItem: freeAccompagnement, 
+            quantity: 1, 
+            specialInstructions: "Accompagnement offert avec box" 
+          }]
+        }));
       }
     }),
     {
