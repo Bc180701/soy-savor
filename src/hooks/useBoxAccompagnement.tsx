@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { MenuItem } from "@/types";
 import { useCartWithRestaurant } from "./useCartWithRestaurant";
 
@@ -9,6 +9,9 @@ export const useBoxAccompagnement = () => {
     quantity: number;
     specialInstructions?: string;
   } | null>(null);
+  
+  // Flag pour éviter la double exécution lors de la fermeture du popup
+  const hasProcessedSelection = useRef(false);
   
   const { addItem } = useCartWithRestaurant();
 
@@ -23,6 +26,8 @@ export const useBoxAccompagnement = () => {
     console.log("🟦 useBoxAccompagnement.handleAddToCart called with:", item.name);
     if (isBoxItem(item)) {
       console.log("🟦 C'est une box, ouverture du popup pour:", item.name);
+      // Réinitialiser le flag à chaque ouverture du popup
+      hasProcessedSelection.current = false;
       // Si c'est une box, ouvrir le popup de sélection d'accompagnement SANS ajouter encore la box
       setPendingBoxItem({ item, quantity, specialInstructions });
       setShowAccompagnementSelector(true);
@@ -37,6 +42,9 @@ export const useBoxAccompagnement = () => {
     console.log("🟦 Accompagnement sélectionné:", accompagnement.name);
     if (pendingBoxItem) {
       console.log("🟦 Ajout de la box au panier:", pendingBoxItem.item.name);
+      // Marquer qu'on a traité la sélection pour éviter la double exécution
+      hasProcessedSelection.current = true;
+      
       // Ajouter la box au panier
       addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
       
@@ -55,11 +63,14 @@ export const useBoxAccompagnement = () => {
 
   const handleCloseAccompagnementSelector = () => {
     console.log("🟦 Fermeture du popup d'accompagnement");
-    if (pendingBoxItem) {
+    // Vérifier si on a déjà traité une sélection pour éviter la duplication
+    if (pendingBoxItem && !hasProcessedSelection.current) {
       console.log("🟦 Ajout de la box sans accompagnement:", pendingBoxItem.item.name);
       // Si l'utilisateur ferme le popup, ajouter quand même la box sans accompagnement
       addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
       setPendingBoxItem(null);
+    } else if (hasProcessedSelection.current) {
+      console.log("🟦 Sélection déjà traitée, pas d'ajout supplémentaire");
     }
     setShowAccompagnementSelector(false);
   };
