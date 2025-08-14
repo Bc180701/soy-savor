@@ -108,7 +108,11 @@ export const AccompagnementSelector = ({
           >
             {accompagnements.map((accompagnement) => (
               <div key={accompagnement.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem value={accompagnement.id} id={accompagnement.id} />
+                <RadioGroupItem 
+                  value={accompagnement.id} 
+                  id={accompagnement.id}
+                  className="data-[state=checked]:bg-black data-[state=checked]:border-black data-[state=checked]:text-white"
+                />
                 <div className="flex-1">
                   <Label htmlFor={accompagnement.id} className="flex flex-col cursor-pointer">
                     <span className="font-medium">{accompagnement.name}</span>
