@@ -118,12 +118,15 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   };
 
   const handleAddToCart = (item: MenuItem) => {
+    console.log("🟩 CategoryContent.handleAddToCart called with:", item.name);
     setClickedButton(item.id);
     
     if (isBoxItem(item)) {
+      console.log("🟩 C'est une box, appel du hook handleBoxAddToCart");
       // Si c'est une box, utiliser la logique du hook pour ouvrir le popup
       handleBoxAddToCart(item, 1);
     } else {
+      console.log("🟩 Pas une box, appel de onAddToCart");
       // Sinon, ajouter directement au panier
       onAddToCart(item);
       toast({

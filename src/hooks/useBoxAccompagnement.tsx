@@ -20,21 +20,27 @@ export const useBoxAccompagnement = () => {
   };
 
   const handleAddToCart = (item: MenuItem, quantity: number = 1, specialInstructions?: string) => {
+    console.log("🟦 useBoxAccompagnement.handleAddToCart called with:", item.name);
     if (isBoxItem(item)) {
+      console.log("🟦 C'est une box, ouverture du popup pour:", item.name);
       // Si c'est une box, ouvrir le popup de sélection d'accompagnement SANS ajouter encore la box
       setPendingBoxItem({ item, quantity, specialInstructions });
       setShowAccompagnementSelector(true);
     } else {
+      console.log("🟦 Pas une box, ajout direct:", item.name);
       // Sinon, ajouter directement au panier
       cart.addItem(item, quantity, specialInstructions);
     }
   };
 
   const handleAccompagnementSelected = (accompagnement: MenuItem) => {
+    console.log("🟦 Accompagnement sélectionné:", accompagnement.name);
     if (pendingBoxItem) {
+      console.log("🟦 Ajout de la box au panier:", pendingBoxItem.item.name);
       // Ajouter la box au panier
       cart.addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
       
+      console.log("🟦 Ajout de l'accompagnement gratuit:", accompagnement.name);
       // Ajouter l'accompagnement gratuit avec instruction spéciale
       cart.addItem({
         ...accompagnement,
@@ -48,7 +54,9 @@ export const useBoxAccompagnement = () => {
   };
 
   const handleCloseAccompagnementSelector = () => {
+    console.log("🟦 Fermeture du popup d'accompagnement");
     if (pendingBoxItem) {
+      console.log("🟦 Ajout de la box sans accompagnement:", pendingBoxItem.item.name);
       // Si l'utilisateur ferme le popup, ajouter quand même la box sans accompagnement
       cart.addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
       setPendingBoxItem(null);
