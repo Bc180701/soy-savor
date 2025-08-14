@@ -21,7 +21,7 @@ export const useBoxAccompagnement = () => {
 
   const handleAddToCart = (item: MenuItem, quantity: number = 1, specialInstructions?: string) => {
     if (isBoxItem(item)) {
-      // Si c'est une box, ouvrir le popup de sélection d'accompagnement
+      // Si c'est une box, ouvrir le popup de sélection d'accompagnement SANS ajouter encore la box
       setPendingBoxItem({ item, quantity, specialInstructions });
       setShowAccompagnementSelector(true);
     } else {
