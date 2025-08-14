@@ -6,11 +6,13 @@ import { Plus, Pencil, Heart, Eye } from "lucide-react";
 import { MenuItem, MenuCategory } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { generateProductImageUrl, generateProductImageAlt } from "@/utils/productImageUtils";
+import { useBoxAccompagnement } from "@/hooks/useBoxAccompagnement";
+import { AccompagnementSelector } from "@/components/AccompagnementSelector";
+import { useToast } from "@/hooks/use-toast";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -24,6 +26,15 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [clickedButton, setClickedButton] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+  
+  const {
+    showAccompagnementSelector,
+    handleAddToCart: handleBoxAddToCart,
+    handleAccompagnementSelected,
+    handleCloseAccompagnementSelector,
+    pendingBoxItem
+  } = useBoxAccompagnement();
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);
@@ -70,16 +81,23 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
         return "poke";
       } else if (item.category === "custom" || 
                 item.name.toLowerCase().includes("sushi")) {
-        return "custom"; // Changed from "sushi" to "custom"
+        return "custom";
       }
     }
     
     // Also check by category for custom products
     if (item.category === "custom" || item.category === "poke_custom") {
-      return item.category === "poke_custom" ? "poke" : "custom"; // Changed from "sushi" to "custom"
+      return item.category === "poke_custom" ? "poke" : "custom";
     }
     
     return false;
+  };
+
+  const isBoxItem = (item: MenuItem) => {
+    return item.category === 'box' || 
+           item.category === 'box_du_midi' || 
+           item.category.toLowerCase().includes('box') ||
+           item.name.toLowerCase().includes('box');
   };
 
   const handleImageClick = (imageUrl: string, alt: string) => {
@@ -101,7 +119,18 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
   const handleAddToCart = (item: MenuItem) => {
     setClickedButton(item.id);
-    onAddToCart(item);
+    
+    if (isBoxItem(item)) {
+      // Si c'est une box, utiliser la logique du hook pour ouvrir le popup
+      handleBoxAddToCart(item, 1);
+    } else {
+      // Sinon, ajouter directement au panier
+      onAddToCart(item);
+      toast({
+        title: "Ajouté au panier",
+        description: `${item.name} a été ajouté à votre panier`,
+      });
+    }
     
     // Reset animation after 600ms to allow the +1 message to fade out
     setTimeout(() => {
@@ -540,6 +569,14 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* Popup de sélection d'accompagnement */}
+      <AccompagnementSelector
+        isOpen={showAccompagnementSelector}
+        onClose={handleCloseAccompagnementSelector}
+        onAccompagnementSelected={handleAccompagnementSelected}
+        restaurantId={pendingBoxItem?.item.restaurant_id}
+      />
     </>
   );
 };
