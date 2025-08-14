@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { MenuItem } from "@/types";
 
 interface AccompagnementSelectorProps {
@@ -75,6 +73,10 @@ export const AccompagnementSelector = ({
     }
   ];
 
+  const handleAccompagnementClick = (accompagnementId: string) => {
+    setSelectedAccompagnement(accompagnementId);
+  };
+
   const handleConfirm = () => {
     const selected = accompagnements.find(acc => acc.id === selectedAccompagnement);
     if (selected) {
@@ -97,32 +99,44 @@ export const AccompagnementSelector = ({
         </DialogHeader>
         
         <div className="py-4">
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Votre box inclut un accompagnement gratuit. Choisissez votre préférence :
           </p>
           
-          <RadioGroup 
-            value={selectedAccompagnement} 
-            onValueChange={setSelectedAccompagnement}
-            className="space-y-3"
-          >
+          <div className="space-y-3">
             {accompagnements.map((accompagnement) => (
-              <div key={accompagnement.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                <RadioGroupItem 
-                  value={accompagnement.id} 
-                  id={accompagnement.id}
-                  className="data-[state=checked]:bg-black data-[state=checked]:border-black data-[state=checked]:text-white"
-                />
+              <div 
+                key={accompagnement.id} 
+                className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-all hover:bg-accent ${
+                  selectedAccompagnement === accompagnement.id 
+                    ? 'bg-primary text-primary-foreground border-primary' 
+                    : 'border-border hover:border-primary/50'
+                }`}
+                onClick={() => handleAccompagnementClick(accompagnement.id)}
+              >
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                  selectedAccompagnement === accompagnement.id 
+                    ? 'border-primary-foreground bg-primary-foreground' 
+                    : 'border-primary'
+                }`}>
+                  {selectedAccompagnement === accompagnement.id && (
+                    <div className="w-2 h-2 rounded-full bg-primary"></div>
+                  )}
+                </div>
                 <div className="flex-1">
-                  <Label htmlFor={accompagnement.id} className="flex flex-col cursor-pointer">
-                    <span className="font-medium">{accompagnement.name}</span>
-                    <span className="text-sm text-gray-500">{accompagnement.description}</span>
-                  </Label>
+                  <div className="font-medium">{accompagnement.name}</div>
+                  <div className={`text-sm ${
+                    selectedAccompagnement === accompagnement.id 
+                      ? 'text-primary-foreground/80' 
+                      : 'text-muted-foreground'
+                  }`}>
+                    {accompagnement.description}
+                  </div>
                 </div>
                 <span className="text-green-600 font-medium text-sm">Gratuit</span>
               </div>
             ))}
-          </RadioGroup>
+          </div>
         </div>
         
         <div className="flex gap-3 pt-4">
@@ -132,7 +146,7 @@ export const AccompagnementSelector = ({
           <Button 
             onClick={handleConfirm} 
             disabled={!selectedAccompagnement}
-            className="flex-1 bg-gold-500 hover:bg-gold-600 text-black"
+            className="flex-1"
           >
             Confirmer
           </Button>
