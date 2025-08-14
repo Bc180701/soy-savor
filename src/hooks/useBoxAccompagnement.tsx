@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MenuItem } from "@/types";
-import { useCart } from "./use-cart";
+import { useCartWithRestaurant } from "./useCartWithRestaurant";
 
 export const useBoxAccompagnement = () => {
   const [showAccompagnementSelector, setShowAccompagnementSelector] = useState(false);
@@ -10,7 +10,7 @@ export const useBoxAccompagnement = () => {
     specialInstructions?: string;
   } | null>(null);
   
-  const cart = useCart();
+  const { addItem } = useCartWithRestaurant();
 
   const isBoxItem = (item: MenuItem) => {
     return item.category === 'box' || 
@@ -29,7 +29,7 @@ export const useBoxAccompagnement = () => {
     } else {
       console.log("🟦 Pas une box, ajout direct:", item.name);
       // Sinon, ajouter directement au panier
-      cart.addItem(item, quantity, specialInstructions);
+      addItem(item, quantity, specialInstructions);
     }
   };
 
@@ -38,11 +38,11 @@ export const useBoxAccompagnement = () => {
     if (pendingBoxItem) {
       console.log("🟦 Ajout de la box au panier:", pendingBoxItem.item.name);
       // Ajouter la box au panier
-      cart.addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
+      addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
       
       console.log("🟦 Ajout de l'accompagnement gratuit:", accompagnement.name);
       // Ajouter l'accompagnement gratuit avec instruction spéciale
-      cart.addItem({
+      addItem({
         ...accompagnement,
         id: `accompagnement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }, 1, "Accompagnement offert avec box");
@@ -58,7 +58,7 @@ export const useBoxAccompagnement = () => {
     if (pendingBoxItem) {
       console.log("🟦 Ajout de la box sans accompagnement:", pendingBoxItem.item.name);
       // Si l'utilisateur ferme le popup, ajouter quand même la box sans accompagnement
-      cart.addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
+      addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
       setPendingBoxItem(null);
     }
     setShowAccompagnementSelector(false);
