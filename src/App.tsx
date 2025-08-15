@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import NosRestaurants from "./pages/NosRestaurants";
 import MentionsLegales from "./pages/MentionsLegales";
+import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import { RestaurantProvider } from "./hooks/useRestaurantContext";
 
 const queryClient = new QueryClient();
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="commande-confirmee" element={<CommandeConfirmee />} />
               <Route path="commande-confirmee/:orderId" element={<CommandeConfirmee />} />
               <Route path="mentions-legales" element={<MentionsLegales />} />
+              <Route path="politique-confidentialite" element={<PolitiqueConfidentialite />} />
               <Route path="admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Route>

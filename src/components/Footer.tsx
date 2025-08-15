@@ -151,7 +151,7 @@ const Footer = () => {
             <Link to="/cgv" className="text-gray-500 text-sm hover:text-white transition-colors">
               {footerData?.legal_links?.cgv || "CGV"}
             </Link>
-            <Link to="/confidentialite" className="text-gray-500 text-sm hover:text-white transition-colors">
+            <Link to="/politique-confidentialite" className="text-gray-500 text-sm hover:text-white transition-colors">
               {footerData?.legal_links?.confidentialite || "Politique de confidentialité"}
             </Link>
           </div>

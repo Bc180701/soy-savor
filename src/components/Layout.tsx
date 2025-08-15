@@ -2,6 +2,7 @@
 import { ReactNode } from "react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import CookieBanner from "./CookieBanner";
 import { motion } from "framer-motion";
 
 interface LayoutProps {
@@ -22,6 +23,7 @@ const Layout = ({ children }: LayoutProps) => {
         {children}
       </motion.main>
       <Footer />
+      <CookieBanner />
     </div>
   );
 };
