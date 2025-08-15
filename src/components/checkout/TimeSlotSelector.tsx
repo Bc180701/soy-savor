@@ -238,9 +238,20 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       });
 
       // Ajuster pour le délai de livraison ou de retrait
-      const interval = 30; // 30 minutes pour tous les types
-      const minDelay = orderType === "delivery" ? 30 : 20;
-      const minTime = addMinutes(now, minDelay);
+      const interval = 15; // 15 minutes pour tous les types
+      
+      // Calculer le premier créneau disponible (demi-heure supérieure)
+      const currentMinutes = now.getMinutes();
+      const nextHalfHour = currentMinutes < 30 ? 30 : 60;
+      const minTime = new Date(now);
+      
+      if (nextHalfHour === 60) {
+        minTime.setHours(now.getHours() + 1, 0, 0, 0);
+      } else {
+        minTime.setMinutes(30, 0, 0);
+      }
+      
+      console.log(`🕐 [TimeSlotSelector] Commande à ${format(now, 'HH:mm')} → Premier créneau ${format(minTime, 'HH:mm')}`);
 
       let currentTime = new Date(startDate);
 
