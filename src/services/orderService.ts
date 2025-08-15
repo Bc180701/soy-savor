@@ -3,9 +3,42 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { sendOrderStatusSMS } from "./smsService";
 
+interface TimeSlotVerificationResult {
+  available: boolean;
+  message: string;
+  currentCount?: number;
+  maxAllowed?: number;
+}
+
 export type OrderResponse = {
   orders: Order[];
   error: Error | null;
+};
+
+// Fonction de vérification côté serveur des créneaux
+const verifyTimeSlot = async (
+  restaurantId: string,
+  orderType: string,
+  scheduledFor: string
+): Promise<TimeSlotVerificationResult> => {
+  try {
+    console.log("🔍 Vérification serveur du créneau:", { restaurantId, orderType, scheduledFor });
+    
+    const { data, error } = await supabase.functions.invoke('verify-time-slot', {
+      body: { restaurantId, orderType, scheduledFor }
+    });
+
+    if (error) {
+      console.error("❌ Erreur lors de la vérification du créneau:", error);
+      return { available: false, message: "Erreur de vérification du créneau" };
+    }
+
+    console.log("✅ Résultat vérification serveur:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Erreur réseau lors de la vérification:", error);
+    return { available: false, message: "Erreur de connexion" };
+  }
 };
 
 export const createOrder = async (
@@ -43,6 +76,25 @@ export const createOrder = async (
     const targetRestaurantId = restaurantId || "11111111-1111-1111-1111-111111111111";
 
     console.log(`🏪 Création de commande pour le restaurant: ${targetRestaurantId}`);
+
+    // 🚨 VÉRIFICATION CRITIQUE DU CRÉNEAU CÔTÉ SERVEUR
+    if (orderInput.orderType === 'delivery') {
+      console.log("🔒 Vérification finale du créneau de livraison...");
+      const verification = await verifyTimeSlot(
+        targetRestaurantId,
+        orderInput.orderType,
+        orderInput.scheduledFor.toISOString()
+      );
+
+      if (!verification.available) {
+        console.log("🚫 CRÉNEAU BLOQUÉ - Commande refusée");
+        return { 
+          success: false, 
+          error: `Créneau de livraison non disponible: ${verification.message}` 
+        };
+      }
+      console.log("✅ Créneau vérifié et disponible, création de la commande...");
+    }
 
     // Création de la commande dans la base de données
     const { data: newOrder, error: orderError } = await supabase

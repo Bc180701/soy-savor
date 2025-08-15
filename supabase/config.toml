@@ -3,6 +3,9 @@ project_id = "tdykegnmomyyucbhslok"
 [auth]
 enable_confirmations = false
 
+[functions.verify-time-slot]
+verify_jwt = false
+
 [functions.send-order-notification]
 verify_jwt = false
 

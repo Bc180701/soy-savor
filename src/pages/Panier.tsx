@@ -224,6 +224,47 @@ const PanierContent = () => {
         return;
       }
 
+      // 🚨 VÉRIFICATION FINALE DU CRÉNEAU AVANT PAIEMENT
+      if (deliveryInfo.orderType === 'delivery' && cartRestaurant && deliveryInfo.pickupTime) {
+        try {
+          console.log("🔒 Vérification finale du créneau avant paiement...");
+          
+          // Préparer la date scheduled_for
+          const scheduledForDate = new Date();
+          const [hours, minutes] = deliveryInfo.pickupTime.split(':') || ["12", "00"];
+          scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+          
+          const { data: verification, error } = await supabase.functions.invoke('verify-time-slot', {
+            body: {
+              restaurantId: cartRestaurant.id,
+              orderType: deliveryInfo.orderType,
+              scheduledFor: scheduledForDate.toISOString()
+            }
+          });
+
+          if (error || !verification?.available) {
+            setLoading(false);
+            toast({
+              title: "Créneau non disponible",
+              description: verification?.message || "Ce créneau de livraison n'est plus disponible. Veuillez en choisir un autre.",
+              variant: "destructive",
+            });
+            setCurrentStep(CheckoutStep.DeliveryDetails); // Retour à l'étape de sélection du créneau
+            return;
+          }
+          console.log("✅ Créneau confirmé disponible, proceeding au paiement...");
+        } catch (error) {
+          setLoading(false);
+          console.error("❌ Erreur lors de la vérification finale:", error);
+          toast({
+            title: "Erreur de vérification",
+            description: "Erreur lors de la vérification du créneau. Veuillez réessayer.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       // If delivery is selected and postal code is invalid, prevent proceeding
       if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
         toast({

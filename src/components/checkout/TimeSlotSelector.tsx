@@ -114,6 +114,18 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
     }
   }, [orderType, isLoading, todayOpeningHours, cartRestaurant]);
 
+  // 🔄 ACTUALISATION AUTOMATIQUE toutes les 30 secondes pour éviter les doublons
+  useEffect(() => {
+    if (!isLoading && todayOpeningHours && cartRestaurant) {
+      const interval = setInterval(() => {
+        console.log("🔄 Actualisation automatique des créneaux...");
+        generateTimeSlots();
+      }, 30000); // 30 secondes
+
+      return () => clearInterval(interval);
+    }
+  }, [isLoading, todayOpeningHours, cartRestaurant]);
+
   const getSlotDataBatch = async () => {
     try {
       const today = new Date();
@@ -243,8 +255,12 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
         
         let isSlotFull = false;
         if (orderType === "delivery") {
-          // Pour une livraison : max 1 livraison par créneau par restaurant
+          // 🚨 LIMITE STRICTE: 1 livraison maximum par créneau par restaurant
           isSlotFull = currentDeliveries >= 1;
+          
+          if (isSlotFull) {
+            console.log(`🚫 CRÉNEAU BLOQUÉ: ${timeValue} (${currentDeliveries} livraison(s) déjà programmée(s)) - Restaurant: ${cartRestaurant?.name}`);
+          }
         } else {
           // Pour un retrait : max 2 commandes totales par créneau
           isSlotFull = currentOrders >= 2;
