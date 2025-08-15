@@ -21,6 +21,7 @@ import Admin from "@/pages/Admin";
 
 import CommandeConfirmee from "@/pages/CommandeConfirmee";
 import MentionsLegales from "@/pages/MentionsLegales";
+import PolitiqueConfidentialite from "@/pages/PolitiqueConfidentialite";
 import NosRestaurants from "@/pages/NosRestaurants";
 import ResetPassword from "@/pages/ResetPassword";
 import UpdatePassword from "@/pages/UpdatePassword";
@@ -91,6 +92,7 @@ function App() {
         
         <Route path="/commande-confirmee" element={<Layout><CommandeConfirmee /></Layout>} />
         <Route path="/mentions-legales" element={<Layout><MentionsLegales /></Layout>} />
+        <Route path="/politique-confidentialite" element={<Layout><PolitiqueConfidentialite /></Layout>} />
         <Route path="/nos-restaurants" element={<Layout><NosRestaurants /></Layout>} />
         
         {/* Pages sans Layout */}
