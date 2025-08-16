@@ -21,7 +21,12 @@ export const useRestaurantOrderingStatus = (restaurants: Restaurant[]) => {
         // Vérifier le statut de verrouillage pour chaque restaurant
         for (const restaurant of restaurants) {
           const settings = (restaurant.settings as Record<string, any>) ?? {};
-          const isLocked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+          const ordering_locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+          const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
+          const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
+          
+          // Restaurant fermé si ordering_locked OU si (delivery_blocked ET pickup_blocked)
+          const isLocked = ordering_locked || (delivery_blocked && pickup_blocked);
           statusMap[restaurant.id] = !isLocked; // true = ouvert (non verrouillé)
         }
         
@@ -65,7 +70,12 @@ export const useRestaurantOrderingStatus = (restaurants: Restaurant[]) => {
           if (restaurantIds.includes(updatedRestaurantId)) {
             console.log("🔒 Changement statut restaurant détecté:", updatedRestaurantId);
             const settings = (payload.new?.settings as Record<string, any>) ?? {};
-            const isLocked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+            const ordering_locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+            const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
+            const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
+            
+            // Restaurant fermé si ordering_locked OU si (delivery_blocked ET pickup_blocked)
+            const isLocked = ordering_locked || (delivery_blocked && pickup_blocked);
             
             setOrderingStatus(prev => ({
               ...prev,

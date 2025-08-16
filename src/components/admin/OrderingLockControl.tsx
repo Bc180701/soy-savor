@@ -178,6 +178,31 @@ const OrderingLockControl = () => {
     fetchLockStatus();
   }, [currentRestaurant]);
 
+  // Logique automatique : activer ordering_locked si delivery_blocked ET pickup_blocked
+  useEffect(() => {
+    if (loading || saving) return;
+    
+    if (deliveryBlocked && pickupBlocked && !isLocked) {
+      console.log("🔒 Activation automatique du verrouillage général (livraison ET emporter bloqués)");
+      updateOrderingSettings('general', true);
+    }
+  }, [deliveryBlocked, pickupBlocked, isLocked, loading, saving]);
+
+  // Logique automatique : désactiver delivery_blocked et pickup_blocked si ordering_locked est activé
+  useEffect(() => {
+    if (loading || saving) return;
+    
+    if (isLocked && (deliveryBlocked || pickupBlocked)) {
+      console.log("🔒 Désactivation automatique des blocages spécifiques (verrouillage général actif)");
+      if (deliveryBlocked) {
+        updateOrderingSettings('delivery', false);
+      }
+      if (pickupBlocked) {
+        updateOrderingSettings('pickup', false);
+      }
+    }
+  }, [isLocked, deliveryBlocked, pickupBlocked, loading, saving]);
+
   // Log de l'état actuel pour debug
   useEffect(() => {
     console.log("🔒 État actuel - isLocked:", isLocked, "deliveryBlocked:", deliveryBlocked, "pickupBlocked:", pickupBlocked, "loading:", loading, "saving:", saving);
@@ -290,7 +315,8 @@ const OrderingLockControl = () => {
               <ul className="text-sm text-blue-700 space-y-1">
                 <li>• Le verrouillage général désactive tous les types de commandes</li>
                 <li>• Les blocages spécifiques permettent de désactiver uniquement les livraisons ou l'emporter</li>
-                <li>• Utile pour fermer temporairement un service (ex: livraisons le midi)</li>
+                <li>• Si livraison ET emporter sont bloqués → le verrouillage général s'active automatiquement</li>
+                <li>• Si le verrouillage général est activé → les blocages spécifiques se désactivent automatiquement</li>
                 <li>• N'affecte pas les commandes déjà en cours</li>
                 <li>• Peut être activé/désactivé à tout moment</li>
               </ul>

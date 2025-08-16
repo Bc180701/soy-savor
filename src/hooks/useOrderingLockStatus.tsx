@@ -34,9 +34,14 @@ export const useOrderingLockStatus = () => {
       }
 
       const settings = (data?.settings as Record<string, any>) ?? {};
-      const locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+      const ordering_locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+      const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
+      const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
       
-      console.log("🔒 Statut récupéré:", locked);
+      // Restaurant fermé si ordering_locked OU si (delivery_blocked ET pickup_blocked)
+      const locked = ordering_locked || (delivery_blocked && pickup_blocked);
+      
+      console.log("🔒 Statut récupéré - ordering_locked:", ordering_locked, "delivery_blocked:", delivery_blocked, "pickup_blocked:", pickup_blocked, "résultat final:", locked);
       setIsOrderingLocked(locked);
       
     } catch (error) {
@@ -70,8 +75,14 @@ export const useOrderingLockStatus = () => {
         (payload) => {
           console.log("🔒 Changement détecté en temps réel:", payload);
           const settings = (payload.new?.settings as Record<string, any>) ?? {};
-          const locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
-          console.log("🔒 Nouveau statut:", locked);
+          const ordering_locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+          const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
+          const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
+          
+          // Restaurant fermé si ordering_locked OU si (delivery_blocked ET pickup_blocked)
+          const locked = ordering_locked || (delivery_blocked && pickup_blocked);
+          
+          console.log("🔒 Nouveau statut - ordering_locked:", ordering_locked, "delivery_blocked:", delivery_blocked, "pickup_blocked:", pickup_blocked, "résultat final:", locked);
           setIsOrderingLocked(locked);
         }
       )
