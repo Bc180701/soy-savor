@@ -77,24 +77,22 @@ export const createOrder = async (
 
     console.log(`🏪 Création de commande pour le restaurant: ${targetRestaurantId}`);
 
-    // 🚨 VÉRIFICATION CRITIQUE DU CRÉNEAU CÔTÉ SERVEUR
-    if (orderInput.orderType === 'delivery') {
-      console.log("🔒 Vérification finale du créneau de livraison...");
-      const verification = await verifyTimeSlot(
-        targetRestaurantId,
-        orderInput.orderType,
-        orderInput.scheduledFor.toISOString()
-      );
+    // 🚨 VÉRIFICATION CRITIQUE DU CRÉNEAU CÔTÉ SERVEUR POUR TOUTES LES COMMANDES
+    console.log("🔒 Vérification finale du créneau avant création...");
+    const verification = await verifyTimeSlot(
+      targetRestaurantId,
+      orderInput.orderType,
+      orderInput.scheduledFor.toISOString()
+    );
 
-      if (!verification.available) {
-        console.log("🚫 CRÉNEAU BLOQUÉ - Commande refusée");
-        return { 
-          success: false, 
-          error: `Créneau de livraison non disponible: ${verification.message}` 
-        };
-      }
-      console.log("✅ Créneau vérifié et disponible, création de la commande...");
+    if (!verification.available) {
+      console.log("🚫 CRÉNEAU BLOQUÉ - Commande refusée");
+      return { 
+        success: false, 
+        error: `Créneau non disponible: ${verification.message}` 
+      };
     }
+    console.log("✅ Créneau vérifié et disponible, création de la commande...");
 
     // Création de la commande dans la base de données
     const { data: newOrder, error: orderError } = await supabase

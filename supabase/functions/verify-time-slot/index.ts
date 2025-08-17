@@ -38,14 +38,24 @@ serve(async (req) => {
     }
 
     // Compter les livraisons existantes pour ce créneau et ce restaurant
+    console.log('🔍 Requête SQL pour:', {
+      restaurantId,
+      orderType,
+      scheduledFor,
+      startTime: scheduledFor,
+      endTime: new Date(new Date(scheduledFor).getTime() + 60000).toISOString()
+    });
+
     const { data: existingOrders, error } = await supabase
       .from('orders')
-      .select('id, scheduled_for, restaurant_id')
+      .select('id, scheduled_for, restaurant_id, payment_status, order_type')
       .eq('restaurant_id', restaurantId)
       .eq('order_type', 'delivery')
-      .eq('payment_status', 'paid')
+      .in('payment_status', ['paid', 'pending']) // Inclure les commandes en attente de paiement
       .gte('scheduled_for', scheduledFor)
       .lt('scheduled_for', new Date(new Date(scheduledFor).getTime() + 60000).toISOString()); // +1 minute
+
+    console.log('📊 Commandes trouvées:', existingOrders);
 
     if (error) {
       console.error('❌ Erreur lors de la vérification:', error);
