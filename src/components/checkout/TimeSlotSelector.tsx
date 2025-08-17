@@ -270,11 +270,12 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
           isSlotFull = currentDeliveries >= 1;
           
           if (isSlotFull) {
-            console.log(`🚫 CRÉNEAU BLOQUÉ: ${timeValue} (${currentDeliveries} livraison(s) déjà programmée(s)) - Restaurant: ${cartRestaurant?.name}`);
+            console.log(`🚫 CRÉNEAU LIVRAISON BLOQUÉ: ${timeValue} (${currentDeliveries} livraison(s) déjà programmée(s)) - Restaurant: ${cartRestaurant?.name}`);
           }
         } else {
-          // Pour un retrait : max 2 commandes totales par créneau
-          isSlotFull = currentOrders >= 2;
+          // Pour un retrait : pas de limitation de créneaux
+          isSlotFull = false;
+          console.log(`✅ RETRAIT: ${timeValue} - Pas de limitation`);
         }
 
         // Vérifier si le créneau est bloqué par l'admin
