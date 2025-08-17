@@ -68,6 +68,44 @@ serve(async (req) => {
     const deliveryCount = existingOrders?.length || 0;
     console.log(`📊 Livraisons existantes pour ${scheduledFor}:`, deliveryCount);
 
+    // 🚨 VÉRIFICATION CRITIQUE: Créneaux bloqués par l'admin
+    const scheduledDate = new Date(scheduledFor);
+    const timeOnly = scheduledDate.toTimeString().slice(0, 5); // Format HH:MM
+    const dateOnly = scheduledDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+    
+    console.log('🔍 Vérification créneau bloqué:', {
+      restaurantId,
+      dateOnly,
+      timeOnly
+    });
+
+    const { data: blockedSlots, error: blockedError } = await supabase
+      .from('blocked_time_slots')
+      .select('id, blocked_time, reason')
+      .eq('restaurant_id', restaurantId)
+      .eq('blocked_date', dateOnly)
+      .eq('blocked_time', timeOnly + ':00'); // Ajouter les secondes
+
+    if (blockedError) {
+      console.error('❌ Erreur vérification créneaux bloqués:', blockedError);
+    } else {
+      console.log('📋 Créneaux bloqués trouvés:', blockedSlots);
+      
+      if (blockedSlots && blockedSlots.length > 0) {
+        console.log('🚫 CRÉNEAU BLOQUÉ PAR L\'ADMIN - Commande refusée');
+        return new Response(
+          JSON.stringify({ 
+            available: false, 
+            message: `Ce créneau a été bloqué par l'administration. ${blockedSlots[0].reason || ''}`.trim(),
+            currentCount: deliveryCount,
+            maxAllowed: 1,
+            blockedByAdmin: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     // LIMITE STRICTE: Maximum 1 livraison par créneau de 1 minute
     const isAvailable = deliveryCount < 1;
     
