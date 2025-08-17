@@ -180,7 +180,12 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       });
 
       // Créer un Set des créneaux bloqués pour une recherche rapide
-      const blockedSlots = new Set((blockedResult.data || []).map(slot => slot.blocked_time));
+      const blockedSlots = new Set((blockedResult.data || []).map(slot => {
+        // Convertir le format HH:MM:SS en HH:MM pour correspondre au format utilisé
+        return slot.blocked_time.slice(0, 5); // "18:00:00" -> "18:00"
+      }));
+
+      console.log('🚫 Créneaux bloqués formatés:', Array.from(blockedSlots));
 
       return { orderCounts, deliveryCounts, pickupCounts, blockedSlots };
     } catch (error) {
