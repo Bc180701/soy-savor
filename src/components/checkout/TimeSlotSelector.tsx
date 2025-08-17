@@ -136,10 +136,11 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       // Récupérer toutes les commandes du jour en une seule requête
       const ordersPromise = supabase
         .from('orders')
-        .select('scheduled_for, order_type')
+        .select('scheduled_for, order_type, payment_status')
         .gte('scheduled_for', startOfDay.toISOString())
         .lt('scheduled_for', endOfDay.toISOString())
-        .eq('restaurant_id', cartRestaurant?.id);
+        .eq('restaurant_id', cartRestaurant?.id)
+        .in('payment_status', ['paid', 'pending']); // Inclure paid ET pending
 
       // Récupérer tous les créneaux bloqués du jour en une seule requête
       const blockedSlotsPromise = supabase
@@ -163,7 +164,8 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       const pickupCounts: Record<string, number> = {};
       
       (ordersResult.data || []).forEach(order => {
-        if (order.scheduled_for) {
+        // Ne compter que les commandes payées ou en attente
+        if (order.scheduled_for && (order.payment_status === 'paid' || order.payment_status === 'pending')) {
           // Extraire l'heure de scheduled_for
           const timeSlot = format(new Date(order.scheduled_for), 'HH:mm');
           
@@ -178,6 +180,9 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
           }
         }
       });
+
+      console.log('📊 Compteurs créneaux livraison:', deliveryCounts);
+      console.log('📊 Compteurs créneaux retrait:', pickupCounts);
 
       // Créer un Set des créneaux bloqués pour une recherche rapide
       const blockedSlots = new Set((blockedResult.data || []).map(slot => {
@@ -269,6 +274,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
         const currentDeliveries = deliveryCounts[timeValue] || 0;
         const currentPickups = pickupCounts[timeValue] || 0;
         
+        
         let isSlotFull = false;
         if (orderType === "delivery") {
           // 🚨 LIMITE STRICTE: 1 livraison maximum par créneau par restaurant
@@ -276,6 +282,8 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
           
           if (isSlotFull) {
             console.log(`🚫 CRÉNEAU LIVRAISON BLOQUÉ: ${timeValue} (${currentDeliveries} livraison(s) déjà programmée(s)) - Restaurant: ${cartRestaurant?.name}`);
+          } else {
+            console.log(`✅ LIVRAISON DISPONIBLE: ${timeValue} (${currentDeliveries}/1) - Restaurant: ${cartRestaurant?.name}`);
           }
         } else {
           // Pour un retrait : pas de limitation de créneaux
