@@ -192,14 +192,26 @@ export function useAdminPermissions() {
     
     // Écouter les changements de permissions via un événement personnalisé
     const handlePermissionsChanged = (event: CustomEvent) => {
-      console.log('🔄 Événement permissions changées reçu:', event.detail);
-      // Invalider le cache et recharger les permissions
+      console.log('🔄 Événement permissions changées reçu dans hook:', event.detail);
+      
+      // Vider immédiatement le cache
       clearCache();
-      // Délai court pour laisser la base de données se synchroniser
+      
+      // Forcer un nouveau check des permissions
       setTimeout(() => {
+        console.log('🔄 Rechargement des permissions...');
         checkPermissions();
-      }, 300);
+      }, 50);
     };
+
+    // Écouter aussi les changements de session auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        console.log('🔄 Session auth changée, rechargement des permissions');
+        clearCache();
+        checkPermissions();
+      }
+    });
 
     window.addEventListener('admin-permissions-changed', handlePermissionsChanged as EventListener);
     
@@ -209,6 +221,7 @@ export function useAdminPermissions() {
         abortControllerRef.current.abort();
       }
       window.removeEventListener('admin-permissions-changed', handlePermissionsChanged as EventListener);
+      subscription.unsubscribe();
     };
   }, [checkPermissions]); // Retirer clearCache des dépendances car useCallback sans deps
 
