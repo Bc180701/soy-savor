@@ -239,6 +239,12 @@ export function useAdminPermissions() {
   }, [checkPermissions]); // Retirer clearCache des dépendances car useCallback sans deps
 
   const canAccessSection = useCallback((sectionName: string): boolean => {
+    // Pendant le chargement, on ne peut pas encore déterminer les permissions
+    if (loading) {
+      console.log(`⏳ Permissions en cours de chargement pour ${sectionName}`);
+      return false;
+    }
+    
     // En cas d'erreur, donner accès par défaut pour éviter le blocage
     if (error) {
       console.warn('⚠️ Accès autorisé par défaut due à une erreur:', error);
@@ -246,14 +252,22 @@ export function useAdminPermissions() {
     }
     
     // Les super-admins ont accès à tout
-    if (isSuperAdmin) return true;
+    if (isSuperAdmin) {
+      console.log(`✅ Super-admin accès autorisé pour ${sectionName}`);
+      return true;
+    }
     
     // Si aucune permission spécifique n'est définie, l'accès est autorisé par défaut
-    if (!(sectionName in permissions)) return true;
+    if (!(sectionName in permissions)) {
+      console.log(`✅ Pas de permission spécifique pour ${sectionName}, accès autorisé par défaut`);
+      return true;
+    }
     
     // Sinon, vérifier la permission spécifique
-    return permissions[sectionName];
-  }, [isSuperAdmin, permissions, error]);
+    const hasAccess = permissions[sectionName];
+    console.log(`${hasAccess ? '✅' : '❌'} Permission ${sectionName}: ${hasAccess}`);
+    return hasAccess;
+  }, [isSuperAdmin, permissions, error, loading]);
 
   return {
     isSuperAdmin,

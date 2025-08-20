@@ -70,6 +70,52 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
       window.removeEventListener('current-user-permissions-changed', handleCurrentUserPermissionsChanged as EventListener);
     };
   }, [refreshPermissions]);
+  
+  // Afficher un loader si les permissions sont en cours de chargement
+  if (loading) {
+    return (
+      <>
+        {/* Mobile overlay */}
+        {isOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={onClose}
+          />
+        )}
+        
+        {/* Sidebar */}
+        <div className={cn(
+          "fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-50",
+          "lg:relative lg:transform-none lg:z-auto",
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}>
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Administration</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="lg:hidden"
+            >
+              <XIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Restaurant Selector */}
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <RestaurantSelector />
+          </div>
+          
+          <div className="p-4">
+            <div className="flex items-center justify-center">
+              <span className="text-sm text-gray-500">Chargement des permissions...</span>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Mobile overlay */}
@@ -107,10 +153,12 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
           <ul className="space-y-2">
             {navigationItems
               .filter((item) => {
+                const canAccess = canAccessSection(item.id);
                 console.log(`🔍 Filtrage section ${item.id}:`, {
                   isSuperAdmin,
-                  canAccess: canAccessSection(item.id),
-                  loading
+                  canAccess,
+                  loading,
+                  finalResult: item.id === 'permissions' ? isSuperAdmin : canAccess
                 });
                 
                 // Les permissions ne sont visibles que pour les super-admins
@@ -118,7 +166,7 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
                   return isSuperAdmin;
                 }
                 // Pour les autres sections, vérifier les permissions
-                return canAccessSection(item.id);
+                return canAccess;
               })
               .map((item) => {
                 const Icon = item.icon;
