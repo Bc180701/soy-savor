@@ -22,14 +22,14 @@ interface Permission {
 
 const ADMIN_SECTIONS = [
   { id: 'dashboard', label: 'Tableau de bord' },
-  { id: 'products', label: 'Gestion des produits' },
-  { id: 'orders', label: 'Gestion des commandes' },
-  { id: 'users', label: 'Gestion des utilisateurs' },
+  { id: 'orders', label: 'Commandes' },
+  { id: 'products', label: 'Produits' },
+  { id: 'users', label: 'Utilisateurs' },
   { id: 'blocked-slots', label: 'Créneaux bloqués' },
-  { id: 'promotions', label: 'Gestion des promotions' },
+  { id: 'promotions', label: 'Promotions' },
   { id: 'homepage', label: 'Page d\'accueil' },
   { id: 'admins', label: 'Administrateurs' },
-  { id: 'stripe-keys', label: 'Gestion des clés Stripe' },
+  { id: 'stripe-keys', label: 'Clés Stripe' },
   { id: 'printers', label: 'Imprimantes' },
   { id: 'bluetooth', label: 'Bluetooth Mobile' },
   { id: 'settings', label: 'Paramètres' },
@@ -118,25 +118,26 @@ export default function AdminPermissionsManager() {
         }
       });
 
+      console.log(`🔄 Permission ${sectionName} mise à jour pour ${userId}: ${canAccess}`);
+      
       // Notifier immédiatement tous les composants du changement
       window.dispatchEvent(new CustomEvent('admin-permissions-changed', {
         detail: { userId, sectionName, canAccess }
       }));
 
-      // Si c'est pour l'utilisateur actuel, forcer un rafraîchissement immédiat
+      // Si c'est pour l'utilisateur actuel, vider le cache et déclencher une mise à jour
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (currentUser && currentUser.id === userId) {
-        console.log('🔄 Mise à jour des permissions pour l\'utilisateur actuel');
+        console.log('🔄 Permissions modifiées pour l\'utilisateur actuel - invalidation cache');
         
         // Vider le cache des permissions immédiatement
         const keys = Object.keys(localStorage).filter(key => key.startsWith('admin_permissions_'));
         keys.forEach(key => localStorage.removeItem(key));
         
-        // Recharger la page après un court délai
-        setTimeout(() => {
-          console.log('🔄 Rechargement de la page...');
-          window.location.reload();
-        }, 100);
+        // Déclencher un événement spécial pour l'utilisateur actuel
+        window.dispatchEvent(new CustomEvent('current-user-permissions-changed', {
+          detail: { userId, sectionName, canAccess }
+        }));
       }
 
       toast.success('Permission mise à jour avec succès');

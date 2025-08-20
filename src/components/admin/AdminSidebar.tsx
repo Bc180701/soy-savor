@@ -52,14 +52,22 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
   
   // Écouter les changements de permissions pour rafraîchir la sidebar
   useEffect(() => {
-    const handlePermissionsChanged = () => {
-      console.log('🔄 Événement permissions changées reçu - rafraîchissement sidebar');
+    const handlePermissionsChanged = (event: CustomEvent) => {
+      console.log('🔄 Événement permissions changées reçu - rafraîchissement sidebar:', event.detail);
       refreshPermissions();
     };
 
-    window.addEventListener('admin-permissions-changed', handlePermissionsChanged);
+    const handleCurrentUserPermissionsChanged = (event: CustomEvent) => {
+      console.log('🔄 Permissions utilisateur actuel changées - rafraîchissement sidebar:', event.detail);
+      refreshPermissions();
+    };
+
+    window.addEventListener('admin-permissions-changed', handlePermissionsChanged as EventListener);
+    window.addEventListener('current-user-permissions-changed', handleCurrentUserPermissionsChanged as EventListener);
+    
     return () => {
-      window.removeEventListener('admin-permissions-changed', handlePermissionsChanged);
+      window.removeEventListener('admin-permissions-changed', handlePermissionsChanged as EventListener);
+      window.removeEventListener('current-user-permissions-changed', handleCurrentUserPermissionsChanged as EventListener);
     };
   }, [refreshPermissions]);
   return (
@@ -99,6 +107,12 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
           <ul className="space-y-2">
             {navigationItems
               .filter((item) => {
+                console.log(`🔍 Filtrage section ${item.id}:`, {
+                  isSuperAdmin,
+                  canAccess: canAccessSection(item.id),
+                  loading
+                });
+                
                 // Les permissions ne sont visibles que pour les super-admins
                 if (item.id === 'permissions') {
                   return isSuperAdmin;
