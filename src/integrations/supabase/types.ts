@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -848,22 +848,31 @@ export type Database = {
       }
       push_tokens: {
         Row: {
-          created_at: string
-          device_type: string
-          id: number
+          created_at: string | null
+          id: string
+          oneSignalPlayerId: string | null
+          platform: string
           token: string
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          created_at: string
-          device_type?: string
-          id?: number
-          token?: string
+          created_at?: string | null
+          id?: string
+          oneSignalPlayerId?: string | null
+          platform: string
+          token: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          created_at?: string
-          device_type?: string
-          id?: number
+          created_at?: string | null
+          id?: string
+          oneSignalPlayerId?: string | null
+          platform?: string
           token?: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1307,7 +1316,7 @@ export type Database = {
     }
     Functions: {
       can_access_admin_section: {
-        Args: { user_id: string; section: string }
+        Args: { section: string; user_id: string }
         Returns: boolean
       }
       check_table_exists: {
@@ -1336,18 +1345,18 @@ export type Database = {
       }
       get_or_create_product_code: {
         Args:
-          | { p_item_name: string; p_item_type?: string }
           | {
+              p_item_description?: string
               p_item_name: string
               p_item_type?: string
-              p_item_description?: string
             }
+          | { p_item_name: string; p_item_type?: string }
         Returns: string
       }
       has_role: {
         Args: {
-          user_id: string
           role: Database["public"]["Enums"]["user_role"]
+          user_id: string
         }
         Returns: boolean
       }
@@ -1364,7 +1373,7 @@ export type Database = {
         Returns: undefined
       }
       update_homepage_data: {
-        Args: { section_name: string; section_data: Json }
+        Args: { section_data: Json; section_name: string }
         Returns: undefined
       }
     }
