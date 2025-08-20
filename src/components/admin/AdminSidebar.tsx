@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { 
   BarChart3, 
   Package, 
@@ -47,7 +48,20 @@ const navigationItems = [
 ];
 
 const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: AdminSidebarProps) => {
-  const { isSuperAdmin, canAccessSection, loading } = useAdminPermissions();
+  const { isSuperAdmin, canAccessSection, loading, refreshPermissions } = useAdminPermissions();
+  
+  // Écouter les changements de permissions pour rafraîchir la sidebar
+  useEffect(() => {
+    const handlePermissionsChanged = () => {
+      console.log('🔄 Événement permissions changées reçu - rafraîchissement sidebar');
+      refreshPermissions();
+    };
+
+    window.addEventListener('admin-permissions-changed', handlePermissionsChanged);
+    return () => {
+      window.removeEventListener('admin-permissions-changed', handlePermissionsChanged);
+    };
+  }, [refreshPermissions]);
   return (
     <>
       {/* Mobile overlay */}

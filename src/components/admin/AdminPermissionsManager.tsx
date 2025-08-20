@@ -25,12 +25,14 @@ const ADMIN_SECTIONS = [
   { id: 'products', label: 'Gestion des produits' },
   { id: 'orders', label: 'Gestion des commandes' },
   { id: 'users', label: 'Gestion des utilisateurs' },
-  { id: 'restaurants', label: 'Gestion des restaurants' },
+  { id: 'blocked-slots', label: 'Créneaux bloqués' },
   { id: 'promotions', label: 'Gestion des promotions' },
-  { id: 'ingredients', label: 'Gestion des ingrédients' },
-  { id: 'settings', label: 'Paramètres' },
   { id: 'homepage', label: 'Page d\'accueil' },
+  { id: 'admins', label: 'Administrateurs' },
   { id: 'stripe-keys', label: 'Gestion des clés Stripe' },
+  { id: 'printers', label: 'Imprimantes' },
+  { id: 'bluetooth', label: 'Bluetooth Mobile' },
+  { id: 'settings', label: 'Paramètres' },
 ];
 
 export default function AdminPermissionsManager() {
@@ -97,6 +99,7 @@ export default function AdminPermissionsManager() {
 
       if (error) throw error;
 
+      // Mettre à jour l'état local immédiatement
       setPermissions(prev => {
         const existing = prev.find(p => p.admin_user_id === userId && p.section_name === sectionName);
         if (existing) {
@@ -114,6 +117,11 @@ export default function AdminPermissionsManager() {
           }];
         }
       });
+
+      // Notifier que les permissions ont changé via un événement personnalisé
+      window.dispatchEvent(new CustomEvent('admin-permissions-changed', {
+        detail: { userId, sectionName, canAccess }
+      }));
 
       toast.success('Permission mise à jour avec succès');
     } catch (error) {
