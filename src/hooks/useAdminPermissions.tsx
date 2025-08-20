@@ -234,7 +234,7 @@ export function useAdminPermissions() {
         console.log('🔇 Arrêt de l\'écoute des changements de permissions');
       }
     };
-  }, [checkPermissions, clearCache]);
+  }, [checkPermissions]); // Retirer clearCache des dépendances car useCallback sans deps
 
   const canAccessSection = useCallback((sectionName: string): boolean => {
     // En cas d'erreur, donner accès par défaut pour éviter le blocage
