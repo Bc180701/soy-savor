@@ -55,9 +55,16 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
+      // Forcer la déconnexion locale même si la session serveur échoue
+      setUser(null);
+      
+      // Nettoyer le localStorage
+      localStorage.removeItem('sb-tdykegnmomyyucbhslok-auth-token');
+      
       const { error } = await supabase.auth.signOut();
       
-      if (error) {
+      // Ne pas bloquer sur les erreurs de session expirée/inexistante
+      if (error && !error.message.includes('Session') && !error.message.includes('session')) {
         console.error("Erreur lors de la déconnexion:", error);
         toast({
           variant: "destructive",
@@ -67,7 +74,7 @@ const Navbar = () => {
         return;
       }
       
-      // Si la déconnexion réussit, on affiche un toast et on redirige l'utilisateur
+      // Toujours afficher le message de succès et rediriger
       toast({
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté avec succès",
@@ -77,11 +84,16 @@ const Navbar = () => {
       navigate("/");
     } catch (err) {
       console.error("Exception lors de la déconnexion:", err);
+      // Forcer la déconnexion locale même en cas d'erreur
+      setUser(null);
+      localStorage.removeItem('sb-tdykegnmomyyucbhslok-auth-token');
+      
       toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur inattendue est survenue lors de la déconnexion",
+        title: "Déconnexion forcée",
+        description: "Vous avez été déconnecté localement",
       });
+      
+      navigate("/");
     }
   };
 
