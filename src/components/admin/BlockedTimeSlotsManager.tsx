@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Calendar, Clock } from "lucide-react";
+import { Trash2, Plus, Calendar, Clock, Truck, ShoppingBag, Users } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Restaurant } from "@/types/restaurant";
@@ -18,6 +19,7 @@ interface BlockedTimeSlot {
   restaurant_id: string;
   blocked_date: string;
   blocked_time: string;
+  blocked_service_type: string;
   reason?: string;
   created_at: string;
 }
@@ -33,6 +35,7 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
   const [newSlot, setNewSlot] = useState({
     blocked_date: "",
     blocked_times: [] as string[],
+    blocked_service_type: "both",
     reason: ""
   });
   const { toast } = useToast();
@@ -84,6 +87,7 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
         restaurant_id: selectedRestaurant.id,
         blocked_date: newSlot.blocked_date,
         blocked_time: time,
+        blocked_service_type: newSlot.blocked_service_type,
         reason: newSlot.reason || null
       }));
 
@@ -108,7 +112,7 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
         description: `${newSlot.blocked_times.length} créneau(x) bloqué(s) avec succès`,
       });
 
-      setNewSlot({ blocked_date: "", blocked_times: [], reason: "" });
+      setNewSlot({ blocked_date: "", blocked_times: [], blocked_service_type: "both", reason: "" });
       setIsDialogOpen(false);
       fetchBlockedSlots();
     } catch (error) {
@@ -155,6 +159,32 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
       }
     }
     return slots;
+  };
+
+  const getServiceTypeIcon = (type: string) => {
+    switch (type) {
+      case 'delivery':
+        return <Truck className="h-4 w-4" />;
+      case 'pickup':
+        return <ShoppingBag className="h-4 w-4" />;
+      case 'both':
+        return <Users className="h-4 w-4" />;
+      default:
+        return <Users className="h-4 w-4" />;
+    }
+  };
+
+  const getServiceTypeLabel = (type: string) => {
+    switch (type) {
+      case 'delivery':
+        return 'Livraison uniquement';
+      case 'pickup':
+        return 'Retrait uniquement';
+      case 'both':
+        return 'Livraison et retrait';
+      default:
+        return 'Livraison et retrait';
+    }
   };
 
   if (!selectedRestaurant) {
@@ -206,6 +236,37 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
                   onChange={(e) => setNewSlot({ ...newSlot, blocked_date: e.target.value })}
                   min={format(new Date(), 'yyyy-MM-dd')}
                 />
+              </div>
+              <div>
+                <Label htmlFor="blocked_service_type">Type de service à bloquer</Label>
+                <Select
+                  value={newSlot.blocked_service_type}
+                  onValueChange={(value) => setNewSlot({ ...newSlot, blocked_service_type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez le type de service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="delivery">
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-4 w-4" />
+                        Livraison uniquement
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="pickup">
+                      <div className="flex items-center gap-2">
+                        <ShoppingBag className="h-4 w-4" />
+                        Retrait uniquement
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="both">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Livraison et retrait
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Créneaux horaires</Label>
@@ -263,8 +324,12 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
             {blockedSlots.map((slot) => (
               <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
-                  <div className="font-medium">
+                  <div className="flex items-center gap-2 font-medium">
+                    {getServiceTypeIcon(slot.blocked_service_type)}
                     {format(new Date(slot.blocked_date), 'EEEE d MMMM yyyy', { locale: fr })} à {slot.blocked_time}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {getServiceTypeLabel(slot.blocked_service_type)}
                   </div>
                   {slot.reason && (
                     <div className="text-sm text-gray-500 mt-1">{slot.reason}</div>

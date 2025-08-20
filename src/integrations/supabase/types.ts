@@ -47,6 +47,7 @@ export type Database = {
       blocked_time_slots: {
         Row: {
           blocked_date: string
+          blocked_service_type: string
           blocked_time: string
           created_at: string
           id: string
@@ -56,6 +57,7 @@ export type Database = {
         }
         Insert: {
           blocked_date: string
+          blocked_service_type?: string
           blocked_time: string
           created_at?: string
           id?: string
@@ -65,6 +67,7 @@ export type Database = {
         }
         Update: {
           blocked_date?: string
+          blocked_service_type?: string
           blocked_time?: string
           created_at?: string
           id?: string
