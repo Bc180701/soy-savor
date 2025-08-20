@@ -27,14 +27,18 @@ const AdminLink = () => {
           return;
         }
         
-        // Vérifier si l'utilisateur a le rôle d'administrateur
-        const { data, error } = await supabase.rpc(
-          'has_role',
-          { user_id: session.user.id, role: 'administrateur' }
-        );
+        // Vérifier si l'utilisateur a le rôle d'administrateur ou super_administrateur
+        const [adminResult, superAdminResult] = await Promise.all([
+          supabase.rpc('has_role', { user_id: session.user.id, role: 'administrateur' }),
+          supabase.rpc('has_role', { user_id: session.user.id, role: 'super_administrateur' })
+        ]);
         
-        if (error) throw error;
-        setIsAdmin(!!data);
+        if (adminResult.error && superAdminResult.error) {
+          throw adminResult.error || superAdminResult.error;
+        }
+        
+        const isAdmin = !!adminResult.data || !!superAdminResult.data;
+        setIsAdmin(isAdmin);
       } catch (error) {
         console.error("Erreur lors de la vérification du statut admin:", error);
         setIsAdmin(false);
