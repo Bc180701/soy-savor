@@ -118,10 +118,20 @@ export default function AdminPermissionsManager() {
         }
       });
 
-      // Notifier que les permissions ont changé via un événement personnalisé
+      // Notifier TOUS les onglets que les permissions ont changé
       window.dispatchEvent(new CustomEvent('admin-permissions-changed', {
         detail: { userId, sectionName, canAccess }
       }));
+
+      // Recharger immédiatement la page si c'est pour l'utilisateur actuel
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser && currentUser.id === userId) {
+        console.log('🔄 Rechargement immédiat des permissions pour l\'utilisateur actuel');
+        // Déclencher un rechargement immédiat des permissions
+        setTimeout(() => {
+          window.location.reload();
+        }, 200);
+      }
 
       toast.success('Permission mise à jour avec succès');
     } catch (error) {

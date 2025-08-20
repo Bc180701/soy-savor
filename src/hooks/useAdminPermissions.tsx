@@ -19,7 +19,6 @@ export function useAdminPermissions() {
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const checkingRef = useRef(false);
-  const permissionsChannelRef = useRef<any>(null);
 
   // Cache local pour éviter les appels répétitifs
   const getCachedPermissions = useCallback((userId: string): PermissionCache | null => {
@@ -191,48 +190,25 @@ export function useAdminPermissions() {
   useEffect(() => {
     checkPermissions();
     
-    // Écouter les changements de permissions en temps réel
-    const setupRealtimeSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // S'abonner aux changements de permissions pour cet utilisateur
-      permissionsChannelRef.current = supabase
-        .channel('admin_permissions_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'admin_permissions',
-            filter: `admin_user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('🔄 Changement de permission détecté:', payload);
-            // Invalider le cache et recharger les permissions
-            clearCache();
-            // Délai court pour laisser la base de données se synchroniser
-            setTimeout(() => {
-              checkPermissions();
-            }, 500);
-          }
-        )
-        .subscribe();
-
-      console.log('👂 Écoute des changements de permissions activée');
+    // Écouter les changements de permissions via un événement personnalisé
+    const handlePermissionsChanged = (event: CustomEvent) => {
+      console.log('🔄 Événement permissions changées reçu:', event.detail);
+      // Invalider le cache et recharger les permissions
+      clearCache();
+      // Délai court pour laisser la base de données se synchroniser
+      setTimeout(() => {
+        checkPermissions();
+      }, 300);
     };
 
-    setupRealtimeSubscription();
+    window.addEventListener('admin-permissions-changed', handlePermissionsChanged as EventListener);
     
     // Nettoyage à la désactivation
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      if (permissionsChannelRef.current) {
-        supabase.removeChannel(permissionsChannelRef.current);
-        console.log('🔇 Arrêt de l\'écoute des changements de permissions');
-      }
+      window.removeEventListener('admin-permissions-changed', handlePermissionsChanged as EventListener);
     };
   }, [checkPermissions]); // Retirer clearCache des dépendances car useCallback sans deps
 
