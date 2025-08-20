@@ -145,7 +145,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       // Récupérer tous les créneaux bloqués du jour en une seule requête
       const blockedSlotsPromise = supabase
         .from('blocked_time_slots')
-        .select('blocked_time')
+        .select('blocked_time, blocked_service_type')
         .eq('restaurant_id', cartRestaurant?.id)
         .eq('blocked_date', todayString);
 
@@ -184,13 +184,22 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       console.log('📊 Compteurs créneaux livraison:', deliveryCounts);
       console.log('📊 Compteurs créneaux retrait:', pickupCounts);
 
-      // Créer un Set des créneaux bloqués pour une recherche rapide
-      const blockedSlots = new Set((blockedResult.data || []).map(slot => {
-        // Convertir le format HH:MM:SS en HH:MM pour correspondre au format utilisé
-        return slot.blocked_time.slice(0, 5); // "18:00:00" -> "18:00"
-      }));
+      // Créer un Set des créneaux bloqués pour une recherche rapide selon le type de service
+      const blockedSlots = new Set<string>();
+      
+      (blockedResult.data || []).forEach(slot => {
+        const timeSlot = slot.blocked_time.slice(0, 5); // "18:00:00" -> "18:00"
+        const serviceType = slot.blocked_service_type;
+        
+        // Ajouter le créneau aux bloqués selon le type de service
+        if (serviceType === 'both' || 
+            (serviceType === 'delivery' && orderType === 'delivery') ||
+            (serviceType === 'pickup' && orderType === 'pickup')) {
+          blockedSlots.add(timeSlot);
+        }
+      });
 
-      console.log('🚫 Créneaux bloqués formatés:', Array.from(blockedSlots));
+      console.log(`🚫 Créneaux bloqués pour ${orderType}:`, Array.from(blockedSlots));
 
       return { orderCounts, deliveryCounts, pickupCounts, blockedSlots };
     } catch (error) {
@@ -250,24 +259,28 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       // Ajuster pour le délai de livraison ou de retrait
       const interval = 15; // 15 minutes pour tous les types
       
-      // Calculer le premier créneau disponible (demi-heure supérieure)
-      const currentMinutes = now.getMinutes();
-      const nextHalfHour = currentMinutes < 30 ? 30 : 60;
-      const minTime = new Date(now);
+      // Calculer le délai minimum selon le type de commande
+      const delayMinutes = orderType === "delivery" ? 30 : 15; // 30 min pour livraison, 15 min pour retrait
+      const minTime = addMinutes(now, delayMinutes);
       
-      if (nextHalfHour === 60) {
-        minTime.setHours(now.getHours() + 1, 0, 0, 0);
+      // Arrondir au prochain créneau de 15 minutes
+      const minutes = minTime.getMinutes();
+      const roundedMinutes = Math.ceil(minutes / 15) * 15;
+      const finalMinTime = new Date(minTime);
+      
+      if (roundedMinutes >= 60) {
+        finalMinTime.setHours(minTime.getHours() + 1, roundedMinutes - 60, 0, 0);
       } else {
-        minTime.setMinutes(30, 0, 0);
+        finalMinTime.setMinutes(roundedMinutes, 0, 0);
       }
       
-      console.log(`🕐 [TimeSlotSelector] Commande à ${format(now, 'HH:mm')} → Premier créneau ${format(minTime, 'HH:mm')}`);
+      console.log(`🕐 [TimeSlotSelector] Commande à ${format(now, 'HH:mm')} → Premier créneau ${format(finalMinTime, 'HH:mm')} (délai: ${delayMinutes}min)`);
 
       let currentTime = new Date(startDate);
 
       while (currentTime <= endDate) {
         const timeValue = format(currentTime, "HH:mm");
-        const isPassedTime = isAfter(minTime, currentTime);
+        const isPassedTime = isAfter(finalMinTime, currentTime);
         
         // Vérifier la capacité du créneau selon le type de commande
         const currentOrders = orderCounts[timeValue] || 0;
