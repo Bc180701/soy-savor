@@ -264,21 +264,6 @@ serve(async (req) => {
         console.log('📦 [STEP 19.5] Pourboire ajouté:', tip, '€');
       }
 
-      // Ajouter la réduction si code promo appliqué
-      if (discount > 0 && promoCode) {
-        lineItems.push({
-          price_data: {
-            currency: 'eur',
-            product_data: {
-              name: `Réduction (${promoCode})`,
-            },
-            unit_amount: -Math.round(discount * 100), // Montant négatif pour la réduction
-          },
-          quantity: 1,
-        });
-        console.log('📦 [STEP 19.6] Réduction ajoutée:', discount, '€ pour code', promoCode);
-      }
-
       console.log('📦 [STEP 20] Total line items créés:', lineItems.length);
 
       if (lineItems.length === 0) {
@@ -448,6 +433,28 @@ serve(async (req) => {
           cart_cuilleres: cartExtras?.cuilleres?.toString() || '0',
         },
       };
+
+      // Ajouter la réduction via un coupon si code promo appliqué
+      if (discount > 0 && promoCode) {
+        try {
+          // Créer un coupon Stripe temporaire pour cette réduction
+          const coupon = await stripe.coupons.create({
+            duration: 'once',
+            amount_off: Math.round(discount * 100), // Montant en centimes
+            currency: 'eur',
+            name: `${promoCode}`,
+          });
+          
+          sessionData.discounts = [{
+            coupon: coupon.id
+          }];
+          
+          console.log('📦 [STEP 19.6] Coupon Stripe créé pour réduction:', discount, '€ pour code', promoCode);
+        } catch (couponError) {
+          console.error('❌ Erreur création coupon Stripe:', couponError);
+          // Continue sans coupon si erreur
+        }
+      }
 
       console.log('💳 [STEP 23] Configuration session:', {
         mode: sessionData.mode,
