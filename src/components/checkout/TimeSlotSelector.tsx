@@ -259,8 +259,8 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       // Ajuster pour le délai de livraison ou de retrait
       const interval = 15; // 15 minutes pour tous les types
       
-      // Calculer le délai minimum selon le type de commande
-      const delayMinutes = orderType === "delivery" ? 30 : 15; // 30 min pour livraison, 15 min pour retrait
+      // Calculer le délai minimum : 30 minutes pour livraison ET retrait
+      const delayMinutes = 30; // 30 min pour tous les types de commande
       const minTime = addMinutes(now, delayMinutes);
       
       // Arrondir au prochain créneau de 15 minutes
