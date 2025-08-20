@@ -130,27 +130,26 @@ export function useAdminPermissions() {
 
       let userPermissions: Record<string, boolean> = {};
 
-      // Si pas super-admin, récupérer les permissions spécifiques
-      if (!isSuperAdminResult) {
-        try {
-          const { data: permissionsData, error: permissionsError } = await supabase
-            .from('admin_permissions')
-            .select('section_name, can_access')
-            .eq('admin_user_id', user.id)
-            .abortSignal(signal);
+      // Récupérer les permissions spécifiques pour TOUS les utilisateurs (y compris super-admins)
+      try {
+        const { data: permissionsData, error: permissionsError } = await supabase
+          .from('admin_permissions')
+          .select('section_name, can_access')
+          .eq('admin_user_id', user.id)
+          .abortSignal(signal);
 
-          if (signal.aborted) return;
+        if (signal.aborted) return;
 
-          if (permissionsError) {
-            console.warn('⚠️ Erreur récupération permissions:', permissionsError.message);
-          } else {
-            permissionsData?.forEach(permission => {
-              userPermissions[permission.section_name] = permission.can_access;
-            });
-          }
-        } catch (error: any) {
-          console.warn('⚠️ Erreur permissions:', error.message);
+        if (permissionsError) {
+          console.warn('⚠️ Erreur récupération permissions:', permissionsError.message);
+        } else {
+          permissionsData?.forEach(permission => {
+            userPermissions[permission.section_name] = permission.can_access;
+          });
+          console.log('📋 Permissions explicites récupérées:', userPermissions);
         }
+      } catch (error: any) {
+        console.warn('⚠️ Erreur permissions:', error.message);
       }
 
       setPermissions(userPermissions);
@@ -251,22 +250,22 @@ export function useAdminPermissions() {
       return true;
     }
     
-    // Les super-admins ont accès à tout
+    // Vérifier d'abord s'il y a une permission explicite définie
+    if (sectionName in permissions) {
+      const hasAccess = permissions[sectionName];
+      console.log(`${hasAccess ? '✅' : '❌'} Permission explicite ${sectionName}: ${hasAccess}`);
+      return hasAccess;
+    }
+    
+    // Si aucune permission spécifique n'est définie, les super-admins ont accès par défaut
     if (isSuperAdmin) {
-      console.log(`✅ Super-admin accès autorisé pour ${sectionName}`);
+      console.log(`✅ Super-admin accès par défaut pour ${sectionName} (pas de restriction)`);
       return true;
     }
     
-    // Si aucune permission spécifique n'est définie, l'accès est autorisé par défaut
-    if (!(sectionName in permissions)) {
-      console.log(`✅ Pas de permission spécifique pour ${sectionName}, accès autorisé par défaut`);
-      return true;
-    }
-    
-    // Sinon, vérifier la permission spécifique
-    const hasAccess = permissions[sectionName];
-    console.log(`${hasAccess ? '✅' : '❌'} Permission ${sectionName}: ${hasAccess}`);
-    return hasAccess;
+    // Pour les admins normaux sans permission spécifique, accès autorisé par défaut
+    console.log(`✅ Admin normal accès par défaut pour ${sectionName}`);
+    return true;
   }, [isSuperAdmin, permissions, error, loading]);
 
   return {
