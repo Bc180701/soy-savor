@@ -264,6 +264,21 @@ serve(async (req) => {
         console.log('📦 [STEP 19.5] Pourboire ajouté:', tip, '€');
       }
 
+      // Ajouter la réduction si code promo appliqué
+      if (discount > 0 && promoCode) {
+        lineItems.push({
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: `Réduction (${promoCode})`,
+            },
+            unit_amount: -Math.round(discount * 100), // Montant négatif pour la réduction
+          },
+          quantity: 1,
+        });
+        console.log('📦 [STEP 19.6] Réduction ajoutée:', discount, '€ pour code', promoCode);
+      }
+
       console.log('📦 [STEP 20] Total line items créés:', lineItems.length);
 
       if (lineItems.length === 0) {
