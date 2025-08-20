@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RestaurantProvider } from "@/hooks/useRestaurantContext";
 import AdminManager from "@/components/admin/AdminManager";
+import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
+import { useSessionStability } from "@/hooks/useSessionStability";
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -12,81 +14,112 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // Hooks de performance et stabilité
+  const { measureAsync } = usePerformanceMonitor();
+  const { checkSessionHealth, getSessionStats, forceSessionRefresh } = useSessionStability();
 
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        console.log("Vérification de l'authentification admin...");
-        
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("Session récupérée:", !!session);
-        
-        if (!session) {
-          console.log("Aucune session trouvée, redirection vers login");
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          navigate("/login");
-          return;
-        }
-        
-        setIsAuthenticated(true);
-        
-        // Vérifier le rôle admin avec la fonction RPC
-        console.log("Vérification du rôle admin pour:", session.user.id);
-        const { data: hasAdminRole, error: roleError } = await supabase.rpc(
-          'has_role',
-          { user_id: session.user.id, role: 'administrateur' }
-        );
-        
-        let finalIsAdmin = false;
-        
-        if (roleError) {
-          console.error("Erreur lors de la vérification du rôle:", roleError);
-          // Fallback: vérifier directement dans la table user_roles
-          const { data: fallbackRoleData, error: fallbackError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .eq('role', 'administrateur')
-            .single();
+      await measureAsync('admin_auth_check', async () => {
+        try {
+          console.log("🔐 Vérification authentification admin...");
           
-          if (fallbackError && fallbackError.code !== 'PGRST116') {
-            console.error("Erreur lors de la vérification fallback du rôle:", fallbackError);
-            throw fallbackError;
+          // Vérifier la santé de la session d'abord
+          const sessionHealthy = await checkSessionHealth();
+          if (!sessionHealthy) {
+            console.warn("⚠️ Session instable, tentative de rafraîchissement...");
+            const refreshed = await forceSessionRefresh();
+            if (!refreshed) {
+              throw new Error("Impossible de rafraîchir la session");
+            }
           }
           
-          finalIsAdmin = !!fallbackRoleData;
-          console.log("Utilisateur admin (fallback):", !!fallbackRoleData);
-        } else {
-          finalIsAdmin = !!hasAdminRole;
-          console.log("Utilisateur admin:", !!hasAdminRole);
-        }
-        
-        setIsAdmin(finalIsAdmin);
+          const { data: { session } } = await supabase.auth.getSession();
+          console.log("Session récupérée:", !!session, session?.user?.email);
+          
+          if (!session) {
+            console.log("❌ Aucune session trouvée, redirection vers login");
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            navigate("/login");
+            return;
+          }
+          
+          setIsAuthenticated(true);
+          
+          // Vérifier le rôle admin avec timeout et fallback
+          console.log("👤 Vérification rôle admin pour:", session.user.email);
+          
+          let finalIsAdmin = false;
+          
+          try {
+            const { data: hasAdminRole, error: roleError } = await Promise.race([
+              supabase.rpc('has_role', { user_id: session.user.id, role: 'administrateur' }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout RPC role')), 5000))
+            ]) as any;
+            
+            if (roleError) {
+              throw roleError;
+            }
+            
+            finalIsAdmin = !!hasAdminRole;
+            console.log("✅ Vérification rôle réussie:", finalIsAdmin);
+            
+          } catch (roleError: any) {
+            console.warn("⚠️ Erreur RPC role:", roleError.message, "- Utilisation du fallback");
+            
+            // Fallback robuste
+            const { data: fallbackRoleData, error: fallbackError } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .eq('role', 'administrateur')
+              .single();
+            
+            if (fallbackError && fallbackError.code !== 'PGRST116') {
+              console.error("❌ Erreur fallback role:", fallbackError);
+              throw fallbackError;
+            }
+            
+            finalIsAdmin = !!fallbackRoleData;
+            console.log("🔄 Rôle vérifié via fallback:", finalIsAdmin);
+          }
+          
+          setIsAdmin(finalIsAdmin);
 
-        if (!finalIsAdmin) {
+          if (!finalIsAdmin) {
+            console.log("🚫 Accès refusé - pas admin");
+            toast({
+              title: "Accès refusé",
+              description: "Vous n'avez pas les permissions pour accéder à cette page.",
+              variant: "destructive"
+            });
+            navigate("/");
+          } else {
+            console.log("✅ Accès admin autorisé");
+            
+            // Afficher les stats de session en mode debug
+            const stats = getSessionStats();
+            console.log("📊 Stats session:", stats);
+          }
+          
+        } catch (error: any) {
+          console.error("💥 Erreur critique auth admin:", error);
           toast({
-            title: "Accès refusé",
-            description: "Vous n'avez pas les permissions pour accéder à cette page.",
+            title: "Erreur d'authentification",
+            description: `Erreur lors de la vérification: ${error.message}`,
             variant: "destructive"
           });
           navigate("/");
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Erreur lors de la vérification d'authentification:", error);
-        toast({
-          title: "Erreur",
-          description: "Une erreur est survenue lors de la vérification des permissions.",
-          variant: "destructive"
-        });
-        navigate("/");
-      } finally {
-        setIsLoading(false);
-      }
+      });
     };
     
     checkAuth();
-  }, [navigate, toast]);
+  }, [navigate, toast, measureAsync, checkSessionHealth, forceSessionRefresh, getSessionStats]);
 
   if (isLoading) {
     return (

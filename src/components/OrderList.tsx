@@ -1,133 +1,144 @@
-import { useState, useEffect } from "react";
-import { getAllOrders, updateOrderStatus } from "@/services/orderService";
+import { useState, useCallback } from "react";
+import { updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, ChefHat, Truck } from "lucide-react";
+import { FileText, ChefHat, Truck, RefreshCw } from "lucide-react";
 import OrdersAccountingView from "./orders/OrdersAccountingView";
 import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useSearchParams } from "react-router-dom";
+import { useOptimizedOrders } from "@/hooks/useOptimizedOrders";
+import { Button } from "@/components/ui/button";
 
 interface OrderListProps {
   defaultTab?: string;
 }
 
 const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>(defaultTab);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { currentRestaurant } = useRestaurantContext();
+  
+  // Utiliser le hook optimisé pour les commandes
+  const { 
+    orders, 
+    loading, 
+    error, 
+    refreshOrders, 
+    updateOrderLocally, 
+    isFromCache 
+  } = useOptimizedOrders(currentRestaurant?.id || null);
 
   // Fonction pour mettre à jour l'onglet dans l'URL
-  const handleTabChange = (newTab: string) => {
+  const handleTabChange = useCallback((newTab: string) => {
     setActiveView(newTab);
     const newParams = new URLSearchParams(searchParams);
     newParams.set("tab", newTab);
     setSearchParams(newParams);
-  };
+  }, [searchParams, setSearchParams]);
 
-  useEffect(() => {
-    // Ne pas charger les commandes tant que le restaurant n'est pas défini
-    if (!currentRestaurant?.id) {
-      console.log("⏳ Restaurant pas encore chargé, attente...");
-      return;
-    }
-
-    const fetchOrders = async () => {
-      setLoading(true);
-      try {
-        console.log("🔍 Récupération des commandes pour le restaurant:", currentRestaurant?.id, "Nom:", currentRestaurant?.name);
-        if (!currentRestaurant?.id) {
-          console.warn("⚠️ Aucun restaurant sélectionné, récupération de toutes les commandes");
-        }
-        const { orders: fetchedOrders, error } = await getAllOrders(currentRestaurant?.id);
-        
-        if (error) {
-          console.error("Erreur lors de la récupération des commandes:", error);
-          toast({
-            title: "Erreur",
-            description: `Impossible de charger les commandes: ${error.message || error}`,
-            variant: "destructive",
-          });
-        } else {
-          console.log(`${fetchedOrders?.length || 0} commandes récupérées pour ${currentRestaurant?.name || 'tous les restaurants'}:`, fetchedOrders);
-          setOrders(fetchedOrders || []);
-        }
-      } catch (err) {
-        console.error("Exception lors de la récupération des commandes:", err);
-        toast({
-          title: "Erreur inattendue",
-          description: "Une erreur est survenue lors du chargement des commandes",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [toast, currentRestaurant?.id]); // Dépendance seulement sur l'ID
-
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+  const handleUpdateStatus = useCallback(async (orderId: string, newStatus: string) => {
     try {
-      console.log(`Mise à jour du statut de la commande ${orderId} à ${newStatus}`);
+      console.log(`📝 Mise à jour statut commande ${orderId} -> ${newStatus}`);
+      
+      // Mise à jour optimiste de l'interface
+      updateOrderLocally(orderId, { status: newStatus as any });
+      
       const { success, error } = await updateOrderStatus(orderId, newStatus);
       
       if (success) {
-        setOrders(orders.map(order => 
-          order.id === orderId 
-            ? { ...order, status: newStatus as any } 
-            : order
-        ));
-        
         toast({
           title: "Statut mis à jour",
           description: "Le statut de la commande a été mis à jour et le client a été notifié.",
-          variant: "success",
         });
       } else {
-        console.error("Erreur lors de la mise à jour du statut:", error);
+        console.error("❌ Erreur mise à jour statut:", error);
+        
+        // Annuler la mise à jour optimiste en cas d'erreur
+        const originalOrder = orders.find(o => o.id === orderId);
+        if (originalOrder) {
+          updateOrderLocally(orderId, { status: originalOrder.status });
+        }
+        
         toast({
           title: "Erreur",
           description: `Impossible de mettre à jour le statut: ${error}`,
           variant: "destructive",
         });
       }
-    } catch (err) {
-      console.error("Exception lors de la mise à jour du statut:", err);
+    } catch (err: any) {
+      console.error("💥 Exception mise à jour statut:", err);
+      
+      // Annuler la mise à jour optimiste
+      const originalOrder = orders.find(o => o.id === orderId);
+      if (originalOrder) {
+        updateOrderLocally(orderId, { status: originalOrder.status });
+      }
+      
       toast({
         title: "Erreur inattendue",
         description: "Une erreur est survenue lors de la mise à jour du statut",
         variant: "destructive",
       });
     }
-  };
+  }, [updateOrderLocally, orders, toast]);
 
-  const handleViewDetails = (order: Order) => {
+  const handleViewDetails = useCallback((order: Order) => {
     setSelectedOrder(order);
-  };
+  }, []);
 
   return (
     <div className={`${isMobile ? 'w-full px-2' : 'bg-white rounded-lg shadow-md'} overflow-hidden`}>
       {!isMobile && (
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold">
-            Gestion des Commandes {currentRestaurant?.name && `- ${currentRestaurant.name}`}
-          </h2>
+        <div className="p-6 border-b flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold">
+              Gestion des Commandes {currentRestaurant?.name && `- ${currentRestaurant.name}`}
+            </h2>
+            {isFromCache && (
+              <p className="text-sm text-muted-foreground">
+                📦 Données en cache - {orders.length} commandes
+              </p>
+            )}
+            {error && (
+              <p className="text-sm text-destructive">
+                ⚠️ {error}
+              </p>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshOrders}
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualiser
+          </Button>
         </div>
       )}
       
       {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin" />
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin mb-4" />
+          <p className="text-sm text-muted-foreground">
+            Chargement des commandes...
+          </p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <p className="text-destructive mb-4">⚠️ {error}</p>
+          <Button onClick={refreshOrders} variant="outline">
+            Réessayer
+          </Button>
         </div>
       ) : (
         <Tabs value={activeView} onValueChange={handleTabChange} className="w-full">
