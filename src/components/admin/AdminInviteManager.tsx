@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,14 +8,35 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Shield, UserPlus } from "lucide-react";
 import AdminUsersList from "./AdminUsersList";
-import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+
 
 const AdminInviteManager = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { isSuperAdmin } = useAdminPermissions();
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  useEffect(() => {
+    checkSuperAdminStatus();
+  }, []);
+
+  const checkSuperAdminStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: isSuperAdminRole } = await supabase.rpc('has_role', {
+        user_id: user.id,
+        role: 'super_administrateur'
+      });
+
+      setIsSuperAdmin(isSuperAdminRole || false);
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut super admin:', error);
+      setIsSuperAdmin(false);
+    }
+  };
 
   const generateRandomPassword = () => {
     const length = 12;

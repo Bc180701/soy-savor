@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
-import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+
 import { Eye, EyeOff, Printer, TestTube, RefreshCw, Bluetooth } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -60,19 +60,6 @@ export default function PrintersManager() {
 
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
-  const { canAccessSection } = useAdminPermissions();
-
-  // Vérifier les permissions d'accès
-  if (!canAccessSection('printers')) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Accès refusé</h3>
-          <p className="text-gray-600">Vous n'avez pas les permissions nécessaires pour accéder à cette section.</p>
-        </div>
-      </div>
-    );
-  }
 
   useEffect(() => {
     // Vérifier le support Bluetooth

@@ -1,5 +1,5 @@
-
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   BarChart3, 
   Package, 
@@ -15,14 +15,12 @@ import {
   Utensils,
   X as XIcon,
   CreditCard,
-  Shield,
   Printer,
   Bluetooth
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import RestaurantSelector from "./RestaurantSelector";
-import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 
 interface AdminSidebarProps {
   activeSection: string;
@@ -40,7 +38,6 @@ const navigationItems = [
   { id: "promotions", label: "Promotions", icon: Tag },
   { id: "homepage", label: "Page d'accueil", icon: Home },
   { id: "admins", label: "Administrateurs", icon: UserCheck },
-  { id: "permissions", label: "Permissions", icon: Shield },
   { id: "stripe-keys", label: "Clés Stripe", icon: CreditCard },
   { id: "printers", label: "Imprimantes", icon: Printer },
   { id: "bluetooth", label: "Bluetooth Mobile", icon: Bluetooth },
@@ -48,30 +45,41 @@ const navigationItems = [
 ];
 
 const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: AdminSidebarProps) => {
-  const { isSuperAdmin, canAccessSection, loading, refreshPermissions } = useAdminPermissions();
-  
-  // Écouter les changements de permissions pour rafraîchir la sidebar
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const handlePermissionsChanged = (event: CustomEvent) => {
-      console.log('🔄 Événement permissions changées reçu - rafraîchissement sidebar:', event.detail);
-      refreshPermissions();
-    };
+    checkAdminStatus();
+  }, []);
 
-    const handleCurrentUserPermissionsChanged = (event: CustomEvent) => {
-      console.log('🔄 Permissions utilisateur actuel changées - rafraîchissement sidebar:', event.detail);
-      refreshPermissions();
-    };
+  const checkAdminStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
 
-    window.addEventListener('admin-permissions-changed', handlePermissionsChanged as EventListener);
-    window.addEventListener('current-user-permissions-changed', handleCurrentUserPermissionsChanged as EventListener);
-    
-    return () => {
-      window.removeEventListener('admin-permissions-changed', handlePermissionsChanged as EventListener);
-      window.removeEventListener('current-user-permissions-changed', handleCurrentUserPermissionsChanged as EventListener);
-    };
-  }, [refreshPermissions]);
-  
-  // Afficher un loader si les permissions sont en cours de chargement
+      const { data: isAdminRole } = await supabase.rpc('has_role', {
+        user_id: user.id,
+        role: 'administrateur'
+      });
+
+      const { data: isSuperAdmin } = await supabase.rpc('has_role', {
+        user_id: user.id,
+        role: 'super_administrateur'
+      });
+
+      setIsAdmin(isAdminRole || isSuperAdmin);
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut admin:', error);
+      setIsAdmin(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -108,12 +116,16 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
           
           <div className="p-4">
             <div className="flex items-center justify-center">
-              <span className="text-sm text-gray-500">Chargement des permissions...</span>
+              <span className="text-sm text-gray-500">Chargement...</span>
             </div>
           </div>
         </div>
       </>
     );
+  }
+
+  if (!isAdmin) {
+    return null;
   }
 
   return (
@@ -151,45 +163,28 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
         
         <nav className="p-4">
           <ul className="space-y-2">
-            {navigationItems
-              .filter((item) => {
-                const canAccess = canAccessSection(item.id);
-                console.log(`🔍 Filtrage section ${item.id}:`, {
-                  isSuperAdmin,
-                  canAccess,
-                  loading,
-                  finalResult: item.id === 'permissions' ? isSuperAdmin : canAccess
-                });
-                
-                // Les permissions ne sont visibles que pour les super-admins
-                if (item.id === 'permissions') {
-                  return isSuperAdmin;
-                }
-                // Pour les autres sections, vérifier les permissions
-                return canAccess;
-              })
-              .map((item) => {
-                const Icon = item.icon;
-                return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => {
-                        onSectionChange(item.id);
-                        onClose();
-                      }}
-                      className={cn(
-                        "w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-                        activeSection === item.id
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                      )}
-                    >
-                      <Icon className="h-4 w-4 mr-3" />
-                      {item.label}
-                    </button>
-                  </li>
-                );
-              })}
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => {
+                      onSectionChange(item.id);
+                      onClose();
+                    }}
+                    className={cn(
+                      "w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                      activeSection === item.id
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 mr-3" />
+                    {item.label}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </nav>
       </div>

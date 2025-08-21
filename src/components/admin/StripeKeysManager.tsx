@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Save, Shield, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
-import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+
 
 const StripeKeysManager = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,26 +20,6 @@ const StripeKeysManager = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
-  const { canAccessSection } = useAdminPermissions();
-
-  // Vérifier l'accès à la section
-  if (!canAccessSection('stripe-keys')) {
-    return (
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Accès refusé
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Vous n'avez pas l'autorisation d'accéder à la gestion des clés Stripe.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   useEffect(() => {
     if (isAuthenticated && currentRestaurant) {
