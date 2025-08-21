@@ -176,6 +176,94 @@ const OrderingLockControl = () => {
     }
   };
 
+  const saveAllSettings = async () => {
+    if (!currentRestaurant) {
+      toast({
+        title: "Erreur",
+        description: "Aucun restaurant sélectionné",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      console.log("💾 Sauvegarde forcée des paramètres:", {
+        ordering_locked: isLocked,
+        delivery_blocked: deliveryBlocked,
+        pickup_blocked: pickupBlocked
+      });
+      
+      // Récupérer les paramètres actuels
+      const { data: currentData, error: fetchError } = await supabase
+        .from('restaurants')
+        .select('settings')
+        .eq('id', currentRestaurant.id)
+        .single();
+
+      if (fetchError) {
+        console.error("💾 Erreur récupération paramètres:", fetchError);
+        throw fetchError;
+      }
+
+      // Fusionner avec les nouveaux paramètres
+      const currentSettings = (currentData?.settings as Record<string, any>) ?? {};
+      const updatedSettings = {
+        ...currentSettings,
+        ordering_locked: isLocked,
+        delivery_blocked: deliveryBlocked,
+        pickup_blocked: pickupBlocked
+      };
+
+      console.log("💾 Sauvegarde - Anciens paramètres:", currentSettings);
+      console.log("💾 Sauvegarde - Nouveaux paramètres:", updatedSettings);
+
+      // Mettre à jour en base de données
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ 
+          settings: updatedSettings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentRestaurant.id);
+        
+      if (error) {
+        console.error("💾 Erreur sauvegarde:", error);
+        throw error;
+      }
+
+      console.log("💾 Paramètres sauvegardés avec succès");
+      
+      // Mettre à jour le contexte restaurant
+      const updatedRestaurant = {
+        ...currentRestaurant,
+        settings: updatedSettings
+      };
+      setCurrentRestaurant(updatedRestaurant);
+      
+      toast({
+        title: "Paramètres sauvegardés",
+        description: "Tous les paramètres ont été enregistrés avec succès",
+      });
+
+      // Refetch pour vérifier
+      setTimeout(() => {
+        fetchLockStatus();
+      }, 1000);
+
+    } catch (error) {
+      console.error("💾 Erreur lors de la sauvegarde:", error);
+      toast({
+        title: "Erreur de sauvegarde",
+        description: "Impossible de sauvegarder les paramètres",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     console.log("🔒 useEffect déclenché, restaurant:", currentRestaurant?.name);
     fetchLockStatus();
@@ -291,6 +379,28 @@ const OrderingLockControl = () => {
               />
             </div>
 
+            {/* Bouton de sauvegarde */}
+            <div className="flex justify-center pt-4 border-t">
+              <Button
+                onClick={saveAllSettings}
+                disabled={saving || loading}
+                size="lg"
+                className="min-w-[200px]"
+              >
+                {saving ? (
+                  <>
+                    <div className="h-4 w-4 mr-2 rounded-full border-2 border-t-transparent border-white animate-spin" />
+                    Sauvegarde...
+                  </>
+                ) : (
+                  <>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Sauvegarder les paramètres
+                  </>
+                )}
+              </Button>
+            </div>
+
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-800 mb-2">À propos des blocages</h3>
               <ul className="text-sm text-blue-700 space-y-1">
@@ -299,6 +409,7 @@ const OrderingLockControl = () => {
                 <li>• Les paramètres sont gérés manuellement par l'administrateur</li>
                 <li>• N'affecte pas les commandes déjà en cours</li>
                 <li>• Peut être activé/désactivé à tout moment</li>
+                <li>• <strong>Utilisez le bouton "Sauvegarder" pour forcer l'enregistrement</strong></li>
               </ul>
             </div>
           </div>
