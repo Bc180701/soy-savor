@@ -181,30 +181,8 @@ const OrderingLockControl = () => {
     fetchLockStatus();
   }, [currentRestaurant]);
 
-  // Logique automatique : activer ordering_locked si delivery_blocked ET pickup_blocked
-  useEffect(() => {
-    if (loading || saving) return;
-    
-    if (deliveryBlocked && pickupBlocked && !isLocked) {
-      console.log("🔒 Activation automatique du verrouillage général (livraison ET emporter bloqués)");
-      updateOrderingSettings('general', true);
-    }
-  }, [deliveryBlocked, pickupBlocked, isLocked, loading, saving]);
-
-  // Logique automatique : désactiver delivery_blocked et pickup_blocked si ordering_locked est activé
-  useEffect(() => {
-    if (loading || saving) return;
-    
-    if (isLocked && (deliveryBlocked || pickupBlocked)) {
-      console.log("🔒 Désactivation automatique des blocages spécifiques (verrouillage général actif)");
-      if (deliveryBlocked) {
-        updateOrderingSettings('delivery', false);
-      }
-      if (pickupBlocked) {
-        updateOrderingSettings('pickup', false);
-      }
-    }
-  }, [isLocked, deliveryBlocked, pickupBlocked, loading, saving]);
+  // Logique automatique supprimée pour éviter les conflits
+  // L'administrateur contrôle manuellement tous les réglages
 
   // Log de l'état actuel pour debug
   useEffect(() => {
