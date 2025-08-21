@@ -3,9 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from "@/integrations/supabase/client";
 import { Shield } from "lucide-react";
 import { useHomepageData } from "@/hooks/useHomepageData";
+import { checkAdminRole } from "@/utils/adminUtils";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -28,18 +28,8 @@ const MobileMenu = ({ isOpen, navLinks, user, handleLogout, onClose }: MobileMen
         return;
       }
       
-      try {
-        const { data, error } = await supabase.rpc(
-          'has_role',
-          { user_id: user.id, role: 'administrateur' }
-        );
-        
-        if (error) throw error;
-        setIsAdmin(!!data);
-      } catch (error) {
-        console.error("Erreur lors de la vérification du statut admin:", error);
-        setIsAdmin(false);
-      }
+      const isAdmin = await checkAdminRole(user.id);
+      setIsAdmin(isAdmin);
     };
     
     checkAdminStatus();

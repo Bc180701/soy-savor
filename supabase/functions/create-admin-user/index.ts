@@ -61,25 +61,24 @@ serve(async (req) => {
     if (existingUser) {
       console.log('Utilisateur existant trouvé:', existingUser.id)
       
-      // Vérifier si l'utilisateur a déjà le rôle administrateur
-      const { data: existingRole, error: roleCheckError } = await supabaseAdmin
+      // Vérifier si l'utilisateur a déjà un rôle administrateur
+      const { data: existingRoles, error: roleCheckError } = await supabaseAdmin
         .from('user_roles')
         .select('role')
         .eq('user_id', existingUser.id)
-        .eq('role', 'administrateur')
-        .single()
+        .in('role', ['administrateur', 'super_administrateur'])
 
       if (roleCheckError && roleCheckError.code !== 'PGRST116') {
         console.error('Erreur vérification rôle:', roleCheckError)
         throw new Error(`Erreur lors de la vérification du rôle: ${roleCheckError.message}`)
       }
 
-      if (existingRole) {
-        console.log('Utilisateur a déjà le rôle administrateur')
+      if (existingRoles && existingRoles.length > 0) {
+        console.log('Utilisateur a déjà un rôle administrateur:', existingRoles.map(r => r.role))
         return new Response(
           JSON.stringify({
             success: true,
-            message: 'Cet utilisateur a déjà le rôle administrateur',
+            message: `Cet utilisateur a déjà le rôle ${existingRoles[0].role}`,
             user: {
               id: existingUser.id,
               email: existingUser.email

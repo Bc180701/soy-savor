@@ -35,11 +35,11 @@ const AdminUsersList = () => {
       setIsLoading(true);
       console.log("🔄 Récupération des administrateurs...");
 
-      // D'abord récupérer tous les utilisateurs avec le rôle administrateur
+      // Récupérer tous les utilisateurs avec les rôles administrateur et super_administrateur
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id')
-        .eq('role', 'administrateur');
+        .in('role', ['administrateur', 'super_administrateur']);
 
       if (rolesError) {
         console.error("❌ Erreur lors de la récupération des rôles:", rolesError);

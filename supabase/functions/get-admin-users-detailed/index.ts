@@ -48,11 +48,11 @@ serve(async (req) => {
 
     console.log('Super admin verified, fetching admin users...')
 
-    // Get all admin users (non-super admins)
+    // Get all admin users (both administrateur and super_administrateur)
     const { data: adminRoles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('user_id')
-      .eq('role', 'administrateur')
+      .in('role', ['administrateur', 'super_administrateur'])
 
     if (rolesError) {
       console.error('Error fetching admin roles:', rolesError)

@@ -42,15 +42,18 @@ serve(async (req) => {
 
     console.log('🔍 Verifying admin permissions for user:', user.id)
 
-    // Check if user has admin role
-    const { data: hasAdminRole, error: roleError } = await supabaseAdmin
-      .rpc('has_role', { user_id: user.id, role: 'administrateur' })
+    // Check if user has admin or super admin role
+    const [adminResult, superAdminResult] = await Promise.all([
+      supabaseAdmin.rpc('has_role', { user_id: user.id, role: 'administrateur' }),
+      supabaseAdmin.rpc('has_role', { user_id: user.id, role: 'super_administrateur' })
+    ]);
 
-    if (roleError) {
-      console.error('Error checking admin role:', roleError)
+    if (adminResult.error && superAdminResult.error) {
+      console.error('Error checking admin roles:', adminResult.error || superAdminResult.error)
       throw new Error('Error verifying permissions')
     }
 
+    const hasAdminRole = !!adminResult.data || !!superAdminResult.data;
     if (!hasAdminRole) {
       throw new Error('Access denied: Administrator privileges required')
     }
