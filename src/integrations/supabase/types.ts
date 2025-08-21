@@ -937,6 +937,36 @@ export type Database = {
           },
         ]
       }
+      restaurant_settings_audit: {
+        Row: {
+          action_type: string
+          id: string
+          restaurant_id: string
+          settings_after: Json | null
+          settings_before: Json | null
+          timestamp: string | null
+          triggered_by: string | null
+        }
+        Insert: {
+          action_type: string
+          id?: string
+          restaurant_id: string
+          settings_after?: Json | null
+          settings_before?: Json | null
+          timestamp?: string | null
+          triggered_by?: string | null
+        }
+        Update: {
+          action_type?: string
+          id?: string
+          restaurant_id?: string
+          settings_after?: Json | null
+          settings_before?: Json | null
+          timestamp?: string | null
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       restaurants: {
         Row: {
           address: string | null
