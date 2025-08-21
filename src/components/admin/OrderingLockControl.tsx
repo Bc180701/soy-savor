@@ -96,20 +96,34 @@ const OrderingLockControl = () => {
       const currentSettings = (currentData?.settings as Record<string, any>) ?? {};
       const settingKey = settingType === 'general' ? 'ordering_locked' : 
                         settingType === 'delivery' ? 'delivery_blocked' : 'pickup_blocked';
-      const updatedSettings = { ...currentSettings, [settingKey]: value };
+      
+      // Créer les nouveaux paramètres en préservant tout l'objet existant
+      const updatedSettings = {
+        ...currentSettings,
+        [settingKey]: value
+      };
 
       console.log("🔒 Anciens paramètres:", currentSettings);
       console.log("🔒 Nouveaux paramètres:", updatedSettings);
 
-      // Mettre à jour en base de données
-      const { error } = await supabase
-        .from('restaurants')
-        .update({ settings: updatedSettings })
-        .eq('id', currentRestaurant.id);
+      // Mettre à jour en base de données avec une requête RPC pour forcer la mise à jour JSON
+      const { error } = await supabase.rpc('update_restaurant_settings', {
+        restaurant_id: currentRestaurant.id,
+        new_settings: updatedSettings
+      });
 
       if (error) {
-        console.error("🔒 Erreur mise à jour:", error);
-        throw error;
+        console.error("🔒 Erreur mise à jour via RPC:", error);
+        // Fallback avec update classique
+        const { error: updateError } = await supabase
+          .from('restaurants')
+          .update({ settings: updatedSettings })
+          .eq('id', currentRestaurant.id);
+          
+        if (updateError) {
+          console.error("🔒 Erreur mise à jour fallback:", updateError);
+          throw updateError;
+        }
       }
 
       console.log("🔒 Restaurant mis à jour avec succès");
