@@ -106,8 +106,7 @@ const OrderingLockControl = () => {
         .from('restaurants')
         .update({ settings: updatedSettings })
         .eq('id', currentRestaurant.id)
-        .select('*')
-        .single();
+        .select('*');
 
       if (error) {
         console.error("🔒 Erreur mise à jour:", error);
