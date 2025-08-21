@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const OrderCTA = () => {
   const { isOrderingLocked } = useOrderingLockStatus();
+  const { currentRestaurant } = useRestaurantContext();
 
   if (isOrderingLocked) {
     return (

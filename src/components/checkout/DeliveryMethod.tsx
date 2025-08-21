@@ -18,18 +18,30 @@ const DeliveryMethod = ({ defaultValue = "delivery", onChange, restaurant }: Del
   const settings = (r?.settings as Record<string, any>) ?? {};
   const isDeliveryBlocked = settings?.delivery_blocked === true;
   const isPickupBlocked = settings?.pickup_blocked === true;
+  
+  console.log("🚚 DeliveryMethod - Restaurant:", r?.name, "Settings:", { 
+    delivery_blocked: settings?.delivery_blocked, 
+    pickup_blocked: settings?.pickup_blocked 
+  });
+  
   const handleSelect = (method: "delivery" | "pickup") => {
     if ((method === "delivery" && isDeliveryBlocked) || (method === "pickup" && isPickupBlocked)) {
+      console.log("❌ Option bloquée:", method, "isDeliveryBlocked:", isDeliveryBlocked, "isPickupBlocked:", isPickupBlocked);
       return; // Option indisponible
     }
+    console.log("✅ Sélection mode:", method);
     onChange(method);
   };
 
   // Si la valeur par défaut est indisponible, basculer automatiquement vers l'option disponible
   useEffect(() => {
+    console.log("🔄 Vérification auto-switch:", { defaultValue, isDeliveryBlocked, isPickupBlocked });
+    
     if (defaultValue === "delivery" && isDeliveryBlocked && !isPickupBlocked) {
+      console.log("🔄 Auto-switch: delivery → pickup");
       onChange("pickup");
     } else if (defaultValue === "pickup" && isPickupBlocked && !isDeliveryBlocked) {
+      console.log("🔄 Auto-switch: pickup → delivery");
       onChange("delivery");
     }
   }, [defaultValue, isDeliveryBlocked, isPickupBlocked, onChange]);
@@ -45,8 +57,10 @@ const DeliveryMethod = ({ defaultValue = "delivery", onChange, restaurant }: Del
           className={`flex-1 p-4 border-2 transition-all ${
             defaultValue === "delivery" && !deliveryDisabled
               ? "border-gold-500 bg-gold-50"
-              : "border-gray-200 hover:border-gray-300"
-          } ${deliveryDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              : deliveryDisabled 
+                ? "border-red-200 bg-red-50" 
+                : "border-gray-200 hover:border-gray-300"
+          } ${deliveryDisabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
           onClick={() => handleSelect("delivery")}
         >
           <div className="flex items-center gap-3">
@@ -65,7 +79,7 @@ const DeliveryMethod = ({ defaultValue = "delivery", onChange, restaurant }: Del
               <h4 className="font-medium">Livraison à domicile</h4>
               <p className="text-sm text-gray-500">Livraison en 30-45 minutes environ</p>
               {deliveryDisabled && (
-                <p className="text-xs text-gray-500 mt-1">Indisponible pour ce restaurant</p>
+                <p className="text-xs text-red-600 font-medium mt-1">❌ Indisponible pour ce restaurant</p>
               )}
             </div>
           </div>
@@ -75,8 +89,10 @@ const DeliveryMethod = ({ defaultValue = "delivery", onChange, restaurant }: Del
           className={`flex-1 p-4 border-2 transition-all ${
             defaultValue === "pickup" && !pickupDisabled
               ? "border-gold-500 bg-gold-50"
-              : "border-gray-200 hover:border-gray-300"
-          } ${pickupDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              : pickupDisabled 
+                ? "border-red-200 bg-red-50" 
+                : "border-gray-200 hover:border-gray-300"
+          } ${pickupDisabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
           onClick={() => handleSelect("pickup")}
         >
           <div className="flex items-center gap-3">
@@ -95,7 +111,7 @@ const DeliveryMethod = ({ defaultValue = "delivery", onChange, restaurant }: Del
               <h4 className="font-medium">À emporter</h4>
               <p className="text-sm text-gray-500">Prêt en 15-20 minutes environ</p>
               {pickupDisabled && (
-                <p className="text-xs text-gray-500 mt-1">Indisponible pour ce restaurant</p>
+                <p className="text-xs text-red-600 font-medium mt-1">❌ Indisponible pour ce restaurant</p>
               )}
             </div>
           </div>
