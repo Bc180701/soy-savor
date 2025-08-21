@@ -54,35 +54,38 @@ const Admin = () => {
           let finalIsAdmin = false;
           
           try {
-            const { data: hasAdminRole, error: roleError } = await Promise.race([
-              supabase.rpc('has_role', { user_id: session.user.id, role: 'administrateur' }),
+            // Vérifier les deux rôles possibles
+            const [adminResult, superAdminResult] = await Promise.race([
+              Promise.all([
+                supabase.rpc('has_role', { user_id: session.user.id, role: 'administrateur' }),
+                supabase.rpc('has_role', { user_id: session.user.id, role: 'super_administrateur' })
+              ]),
               new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout RPC role')), 5000))
             ]) as any;
             
-            if (roleError) {
-              throw roleError;
+            if (adminResult.error || superAdminResult.error) {
+              throw adminResult.error || superAdminResult.error;
             }
             
-            finalIsAdmin = !!hasAdminRole;
+            finalIsAdmin = !!adminResult.data || !!superAdminResult.data;
             console.log("✅ Vérification rôle réussie:", finalIsAdmin);
             
           } catch (roleError: any) {
             console.warn("⚠️ Erreur RPC role:", roleError.message, "- Utilisation du fallback");
             
-            // Fallback robuste
+            // Fallback robuste - vérifier les deux rôles
             const { data: fallbackRoleData, error: fallbackError } = await supabase
               .from('user_roles')
               .select('role')
               .eq('user_id', session.user.id)
-              .eq('role', 'administrateur')
-              .single();
+              .in('role', ['administrateur', 'super_administrateur']);
             
-            if (fallbackError && fallbackError.code !== 'PGRST116') {
+            if (fallbackError) {
               console.error("❌ Erreur fallback role:", fallbackError);
               throw fallbackError;
             }
             
-            finalIsAdmin = !!fallbackRoleData;
+            finalIsAdmin = !!(fallbackRoleData && fallbackRoleData.length > 0);
             console.log("🔄 Rôle vérifié via fallback:", finalIsAdmin);
           }
           
