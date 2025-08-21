@@ -12,6 +12,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Charger les restaurants seulement au montage initial
   useEffect(() => {
     const loadRestaurants = async () => {
       try {
@@ -23,16 +24,6 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
         
         setRestaurants(restaurantsList);
         
-        // Récupérer le restaurant depuis les URL params
-        const restaurantId = searchParams.get("restaurant");
-        if (restaurantId && restaurantsList.length > 0) {
-          const savedRestaurant = restaurantsList.find(r => r.id === restaurantId);
-          if (savedRestaurant && (!currentRestaurant || currentRestaurant.id !== savedRestaurant.id)) {
-            console.log("Restaurant restauré depuis URL:", savedRestaurant.name);
-            setCurrentRestaurant(savedRestaurant);
-          }
-        }
-        
       } catch (error) {
         console.error("Erreur lors du chargement des restaurants:", error);
         setRestaurants([]);
@@ -42,7 +33,19 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadRestaurants();
-  }, [searchParams.get("restaurant")]);
+  }, []); // Seulement au montage initial
+
+  // Récupérer le restaurant depuis les URL params (séparé du fetch)
+  useEffect(() => {
+    const restaurantId = searchParams.get("restaurant");
+    if (restaurantId && restaurants.length > 0) {
+      const savedRestaurant = restaurants.find(r => r.id === restaurantId);
+      if (savedRestaurant && (!currentRestaurant || currentRestaurant.id !== savedRestaurant.id)) {
+        console.log("Restaurant restauré depuis URL:", savedRestaurant.name);
+        setCurrentRestaurant(savedRestaurant);
+      }
+    }
+  }, [restaurants, searchParams.get("restaurant")]);
 
   // Fonction pour changer de restaurant et persister dans l'URL
   const handleSetCurrentRestaurant = (restaurant: Restaurant | null) => {
