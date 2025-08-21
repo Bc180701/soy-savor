@@ -102,18 +102,17 @@ const OrderingLockControl = () => {
       console.log("🔒 Nouveaux paramètres:", updatedSettings);
 
       // Mettre à jour en base de données
-      const { data: updatedData, error } = await supabase
+      const { error } = await supabase
         .from('restaurants')
         .update({ settings: updatedSettings })
-        .eq('id', currentRestaurant.id)
-        .select('*');
+        .eq('id', currentRestaurant.id);
 
       if (error) {
         console.error("🔒 Erreur mise à jour:", error);
         throw error;
       }
 
-      console.log("🔒 Restaurant mis à jour:", updatedData);
+      console.log("🔒 Restaurant mis à jour avec succès");
 
       // Mettre à jour l'état local
       if (settingType === 'general') {
@@ -146,10 +145,7 @@ const OrderingLockControl = () => {
           : `Les nouvelles commandes ${settingType === 'general' ? '' : settingType === 'delivery' ? 'en livraison' : 'à emporter'} sont maintenant autorisées`,
       });
 
-      // Vérifier immédiatement après la mise à jour
-      setTimeout(() => {
-        fetchLockStatus();
-      }, 500);
+      // Pas besoin de refetch - les états locaux sont déjà mis à jour
 
     } catch (error) {
       console.error("🔒 Erreur lors de la mise à jour:", error);
