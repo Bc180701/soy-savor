@@ -38,8 +38,9 @@ export const useOrderingLockStatus = () => {
       const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
       const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
       
-      // Restaurant fermé si ordering_locked OU si (delivery_blocked ET pickup_blocked)
-      const locked = ordering_locked || (delivery_blocked && pickup_blocked);
+      // LOGIQUE CORRIGÉE : Si ordering_locked est true, tout est bloqué (priorité absolue)
+      // Sinon, vérifier si les deux services spécifiques sont bloqués
+      const locked = ordering_locked || (!ordering_locked && delivery_blocked && pickup_blocked);
       
       console.log("🔒 Statut récupéré - ordering_locked:", ordering_locked, "delivery_blocked:", delivery_blocked, "pickup_blocked:", pickup_blocked, "résultat final:", locked);
       setIsOrderingLocked(locked);
@@ -79,8 +80,9 @@ export const useOrderingLockStatus = () => {
           const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
           const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
           
-          // Restaurant fermé si ordering_locked OU si (delivery_blocked ET pickup_blocked)
-          const locked = ordering_locked || (delivery_blocked && pickup_blocked);
+          // LOGIQUE CORRIGÉE : Si ordering_locked est true, tout est bloqué (priorité absolue)
+          // Sinon, vérifier si les deux services spécifiques sont bloqués
+          const locked = ordering_locked || (!ordering_locked && delivery_blocked && pickup_blocked);
           
           console.log("🔒 Nouveau statut - ordering_locked:", ordering_locked, "delivery_blocked:", delivery_blocked, "pickup_blocked:", pickup_blocked, "résultat final:", locked);
           setIsOrderingLocked(locked);

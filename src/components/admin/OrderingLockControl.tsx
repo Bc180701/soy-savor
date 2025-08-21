@@ -294,10 +294,9 @@ const OrderingLockControl = () => {
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-800 mb-2">À propos des blocages</h3>
               <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Le verrouillage général désactive tous les types de commandes</li>
-                <li>• Les blocages spécifiques permettent de désactiver uniquement les livraisons ou l'emporter</li>
-                <li>• Si livraison ET emporter sont bloqués → le verrouillage général s'active automatiquement</li>
-                <li>• Si le verrouillage général est activé → les blocages spécifiques se désactivent automatiquement</li>
+                <li>• <strong>Verrouillage général :</strong> Bloque complètement toutes les commandes (priorité absolue)</li>
+                <li>• <strong>Blocages spécifiques :</strong> Désactivent uniquement la livraison ou l'emporter (désactivés si verrouillage général actif)</li>
+                <li>• Les paramètres sont gérés manuellement par l'administrateur</li>
                 <li>• N'affecte pas les commandes déjà en cours</li>
                 <li>• Peut être activé/désactivé à tout moment</li>
               </ul>
