@@ -76,6 +76,9 @@ export const useOrderingLockStatus = () => {
         },
         (payload) => {
           console.log("🔒 Changement détecté en temps réel:", payload);
+          console.log("🔒 [CRITICAL] Qui a déclenché ce changement en temps réel ?");
+          console.log("🔒 [CRITICAL] Payload complet:", JSON.stringify(payload, null, 2));
+          
           const settings = (payload.new?.settings as Record<string, any>) ?? {};
           const ordering_locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
           const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;

@@ -247,10 +247,11 @@ const OrderingLockControl = () => {
         description: "Tous les paramètres ont été enregistrés avec succès",
       });
 
-      // Refetch pour vérifier
+      // Refetch pour vérifier avec délai plus long
       setTimeout(() => {
+        console.log("💾 Vérification des paramètres après 3 secondes...");
         fetchLockStatus();
-      }, 1000);
+      }, 3000);
 
     } catch (error) {
       console.error("💾 Erreur lors de la sauvegarde:", error);
