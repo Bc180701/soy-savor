@@ -106,24 +106,18 @@ const OrderingLockControl = () => {
       console.log("🔒 Anciens paramètres:", currentSettings);
       console.log("🔒 Nouveaux paramètres:", updatedSettings);
 
-      // Mettre à jour en base de données avec une requête RPC pour forcer la mise à jour JSON
-      const { error } = await supabase.rpc('update_restaurant_settings', {
-        restaurant_id: currentRestaurant.id,
-        new_settings: updatedSettings
-      });
-
+      // Mettre à jour en base de données directement
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ 
+          settings: updatedSettings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentRestaurant.id);
+        
       if (error) {
-        console.error("🔒 Erreur mise à jour via RPC:", error);
-        // Fallback avec update classique
-        const { error: updateError } = await supabase
-          .from('restaurants')
-          .update({ settings: updatedSettings })
-          .eq('id', currentRestaurant.id);
-          
-        if (updateError) {
-          console.error("🔒 Erreur mise à jour fallback:", updateError);
-          throw updateError;
-        }
+        console.error("🔒 Erreur mise à jour:", error);
+        throw error;
       }
 
       console.log("🔒 Restaurant mis à jour avec succès");

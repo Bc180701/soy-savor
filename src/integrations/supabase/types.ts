@@ -1345,6 +1345,10 @@ export type Database = {
         Args: { section_data: Json; section_name: string }
         Returns: undefined
       }
+      update_restaurant_settings: {
+        Args: { new_settings: Json; restaurant_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       user_role:
