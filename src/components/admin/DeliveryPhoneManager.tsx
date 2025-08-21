@@ -67,7 +67,11 @@ const DeliveryPhoneManager = () => {
       if (fetchError) throw fetchError;
 
       const currentSettings = (currentData?.settings as Record<string, any>) ?? {};
-      const updatedSettings = { ...currentSettings, order_alert_phone: alertPhone || null };
+      // Préserver TOUS les settings existants et seulement modifier order_alert_phone
+      const updatedSettings = { 
+        ...currentSettings, 
+        order_alert_phone: alertPhone || null 
+      };
 
       const { error } = await supabase
         .from('restaurants')

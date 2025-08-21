@@ -43,6 +43,7 @@ export const useOrderingLockStatus = () => {
       const locked = ordering_locked || (!ordering_locked && delivery_blocked && pickup_blocked);
       
       console.log("🔒 Statut récupéré - ordering_locked:", ordering_locked, "delivery_blocked:", delivery_blocked, "pickup_blocked:", pickup_blocked, "résultat final:", locked);
+      console.log("🔒 [DEBUG] Settings complets reçus:", JSON.stringify(settings, null, 2));
       setIsOrderingLocked(locked);
       
     } catch (error) {
@@ -85,6 +86,7 @@ export const useOrderingLockStatus = () => {
           const locked = ordering_locked || (!ordering_locked && delivery_blocked && pickup_blocked);
           
           console.log("🔒 Nouveau statut - ordering_locked:", ordering_locked, "delivery_blocked:", delivery_blocked, "pickup_blocked:", pickup_blocked, "résultat final:", locked);
+          console.log("🔒 [DEBUG] Settings complets temps réel:", JSON.stringify(settings, null, 2));
           setIsOrderingLocked(locked);
         }
       )
