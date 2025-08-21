@@ -151,8 +151,12 @@ export function useOptimizedOrders(restaurantId: string | null) {
 
   // Effect principal pour charger les commandes
   useEffect(() => {
+    // Attendre que restaurantId soit défini (ne pas charger pendant l'initialisation)
     if (restaurantId !== undefined) { // null est une valeur valide (tous les restaurants)
+      console.log('🎯 Chargement des commandes pour restaurant initialisé:', restaurantId || 'tous');
       debouncedFetchOrders(restaurantId);
+    } else {
+      console.log('⏳ Attente de l\'initialisation du restaurant...');
     }
 
     // Nettoyage

@@ -24,7 +24,10 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { currentRestaurant } = useRestaurantContext();
+  const { currentRestaurant, isLoading: restaurantLoading } = useRestaurantContext();
+  
+  // Attendre que le contexte restaurant soit initialisé avant de charger les commandes
+  const restaurantId = restaurantLoading ? undefined : (currentRestaurant?.id || null);
   
   // Utiliser le hook optimisé pour les commandes
   const { 
@@ -34,7 +37,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     refreshOrders, 
     updateOrderLocally, 
     isFromCache 
-  } = useOptimizedOrders(currentRestaurant?.id || null);
+  } = useOptimizedOrders(restaurantId);
 
   // Fonction pour mettre à jour l'onglet dans l'URL
   const handleTabChange = useCallback((newTab: string) => {
@@ -126,11 +129,11 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
         </div>
       )}
       
-      {loading ? (
+      {(loading || restaurantLoading) ? (
         <div className="flex flex-col items-center justify-center py-8">
           <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin mb-4" />
           <p className="text-sm text-muted-foreground">
-            Chargement des commandes...
+            {restaurantLoading ? 'Initialisation...' : 'Chargement des commandes...'}
           </p>
         </div>
       ) : error ? (
