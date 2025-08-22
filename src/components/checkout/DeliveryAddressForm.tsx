@@ -397,7 +397,10 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
               </Button>
             </div>
             {isPostalCodeValid === true && (
-              <p className="text-sm text-green-600 mt-1">✓ Zone de livraison confirmée</p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+                <p className="text-sm text-green-800 font-medium">✓ Adresse validée et confirmée !</p>
+                <p className="text-xs text-green-600">Votre adresse a été enregistrée pour cette commande.</p>
+              </div>
             )}
             {isPostalCodeValid === false && (
               <p className="text-sm text-red-600 mt-1">✗ Hors zone de livraison</p>
