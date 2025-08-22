@@ -32,6 +32,10 @@ interface DeliveryInfo {
 }
 
 const PanierContent = () => {
+  // Scroll automatique en haut de la page au chargement
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []); // Empty dependency array means this runs once on mount
   const { items, clearCart, selectedRestaurantId } = useCart();
   const cartTotal = useCartTotal();
   const { toast } = useToast();
