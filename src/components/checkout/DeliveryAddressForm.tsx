@@ -121,7 +121,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     }
   };
 
-  const validatePostalCode = async () => {
+  const validateAndConfirmPostalCode = async () => {
     if (!formData.postalCode.trim()) {
       setIsPostalCodeValid(false);
       return;
@@ -131,6 +131,16 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
       toast({
         title: "Erreur",
         description: "Aucun restaurant détecté dans le panier",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validation
+    if (!formData.name || !formData.email || !formData.phone || !formData.street || !formData.city || !formData.postalCode) {
+      toast({
+        title: "Champs manquants",
+        description: "Veuillez remplir tous les champs obligatoires.",
         variant: "destructive",
       });
       return;
@@ -153,6 +163,12 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
         toast({
           title: "Zone de livraison confirmée",
           description: `Nous livrons bien au code postal ${formData.postalCode} depuis ${cartRestaurant.name}.`,
+        });
+        
+        // Confirmer directement l'adresse
+        onComplete({
+          ...formData,
+          isPostalCodeValid: true
         });
       }
     } catch (error) {
@@ -364,8 +380,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
               />
               <Button
                 type="button"
-                onClick={validatePostalCode}
-                disabled={isValidatingPostalCode || !formData.postalCode.trim()}
+                onClick={validateAndConfirmPostalCode}
+                disabled={isValidatingPostalCode || !formData.postalCode.trim() || !formData.name || !formData.email || !formData.phone || !formData.street || !formData.city}
                 variant="outline"
                 size="sm"
               >
@@ -404,13 +420,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
         <div className="flex justify-between pt-4">
           <Button type="button" onClick={onCancel} variant="outline">
             Annuler
-          </Button>
-          <Button 
-            type="submit"
-            className="bg-gold-500 hover:bg-gold-600 text-black"
-            disabled={isPostalCodeValid !== true}
-          >
-            Confirmer l'adresse
           </Button>
         </div>
       </form>
