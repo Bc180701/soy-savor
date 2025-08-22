@@ -43,6 +43,11 @@ const PanierContent = () => {
   const TAX_RATE = 0.1; // 10% TVA
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
+  
+  // Scroll automatique en haut à chaque changement d'étape
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentStep]);
   const [loading, setLoading] = useState(false);
   const [allergies, setAllergies] = useState<string[]>([]);
   const [tip, setTip] = useState<number>(0);
