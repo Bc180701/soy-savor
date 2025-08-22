@@ -50,22 +50,31 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
   const [loadingZones, setLoadingZones] = useState(false);
   const { toast } = useToast();
 
-  // Synchroniser avec les données initiales quand elles changent
+  // Synchroniser avec les données initiales quand elles changent (seulement si les champs sont vides)
   useEffect(() => {
     if (initialData) {
       console.log("🔄 Synchronisation avec données initiales:", initialData);
-      setFormData({
-        name: initialData.name || "",
-        email: initialData.email || "",
-        phone: initialData.phone || "",
-        street: initialData.street || "",
-        city: initialData.city || "",
-        postalCode: initialData.postalCode || "",
-        instructions: initialData.deliveryInstructions || ""
-      });
       
-      // Reset la validation du code postal car les données ont changé
-      setIsPostalCodeValid(null);
+      // Ne synchroniser que si les champs actuels sont vides pour éviter d'écraser les données validées
+      const shouldSync = !formData.name && !formData.email && !formData.phone && !formData.street && !formData.city && !formData.postalCode;
+      
+      if (shouldSync) {
+        console.log("✅ Synchronisation autorisée - champs vides");
+        setFormData({
+          name: initialData.name || "",
+          email: initialData.email || "",
+          phone: initialData.phone || "",
+          street: initialData.street || "",
+          city: initialData.city || "",
+          postalCode: initialData.postalCode || "",
+          instructions: initialData.deliveryInstructions || ""
+        });
+        
+        // Reset la validation du code postal car les données ont changé
+        setIsPostalCodeValid(null);
+      } else {
+        console.log("❌ Synchronisation ignorée - données déjà présentes");
+      }
     }
   }, [initialData]);
 
