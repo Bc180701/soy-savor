@@ -433,30 +433,74 @@ const PanierContent = () => {
 
   return (
     <div className="container mx-auto py-24 px-4">
-      {/* Sur mobile: justifier à droite, sur desktop: centré */}
-      <div className="max-w-4xl lg:mx-auto md:mx-auto sm:ml-auto">
-        {/* Affichage du restaurant détecté */}
-        {cartRestaurant && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-800">
-              <span className="font-medium">Restaurant sélectionné :</span> {cartRestaurant.name}
-            </p>
+      {/* Layout mobile: stack vertical, desktop: sidebar droite */}
+      <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
+        {/* Contenu principal */}
+        <div className="flex-1 lg:max-w-3xl">
+          {/* Affichage du restaurant détecté */}
+          {cartRestaurant && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <span className="font-medium">Restaurant sélectionné :</span> {cartRestaurant.name}
+              </p>
+            </div>
+          )}
+          
+          {/* Étapes du checkout */}
+          <CheckoutSteps currentStep={currentStep} />
+          
+          {/* Contenu de l'étape actuelle */}
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderStep()}
+          </motion.div>
+        </div>
+        
+        {/* Sidebar panier (visible sur desktop uniquement) */}
+        <div className="hidden lg:block lg:w-80 xl:w-96">
+          <div className="sticky top-24 bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+            <h3 className="font-semibold text-lg mb-4">Résumé de commande</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span>Sous-total</span>
+                <span>{subtotal.toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>TVA (10%)</span>
+                <span>{tax.toFixed(2)} €</span>
+              </div>
+              {deliveryInfo.orderType === "delivery" && (
+                <div className="flex justify-between text-sm">
+                  <span>Livraison</span>
+                  <span>{deliveryFee.toFixed(2)} €</span>
+                </div>
+              )}
+              {discount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Réduction</span>
+                  <span>-{discount.toFixed(2)} €</span>
+                </div>
+              )}
+              {tip > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Pourboire</span>
+                  <span>{tip.toFixed(2)} €</span>
+                </div>
+              )}
+              <div className="border-t pt-3">
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>{orderTotal.toFixed(2)} €</span>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-        
-        {/* Étapes du checkout */}
-        <CheckoutSteps currentStep={currentStep} />
-        
-        {/* Contenu de l'étape actuelle */}
-        <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
-        >
-          {renderStep()}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
