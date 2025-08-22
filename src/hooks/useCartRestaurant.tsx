@@ -21,13 +21,16 @@ export const useCartRestaurant = () => {
   const { items, selectedRestaurantId } = useCart();
   const [cartRestaurant, setCartRestaurant] = useState<Restaurant | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
-    const detectRestaurantFromCart = async () => {
-      console.log("🔍 Détection restaurant - Items:", items.length, "Selected restaurant:", selectedRestaurantId);
+    const detectRestaurantFromCart = async (attempt = 1) => {
+      console.log(`🔍 Détection restaurant (tentative ${attempt}) - Items:`, items.length, "Selected restaurant:", selectedRestaurantId);
       
       if (items.length === 0 && !selectedRestaurantId) {
+        console.log("📭 Panier vide, reset du restaurant");
         setCartRestaurant(null);
+        setRetryCount(0);
         return;
       }
 
@@ -52,8 +55,20 @@ export const useCartRestaurant = () => {
       }
 
       if (!restaurantId) {
-        console.warn("❌ Impossible de détecter le restaurant");
+        console.warn("❌ Impossible de détecter le restaurant - attempt:", attempt);
+        
+        // Retry logic si on a des items mais pas de restaurant détecté
+        if (items.length > 0 && attempt <= 3) {
+          console.log("🔄 Nouvelle tentative dans 500ms...");
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            detectRestaurantFromCart(attempt + 1);
+          }, 500);
+          return;
+        }
+        
         setCartRestaurant(null);
+        setRetryCount(0);
         return;
       }
 
@@ -64,20 +79,56 @@ export const useCartRestaurant = () => {
         if (restaurant) {
           console.log("✅ Restaurant détecté:", restaurant.name);
           setCartRestaurant(restaurant);
+          setRetryCount(0);
         } else {
           console.warn("❌ Restaurant non trouvé pour ID:", restaurantId);
+          
+          // Retry si le restaurant n'est pas trouvé
+          if (attempt <= 2) {
+            console.log("🔄 Retry chargement restaurant dans 1s...");
+            setTimeout(() => {
+              setRetryCount(prev => prev + 1);
+              detectRestaurantFromCart(attempt + 1);
+            }, 1000);
+            return;
+          }
+          
           setCartRestaurant(null);
+          setRetryCount(0);
         }
       } catch (error) {
         console.error("❌ Erreur détection restaurant:", error);
+        
+        // Retry sur erreur
+        if (attempt <= 2) {
+          console.log("🔄 Retry après erreur dans 1s...");
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            detectRestaurantFromCart(attempt + 1);
+          }, 1000);
+          return;
+        }
+        
         setCartRestaurant(null);
+        setRetryCount(0);
       } finally {
         setIsLoading(false);
       }
     };
 
     detectRestaurantFromCart();
-  }, [items, selectedRestaurantId]);
+  }, [items, selectedRestaurantId, retryCount]);
 
-  return { cartRestaurant, isLoading };
+  // Fonction pour forcer un rechargement
+  const refetchRestaurant = () => {
+    console.log("🔄 Rechargement forcé du restaurant");
+    setRetryCount(prev => prev + 1);
+  };
+
+  return { 
+    cartRestaurant, 
+    isLoading, 
+    refetchRestaurant,
+    hasItems: items.length > 0
+  };
 };

@@ -322,7 +322,7 @@ export const DeliveryStep = ({
         )}
       
       {/* Restaurant Card */}
-      {cartRestaurant && (
+      {cartRestaurant ? (
         <Card className="border-green-200 bg-green-50">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -330,6 +330,27 @@ export const DeliveryStep = ({
               <div>
                 <p className="text-sm font-medium text-green-800">
                   Commande pour : {cartRestaurant.name}
+                </p>
+                {cartRestaurant.city && (
+                  <p className="text-xs text-green-600">
+                    {cartRestaurant.city}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></div>
+              <div>
+                <p className="text-sm font-medium text-amber-800">
+                  Détection du restaurant en cours...
+                </p>
+                <p className="text-xs text-amber-600">
+                  Veuillez patienter
                 </p>
               </div>
             </div>

@@ -35,7 +35,7 @@ const PanierContent = () => {
   const { items, clearCart, selectedRestaurantId } = useCart();
   const cartTotal = useCartTotal();
   const { toast } = useToast();
-  const { cartRestaurant } = useCartRestaurant();
+  const { cartRestaurant, isLoading: cartRestaurantLoading, refetchRestaurant, hasItems } = useCartRestaurant();
   const TAX_RATE = 0.1; // 10% TVA
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
@@ -72,9 +72,11 @@ const PanierContent = () => {
       items: items,
       selectedRestaurantId,
       cartRestaurant: cartRestaurant?.name,
-      cartTotal
+      cartTotal,
+      cartRestaurantLoading,
+      hasItems
     });
-  }, [items, selectedRestaurantId, cartRestaurant, cartTotal]);
+  }, [items, selectedRestaurantId, cartRestaurant, cartTotal, cartRestaurantLoading, hasItems]);
   
   // Check if user is logged in
   useEffect(() => {
@@ -141,7 +143,7 @@ const PanierContent = () => {
   });
 
   const handleNextStep = () => {
-    console.log("🔄 handleNextStep appelé - Step:", currentStep, "Items:", items.length);
+    console.log("🔄 handleNextStep appelé - Step:", currentStep, "Items:", items.length, "Restaurant:", cartRestaurant?.name);
     
     if (currentStep === CheckoutStep.Cart) {
       if (items.length === 0) {
@@ -150,6 +152,28 @@ const PanierContent = () => {
           title: "Panier vide",
           description: "Veuillez ajouter des articles à votre panier.",
           variant: "destructive",
+        });
+        return;
+      }
+
+      // Vérifier que le restaurant est bien détecté
+      if (hasItems && !cartRestaurant && !cartRestaurantLoading) {
+        console.error("❌ Restaurant non détecté pour un panier avec des articles");
+        toast({
+          title: "Restaurant non détecté",
+          description: "Impossible de détecter le restaurant. Tentative de rechargement...",
+          variant: "destructive",
+        });
+        refetchRestaurant();
+        return;
+      }
+
+      // Attendre que le restaurant soit chargé si nécessaire
+      if (hasItems && cartRestaurantLoading) {
+        console.log("⏳ Attente du chargement du restaurant...");
+        toast({
+          title: "Chargement en cours",
+          description: "Détection du restaurant en cours, veuillez patienter...",
         });
         return;
       }
