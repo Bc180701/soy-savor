@@ -433,7 +433,8 @@ const PanierContent = () => {
 
   return (
     <div className="container mx-auto py-24 px-4">
-      <div className="max-w-4xl mx-auto">
+      {/* Sur mobile: justifier à droite, sur desktop: centré */}
+      <div className="max-w-4xl lg:mx-auto md:mx-auto sm:ml-auto">
         {/* Affichage du restaurant détecté */}
         {cartRestaurant && (
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
