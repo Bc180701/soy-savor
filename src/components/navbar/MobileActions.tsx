@@ -16,7 +16,10 @@ const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
   
   return (
     <div className="md:hidden flex items-center justify-between w-full">
-      {/* Bouton Commander à gauche */}
+      {/* Espace vide à gauche pour équilibrer */}
+      <div className="w-20"></div>
+
+      {/* Bouton Commander au centre */}
       <Link to="/commander">
         <Button className="bg-gold-500 hover:bg-gold-600 text-black px-4 py-2 text-sm font-medium">
           {homepageData?.header_section?.buttons?.order || "Commander"}
