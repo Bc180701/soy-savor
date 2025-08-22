@@ -15,19 +15,16 @@ const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
   const { data: homepageData } = useHomepageData();
   
   return (
-    <div className="md:hidden flex items-center justify-between w-full">
-      {/* Espace vide à gauche pour équilibrer */}
-      <div className="w-20"></div>
-
-      {/* Bouton Commander au centre */}
+    <div className="md:hidden flex items-center justify-center w-full relative">
+      {/* Bouton Commander au centre absolu */}
       <Link to="/commander">
         <Button className="bg-gold-500 hover:bg-gold-600 text-black px-4 py-2 text-sm font-medium">
           {homepageData?.header_section?.buttons?.order || "Commander"}
         </Button>
       </Link>
 
-      {/* Panier et Menu hamburger à droite */}
-      <div className="flex items-center gap-2">
+      {/* Panier et Menu hamburger à droite - position absolue */}
+      <div className="absolute right-0 flex items-center gap-2">
         <Link to="/panier">
           <Button
             variant="ghost"
