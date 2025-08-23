@@ -215,6 +215,17 @@ const PanierContent = () => {
       return false;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(deliveryInfo.email)) {
+      toast({
+        title: "Email invalide",
+        description: "Veuillez saisir une adresse email valide (exemple: nom@domaine.com).",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     if (deliveryInfo.orderType === "delivery") {
       if (!deliveryInfo.street || !deliveryInfo.city || !deliveryInfo.postalCode) {
         toast({
