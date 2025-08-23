@@ -28,6 +28,18 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
+  // Vérifier si c'est après 14h
+  const isAfter2PM = () => {
+    const now = new Date();
+    return now.getHours() >= 14;
+  };
+  
+  // Vérifier si c'est une catégorie box du midi
+  const isBoxDuMidi = (category: MenuCategory) => {
+    return category.name.toLowerCase().includes('box') && 
+           category.name.toLowerCase().includes('midi');
+  };
+  
   const {
     showAccompagnementSelector,
     handleAddToCart: handleBoxAddToCart,
@@ -157,12 +169,23 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-full"
+        className={`w-full ${isBoxDuMidi(category) && isAfter2PM() ? 'opacity-50 pointer-events-none' : ''}`}
       >
         <div className="mb-8">
-          <h2 className="text-2xl font-bold">{category.name}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className={`text-2xl font-bold ${isBoxDuMidi(category) && isAfter2PM() ? 'text-gray-400' : ''}`}>
+              {category.name}
+            </h2>
+            {isBoxDuMidi(category) && isAfter2PM() && (
+              <span className="text-sm text-red-500 font-medium">
+                (Disponible jusqu'à 14h)
+              </span>
+            )}
+          </div>
           {category.description && (
-            <p className="text-gray-600 italic mt-1">{category.description}</p>
+            <p className={`italic mt-1 ${isBoxDuMidi(category) && isAfter2PM() ? 'text-gray-400' : 'text-gray-600'}`}>
+              {category.description}
+            </p>
           )}
           <Separator className="my-4" />
         </div>
@@ -178,7 +201,11 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
                 >
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow border-0 bg-white rounded-xl h-full">
+                  <Card className={`overflow-hidden transition-shadow border-0 rounded-xl h-full ${
+                    isBoxDuMidi(category) && isAfter2PM() 
+                      ? 'bg-gray-100 cursor-not-allowed' 
+                      : 'bg-white hover:shadow-lg'
+                  }`}>
                     <CardContent className="p-0 h-full">
                       {isMobile ? (
                         // Mobile layout - Vertical card
