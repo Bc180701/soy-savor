@@ -57,6 +57,7 @@ export const DeliveryStep = ({
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userAddress, setUserAddress] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [emailError, setEmailError] = useState<string>("");
   const { toast } = useToast();
 
   // Charger le profil utilisateur si connecté
@@ -189,6 +190,16 @@ export const DeliveryStep = ({
       ...prev,
       [name]: value
     }));
+
+    // Validation en temps réel pour l'email
+    if (name === "email") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && !emailRegex.test(value)) {
+        setEmailError("Format d'email invalide (exemple: nom@domaine.com)");
+      } else {
+        setEmailError("");
+      }
+    }
   };
 
   // Nouvelle fonction pour synchroniser les informations de contact vers l'adresse
@@ -450,8 +461,14 @@ export const DeliveryStep = ({
                 onBlur={(e) => handleContactFieldBlur("email", e.target.value)}
                 placeholder="votre@email.com"
                 required
-                className="mt-1"
+                className={`mt-1 ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
               />
+              {emailError && (
+                <div className="flex items-center mt-1 text-sm text-red-600">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {emailError}
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="phone" className="flex items-center gap-2">
