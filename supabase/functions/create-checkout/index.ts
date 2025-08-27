@@ -424,6 +424,19 @@ serve(async (req) => {
         mode: 'payment',
         success_url: successUrl ? `${successUrl}?session_id={CHECKOUT_SESSION_ID}` : `${req.headers.get('origin')}/commande-confirmee?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: cancelUrl || `${req.headers.get('origin')}/panier`,
+        // Configuration pour la facturation automatique
+        invoice_creation: {
+          enabled: true,
+          invoice_data: {
+            description: `Commande restaurant #${orderType}`,
+            metadata: {
+              order_type: orderType,
+              restaurant_id: restaurantId,
+              order_timestamp: new Date().toISOString()
+            },
+            footer: 'Merci pour votre commande !'
+          }
+        },
         customer_email: clientEmail,
         metadata: {
           restaurant_id: targetRestaurantId,
