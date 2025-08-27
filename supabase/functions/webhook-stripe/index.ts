@@ -130,30 +130,90 @@ serve(async (req) => {
         }
       }
 
-      // Récupérer les vrais line_items depuis Stripe
+      // Récupérer les articles depuis Stripe d'abord, puis fallback sur métadonnées
       let itemsSummary = [];
+      let itemsSource = 'stripe';
+      
       try {
         console.log('🔍 Récupération des line_items depuis Stripe...');
         const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
           expand: ['data.price.product']
         });
         
-        itemsSummary = lineItems.data.map((item: any) => ({
-          id: item.price?.product?.metadata?.product_id || item.price?.product?.id || 'unknown',
-          name: item.description || item.price?.product?.name || 'Produit inconnu',
-          price: (item.amount_total || 0) / 100,
-          quantity: item.quantity || 1,
-          unit_price: (item.price?.unit_amount || 0) / 100
-        }));
-        
-        console.log('✅ Line items récupérés:', itemsSummary.length, 'articles');
-        console.log('📋 Détail des articles:', itemsSummary);
+        if (lineItems.data && lineItems.data.length > 0) {
+          itemsSummary = lineItems.data.map((item: any) => ({
+            id: item.price?.product?.metadata?.product_id || item.price?.product?.id || 'unknown',
+            name: item.description || item.price?.product?.name || 'Produit inconnu',
+            price: (item.amount_total || 0) / 100,
+            quantity: item.quantity || 1,
+            unit_price: (item.price?.unit_amount || 0) / 100
+          }));
+          
+          console.log('✅ Line items récupérés depuis Stripe:', itemsSummary.length, 'articles');
+        } else {
+          throw new Error('Aucun line_item retourné par Stripe');
+        }
       } catch (stripeError) {
         console.error('❌ Erreur récupération line_items Stripe:', stripeError);
-        // Fallback sur les métadonnées si l'API Stripe échoue
-        itemsSummary = metadata?.items_summary ? JSON.parse(metadata.items_summary) : [];
-        console.log('⚠️ Utilisation du fallback métadonnées:', itemsSummary.length, 'articles');
+        itemsSource = 'metadata';
+        
+        // Fallback 1: Essayer de décoder les items depuis les métadonnées compressées
+        if (metadata?.itemsSummaryStr) {
+          console.log('🔄 Tentative de décodage du résumé compressé...');
+          try {
+            // Appeler la fonction de décodage Supabase
+            const { data: decodedItems, error: decodeError } = await supabase
+              .rpc('decode_items_summary', { 
+                encoded_summary: JSON.parse(metadata.itemsSummaryStr) 
+              });
+            
+            if (!decodeError && decodedItems && Array.isArray(decodedItems)) {
+              itemsSummary = decodedItems;
+              console.log('✅ Articles décodés depuis le résumé compressé:', itemsSummary.length, 'articles');
+              itemsSource = 'decoded';
+            } else {
+              console.error('❌ Erreur décodage résumé:', decodeError);
+              throw new Error('Échec décodage résumé compressé');
+            }
+          } catch (decodeError) {
+            console.error('❌ Erreur lors du décodage:', decodeError);
+            throw new Error('Échec décodage résumé compressé');
+          }
+        }
+        
+        // Fallback 2: Utiliser items_summary direct des métadonnées
+        if (itemsSummary.length === 0 && metadata?.items_summary) {
+          try {
+            itemsSummary = JSON.parse(metadata.items_summary);
+            console.log('⚠️ Utilisation du fallback métadonnées directes:', itemsSummary.length, 'articles');
+            itemsSource = 'metadata_direct';
+          } catch (parseError) {
+            console.error('❌ Erreur parsing items_summary:', parseError);
+          }
+        }
+        
+        // Si toujours vide, alerte critique
+        if (itemsSummary.length === 0) {
+          console.error('🚨 CRITIQUE: Aucun article trouvé ni dans Stripe ni dans les métadonnées!');
+          console.error('🔍 Métadonnées disponibles:', Object.keys(metadata || {}));
+          
+          // Envoyer une alerte aux administrateurs
+          try {
+            await supabase.functions.invoke('send-restaurant-alert', {
+              body: { 
+                orderId: session.id,
+                restaurantId: restaurantId,
+                alertType: 'missing_items',
+                message: `Commande ${session.id} créée sans articles - Session Stripe expirée`
+              }
+            });
+          } catch (alertError) {
+            console.error('❌ Erreur envoi alerte critique:', alertError);
+          }
+        }
       }
+      
+      console.log(`📋 Articles finaux (source: ${itemsSource}):`, itemsSummary);
       
       const orderData = {
         stripe_session_id: session.id,
@@ -201,6 +261,36 @@ serve(async (req) => {
       }
 
       console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId, 'avec', itemsSummary.length, 'articles');
+
+      // Créer les order_items si on a des articles
+      if (itemsSummary.length > 0) {
+        console.log('📦 Création des order_items pour', itemsSummary.length, 'articles...');
+        
+        const orderItems = itemsSummary.map((item: any) => ({
+          order_id: order.id,
+          product_id: item.id === 'unknown' ? null : item.id,
+          quantity: item.quantity || 1,
+          price: item.unit_price || item.price || 0,
+          special_instructions: null
+        })).filter(item => item.product_id); // Ne garder que les items avec un product_id valide
+        
+        if (orderItems.length > 0) {
+          const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItems);
+          
+          if (itemsError) {
+            console.error('❌ Erreur création order_items:', itemsError);
+            // Ne pas faire échouer la commande pour autant
+          } else {
+            console.log('✅ Order_items créés avec succès:', orderItems.length, 'articles');
+          }
+        } else {
+          console.log('⚠️ Aucun order_item valide à créer (pas de product_id)');
+        }
+      } else {
+        console.log('⚠️ Aucun article à traiter pour les order_items');
+      }
 
       // Envoyer l'email de confirmation en arrière-plan
       if (order.client_email) {
