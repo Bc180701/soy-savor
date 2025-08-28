@@ -58,46 +58,72 @@ export const useOrderingLockStatus = () => {
     checkOrderingStatus();
   }, [currentRestaurant]);
 
-  // Écouter les changements en temps réel
+  // Polling fallback when WebSockets fail
   useEffect(() => {
     if (!currentRestaurant) return;
 
-    console.log("🔒 Configuration écoute temps réel pour:", currentRestaurant.id);
-    
-    const channel = supabase
-      .channel('restaurant-settings-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'restaurants',
-          filter: `id=eq.${currentRestaurant.id}`
-        },
-        (payload) => {
-          console.log("🔒 Changement détecté en temps réel:", payload);
-          console.log("🔒 [CRITICAL] Qui a déclenché ce changement en temps réel ?");
-          console.log("🔒 [CRITICAL] Payload complet:", JSON.stringify(payload, null, 2));
-          
-          const settings = (payload.new?.settings as Record<string, any>) ?? {};
-          const ordering_locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
-          const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
-          const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
-          
-          // LOGIQUE CORRIGÉE : Si ordering_locked est true, tout est bloqué (priorité absolue)
-          // Sinon, vérifier si les deux services spécifiques sont bloqués
-          const locked = ordering_locked || (!ordering_locked && delivery_blocked && pickup_blocked);
-          
-          console.log("🔒 Nouveau statut - ordering_locked:", ordering_locked, "delivery_blocked:", delivery_blocked, "pickup_blocked:", pickup_blocked, "résultat final:", locked);
-          console.log("🔒 [DEBUG] Settings complets temps réel:", JSON.stringify(settings, null, 2));
-          setIsOrderingLocked(locked);
-        }
-      )
-      .subscribe();
+    let pollInterval: NodeJS.Timeout;
+
+    const startPolling = () => {
+      // Poll every 10 seconds as fallback
+      pollInterval = setInterval(() => {
+        checkOrderingStatus();
+      }, 10000);
+    };
+
+    // Try WebSocket subscription first, fallback to polling if it fails
+    const setupRealtime = () => {
+      try {
+        console.log("🔒 Configuration écoute temps réel pour:", currentRestaurant.id);
+        
+        const channel = supabase
+          .channel('restaurant-settings-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'restaurants',
+              filter: `id=eq.${currentRestaurant.id}`
+            },
+            (payload) => {
+              console.log("🔒 Changement détecté en temps réel:", payload);
+              
+              const settings = (payload.new?.settings as Record<string, any>) ?? {};
+              const ordering_locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
+              const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
+              const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
+              
+              const locked = ordering_locked || (!ordering_locked && delivery_blocked && pickup_blocked);
+              
+              console.log("🔒 Nouveau statut - ordering_locked:", ordering_locked, "delivery_blocked:", delivery_blocked, "pickup_blocked:", pickup_blocked, "résultat final:", locked);
+              setIsOrderingLocked(locked);
+            }
+          )
+          .subscribe();
+
+        return () => {
+          console.log("🔒 Arrêt écoute temps réel");
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        console.warn("🔒 WebSocket failed, falling back to polling:", error);
+        startPolling();
+        return () => {
+          if (pollInterval) {
+            clearInterval(pollInterval);
+          }
+        };
+      }
+    };
+
+    const cleanup = setupRealtime();
 
     return () => {
-      console.log("🔒 Arrêt écoute temps réel");
-      supabase.removeChannel(channel);
+      cleanup();
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
     };
   }, [currentRestaurant]);
 
