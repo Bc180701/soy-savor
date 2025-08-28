@@ -214,7 +214,7 @@ serve(async (req) => {
           continue;
         }
 
-        // Les prix incluent déjà la TVA (10%), on ne majore plus
+        // Les prix sont déjà TTC, pas de majoration
         const unitAmount = Math.round(item.menuItem.price * 100);
         
         const lineItem = {

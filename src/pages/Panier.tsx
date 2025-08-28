@@ -123,9 +123,8 @@ const PanierContent = () => {
     }
   };
   
-  // Utiliser le total réactif au lieu de l'ancien système
+  // Les prix sont déjà TTC, calculer la TVA incluse pour affichage
   const subtotal = cartTotal;
-  const tax = subtotal * TAX_RATE;
   const deliveryFee = deliveryInfo.orderType === "delivery" ? calculateDeliveryFee(subtotal) : 0;
   
   // Calculate discount if promo code is applied
@@ -135,8 +134,11 @@ const PanierContent = () => {
       : appliedPromoCode.discount
     : 0;
   
-  // Calculate total with discount and tip
-  const orderTotal = subtotal + tax + deliveryFee + tip - discount;
+  // Calculate total with discount and tip (sans ajouter de TVA car déjà incluse)
+  const orderTotal = subtotal + deliveryFee + tip - discount;
+  
+  // TVA incluse dans les prix (10%) - affichage informatif uniquement
+  const tax = orderTotal / 1.1 * 0.1;
 
   console.log("📊 Panier - Calculs détaillés:", {
     subtotal,
