@@ -7,11 +7,15 @@ import { SushiCategory } from '@/types';
 const SUPABASE_URL = "https://tdykegnmomyyucbhslok.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRkeWtlZ25tb215eXVjYmhzbG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI3NjA2NjUsImV4cCI6MjA1ODMzNjY2NX0.88jbkZIkFiFXudHvqe0l2DhqQGh2V9JIThv9FFFagas";
 
+// Configuration spécifique pour forcer l'utilisation de WebSocket sécurisé
+const REALTIME_URL = "wss://tdykegnmomyyucbhslok.supabase.co/realtime/v1";
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   realtime: {
+    url: REALTIME_URL,
     params: {
       eventsPerSecond: 10,
     }

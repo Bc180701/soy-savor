@@ -121,63 +121,61 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
     const restaurantFilterMsg = restaurantId ? `pour le restaurant ${restaurantId}` : 'pour TOUS les restaurants';
     console.log(`🔗 Configuration des notifications en temps réel ${restaurantFilterMsg}`);
 
-    const channel = supabase
-      .channel('order-notifications')
-      .on(
-        'postgres_changes',
-        restaurantId ? {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders',
-          filter: `restaurant_id=eq.${restaurantId}`
-        } : {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders'
-        },
-        (payload) => {
-        console.log('🔔 Nouvelle commande reçue:', payload);
-        console.log('🔔 Event details:', {
-          event: payload.eventType,
-          table: payload.table,
-          new: payload.new,
-          restaurant_id: payload.new?.restaurant_id,
-          filter_restaurant: restaurantId
-        });
+    // SOLUTION TEMPORAIRE: Désactiver WebSocket pour éviter SecurityError
+    // Utiliser polling HTTP à la place
+    console.log('⚠️ WebSocket désactivé temporairement - utilisation du polling HTTP');
+    
+    let pollingInterval: NodeJS.Timeout;
+    let lastCheckTime = new Date().getTime();
+    
+    pollingInterval = setInterval(async () => {
+      try {
+        const { data: orders, error } = await supabase
+          .from('orders')
+          .select('id, created_at, restaurant_id')
+          .gte('created_at', new Date(lastCheckTime).toISOString())
+          .order('created_at', { ascending: false });
         
-        // Vérifier si la commande correspond au restaurant courant (double vérification)
-        if (restaurantId && payload.new?.restaurant_id !== restaurantId) {
-          console.log('⚠️ Commande ignorée - restaurant différent');
-          return;
+        if (!error && orders && orders.length > 0) {
+          // Filtrer par restaurant si nécessaire
+          const filteredOrders = restaurantId 
+            ? orders.filter(order => order.restaurant_id === restaurantId)
+            : orders;
+          
+          if (filteredOrders.length > 0) {
+            // Traiter chaque nouvelle commande
+            filteredOrders.forEach(order => {
+              console.log('🔔 Nouvelle commande détectée via polling:', order);
+              
+              // Play notification sound
+              playNotificationSound();
+
+              // Show toast notification with restaurant info
+              const restaurantName = order.restaurant_id === '11111111-1111-1111-1111-111111111111' ? 'Châteaurenard' : 'St Martin de Crau';
+              toast({
+                title: "🔔 Nouvelle commande!",
+                description: `Commande #${order.id.slice(0, 8)}... reçue pour ${restaurantName}`,
+                duration: 5000,
+              });
+
+              // Start blinking tab title
+              setHasNewOrders(true);
+              startTitleBlink();
+            });
+          }
         }
         
-        // Play notification sound
-        playNotificationSound();
-
-        // Show toast notification with restaurant info
-        const restaurantName = payload.new?.restaurant_id === '11111111-1111-1111-1111-111111111111' ? 'Châteaurenard' : 'St Martin de Crau';
-        toast({
-          title: "🔔 Nouvelle commande!",
-          description: `Commande #${payload.new.id.slice(0, 8)}... reçue pour ${restaurantName}`,
-          duration: 5000,
-        });
-
-        // Start blinking tab title
-        setHasNewOrders(true);
-        startTitleBlink();
-      })
-      .subscribe((status) => {
-        console.log('📡 Statut subscription:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Canal Real-time connecté avec succès');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Erreur de connexion au canal Real-time');
-        }
-      });
+        lastCheckTime = new Date().getTime();
+      } catch (error) {
+        console.error('Erreur polling:', error);
+      }
+    }, 3000); // Vérifier toutes les 3 secondes
 
     return () => {
-      console.log('🔌 Déconnexion du canal de notifications');
-      supabase.removeChannel(channel);
+      console.log('🔌 Arrêt du polling de notifications');
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
       stopTitleBlink();
     };
   }, [isAdmin, restaurantId, toast]);
