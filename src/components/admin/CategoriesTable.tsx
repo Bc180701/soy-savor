@@ -113,7 +113,7 @@ const CategoriesTable = () => {
       // Update the first category's order
       const { error: error1 } = await supabase
         .from('categories')
-        .update({ display_order: swapCategory.display_order })
+        .update({ display_order: swapCategory.display_order } as any)
         .eq('id', category.id)
         .eq('restaurant_id', currentRestaurant.id);
         
@@ -122,7 +122,7 @@ const CategoriesTable = () => {
       // Update the second category's order
       const { error: error2 } = await supabase
         .from('categories')
-        .update({ display_order: category.display_order })
+        .update({ display_order: category.display_order } as any)
         .eq('id', swapCategory.id)
         .eq('restaurant_id', currentRestaurant.id);
         

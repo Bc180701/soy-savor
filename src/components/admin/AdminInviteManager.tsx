@@ -31,7 +31,7 @@ const AdminInviteManager = () => {
         role: 'super_administrateur'
       });
 
-      setIsSuperAdmin(isSuperAdminRole || false);
+      setIsSuperAdmin(Boolean(isSuperAdminRole));
     } catch (error) {
       console.error('Erreur lors de la vérification du statut super admin:', error);
       setIsSuperAdmin(false);

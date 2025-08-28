@@ -391,11 +391,11 @@ const FeaturedProductsSection = () => {
 
         if (settingsError && settingsError.code !== 'PGRST116') {
           console.error("Erreur lors de la récupération des paramètres:", settingsError);
-        } else if (settingsData) {
+        } else if (settingsData && !('error' in settingsData)) {
           setSettings({
-            show_nouveautes: settingsData.show_nouveautes,
-            show_populaires: settingsData.show_populaires,
-            show_exclusivites: settingsData.show_exclusivites
+            show_nouveautes: Boolean(settingsData.show_nouveautes),
+            show_populaires: Boolean(settingsData.show_populaires),
+            show_exclusivites: Boolean(settingsData.show_exclusivites)
           });
         }
         
@@ -407,7 +407,10 @@ const FeaturedProductsSection = () => {
           .limit(3);
         
         if (newError) throw newError;
-        setNewProducts(newProductsData || []);
+        if (newProductsData && Array.isArray(newProductsData)) {
+          const validProducts = newProductsData.filter(product => product && typeof product === 'object' && !('error' in product));
+          setNewProducts(validProducts as any[]);
+        }
         
         // Fetch best seller products
         const { data: bestSellerData, error: bestError } = await supabase
@@ -418,7 +421,10 @@ const FeaturedProductsSection = () => {
           .limit(3);
         
         if (bestError) throw bestError;
-        setBestSellerProducts(bestSellerData || []);
+        if (bestSellerData && Array.isArray(bestSellerData)) {
+          const validProducts = bestSellerData.filter(product => product && typeof product === 'object' && !('error' in product));
+          setBestSellerProducts(validProducts as any[]);
+        }
         
         // Fetch most popular products - basé sur les prix les plus élevés parmi les produits actifs
         const { data: popularData, error: popularError } = await supabase
@@ -429,7 +435,10 @@ const FeaturedProductsSection = () => {
           .limit(4);
         
         if (popularError) throw popularError;
-        setPopularProducts(popularData || []);
+        if (popularData && Array.isArray(popularData)) {
+          const validProducts = popularData.filter(product => product && typeof product === 'object' && !('error' in product));
+          setPopularProducts(validProducts as any[]);
+        }
 
         console.log('📦 Produits récupérés:', {
           nouveautes: newProductsData?.length || 0,

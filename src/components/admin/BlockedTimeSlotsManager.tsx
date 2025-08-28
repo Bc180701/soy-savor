@@ -59,7 +59,10 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
         .order('blocked_time', { ascending: true });
 
       if (error) throw error;
-      setBlockedSlots(data || []);
+      if (data && Array.isArray(data)) {
+        const validSlots = data.filter(slot => slot && !('error' in slot));
+        setBlockedSlots(validSlots as any[]);
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des créneaux bloqués:', error);
       toast({
@@ -93,7 +96,7 @@ const BlockedTimeSlotsManager = ({ selectedRestaurant }: BlockedTimeSlotsManager
 
       const { error } = await supabase
         .from('blocked_time_slots')
-        .insert(slotsToInsert);
+        .insert(slotsToInsert as any);
 
       if (error) {
         if (error.code === '23505') {

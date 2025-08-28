@@ -107,7 +107,7 @@ const CategoryForm = ({ category, categories, onSave, onCancel }: CategoryFormPr
             name: data.name,
             description: data.description,
             display_order: data.display_order,
-          })
+          } as any)
           .eq("id", category.id)
           .eq("restaurant_id", currentRestaurant.id);
 
@@ -137,7 +137,7 @@ const CategoryForm = ({ category, categories, onSave, onCancel }: CategoryFormPr
           description: data.description,
           display_order: data.display_order,
           restaurant_id: currentRestaurant.id,
-        });
+        } as any);
 
         if (error) throw error;
       }

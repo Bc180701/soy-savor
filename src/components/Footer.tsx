@@ -26,8 +26,8 @@ const Footer = () => {
           return;
         }
         
-        if (data && data.section_data) {
-          setContactInfo(data.section_data as unknown as ContactInfo);
+        if (data && !('error' in data) && (data as any).section_data) {
+          setContactInfo((data as any).section_data as ContactInfo);
         }
       } catch (error) {
         console.error("Exception lors de la récupération des coordonnées de contact:", error);

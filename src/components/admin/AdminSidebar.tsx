@@ -71,7 +71,7 @@ const AdminSidebar = ({ activeSection, onSectionChange, isOpen, onClose }: Admin
         role: 'super_administrateur'
       });
 
-      setIsAdmin(isAdminRole || isSuperAdmin);
+      setIsAdmin(Boolean(isAdminRole) || Boolean(isSuperAdmin));
     } catch (error) {
       console.error('Erreur lors de la vérification du statut admin:', error);
       setIsAdmin(false);

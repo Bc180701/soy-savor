@@ -54,7 +54,7 @@ const AdminUsersList = () => {
         return;
       }
 
-      const adminUserIds = userRoles.map(role => role.user_id);
+      const adminUserIds = userRoles.filter(role => role && !('error' in role)).map(role => (role as any).user_id);
 
       // Ensuite récupérer les détails des utilisateurs via la fonction Edge
       const { data: usersData, error: usersError } = await supabase.functions.invoke('get-admin-users', {
