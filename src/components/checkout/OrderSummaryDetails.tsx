@@ -144,7 +144,6 @@ export const OrderSummaryDetails = ({
             <span>{formatEuro(deliveryFee)}</span>
           </div>
         )}
-        {/* Add tip display */}
         {tip > 0 && (
           <div className="flex justify-between mb-2 text-green-600">
             <span>Pourboire</span>
@@ -157,8 +156,13 @@ export const OrderSummaryDetails = ({
             <span>-{formatEuro(discount)}</span>
           </div>
         )}
+        {/* TVA incluse - affichage informatif */}
+        <div className="flex justify-between mb-2 text-gray-600 text-sm">
+          <span>dont TVA incluse (10%)</span>
+          <span>{formatEuro(tax)}</span>
+        </div>
         <div className="flex justify-between font-bold text-lg mt-4">
-          <span>Total</span>
+          <span>Total TTC</span>
           <span>{formatEuro(orderTotal)}</span>
         </div>
       </div>
