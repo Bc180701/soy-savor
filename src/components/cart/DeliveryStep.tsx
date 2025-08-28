@@ -90,7 +90,7 @@ export const DeliveryStep = ({
             
             if (profile) {
               setUserProfile({
-                ...profile,
+                ...(profile as any),
                 email: user.email
               });
             } else if (!profileError) {

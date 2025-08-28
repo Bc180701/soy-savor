@@ -45,19 +45,19 @@ export const usePokeIngredients = () => {
         }
 
         // Group ingredients by type
-        const base = ingredients.filter(ing => ing.ingredient_type === 'base');
-        const protein = ingredients.filter(ing => ing.ingredient_type === 'protein');
-        const vegetable = ingredients.filter(ing => ing.ingredient_type === 'vegetable');
-        const topping = ingredients.filter(ing => ing.ingredient_type === 'topping');
-        const sauce = ingredients.filter(ing => ing.ingredient_type === 'sauce');
+        const base = ingredients.filter((ing: any) => ing.ingredient_type === 'base');
+        const protein = ingredients.filter((ing: any) => ing.ingredient_type === 'protein');
+        const vegetable = ingredients.filter((ing: any) => ing.ingredient_type === 'vegetable');
+        const topping = ingredients.filter((ing: any) => ing.ingredient_type === 'topping');
+        const sauce = ingredients.filter((ing: any) => ing.ingredient_type === 'sauce');
 
         console.log("Poke categories:", { base: base.length, protein: protein.length, vegetable: vegetable.length, topping: topping.length, sauce: sauce.length });
 
-        setBaseOptions(base);
-        setProteinOptions(protein);
-        setVegetableOptions(vegetable);
-        setToppingOptions(topping);
-        setSauceOptions(sauce);
+        setBaseOptions(base as any);
+        setProteinOptions(protein as any);
+        setVegetableOptions(vegetable as any);
+        setToppingOptions(topping as any);
+        setSauceOptions(sauce as any);
 
       } catch (error) {
         console.error('Error in fetchPokeIngredients:', error);

@@ -106,7 +106,7 @@ const OrdersKitchenView = ({
         // Aligner avec le comportement de l'email: consigner la note sur la commande
         const { error: updateErr } = await supabase
           .from('orders')
-          .update({ customer_notes: `${delayReason} (Retard de ${delayMinutes} min signalé)` })
+          .update({ customer_notes: `${delayReason} (Retard de ${delayMinutes} min signalé)` } as any)
           .eq('id', selectedOrderId);
         if (updateErr) console.warn("Impossible d'ajouter la note de retard sur la commande:", updateErr);
       } else {

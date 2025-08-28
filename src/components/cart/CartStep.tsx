@@ -91,7 +91,7 @@ export const CartStep = ({
           
           if (data && data.length > 0) {
             // Format the desserts
-            const formattedDesserts: MenuItem[] = data.map(dessert => ({
+            const formattedDesserts: MenuItem[] = data.map((dessert: any) => ({
               id: dessert.id,
               name: dessert.name,
               description: dessert.description || '',

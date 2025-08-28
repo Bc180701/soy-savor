@@ -163,7 +163,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       const deliveryCounts: Record<string, number> = {};
       const pickupCounts: Record<string, number> = {};
       
-      (ordersResult.data || []).forEach(order => {
+      (ordersResult.data || []).forEach((order: any) => {
         // Ne compter que les commandes payées ou en attente
         if (order.scheduled_for && (order.payment_status === 'paid' || order.payment_status === 'pending')) {
           // Extraire l'heure de scheduled_for
@@ -187,7 +187,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       // Créer un Set des créneaux bloqués pour une recherche rapide selon le type de service
       const blockedSlots = new Set<string>();
       
-      (blockedResult.data || []).forEach(slot => {
+      (blockedResult.data || []).forEach((slot: any) => {
         const timeSlot = slot.blocked_time.slice(0, 5); // "18:00:00" -> "18:00"
         const serviceType = slot.blocked_service_type;
         

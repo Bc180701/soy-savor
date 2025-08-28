@@ -228,7 +228,7 @@ export const useHomepageData = (): UseHomepageDataResult => {
           footer_section: data.footer_section,
         };
 
-        sections.forEach((section) => {
+        sections.forEach((section: any) => {
           if (section.section_name === 'hero_section') {
             homepageData.hero_section = section.section_data as unknown as HeroSection;
           } else if (section.section_name === 'custom_creation_section') {

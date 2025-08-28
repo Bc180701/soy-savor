@@ -15,7 +15,6 @@ const REALTIME_URL = "wss://tdykegnmomyyucbhslok.supabase.co/realtime/v1";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   realtime: {
-    url: REALTIME_URL,
     params: {
       eventsPerSecond: 10,
     }
@@ -40,12 +39,12 @@ export const fetchOrderWithDetails = async (orderId: string) => {
     
     // Process items_summary to group duplicates by name, OR fallback to order_items for old orders
     let processedItems = [];
-    if (order.items_summary && Array.isArray(order.items_summary) && order.items_summary.length > 0) {
+    if ((order as any).items_summary && Array.isArray((order as any).items_summary) && (order as any).items_summary.length > 0) {
       // NEW: Use items_summary (from webhook)
       const itemsMap = new Map();
       
       // Group items by name and sum quantities
-      order.items_summary.forEach((item: any) => {
+      (order as any).items_summary.forEach((item: any) => {
         const name = item.name;
         if (itemsMap.has(name)) {
           const existing = itemsMap.get(name);
@@ -98,11 +97,11 @@ export const fetchOrderWithDetails = async (orderId: string) => {
     
     // Fetch customer profile details
     let customerDetails = null;
-    if (order.user_id) {
+    if ((order as any).user_id) {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', order.user_id)
+        .eq('id', (order as any).user_id)
         .single();
         
       if (!profileError) {
@@ -112,11 +111,11 @@ export const fetchOrderWithDetails = async (orderId: string) => {
     
     // Fetch delivery address if available
     let addressDetails = null;
-    if (order.delivery_address_id) {
+    if ((order as any).delivery_address_id) {
       const { data: address, error: addressError } = await supabase
         .from('user_addresses')
         .select('*')
-        .eq('id', order.delivery_address_id)
+        .eq('id', (order as any).delivery_address_id)
         .single();
         
       if (!addressError) {
@@ -126,7 +125,7 @@ export const fetchOrderWithDetails = async (orderId: string) => {
     
     // Return complete order details with processed items from items_summary
     return {
-      ...order,
+      ...(order as any),
       order_items: processedItems, // Now using processed items_summary instead of order_items table
       customer: customerDetails,
       delivery_address: addressDetails
@@ -173,10 +172,10 @@ export const fetchAllMenuData = async (restaurantId?: string) => {
     
     // Group products by category
     const menuData = categories.map(category => {
-      const categoryProducts = products.filter(product => product.category_id === category.id);
+      const categoryProducts = products.filter((product: any) => product.category_id === (category as any).id);
       
       // Transform products to menu items
-      const menuItems = categoryProducts.map(product => ({
+      const menuItems = categoryProducts.map((product: any) => ({
         id: product.id,
         name: product.name,
         description: product.description,
@@ -192,9 +191,9 @@ export const fetchAllMenuData = async (restaurantId?: string) => {
       }));
       
       return {
-        id: category.id as SushiCategory,
-        name: category.name,
-        description: category.description,
+        id: (category as any).id as SushiCategory,
+        name: (category as any).name,
+        description: (category as any).description,
         items: menuItems
       };
     });

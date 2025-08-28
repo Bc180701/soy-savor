@@ -139,12 +139,12 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
         if (!error && orders && orders.length > 0) {
           // Filtrer par restaurant si nécessaire
           const filteredOrders = restaurantId 
-            ? orders.filter(order => order.restaurant_id === restaurantId)
+            ? orders.filter((order: any) => order.restaurant_id === restaurantId)
             : orders;
           
           if (filteredOrders.length > 0) {
             // Traiter chaque nouvelle commande
-            filteredOrders.forEach(order => {
+            filteredOrders.forEach((order: any) => {
               console.log('🔔 Nouvelle commande détectée via polling:', order);
               
               // Play notification sound

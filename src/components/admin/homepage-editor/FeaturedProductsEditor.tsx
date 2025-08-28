@@ -37,9 +37,9 @@ const FeaturedProductsEditor = () => {
 
       if (data) {
         setSettings({
-          show_nouveautes: data.show_nouveautes,
-          show_populaires: data.show_populaires,
-          show_exclusivites: data.show_exclusivites
+          show_nouveautes: (data as any).show_nouveautes,
+          show_populaires: (data as any).show_populaires,
+          show_exclusivites: (data as any).show_exclusivites
         });
       }
     } catch (error) {
@@ -69,8 +69,8 @@ const FeaturedProductsEditor = () => {
         // Mettre à jour l'enregistrement existant
         const { error: updateError } = await supabase
           .from('featured_products_settings')
-          .update(newSettings)
-          .eq('id', existingData.id);
+          .update(newSettings as any)
+          .eq('id', (existingData as any).id);
 
         if (updateError) {
           throw updateError;
@@ -79,7 +79,7 @@ const FeaturedProductsEditor = () => {
         // Créer un nouvel enregistrement
         const { error: insertError } = await supabase
           .from('featured_products_settings')
-          .insert(newSettings);
+          .insert(newSettings as any);
 
         if (insertError) {
           throw insertError;

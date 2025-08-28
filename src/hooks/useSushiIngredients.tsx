@@ -38,7 +38,7 @@ export const useSushiIngredients = () => {
         }
 
         // Transform ingredients to SushiOption format
-        const transformedIngredients: SushiOption[] = ingredients.map(ingredient => ({
+        const transformedIngredients: SushiOption[] = ingredients.map((ingredient: any) => ({
           id: ingredient.id,
           name: ingredient.name,
           price: ingredient.price,

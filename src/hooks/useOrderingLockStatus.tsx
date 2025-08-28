@@ -33,7 +33,7 @@ export const useOrderingLockStatus = () => {
         return;
       }
 
-      const settings = (data?.settings as Record<string, any>) ?? {};
+      const settings = ((data as any)?.settings as Record<string, any>) ?? {};
       const ordering_locked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
       const delivery_blocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
       const pickup_blocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
