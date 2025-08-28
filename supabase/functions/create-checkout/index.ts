@@ -394,9 +394,22 @@ serve(async (req) => {
 
     console.log('📝 [STEP 21] Résumé articles total (produits + extras) créé (longueur):', itemsSummaryStr.length, ' | items comptés:', rawItemsSummary.length);
 
-    // Note: Pas de taux de taxe car TVA déjà incluse dans les prix
-    console.log('📦 [STEP 21.5] TVA déjà incluse dans les prix, pas de taxe supplémentaire');
-    const taxRate = null;
+    // Créer un taux de taxe de 10% INCLUSIF (TVA déjà incluse dans les prix)
+    console.log('📦 [STEP 21.5] Création du taux de taxe inclusif...');
+    let taxRate;
+    try {
+      taxRate = await stripe.taxRates.create({
+        display_name: 'TVA',
+        description: 'Taxe sur la valeur ajoutée (incluse)',
+        jurisdiction: 'FR',
+        percentage: 10.0,
+        inclusive: true, // IMPORTANT: TVA déjà incluse dans les prix
+      });
+      console.log('✅ [STEP 21.6] Taux de taxe inclusif créé:', taxRate.id);
+    } catch (error) {
+      console.error('❌ [STEP 21.6] Erreur création taux de taxe:', error);
+      // Continuer sans taux de taxe si erreur
+    }
 
     // Créer la session Stripe
     console.log('💳 [STEP 22] Création session Stripe...');
@@ -404,7 +417,10 @@ serve(async (req) => {
     try {
       const sessionData = {
         payment_method_types: ['card'],
-        line_items: lineItems, // Pas de taxe supplémentaire, prix déjà TTC
+        line_items: lineItems.map(lineItem => ({
+          ...lineItem,
+          ...(taxRate && { tax_rates: [taxRate.id] }) // Applique le taux inclusif pour la facture
+        })),
         mode: 'payment',
         success_url: successUrl ? `${successUrl}?session_id={CHECKOUT_SESSION_ID}` : `${req.headers.get('origin')}/commande-confirmee?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: cancelUrl || `${req.headers.get('origin')}/panier`,
