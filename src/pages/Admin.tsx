@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { RestaurantProvider } from "@/hooks/useRestaurantContext";
 import AdminManager from "@/components/admin/AdminManager";
 
 const Admin = () => {
@@ -35,11 +34,7 @@ const Admin = () => {
     );
   }
 
-  return (
-    <RestaurantProvider>
-      <AdminManager />
-    </RestaurantProvider>
-  );
+  return <AdminManager />;
 };
 
 export default Admin;
