@@ -16,14 +16,16 @@ const MobileActions = ({ isOpen, toggleMenu }: MobileActionsProps) => {
   
   return (
     <div className="md:hidden flex items-center w-full relative">
-      {/* Bouton Commander au centre absolu - parfaitement centré */}
-      <div className="absolute left-1/2 transform -translate-x-1/2">
-        <Link to="/commander">
-          <Button className="bg-gold-500 hover:bg-gold-600 text-black px-4 py-2 text-sm font-medium">
-            {homepageData?.header_section?.buttons?.order || "Commander"}
-          </Button>
-        </Link>
-      </div>
+      {/* Bouton Commander au centre absolu - parfaitement centré - caché si panier non vide */}
+      {itemCount === 0 && (
+        <div className="absolute left-1/2 transform -translate-x-1/2">
+          <Link to="/commander">
+            <Button className="bg-gold-500 hover:bg-gold-600 text-black px-4 py-2 text-sm font-medium">
+              {homepageData?.header_section?.buttons?.order || "Commander"}
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Panier et Menu hamburger à droite - position absolue */}
       <div className="absolute right-0 flex items-center gap-2">
