@@ -134,10 +134,10 @@ const PanierContent = () => {
       : appliedPromoCode.discount
     : 0;
   
-  // Calculate total with discount and tip (sans ajouter de TVA car déjà incluse)
+  // Le total TTC (sans ajouter de TVA car déjà incluse dans les prix)
   const orderTotal = subtotal + deliveryFee + tip - discount;
   
-  // TVA incluse dans les prix (10%) - affichage informatif uniquement
+  // TVA incluse dans le total TTC (10%) - pour affichage uniquement
   const tax = orderTotal / 1.1 * 0.1;
 
   console.log("📊 Panier - Calculs détaillés:", {
