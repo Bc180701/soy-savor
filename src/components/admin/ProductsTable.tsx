@@ -84,7 +84,7 @@ const ProductsTable = () => {
     try {
       const { data: updatedProduct, error } = await supabase
         .from('products')
-        .update({ is_new: !product.is_new })
+        .update({ is_new: !product.is_new } as any)
         .eq('id', product.id)
         .eq('restaurant_id', currentRestaurant.id)
         .select()

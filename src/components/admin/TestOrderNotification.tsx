@@ -55,7 +55,7 @@ const TestOrderNotification: React.FC<TestOrderNotificationProps> = ({
       
       const { data, error } = await supabase
         .from('orders')
-        .insert(testOrder)
+        .insert(testOrder as any)
         .select();
 
       if (error) {

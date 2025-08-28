@@ -44,7 +44,7 @@ const PokeIngredientsSection = () => {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setIngredients(data || []);
+      setIngredients((data as any) || []);
     } catch (error) {
       console.error('Erreur lors du chargement des ingrédients pokés:', error);
       toast.error("Erreur lors du chargement des ingrédients pokés");
@@ -65,7 +65,7 @@ const PokeIngredientsSection = () => {
       if (editingId) {
         const { error } = await supabase
           .from('poke_ingredients')
-          .update(formData)
+          .update(formData as any)
           .eq('id', editingId);
 
         if (error) throw error;
@@ -73,7 +73,7 @@ const PokeIngredientsSection = () => {
       } else {
         const { error } = await supabase
           .from('poke_ingredients')
-          .insert([formData]);
+          .insert([formData] as any);
 
         if (error) throw error;
         toast.success("Ingrédient poké ajouté avec succès");

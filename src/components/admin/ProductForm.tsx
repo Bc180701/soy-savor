@@ -109,8 +109,8 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
 
         // Extraire tous les allergènes uniques
         const existingAllergens = new Set<string>();
-        products?.forEach(product => {
-          if (product.allergens && Array.isArray(product.allergens)) {
+        products?.forEach((product: any) => {
+          if (product?.allergens && Array.isArray(product.allergens)) {
             product.allergens.forEach((allergen: string) => {
               if (allergen && allergen.trim()) {
                 existingAllergens.add(allergen.trim());
@@ -286,7 +286,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_gluten_free: data.is_gluten_free,
             allergens: data.allergens,
             updated_at: new Date().toISOString(),
-          })
+          } as any)
           .eq("id", product.id)
           .eq("restaurant_id", currentRestaurant.id)
           .select();
@@ -326,7 +326,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_gluten_free: data.is_gluten_free,
             allergens: data.allergens,
             restaurant_id: currentRestaurant.id,
-          })
+          } as any)
           .select();
 
         if (error) throw error;

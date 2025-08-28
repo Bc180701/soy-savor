@@ -38,7 +38,7 @@ export const RenameProductImages = () => {
       for (const product of products) {
         try {
           // Extraire le nom du fichier de l'URL
-          const urlParts = product.image_url.split('/');
+          const urlParts = (product as any).image_url.split('/');
           const oldFileName = urlParts[urlParts.length - 1].split('?')[0]; // Retirer les paramètres de requête
           
           // Si ce fichier a déjà été traité, passer au suivant
@@ -49,7 +49,7 @@ export const RenameProductImages = () => {
 
           // Créer le nouveau nom de fichier basé sur le nom du produit
           const fileExtension = oldFileName.split('.').pop();
-          let sanitizedProductName = product.name
+          let sanitizedProductName = (product as any).name
             .toLowerCase()
             .replace(/[^a-z0-9\s]/g, '') // Retirer les caractères spéciaux
             .replace(/\s+/g, '-') // Remplacer les espaces par des tirets
@@ -67,7 +67,7 @@ export const RenameProductImages = () => {
           if (downloadError) {
             console.error(`Erreur lors du téléchargement de ${oldFileName}:`, downloadError);
             processResults.push({
-              product: product.name,
+          product: (product as any).name,
               oldFileName,
               newFileName,
               status: 'error_download',
@@ -87,7 +87,7 @@ export const RenameProductImages = () => {
           if (uploadError) {
             console.error(`Erreur lors de l'upload de ${newFileName}:`, uploadError);
             processResults.push({
-              product: product.name,
+          product: (product as any).name,
               oldFileName,
               newFileName,
               status: 'error_upload',
@@ -111,13 +111,13 @@ export const RenameProductImages = () => {
           // Mettre à jour tous les produits qui utilisent cette image
           const { error: updateError } = await supabase
             .from('products')
-            .update({ image_url: newImageUrl })
-            .eq('image_url', product.image_url);
+            .update({ image_url: newImageUrl } as any)
+            .eq('image_url', (product as any).image_url);
 
           if (updateError) {
-            console.error(`Erreur lors de la mise à jour de l'URL pour le produit ${product.name}:`, updateError);
+            console.error(`Erreur lors de la mise à jour de l'URL pour le produit ${(product as any).name}:`, updateError);
             processResults.push({
-              product: product.name,
+              product: (product as any).name,
               oldFileName,
               newFileName,
               status: 'error_update',
@@ -128,19 +128,19 @@ export const RenameProductImages = () => {
 
           processedFiles.add(oldFileName);
           processResults.push({
-            product: product.name,
+            product: (product as any).name,
             oldFileName,
             newFileName,
             newUrl: newImageUrl,
             status: 'success'
           });
 
-          console.log(`Succès: ${product.name} -> ${newFileName}`);
+          console.log(`Succès: ${(product as any).name} -> ${newFileName}`);
 
         } catch (error: any) {
-          console.error(`Erreur lors du traitement de ${product.name}:`, error);
+          console.error(`Erreur lors du traitement de ${(product as any).name}:`, error);
           processResults.push({
-            product: product.name,
+            product: (product as any).name,
             status: 'error',
             error: error.message
           });

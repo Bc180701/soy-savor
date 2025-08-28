@@ -130,7 +130,7 @@ const PromotionsManager = () => {
         .order('name');
       
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data as any) || []);
     } catch (error) {
       console.error('Erreur lors du chargement des produits:', error);
     }
@@ -144,7 +144,7 @@ const PromotionsManager = () => {
         .order('name');
       
       if (error) throw error;
-      setRestaurants(data || []);
+      setRestaurants((data as any) || []);
     } catch (error) {
       console.error('Erreur lors du chargement des restaurants:', error);
     }

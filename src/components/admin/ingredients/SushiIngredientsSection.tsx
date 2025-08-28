@@ -53,7 +53,7 @@ const SushiIngredientsSection = () => {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setIngredients(data || []);
+      setIngredients((data as any) || []);
     } catch (error) {
       console.error('Erreur lors du chargement des ingrédients sushi:', error);
       toast.error("Erreur lors du chargement des ingrédients sushi");
@@ -74,7 +74,7 @@ const SushiIngredientsSection = () => {
       if (editingId) {
         const { error } = await supabase
           .from('sushi_ingredients')
-          .update(formData)
+          .update(formData as any)
           .eq('id', editingId);
 
         if (error) throw error;
@@ -82,7 +82,7 @@ const SushiIngredientsSection = () => {
       } else {
         const { error } = await supabase
           .from('sushi_ingredients')
-          .insert([formData]);
+          .insert([formData] as any);
 
         if (error) throw error;
         toast.success("Ingrédient sushi ajouté avec succès");

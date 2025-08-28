@@ -41,7 +41,7 @@ export const ReassignProductImages = () => {
       for (const product of products) {
         try {
           // Nettoyer le nom du produit pour la recherche
-          const sanitizedProductName = product.name
+          const sanitizedProductName = (product as any).name
             .toLowerCase()
             .replace(/[^a-z0-9\s]/g, '')
             .replace(/\s+/g, '-')
@@ -73,28 +73,28 @@ export const ReassignProductImages = () => {
             // Mettre à jour le produit avec la nouvelle URL
             const { error: updateError } = await supabase
               .from('products')
-              .update({ image_url: newImageUrl })
-              .eq('id', product.id);
+              .update({ image_url: newImageUrl } as any)
+              .eq('id', (product as any).id);
 
             if (updateError) {
               processResults.push({
-                product: product.name,
+                product: (product as any).name,
                 status: 'error',
                 error: updateError.message,
                 suggestedFile: matchingFile.name
               });
             } else {
               processResults.push({
-                product: product.name,
+                product: (product as any).name,
                 status: 'success',
-                oldUrl: product.image_url,
+                oldUrl: (product as any).image_url,
                 newUrl: newImageUrl,
                 matchedFile: matchingFile.name
               });
             }
           } else {
             processResults.push({
-              product: product.name,
+              product: (product as any).name,
               status: 'no_match',
               searchName: sanitizedProductName,
               availableFiles: files.map(f => f.name).slice(0, 5) // Montrer quelques fichiers disponibles
@@ -102,7 +102,7 @@ export const ReassignProductImages = () => {
           }
         } catch (error: any) {
           processResults.push({
-            product: product.name,
+            product: (product as any).name,
             status: 'error',
             error: error.message
           });
