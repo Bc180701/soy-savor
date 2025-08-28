@@ -44,7 +44,10 @@ const DeliveryZonesManager = () => {
         .order('city', { ascending: true });
 
       if (error) throw error;
-      setDeliveryLocations(data || []);
+      if (data && Array.isArray(data)) {
+        const validLocations = data.filter(location => location && !('error' in location));
+        setDeliveryLocations(validLocations as any[]);
+      }
     } catch (error) {
       console.error("Erreur lors du chargement des zones:", error);
       toast({
@@ -76,7 +79,7 @@ const DeliveryZonesManager = () => {
           postal_code: newLocation.postal_code.trim(),
           restaurant_id: currentRestaurant.id,
           is_active: true
-        });
+        } as any);
 
       if (error) throw error;
 
@@ -148,15 +151,15 @@ const DeliveryZonesManager = () => {
 
       // Copier les zones vers le restaurant actuel
       const zonesToInsert = sourceZones.map(zone => ({
-        city: zone.city,
-        postal_code: zone.postal_code,
+        city: (zone as any).city,
+        postal_code: (zone as any).postal_code,
         restaurant_id: currentRestaurant.id,
         is_active: true
       }));
 
       const { error: insertError } = await supabase
         .from('delivery_locations')
-        .insert(zonesToInsert);
+        .insert(zonesToInsert as any);
 
       if (insertError) throw insertError;
 

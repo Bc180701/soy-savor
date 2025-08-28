@@ -58,9 +58,9 @@ const PokeIngredientsManager = () => {
         throw new Error("Erreur lors du chargement des ingrédients");
       }
       
-      setIngredients(ingredientsData as PokeIngredient[] || []);
-      setProteinOptions(proteinsData as PokeIngredient[] || []);
-      setSauceOptions(saucesData as PokeIngredient[] || []);
+      setIngredients((ingredientsData as any) || []);
+      setProteinOptions((proteinsData as any) || []);
+      setSauceOptions((saucesData as any) || []);
       
     } catch (error) {
       console.error("Erreur lors du chargement des ingrédients:", error);
@@ -93,7 +93,7 @@ const PokeIngredientsManager = () => {
           price: newPrice,
           included: newIncluded,
           ingredient_type: newType
-        })
+        } as any)
         .select()
         .single();
         
@@ -152,7 +152,7 @@ const PokeIngredientsManager = () => {
     try {
       const { error } = await supabase
         .from('poke_ingredients')
-        .update({ [field]: value })
+        .update({ [field]: value } as any)
         .eq('id', id);
         
       if (error) throw error;

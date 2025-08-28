@@ -65,7 +65,7 @@ const DashboardStats = () => {
             return 0;
           }
           
-          return data?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+          return data?.reduce((sum, order) => sum + ((order as any)?.total || 0), 0) || 0;
         };
 
         // Récupérer les revenus par période

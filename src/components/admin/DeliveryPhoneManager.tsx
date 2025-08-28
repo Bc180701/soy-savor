@@ -66,7 +66,7 @@ const DeliveryPhoneManager = () => {
 
       if (fetchError) throw fetchError;
 
-      const currentSettings = (currentData?.settings as Record<string, any>) ?? {};
+      const currentSettings = ((currentData as any)?.settings as Record<string, any>) ?? {};
       // Préserver TOUS les settings existants et seulement modifier order_alert_phone
       const updatedSettings = { 
         ...currentSettings, 
@@ -78,7 +78,7 @@ const DeliveryPhoneManager = () => {
         .update({ 
           delivery_phone: deliveryPhone || null,
           settings: updatedSettings
-        })
+        } as any)
         .eq('id', restaurantId);
 
       if (error) throw error;

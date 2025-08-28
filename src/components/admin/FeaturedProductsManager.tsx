@@ -63,7 +63,7 @@ const FeaturedProductsManager = () => {
     try {
       const { error } = await supabase
         .from('products')
-        .update({ [flagName]: value })
+        .update({ [flagName]: value } as any)
         .eq('id', productId)
         .eq('restaurant_id', currentRestaurant.id);
 

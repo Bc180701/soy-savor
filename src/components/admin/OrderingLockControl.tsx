@@ -42,7 +42,7 @@ const OrderingLockControl = () => {
         throw error;
       }
 
-      const settings = (restaurantData?.settings as Record<string, any>) ?? {};
+      const settings = ((restaurantData as any)?.settings as Record<string, any>) ?? {};
       const orderingLocked = typeof settings?.ordering_locked === 'boolean' ? settings.ordering_locked : false;
       const deliveryBlocked = typeof settings?.delivery_blocked === 'boolean' ? settings.delivery_blocked : false;
       const pickupBlocked = typeof settings?.pickup_blocked === 'boolean' ? settings.pickup_blocked : false;
@@ -93,7 +93,7 @@ const OrderingLockControl = () => {
       }
 
       // Fusionner avec les nouveaux paramètres
-      const currentSettings = (currentData?.settings as Record<string, any>) ?? {};
+      const currentSettings = ((currentData as any)?.settings as Record<string, any>) ?? {};
       const settingKey = settingType === 'general' ? 'ordering_locked' : 
                         settingType === 'delivery' ? 'delivery_blocked' : 'pickup_blocked';
       
@@ -112,7 +112,7 @@ const OrderingLockControl = () => {
         .update({ 
           settings: updatedSettings,
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', currentRestaurant.id);
         
       if (error) {
@@ -208,7 +208,7 @@ const OrderingLockControl = () => {
       }
 
       // Fusionner avec les nouveaux paramètres
-      const currentSettings = (currentData?.settings as Record<string, any>) ?? {};
+      const currentSettings = ((currentData as any)?.settings as Record<string, any>) ?? {};
       const updatedSettings = {
         ...currentSettings,
         ordering_locked: isLocked,
@@ -225,7 +225,7 @@ const OrderingLockControl = () => {
         .update({ 
           settings: updatedSettings,
           updated_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', currentRestaurant.id);
         
       if (error) {
