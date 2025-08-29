@@ -165,6 +165,7 @@ export const createOrder = async (
     const orderResult: Order = {
       id: newOrder.id,
       userId: newOrder.user_id,
+      restaurant_id: newOrder.restaurant_id, // IMPORTANT: inclure le restaurant_id
       items: orderInput.items,
       subtotal: newOrder.subtotal,
       tax: newOrder.tax,
@@ -302,29 +303,54 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       `)
       .order('created_at', { ascending: false });
 
-    // Ajouter le filtre restaurant si fourni
+    // Ajouter le filtre restaurant si fourni avec LOGS DÉTAILLÉS
     if (restaurantId) {
-      console.log("🏪 [getAllOrders] Application du filtrage pour restaurant:", restaurantId);
+      console.log("🏪 [getAllOrders] FILTRAGE STRICT pour restaurant:", restaurantId);
       query = query.eq('restaurant_id', restaurantId);
     } else {
-      console.log("🌍 [getAllOrders] Aucun filtre restaurant - récupération de TOUTES les commandes");
+      console.log("🌍 [getAllOrders] AUCUN FILTRE - récupération de TOUTES les commandes");
     }
       
     const response = await query;
       
     if (response.error) {
       console.error("❌ Erreur lors de la récupération des commandes:", response.error);
-      // Create a proper Error instance from the PostgrestError
       return { orders: [], error: new Error(response.error.message) };
     }
     
-    console.log(`✅ ${response.data?.length || 0} commandes récupérées de Supabase pour le restaurant ${restaurantId || 'tous'}`);
     const orders = response.data || [];
+    console.log(`✅ ${orders.length} commandes récupérées de Supabase pour le restaurant ${restaurantId || 'tous'}`);
+    
+    // VALIDATION SERVEUR: vérifier l'attribution des commandes
+    if (restaurantId && orders.length > 0) {
+      const badOrders = orders.filter(order => order.restaurant_id !== restaurantId);
+      if (badOrders.length > 0) {
+        console.error("🚨 [SERVEUR] COMMANDES MAL ATTRIBUÉES détectées:", {
+          restaurant_attendu: restaurantId,
+          commandes_incorrectes: badOrders.map(o => ({
+            id: o.id,
+            restaurant_recu: o.restaurant_id,
+            client: o.client_name
+          }))
+        });
+      }
+    }
+    
+    // LOG détaillé de la répartition des restaurants
+    if (orders.length > 0) {
+      const restaurantStats = orders.reduce((acc, order) => {
+        acc[order.restaurant_id] = (acc[order.restaurant_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log("📊 [getAllOrders] Répartition des commandes par restaurant:", restaurantStats);
+    }
 
     // Convertir les données Supabase au format de notre application
     const formattedOrders: Order[] = orders.map(order => ({
       id: order.id,
       userId: order.user_id,
+      restaurant_id: order.restaurant_id, // IMPORTANT: inclure le restaurant_id
       subtotal: order.subtotal,
       tax: order.tax,
       deliveryFee: order.delivery_fee,

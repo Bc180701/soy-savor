@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -26,8 +26,19 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const isMobile = useIsMobile();
   const { currentRestaurant, isLoading: restaurantLoading } = useRestaurantContext();
   
-  // Attendre que le contexte restaurant soit initialisé avant de charger les commandes
+  // Attendre que le contexte restaurant soit initialisé ET stable avant de charger les commandes
   const restaurantId = restaurantLoading ? undefined : (currentRestaurant?.id || null);
+  
+  // Suivre les changements de restaurant pour déboguer
+  const prevRestaurantId = useRef<string | null | undefined>(undefined);
+  if (prevRestaurantId.current !== restaurantId) {
+    console.log('🔄 [OrderList] Changement de restaurant:', {
+      ancien: prevRestaurantId.current,
+      nouveau: restaurantId,
+      isLoading: restaurantLoading
+    });
+    prevRestaurantId.current = restaurantId;
+  }
   
   // Utiliser le hook optimisé pour les commandes
   const { 

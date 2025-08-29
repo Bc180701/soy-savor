@@ -3,7 +3,7 @@ import { getAllOrders } from "@/services/orderService";
 import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 
-// Cache local avec timestamp pour éviter les recharges répétitives
+// Cache local avec timestamp pour éviter les recharges répétitives - ISOLÉ PAR RESTAURANT
 interface OrdersCache {
   orders: Order[];
   timestamp: number;
@@ -11,7 +11,7 @@ interface OrdersCache {
 }
 
 const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
-const DEBOUNCE_DELAY = 500; // 500ms de debounce
+const DEBOUNCE_DELAY = 300; // Réduit à 300ms pour plus de réactivité
 
 export function useOptimizedOrders(restaurantId: string | null) {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -21,34 +21,52 @@ export function useOptimizedOrders(restaurantId: string | null) {
   
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fetchingRef = useRef(false);
-  const cacheRef = useRef<OrdersCache | null>(null);
+  const cacheMapRef = useRef<Map<string, OrdersCache>>(new Map()); // Cache isolé par restaurant
+  const currentRestaurantRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Fonction pour obtenir le cache
+  // Fonction pour obtenir le cache ISOLÉ par restaurant
   const getCachedOrders = useCallback((restId: string | null): OrdersCache | null => {
-    if (cacheRef.current) {
-      const { orders, timestamp, restaurantId: cachedRestId } = cacheRef.current;
-      const isValid = Date.now() - timestamp < CACHE_DURATION;
-      const isSameRestaurant = cachedRestId === restId;
-      
-      if (isValid && isSameRestaurant) {
+    const cacheKey = restId || 'all_restaurants';
+    const cached = cacheMapRef.current.get(cacheKey);
+    
+    if (cached) {
+      const isValid = Date.now() - cached.timestamp < CACHE_DURATION;
+      if (isValid) {
         console.log('📦 Commandes trouvées en cache pour restaurant:', restId || 'tous');
-        return cacheRef.current;
+        return cached;
+      } else {
+        // Supprimer le cache expiré
+        cacheMapRef.current.delete(cacheKey);
+        console.log('🗑️ Cache expiré supprimé pour restaurant:', restId || 'tous');
       }
     }
     return null;
   }, []);
 
-  // Fonction pour mettre en cache
+  // Fonction pour mettre en cache ISOLÉ par restaurant
   const setCachedOrders = useCallback((orders: Order[], restId: string | null) => {
-    cacheRef.current = {
+    const cacheKey = restId || 'all_restaurants';
+    cacheMapRef.current.set(cacheKey, {
       orders,
       timestamp: Date.now(),
       restaurantId: restId
-    };
+    });
+    console.log('💾 Cache mis à jour pour restaurant:', restId || 'tous', '- Commandes:', orders.length);
   }, []);
 
   const fetchOrders = useCallback(async (restId: string | null, force = false) => {
-    // Éviter les appels concurrents
+    // ANNULER les requêtes précédentes pour éviter les race conditions
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      console.log('🚫 Requête précédente annulée pour restaurant:', currentRestaurantRef.current || 'tous');
+    }
+    
+    // Créer un nouveau controller pour cette requête
+    abortControllerRef.current = new AbortController();
+    currentRestaurantRef.current = restId;
+
+    // Éviter les appels concurrents pour le même restaurant
     if (fetchingRef.current && !force) {
       console.log('🔄 Récupération déjà en cours, ignorée');
       return;
@@ -58,10 +76,20 @@ export function useOptimizedOrders(restaurantId: string | null) {
     if (!force) {
       const cached = getCachedOrders(restId);
       if (cached) {
-        setOrders(cached.orders);
-        setLoading(false);
-        setError(null);
-        return;
+        // VALIDATION: vérifier que les commandes correspondent au restaurant
+        const filteredFromCache = restId 
+          ? cached.orders.filter(order => order.restaurant_id === restId)
+          : cached.orders;
+        
+        if (filteredFromCache.length !== cached.orders.length && restId) {
+          console.warn('⚠️ Cache contaminé détecté pour restaurant:', restId, 'Nettoyage nécessaire');
+          cacheMapRef.current.delete(restId);
+        } else {
+          setOrders(filteredFromCache);
+          setLoading(false);
+          setError(null);
+          return;
+        }
       }
     }
 
@@ -70,10 +98,16 @@ export function useOptimizedOrders(restaurantId: string | null) {
     setError(null);
 
     try {
-      console.log('🔍 Récupération commandes pour restaurant:', restId || 'tous');
+      console.log('🔍 [FETCH] Récupération commandes pour restaurant:', restId || 'tous');
       const startTime = performance.now();
       
       const { orders: fetchedOrders, error: fetchError } = await getAllOrders(restId);
+      
+      // Vérifier si la requête a été annulée
+      if (abortControllerRef.current?.signal.aborted) {
+        console.log('🚫 Requête annulée pour restaurant:', restId || 'tous');
+        return;
+      }
       
       const loadTime = Math.round(performance.now() - startTime);
       console.log(`⏱️ Commandes récupérées en ${loadTime}ms:`, fetchedOrders?.length || 0);
@@ -88,9 +122,32 @@ export function useOptimizedOrders(restaurantId: string | null) {
         });
       } else {
         const validOrders = fetchedOrders || [];
-        setOrders(validOrders);
-        setCachedOrders(validOrders, restId);
+        
+        // VALIDATION CLIENT: vérifier que les commandes correspondent au restaurant attendu
+        const verifiedOrders = restId 
+          ? validOrders.filter(order => {
+              if (order.restaurant_id !== restId) {
+                console.error('🚨 COMMANDE MAL ATTRIBUÉE détectée:', {
+                  orderId: order.id,
+                  attendu: restId,
+                  reçu: order.restaurant_id,
+                  clientName: order.clientName
+                });
+                return false;
+              }
+              return true;
+            })
+          : validOrders;
+        
+        if (verifiedOrders.length !== validOrders.length) {
+          console.warn(`⚠️ ${validOrders.length - verifiedOrders.length} commande(s) mal attribuée(s) filtrée(s)`);
+        }
+        
+        setOrders(verifiedOrders);
+        setCachedOrders(verifiedOrders, restId);
         setError(null);
+        
+        console.log(`✅ ${verifiedOrders.length} commandes validées pour restaurant:`, restId || 'tous');
         
         // Métriques de performance
         if (loadTime > 3000) {
@@ -111,9 +168,22 @@ export function useOptimizedOrders(restaurantId: string | null) {
     }
   }, [toast, getCachedOrders, setCachedOrders]);
 
-  // Fonction pour rafraîchir les commandes avec debounce
+  // Fonction pour rafraîchir les commandes avec debounce OPTIMISÉ
   const debouncedFetchOrders = useCallback((restId: string | null, force = false) => {
-    // Annuler le timer précédent
+    // Annuler immédiatement si changement de restaurant
+    if (currentRestaurantRef.current !== restId) {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      // Exécution immédiate pour les changements de restaurant
+      fetchOrders(restId, true);
+      return;
+    }
+
+    // Annuler le timer précédent pour le même restaurant
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
@@ -145,8 +215,8 @@ export function useOptimizedOrders(restaurantId: string | null) {
 
   // Fonction pour vider le cache
   const clearCache = useCallback(() => {
-    cacheRef.current = null;
-    console.log('🗑️ Cache commandes vidé');
+    cacheMapRef.current.clear();
+    console.log('🗑️ Cache commandes vidé complètement');
   }, []);
 
   // Effect principal pour charger les commandes
@@ -159,10 +229,13 @@ export function useOptimizedOrders(restaurantId: string | null) {
       console.log('⏳ Attente de l\'initialisation du restaurant...');
     }
 
-    // Nettoyage
+    // Nettoyage COMPLET
     return () => {
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
   }, [restaurantId, debouncedFetchOrders]);

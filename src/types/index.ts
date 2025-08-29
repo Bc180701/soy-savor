@@ -117,6 +117,7 @@ export interface TimeSlot {
 export interface Order {
   id: string;
   userId?: string;
+  restaurant_id?: string; // Ajout du restaurant_id pour l'attribution des commandes
   items: CartItem[];
   itemsSummary?: any[]; // Produits du JSON items_summary
   subtotal: number;
