@@ -13,6 +13,7 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useSearchParams } from "react-router-dom";
 import { useOptimizedOrders } from "@/hooks/useOptimizedOrders";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OrderListProps {
   defaultTab?: string;
@@ -103,6 +104,55 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
       });
     }
   }, [updateOrderLocally, orders, toast]);
+
+  const handleRecoverOrderItems = useCallback(async (orderId: string) => {
+    try {
+      console.log('🔄 Récupération order_items pour commande:', orderId);
+      
+      toast({
+        title: "Récupération en cours...",
+        description: "Tentative de récupération des articles manquants",
+      });
+
+      const { data, error } = await supabase.functions.invoke('recover-order-items', {
+        body: { orderId }
+      });
+
+      if (error) {
+        console.error('❌ Erreur récupération:', error);
+        toast({
+          title: "Erreur de récupération",
+          description: `Impossible de récupérer les articles: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('✅ Résultat récupération:', data);
+      
+      if (data.success) {
+        toast({
+          title: "Récupération réussie",
+          description: data.message,
+        });
+        // Actualiser les commandes pour voir les changements
+        refreshOrders();
+      } else {
+        toast({
+          title: "Récupération échouée",
+          description: data.error || "Erreur inconnue",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error('💥 Exception récupération order_items:', err);
+      toast({
+        title: "Erreur inattendue",
+        description: "Une erreur est survenue lors de la récupération",
+        variant: "destructive",
+      });
+    }
+  }, [toast, refreshOrders]);
 
   const handleViewDetails = useCallback((order: Order) => {
     setSelectedOrder(order);

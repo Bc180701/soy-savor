@@ -14,6 +14,10 @@ import {
 import { formatEuro } from "@/utils/formatters";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface OrdersAccountingViewProps {
   orders: Order[];
@@ -27,6 +31,54 @@ const OrdersAccountingView = ({
   onUpdateStatus 
 }: OrdersAccountingViewProps) => {
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+
+  const handleRecoverOrderItems = async (orderId: string) => {
+    try {
+      console.log('🔄 Récupération order_items pour commande:', orderId);
+      
+      toast({
+        title: "Récupération en cours...",
+        description: "Tentative de récupération des articles manquants",
+      });
+
+      const { data, error } = await supabase.functions.invoke('recover-order-items', {
+        body: { orderId }
+      });
+
+      if (error) {
+        console.error('❌ Erreur récupération:', error);
+        toast({
+          title: "Erreur de récupération",
+          description: `Impossible de récupérer les articles: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('✅ Résultat récupération:', data);
+      
+      if (data.success) {
+        toast({
+          title: "Récupération réussie",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "Récupération échouée",
+          description: data.error || "Erreur inconnue",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      console.error('💥 Exception récupération order_items:', err);
+      toast({
+        title: "Erreur inattendue",
+        description: "Une erreur est survenue lors de la récupération",
+        variant: "destructive",
+      });
+    }
+  };
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('fr-FR', {
@@ -182,6 +234,23 @@ const OrdersAccountingView = ({
                   </span>
                 </div>
                 
+                {/* Affichage des articles */}
+                <div className="mb-2">
+                  {order.itemsSummary && Array.isArray(order.itemsSummary) && order.itemsSummary.length > 0 ? (
+                    <div className="space-y-1">
+                      {order.itemsSummary.map((item: any, index: number) => (
+                        <div key={index} className="text-xs text-muted-foreground">
+                          {item.quantity}x {item.name} - {item.price}€
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-amber-600">
+                      ⚠️ Aucun article affiché
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex gap-2 justify-between">
                   <Button 
                     variant="outline" 
@@ -191,6 +260,16 @@ const OrdersAccountingView = ({
                   >
                     <Eye className="h-3 w-3 mr-1" />
                     Voir
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-amber-50 text-amber-700 border-amber-200"
+                    onClick={() => handleRecoverOrderItems(order.id)}
+                    title="Récupérer les order_items manquants"
+                  >
+                    🔄
                   </Button>
                   
                   {getActionButton(order) && (
