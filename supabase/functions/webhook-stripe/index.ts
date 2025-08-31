@@ -262,17 +262,37 @@ serve(async (req) => {
 
       console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId, 'avec', itemsSummary.length, 'articles');
 
-      // Créer les order_items si on a des articles
+      // Créer les order_items si on a des articles - NOUVEAU: Conserver TOUS les articles
       if (itemsSummary.length > 0) {
         console.log('📦 Création des order_items pour', itemsSummary.length, 'articles...');
         
-        const orderItems = itemsSummary.map((item: any) => ({
-          order_id: order.id,
-          product_id: item.id === 'unknown' ? null : item.id,
-          quantity: item.quantity || 1,
-          price: item.unit_price || item.price || 0,
-          special_instructions: null
-        })).filter(item => item.product_id); // Ne garder que les items avec un product_id valide
+        // LOGS DÉTAILLÉS pour chaque article
+        itemsSummary.forEach((item: any, index: number) => {
+          console.log(`📋 Article ${index + 1}:`, {
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            price: item.price,
+            has_valid_product_id: item.id && item.id !== 'unknown'
+          });
+        });
+        
+        // NOUVEAU: Ne plus filtrer les articles sans product_id
+        const orderItems = itemsSummary.map((item: any, index: number) => {
+          const orderItem = {
+            order_id: order.id,
+            product_id: (item.id === 'unknown' || !item.id) ? null : item.id,
+            quantity: item.quantity || 1,
+            price: item.unit_price || item.price || 0,
+            special_instructions: item.name || `Article ${index + 1}` // Conserver le nom si pas de product_id
+          };
+          
+          console.log(`💾 Order_item créé pour article ${index + 1}:`, orderItem);
+          return orderItem;
+        });
+        
+        console.log(`📊 Statistiques order_items: ${orderItems.length} total, ${orderItems.filter(i => i.product_id).length} avec product_id, ${orderItems.filter(i => !i.product_id).length} sans product_id`);
         
         if (orderItems.length > 0) {
           const { error: itemsError } = await supabase
@@ -284,12 +304,54 @@ serve(async (req) => {
             // Ne pas faire échouer la commande pour autant
           } else {
             console.log('✅ Order_items créés avec succès:', orderItems.length, 'articles');
+            console.log(`   - ${orderItems.filter(i => i.product_id).length} avec product_id valide`);
+            console.log(`   - ${orderItems.filter(i => !i.product_id).length} avec product_id null (récupérables)`);
           }
         } else {
-          console.log('⚠️ Aucun order_item valide à créer (pas de product_id)');
+          console.log('⚠️ Aucun order_item à créer');
         }
       } else {
         console.log('⚠️ Aucun article à traiter pour les order_items');
+      }
+
+      // NOUVEAU: Logique de récupération des order_items manquants
+      try {
+        console.log('🔄 Vérification des order_items manquants...');
+        const { data: existingItems, error: checkError } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.id);
+
+        if (checkError) {
+          console.error('❌ Erreur vérification order_items existants:', checkError);
+        } else if (!existingItems || existingItems.length === 0) {
+          console.log('🚨 AUCUN order_item trouvé, tentative de récupération depuis items_summary...');
+          
+          // Logique de récupération depuis items_summary
+          if (itemsSummary.length > 0) {
+            const recoveryItems = itemsSummary.map((item: any, index: number) => ({
+              order_id: order.id,
+              product_id: null, // On met null car on n'a pas de product_id valide
+              quantity: item.quantity || 1,
+              price: item.unit_price || item.price || 0,
+              special_instructions: `RÉCUPÉRÉ: ${item.name || `Article ${index + 1}`}`
+            }));
+
+            const { error: recoveryError } = await supabase
+              .from('order_items')
+              .insert(recoveryItems);
+
+            if (recoveryError) {
+              console.error('❌ Erreur récupération order_items:', recoveryError);
+            } else {
+              console.log('✅ Récupération réussie:', recoveryItems.length, 'order_items créés');
+            }
+          }
+        } else {
+          console.log('✅ Order_items existants trouvés:', existingItems.length);
+        }
+      } catch (recoveryError) {
+        console.error('❌ Erreur dans la logique de récupération:', recoveryError);
       }
 
       // Envoyer l'email de confirmation en arrière-plan
