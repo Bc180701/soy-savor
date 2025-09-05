@@ -325,9 +325,9 @@ export const DeliveryStep = ({
             <div className="space-y-1 text-sm text-gold-700">
               <p><strong>Sauces :</strong> {cartExtras.sauces.length > 0 ? cartExtras.sauces.join(', ') : 'Aucune'}</p>
               <p><strong>Accompagnements :</strong> {cartExtras.accompagnements.length > 0 ? cartExtras.accompagnements.join(', ') : 'Aucun'}</p>
-              <p><strong>Baguettes :</strong> {cartExtras.baguettes} paires</p>
-              <p><strong>Couverts :</strong> {cartExtras.couverts} sets</p>
-              <p><strong>Cuillères :</strong> {cartExtras.cuilleres} cuillères</p>
+              <p><strong>Baguettes :</strong> {cartExtras.baguettes ? 'Demandées' : 'Non demandées'}</p>
+              <p><strong>Couverts :</strong> {cartExtras.couverts ? 'Demandés' : 'Non demandés'}</p>
+              <p><strong>Cuillères :</strong> {cartExtras.cuilleres ? 'Demandées' : 'Non demandées'}</p>
             </div>
           </div>
         )}

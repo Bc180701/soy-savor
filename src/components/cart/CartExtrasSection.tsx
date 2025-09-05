@@ -12,17 +12,17 @@ interface CartExtrasSectionProps {
 export interface CartExtras {
   sauces: string[];
   accompagnements: string[];
-  baguettes: number;
-  couverts: number;
-  cuilleres: number;
+  baguettes: boolean;
+  couverts: boolean;
+  cuilleres: boolean;
 }
 
 export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) => {
   const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<string[]>([]);
-  const [baguettesCount, setBaguettesCount] = useState<number>(0);
-  const [couvertsCount, setCouvertsCount] = useState<number>(0);
-  const [cuilleresCount, setCuilleresCount] = useState<number>(0);
+  const [baguettesSelected, setBaguettesSelected] = useState<boolean>(false);
+  const [couvertsSelected, setCouvertsSelected] = useState<boolean>(false);
+  const [cuilleresSelected, setCuilleresSelected] = useState<boolean>(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const { addItem, selectedRestaurantId, items } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
@@ -38,51 +38,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     "Gingembre"
   ];
 
-  const addSauceToCart = (sauce: string) => {
-    const restaurantId = getRestaurantId();
-    if (!restaurantId) return;
-
-    addItem({
-      id: `sauce-${sauce}-${Date.now()}`,
-      name: `Sauce: ${sauce}`,
-      description: "Sauce pour la commande",
-      price: 0,
-      imageUrl: "",
-      category: "Sauce" as const,
-      restaurant_id: restaurantId,
-      isVegetarian: true,
-      isSpicy: false,
-      isNew: false,
-      isBestSeller: false,
-      isGlutenFree: true,
-      allergens: [],
-      pieces: null,
-      prepTime: null
-    }, 1);
-  };
-
-  const addAccompagnementToCart = (accompagnement: string) => {
-    const restaurantId = getRestaurantId();
-    if (!restaurantId) return;
-
-    addItem({
-      id: `accompagnement-${accompagnement}-${Date.now()}`,
-      name: `Accompagnement: ${accompagnement}`,
-      description: "Accompagnement pour la commande",
-      price: 0,
-      imageUrl: "",
-      category: "Accompagnement" as const,
-      restaurant_id: restaurantId,
-      isVegetarian: true,
-      isSpicy: false,
-      isNew: false,
-      isBestSeller: false,
-      isGlutenFree: true,
-      allergens: [],
-      pieces: null,
-      prepTime: null
-    }, 1);
-  };
 
   const handleAddAccompagnements = () => {
     const restaurantId = getRestaurantId();
@@ -130,11 +85,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       });
     }
 
-    if (baguettesCount > 0) {
+    if (baguettesSelected) {
       itemsToAdd.push({
         id: `baguettes-${Date.now()}`,
-        name: `Baguettes (${baguettesCount} ${baguettesCount === 1 ? 'paire' : 'paires'})`,
-        description: "Baguettes japonaises",
+        name: `Baguettes`,
+        description: "Baguettes japonaises demandées",
         price: 0,
         imageUrl: "",
         category: "Accessoire" as const,
@@ -150,11 +105,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       });
     }
 
-    if (couvertsCount > 0) {
+    if (couvertsSelected) {
       itemsToAdd.push({
         id: `couverts-${Date.now()}`,
-        name: `Couverts (${couvertsCount} ${couvertsCount === 1 ? 'set' : 'sets'})`,
-        description: "Couteau et fourchette",
+        name: `Couverts`,
+        description: "Couverts demandés",
         price: 0,
         imageUrl: "",
         category: "Accessoire" as const,
@@ -170,11 +125,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       });
     }
 
-    if (cuilleresCount > 0) {
+    if (cuilleresSelected) {
       itemsToAdd.push({
         id: `cuilleres-${Date.now()}`,
-        name: `Cuillères (${cuilleresCount} ${cuilleresCount === 1 ? 'cuillère' : 'cuillères'})`,
-        description: "Cuillères",
+        name: `Cuillères`,
+        description: "Cuillères demandées",
         price: 0,
         imageUrl: "",
         category: "Accessoire" as const,
@@ -196,79 +151,26 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
     setSelectedSauces([]);
     setSelectedAccompagnements([]);
-    setBaguettesCount(0);
-    setCouvertsCount(0);
-    setCuilleresCount(0);
+    setBaguettesSelected(false);
+    setCouvertsSelected(false);
+    setCuilleresSelected(false);
     setHasSubmitted(true);
   };
 
-  const addBaguettesToCart = () => {
-    const restaurantId = getRestaurantId();
-    if (!restaurantId) return;
-
-    addItem({
-      id: `baguettes-${Date.now()}`,
-      name: "Baguettes (1 paire)",
-      description: "Baguettes japonaises",
-      price: 0,
-      imageUrl: "",
-      category: "Accessoire" as const,
-      restaurant_id: restaurantId,
-      isVegetarian: true,
-      isSpicy: false,
-      isNew: false,
-      isBestSeller: false,
-      isGlutenFree: true,
-      allergens: [],
-      pieces: null,
-      prepTime: null
-    }, 1);
+  const handleSauceToggle = (sauce: string) => {
+    if (selectedSauces.includes(sauce)) {
+      setSelectedSauces(selectedSauces.filter(s => s !== sauce));
+    } else {
+      setSelectedSauces([...selectedSauces, sauce]);
+    }
   };
 
-  const addCouvertsToCart = () => {
-    const restaurantId = getRestaurantId();
-    if (!restaurantId) return;
-
-    addItem({
-      id: `couverts-${Date.now()}`,
-      name: "Couverts (1 set)",
-      description: "Couteau et fourchette",
-      price: 0,
-      imageUrl: "",
-      category: "Accessoire" as const,
-      restaurant_id: restaurantId,
-      isVegetarian: true,
-      isSpicy: false,
-      isNew: false,
-      isBestSeller: false,
-      isGlutenFree: true,
-      allergens: [],
-      pieces: null,
-      prepTime: null
-    }, 1);
-  };
-
-  const addCuilleresToCart = () => {
-    const restaurantId = getRestaurantId();
-    if (!restaurantId) return;
-
-    addItem({
-      id: `cuilleres-${Date.now()}`,
-      name: "Cuillères (1 cuillère)",
-      description: "Cuillères",
-      price: 0,
-      imageUrl: "",
-      category: "Accessoire" as const,
-      restaurant_id: restaurantId,
-      isVegetarian: true,
-      isSpicy: false,
-      isNew: false,
-      isBestSeller: false,
-      isGlutenFree: true,
-      allergens: [],
-      pieces: null,
-      prepTime: null
-    }, 1);
+  const handleAccompagnementToggle = (accompagnement: string) => {
+    if (selectedAccompagnements.includes(accompagnement)) {
+      setSelectedAccompagnements(selectedAccompagnements.filter(a => a !== accompagnement));
+    } else {
+      setSelectedAccompagnements([...selectedAccompagnements, accompagnement]);
+    }
   };
 
   return (
@@ -288,21 +190,22 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         {/* Sauces */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-            🥢 Sauce
+            🥢 Sauces
           </h4>
           <div className="grid grid-cols-1 gap-3">
             {saucesOptions.map((sauce) => (
-              <div key={sauce} className="flex items-center justify-between p-3 border rounded-lg bg-white">
-                <span className="text-sm font-medium">{sauce}</span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addSauceToCart(sauce)}
-                  className="h-8 px-3 border-gold-400 hover:bg-gold-100"
+              <div key={sauce} className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+                <Checkbox
+                  id={`sauce-${sauce}`}
+                  checked={selectedSauces.includes(sauce)}
+                  onCheckedChange={() => handleSauceToggle(sauce)}
+                />
+                <label 
+                  htmlFor={`sauce-${sauce}`} 
+                  className="text-sm font-medium cursor-pointer flex-1"
                 >
-                  +1
-                </Button>
+                  {sauce}
+                </label>
               </div>
             ))}
           </div>
@@ -313,17 +216,18 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800">🌶️ Accompagnements</h4>
           <div className="grid grid-cols-1 gap-3">
             {accompagnementsOptions.map((accompagnement) => (
-              <div key={accompagnement} className="flex items-center justify-between p-3 border rounded-lg bg-white">
-                <span className="text-sm font-medium">{accompagnement}</span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addAccompagnementToCart(accompagnement)}
-                  className="h-8 px-3 border-gold-400 hover:bg-gold-100"
+              <div key={accompagnement} className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+                <Checkbox
+                  id={`accompagnement-${accompagnement}`}
+                  checked={selectedAccompagnements.includes(accompagnement)}
+                  onCheckedChange={() => handleAccompagnementToggle(accompagnement)}
+                />
+                <label 
+                  htmlFor={`accompagnement-${accompagnement}`} 
+                  className="text-sm font-medium cursor-pointer flex-1"
                 >
-                  +1
-                </Button>
+                  {accompagnement}
+                </label>
               </div>
             ))}
           </div>
@@ -332,52 +236,58 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         {/* Baguettes */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🥢 Baguettes</h4>
-          <div className="flex items-center justify-between p-3 border rounded-lg bg-white">
-            <span className="text-sm font-medium">Baguettes (1 paire)</span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addBaguettesToCart}
-              className="h-8 px-3 border-gold-400 hover:bg-gold-100"
-            >
-              +1
-            </Button>
+          <div className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+            <Checkbox
+              id="baguettes"
+              checked={baguettesSelected}
+              onCheckedChange={(checked) => setBaguettesSelected(checked as boolean)}
+            />
+            <label htmlFor="baguettes" className="text-sm font-medium cursor-pointer flex-1">
+              Baguettes japonaises
+            </label>
           </div>
         </div>
 
         {/* Couverts */}
         <div className="space-y-3">
-          <h4 className="font-semibold text-gray-800">🍽️ Couverts (couteau/fourchette)</h4>
-          <div className="flex items-center justify-between p-3 border rounded-lg bg-white">
-            <span className="text-sm font-medium">Couverts (1 set)</span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addCouvertsToCart}
-              className="h-8 px-3 border-gold-400 hover:bg-gold-100"
-            >
-              +1
-            </Button>
+          <h4 className="font-semibold text-gray-800">🍽️ Couverts</h4>
+          <div className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+            <Checkbox
+              id="couverts"
+              checked={couvertsSelected}
+              onCheckedChange={(checked) => setCouvertsSelected(checked as boolean)}
+            />
+            <label htmlFor="couverts" className="text-sm font-medium cursor-pointer flex-1">
+              Couteau et fourchette
+            </label>
           </div>
         </div>
 
         {/* Cuillères */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🥄 Cuillères</h4>
-          <div className="flex items-center justify-between p-3 border rounded-lg bg-white">
-            <span className="text-sm font-medium">Cuillères (1 cuillère)</span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addCuilleresToCart}
-              className="h-8 px-3 border-gold-400 hover:bg-gold-100"
-            >
-              +1
-            </Button>
+          <div className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+            <Checkbox
+              id="cuilleres"
+              checked={cuilleresSelected}
+              onCheckedChange={(checked) => setCuilleresSelected(checked as boolean)}
+            />
+            <label htmlFor="cuilleres" className="text-sm font-medium cursor-pointer flex-1">
+              Cuillères
+            </label>
           </div>
+        </div>
+
+        {/* Bouton pour ajouter tous les extras sélectionnés */}
+        <div className="pt-4">
+          <Button
+            type="button"
+            onClick={handleAddAccompagnements}
+            className="w-full bg-gold-600 hover:bg-gold-700 text-white"
+            disabled={selectedSauces.length === 0 && selectedAccompagnements.length === 0 && !baguettesSelected && !couvertsSelected && !cuilleresSelected}
+          >
+            Ajouter les accompagnements sélectionnés
+          </Button>
         </div>
       </CardContent>
     </Card>
