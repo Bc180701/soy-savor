@@ -100,8 +100,63 @@ serve(async (req) => {
       }
 
       if (existingOrder) {
-        console.log('✅ Commande déjà existante:', existingOrder.id);
-        return new Response(JSON.stringify({ received: true, existing: true }), {
+        console.log('🔍 Commande existante détectée:', existingOrder.id);
+        
+        // Vérifier si cette commande a des order_items
+        const { data: existingItems, error: itemsCheckError } = await supabase
+          .from('order_items')
+          .select('id')
+          .eq('order_id', existingOrder.id);
+        
+        if (itemsCheckError) {
+          console.error('❌ Erreur vérification order_items existants:', itemsCheckError);
+        }
+        
+        // Si la commande n'a pas d'order_items, essayer de les recréer
+        if (!existingItems || existingItems.length === 0) {
+          console.log('🚨 Commande existante SANS order_items détectée - tentative de récupération...');
+          
+          // Récupérer les métadonnées pour recréer les order_items
+          const metadata = session.metadata;
+          let itemsSummary = [];
+          
+          // Essayer de récupérer les articles depuis les métadonnées
+          if (metadata?.items_summary) {
+            try {
+              itemsSummary = JSON.parse(metadata.items_summary);
+              console.log('📋 Items récupérés depuis métadonnées pour commande existante:', itemsSummary.length);
+            } catch (parseError) {
+              console.error('❌ Erreur parsing items_summary pour commande existante:', parseError);
+            }
+          }
+          
+          // Si on a des articles, les créer
+          if (itemsSummary.length > 0) {
+            const recoveryItems = itemsSummary.map((item: any, index: number) => ({
+              order_id: existingOrder.id,
+              product_id: (item.id === 'unknown' || !item.id) ? null : item.id,
+              quantity: item.quantity || 1,
+              price: item.unit_price || item.price || 0,
+              special_instructions: `RÉCUPÉRÉ: ${item.name || `Article ${index + 1}`}`
+            }));
+            
+            const { error: recoveryError } = await supabase
+              .from('order_items')
+              .insert(recoveryItems);
+            
+            if (recoveryError) {
+              console.error('❌ Erreur récupération order_items pour commande existante:', recoveryError);
+            } else {
+              console.log('✅ Order_items récupérés avec succès pour commande existante:', recoveryItems.length);
+            }
+          } else {
+            console.log('⚠️ Aucun article trouvé dans les métadonnées pour récupération');
+          }
+        } else {
+          console.log('✅ Commande existante avec order_items:', existingItems.length);
+        }
+        
+        return new Response(JSON.stringify({ received: true, existing: true, orderId: existingOrder.id }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' }
         });
