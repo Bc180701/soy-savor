@@ -15,6 +15,7 @@ import HeaderSectionEditor from "./homepage-editor/HeaderSectionEditor";
 import FooterSectionEditor from "./homepage-editor/FooterSectionEditor";
 import FeaturedProductsEditor from "./homepage-editor/FeaturedProductsEditor";
 import DeliveryPhoneManager from "./DeliveryPhoneManager";
+import RestaurantsInfoManager from "./homepage-editor/RestaurantsInfoManager";
 import { HomepageData, useHomepageData } from "@/hooks/useHomepageData";
 
 const HomepageEditor = () => {
@@ -266,7 +267,7 @@ const HomepageEditor = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DeliveryPhoneManager />
+              <RestaurantsInfoManager />
             </CardContent>
           </Card>
         </TabsContent>
