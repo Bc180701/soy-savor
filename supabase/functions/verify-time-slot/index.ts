@@ -28,16 +28,25 @@ serve(async (req) => {
       );
     }
 
-    // Si ce n'est pas une livraison, pas besoin de limiter
-    if (orderType !== 'delivery') {
-      console.log('✅ Commande à emporter/sur place, pas de limitation');
+    // Définir les limites par type de commande
+    const limits = {
+      delivery: 1,
+      pickup: 2,
+      'dine-in': 10 // Pas de limitation pour sur place
+    };
+
+    const maxAllowed = limits[orderType as keyof typeof limits] || 1;
+    
+    // Si sur place, pas de limitation stricte
+    if (orderType === 'dine-in') {
+      console.log('✅ Commande sur place, pas de limitation');
       return new Response(
-        JSON.stringify({ available: true, message: 'No limit for pickup/dine-in orders' }),
+        JSON.stringify({ available: true, message: 'No limit for dine-in orders' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Compter les livraisons existantes pour ce créneau et ce restaurant
+    // Compter les commandes existantes pour ce créneau et ce restaurant du type demandé
     console.log('🔍 Requête SQL pour:', {
       restaurantId,
       orderType,
@@ -50,7 +59,7 @@ serve(async (req) => {
       .from('orders')
       .select('id, scheduled_for, restaurant_id, payment_status, order_type')
       .eq('restaurant_id', restaurantId)
-      .eq('order_type', 'delivery')
+      .eq('order_type', orderType) // Filtrer par le type de commande actuel
       .in('payment_status', ['paid', 'pending']) // Inclure les commandes en attente de paiement
       .gte('scheduled_for', scheduledFor)
       .lt('scheduled_for', new Date(new Date(scheduledFor).getTime() + 60000).toISOString()); // +1 minute
@@ -65,8 +74,8 @@ serve(async (req) => {
       );
     }
 
-    const deliveryCount = existingOrders?.length || 0;
-    console.log(`📊 Livraisons existantes pour ${scheduledFor}:`, deliveryCount);
+    const orderCount = existingOrders?.length || 0;
+    console.log(`📊 Commandes ${orderType} existantes pour ${scheduledFor}:`, orderCount);
 
     // 🚨 VÉRIFICATION CRITIQUE: Créneaux bloqués par l'admin
     const scheduledDate = new Date(scheduledFor);
@@ -97,8 +106,8 @@ serve(async (req) => {
           JSON.stringify({ 
             available: false, 
             message: `Ce créneau a été bloqué par l'administration. ${blockedSlots[0].reason || ''}`.trim(),
-            currentCount: deliveryCount,
-            maxAllowed: 1,
+            currentCount: orderCount,
+            maxAllowed,
             blockedByAdmin: true
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -106,17 +115,18 @@ serve(async (req) => {
       }
     }
 
-    // LIMITE STRICTE: Maximum 1 livraison par créneau de 1 minute
-    const isAvailable = deliveryCount < 1;
+    // LIMITE STRICTE: Vérification selon le type de commande
+    const isAvailable = orderCount < maxAllowed;
     
     if (!isAvailable) {
-      console.log('🚫 CRÉNEAU PLEIN - Blocage de la commande');
+      const typeMessage = orderType === 'delivery' ? 'livraison' : 'retrait';
+      console.log(`🚫 CRÉNEAU PLEIN - Blocage de la commande ${orderType}`);
       return new Response(
         JSON.stringify({ 
           available: false, 
-          message: 'Ce créneau de livraison est complet. Veuillez choisir un autre horaire.',
-          currentCount: deliveryCount,
-          maxAllowed: 1
+          message: `Ce créneau de ${typeMessage} est complet. Veuillez choisir un autre horaire.`,
+          currentCount: orderCount,
+          maxAllowed
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -127,8 +137,8 @@ serve(async (req) => {
       JSON.stringify({ 
         available: true, 
         message: 'Time slot available',
-        currentCount: deliveryCount,
-        maxAllowed: 1
+        currentCount: orderCount,
+        maxAllowed
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
