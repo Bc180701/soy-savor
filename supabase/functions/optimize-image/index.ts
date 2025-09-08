@@ -71,42 +71,42 @@ serve(async (req) => {
     // 4. Optimiser l'image avec Canvas API
     const arrayBuffer = await imageData.arrayBuffer();
     
-    // Créer un Canvas pour redimensionner et optimiser l'image
-    const canvas = new OffscreenCanvas(800, 600); // Taille max: 800x600
+    // Créer une ImageBitmap depuis les données
+    const imageBitmap = await createImageBitmap(new Blob([arrayBuffer]));
+    console.log(`📐 Dimensions originales: ${imageBitmap.width}x${imageBitmap.height}`);
+    
+    // Forcer la réduction: maximum 600x400 pour une compression significative
+    const maxWidth = 600;
+    const maxHeight = 400;
+    
+    // Calculer les nouvelles dimensions en gardant le ratio d'aspect
+    const ratio = Math.min(maxWidth / imageBitmap.width, maxHeight / imageBitmap.height);
+    const newWidth = Math.floor(imageBitmap.width * ratio);
+    const newHeight = Math.floor(imageBitmap.height * ratio);
+    
+    console.log(`📐 Nouvelles dimensions: ${newWidth}x${newHeight} (ratio: ${ratio.toFixed(3)})`);
+    
+    // Créer un Canvas avec les nouvelles dimensions
+    const canvas = new OffscreenCanvas(newWidth, newHeight);
     const ctx = canvas.getContext('2d');
     
     if (!ctx) {
       throw new Error('Impossible de créer le contexte Canvas');
     }
-
-    // Créer une ImageBitmap depuis les données
-    const imageBitmap = await createImageBitmap(new Blob([arrayBuffer]));
     
-    // Calculer les nouvelles dimensions en gardant le ratio
-    const maxWidth = 800;
-    const maxHeight = 600;
-    let { width, height } = imageBitmap;
+    // Dessiner l'image redimensionnée avec lissage
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(imageBitmap, 0, 0, newWidth, newHeight);
     
-    if (width > maxWidth || height > maxHeight) {
-      const ratio = Math.min(maxWidth / width, maxHeight / height);
-      width = Math.floor(width * ratio);
-      height = Math.floor(height * ratio);
-    }
-    
-    // Redimensionner le canvas
-    canvas.width = width;
-    canvas.height = height;
-    
-    // Dessiner l'image redimensionnée
-    ctx.drawImage(imageBitmap, 0, 0, width, height);
-    
-    // Convertir en JPG avec compression (qualité 0.8)
+    // Convertir en JPG avec compression agressive (qualité 0.6)
     const optimizedBlob = await canvas.convertToBlob({
       type: 'image/jpeg',
-      quality: 0.8
+      quality: 0.6
     });
     
-    console.log(`🔄 Image optimisée: ${width}x${height}, taille: ${optimizedBlob.size} bytes`);
+    const compressionRatio = ((originalSize - optimizedBlob.size) / originalSize * 100).toFixed(1);
+    console.log(`🔄 Image optimisée: ${newWidth}x${newHeight}, taille: ${optimizedBlob.size} bytes (${compressionRatio}% de compression)`);
     
     // 5. Créer le nom du fichier optimisé (toujours en .jpg)
     const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, '-optimized.jpg');
