@@ -68,21 +68,58 @@ serve(async (req) => {
     const originalSize = imageData.size;
     console.log(`✅ Image downloaded successfully, size: ${originalSize} bytes`);
 
-    // 4. Create optimized filename
-    const optimizedFileName = originalFileName.replace(`.${fileExtension}`, `-optimized.${fileExtension}`);
-    console.log(`📝 Optimized filename: ${optimizedFileName}`);
-
-    // 5. For this test, we'll just copy the file (in production, we'd optimize it)
+    // 4. Optimiser l'image avec Canvas API
     const arrayBuffer = await imageData.arrayBuffer();
     
-    // 6. Upload the "optimized" image
+    // Créer un Canvas pour redimensionner et optimiser l'image
+    const canvas = new OffscreenCanvas(800, 600); // Taille max: 800x600
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Impossible de créer le contexte Canvas');
+    }
+
+    // Créer une ImageBitmap depuis les données
+    const imageBitmap = await createImageBitmap(new Blob([arrayBuffer]));
+    
+    // Calculer les nouvelles dimensions en gardant le ratio
+    const maxWidth = 800;
+    const maxHeight = 600;
+    let { width, height } = imageBitmap;
+    
+    if (width > maxWidth || height > maxHeight) {
+      const ratio = Math.min(maxWidth / width, maxHeight / height);
+      width = Math.floor(width * ratio);
+      height = Math.floor(height * ratio);
+    }
+    
+    // Redimensionner le canvas
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Dessiner l'image redimensionnée
+    ctx.drawImage(imageBitmap, 0, 0, width, height);
+    
+    // Convertir en JPG avec compression (qualité 0.8)
+    const optimizedBlob = await canvas.convertToBlob({
+      type: 'image/jpeg',
+      quality: 0.8
+    });
+    
+    console.log(`🔄 Image optimisée: ${width}x${height}, taille: ${optimizedBlob.size} bytes`);
+    
+    // 5. Créer le nom du fichier optimisé (toujours en .jpg)
+    const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, '-optimized.jpg');
+    console.log(`📝 Optimized filename: ${optimizedFileName}`);
+
+    // 6. Upload l'image optimisée
     console.log('⬆️ Uploading optimized image...');
     const { error: uploadError } = await supabase.storage
       .from('products')
-      .upload(optimizedFileName, arrayBuffer, {
+      .upload(optimizedFileName, optimizedBlob, {
         cacheControl: '3600',
         upsert: true,
-        contentType: fileExtension === 'png' ? 'image/png' : 'image/jpeg'
+        contentType: 'image/jpeg'
       });
 
     if (uploadError) {
