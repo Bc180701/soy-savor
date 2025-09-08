@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,67 +69,51 @@ serve(async (req) => {
     const originalSize = imageData.size;
     console.log(`✅ Image downloaded successfully, size: ${originalSize} bytes`);
 
-    // 4. Optimiser l'image en utilisant l'API Web standard
-    console.log('🔄 Début de l\'optimisation avec redimensionnement...');
+    // 4. Optimiser l'image avec ImageScript (compatible Deno)
+    console.log('🔄 Début de l\'optimisation avec ImageScript...');
+    
+    let finalBlob: Blob;
+    let compressionRatio = 0;
+    let newWidth = 0;
+    let newHeight = 0;
     
     try {
-      // Créer un canvas virtuel pour le redimensionnement
-      const img = new Image();
+      // Convertir le blob en Uint8Array
+      const imageBuffer = new Uint8Array(await imageData.arrayBuffer());
+      console.log(`📊 Buffer size: ${imageBuffer.length} bytes`);
       
-      // Convertir le blob en URL d'objet
-      const imageUrl = URL.createObjectURL(imageData);
-      
-      // Charger l'image
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = imageUrl;
-      });
-      
+      // Décoder l'image avec ImageScript
+      const img = await Image.decode(imageBuffer);
       console.log(`📐 Dimensions originales: ${img.width}x${img.height}`);
       
       // Calculer les nouvelles dimensions (max 600x400)
       const maxWidth = 600;
       const maxHeight = 400;
-      const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1); // Ne pas agrandir
-      const newWidth = Math.floor(img.width * ratio);
-      const newHeight = Math.floor(img.height * ratio);
+      const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+      newWidth = Math.floor(img.width * ratio);
+      newHeight = Math.floor(img.height * ratio);
       
       console.log(`📐 Nouvelles dimensions: ${newWidth}x${newHeight} (ratio: ${ratio.toFixed(3)})`);
       
-      // Créer un canvas pour le redimensionnement
-      const canvas = new OffscreenCanvas(newWidth, newHeight);
-      const ctx = canvas.getContext('2d');
+      // Redimensionner l'image
+      const resizedImage = img.resize(newWidth, newHeight);
+      console.log(`✅ Image redimensionnée: ${resizedImage.width}x${resizedImage.height}`);
       
-      if (!ctx) {
-        throw new Error('Impossible de créer le contexte Canvas');
-      }
+      // Encoder en JPEG avec compression
+      const optimizedBuffer = await resizedImage.encodeJPEG(70); // 70% de qualité
+      console.log(`📦 Buffer optimisé: ${optimizedBuffer.length} bytes`);
       
-      // Configurer la qualité de rendu
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      // Créer le blob optimisé
+      finalBlob = new Blob([optimizedBuffer], { type: 'image/jpeg' });
       
-      // Dessiner l'image redimensionnée
-      ctx.drawImage(img, 0, 0, newWidth, newHeight);
-      
-      // Nettoyer l'URL d'objet
-      URL.revokeObjectURL(imageUrl);
-      
-      // Convertir en JPEG avec compression
-      const optimizedBlob = await canvas.convertToBlob({
-        type: 'image/jpeg',
-        quality: 0.7 // 70% de qualité pour un bon compromis
-      });
-      
-      const compressionRatio = ((originalSize - optimizedBlob.size) / originalSize * 100).toFixed(1);
-      console.log(`✅ Image optimisée: ${newWidth}x${newHeight}, taille: ${optimizedBlob.size} bytes (${compressionRatio}% de compression)`);
-      
-      // Assigner le blob optimisé
-      var finalBlob = optimizedBlob;
+      // Calculer le ratio de compression
+      compressionRatio = ((originalSize - finalBlob.size) / originalSize * 100);
+      console.log(`✅ Image optimisée: ${newWidth}x${newHeight}, taille: ${finalBlob.size} bytes (${compressionRatio.toFixed(1)}% de compression)`);
       
     } catch (error) {
-      console.error('⚠️ Erreur pendant l\'optimisation, utilisation de l\'image originale:', error);
-      var finalBlob = imageData;
+      console.error('⚠️ Erreur pendant l\'optimisation avec ImageScript:', error);
+      console.log('🔄 Fallback: utilisation de l\'image originale');
+      finalBlob = imageData;
     }
     
     // 5. Créer le nom du fichier optimisé (toujours en .jpg)
