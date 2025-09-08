@@ -12,60 +12,70 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Starting image optimization function...');
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const { productName } = await req.json();
-    
-    console.log(`🚀 Début de l'optimisation pour le produit: ${productName}`);
+    console.log(`📦 Processing product: ${productName}`);
 
-    // 1. Récupérer les informations du produit
+    // 1. Get product information
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('id, name, image_url')
       .eq('name', productName)
       .single();
 
-    if (productError || !product) {
-      throw new Error(`Produit non trouvé: ${productName}`);
+    if (productError) {
+      console.error('❌ Product query error:', productError);
+      throw new Error(`Product not found: ${productName}`);
     }
 
-    console.log(`📦 Produit trouvé: ${product.name}, Image: ${product.image_url}`);
+    if (!product) {
+      throw new Error(`No product found with name: ${productName}`);
+    }
+
+    console.log(`✅ Product found: ${product.name}`);
+    console.log(`🖼️ Current image URL: ${product.image_url}`);
 
     if (!product.image_url || !product.image_url.includes('supabase')) {
-      throw new Error('Image non compatible pour l\'optimisation');
+      throw new Error('Image URL is not compatible for optimization');
     }
 
-    // 2. Extraire le nom du fichier
+    // 2. Extract filename from URL
     const urlParts = product.image_url.split('/');
     const originalFileName = decodeURIComponent(urlParts[urlParts.length - 1]);
     const fileExtension = originalFileName.split('.').pop()?.toLowerCase();
     
-    console.log(`📄 Fichier original: ${originalFileName}`);
+    console.log(`📄 Original filename: ${originalFileName}`);
+    console.log(`🔧 File extension: ${fileExtension}`);
 
-    // 3. Télécharger l'image originale
+    // 3. Download the original image
+    console.log('⬇️ Downloading original image...');
     const { data: imageData, error: downloadError } = await supabase.storage
       .from('products')
       .download(originalFileName);
 
     if (downloadError) {
-      throw new Error(`Erreur lors du téléchargement: ${downloadError.message}`);
+      console.error('❌ Download error:', downloadError);
+      throw new Error(`Download failed: ${downloadError.message}`);
     }
 
-    console.log(`⬇️ Image téléchargée, taille: ${imageData.size} bytes`);
+    const originalSize = imageData.size;
+    console.log(`✅ Image downloaded successfully, size: ${originalSize} bytes`);
 
-    // 4. Créer un nom pour l'image optimisée
+    // 4. Create optimized filename
     const optimizedFileName = originalFileName.replace(`.${fileExtension}`, `-optimized.${fileExtension}`);
-    
-    console.log(`🔄 Création du fichier optimisé: ${optimizedFileName}`);
-    
-    // 5. Pour ce test, on va simplement copier le fichier avec un nom différent
-    // En production, on utiliserait une véritable optimisation d'image
+    console.log(`📝 Optimized filename: ${optimizedFileName}`);
+
+    // 5. For this test, we'll just copy the file (in production, we'd optimize it)
     const arrayBuffer = await imageData.arrayBuffer();
     
-    // 6. Sauvegarder l'image "optimisée" (pour l'instant, c'est juste une copie)
+    // 6. Upload the "optimized" image
+    console.log('⬆️ Uploading optimized image...');
     const { error: uploadError } = await supabase.storage
       .from('products')
       .upload(optimizedFileName, arrayBuffer, {
@@ -75,15 +85,18 @@ serve(async (req) => {
       });
 
     if (uploadError) {
-      throw new Error(`Erreur lors de l'upload: ${uploadError.message}`);
+      console.error('❌ Upload error:', uploadError);
+      throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
-    // 6. Construire la nouvelle URL
-    const optimizedImageUrl = `https://tdykegnmomyyucbhslok.supabase.co/storage/v1/object/public/products/${encodeURIComponent(optimizedFileName)}`;
-    
-    console.log(`✅ Image optimisée sauvegardée: ${optimizedFileName}`);
+    console.log('✅ Image uploaded successfully');
 
-    // 7. Mettre à jour le produit pour pointer vers l'image optimisée
+    // 7. Build new URL
+    const optimizedImageUrl = `https://tdykegnmomyyucbhslok.supabase.co/storage/v1/object/public/products/${encodeURIComponent(optimizedFileName)}`;
+    console.log(`🔗 New URL: ${optimizedImageUrl}`);
+
+    // 8. Update product to point to optimized image
+    console.log('🔄 Updating product...');
     const { error: updateError } = await supabase
       .from('products')
       .update({ 
@@ -93,19 +106,20 @@ serve(async (req) => {
       .eq('id', product.id);
 
     if (updateError) {
-      throw new Error(`Erreur lors de la mise à jour: ${updateError.message}`);
+      console.error('❌ Update error:', updateError);
+      throw new Error(`Product update failed: ${updateError.message}`);
     }
 
-    console.log(`🎉 Optimisation terminée avec succès pour ${product.name}`);
+    console.log('🎉 Optimization completed successfully!');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Image optimisée avec succès pour ${product.name}`,
+        message: `Image optimized successfully for ${product.name}`,
         original: {
           fileName: originalFileName,
           url: product.image_url,
-          size: imageData.size
+          size: originalSize
         },
         optimized: {
           fileName: optimizedFileName,
@@ -120,11 +134,12 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Erreur lors de l\'optimisation:', error);
+    console.error('❌ Function error:', error);
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
+        stack: error.stack
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
