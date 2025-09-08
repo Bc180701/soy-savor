@@ -50,10 +50,10 @@ serve(async (req) => {
     // 2. Extract filename from URL
     const urlParts = product.image_url.split('/');
     const originalFileName = decodeURIComponent(urlParts[urlParts.length - 1]);
-    const fileExtension = originalFileName.split('.').pop()?.toLowerCase();
+    const originalFileExtension = originalFileName.split('.').pop()?.toLowerCase();
     
     console.log(`📄 Original filename: ${originalFileName}`);
-    console.log(`🔧 File extension: ${fileExtension}`);
+    console.log(`🔧 Original file extension: ${originalFileExtension}`);
 
     // 3. Download the original image
     console.log('⬇️ Downloading original image...');
