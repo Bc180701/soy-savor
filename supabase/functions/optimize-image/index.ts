@@ -99,12 +99,35 @@ serve(async (req) => {
       const resizedImage = img.resize(newWidth, newHeight);
       console.log(`✅ Image redimensionnée: ${resizedImage.width}x${resizedImage.height}`);
       
-      // Encoder en JPEG avec compression
-      const optimizedBuffer = await resizedImage.encodeJPEG(70); // 70% de qualité
-      console.log(`📦 Buffer optimisé: ${optimizedBuffer.length} bytes`);
+      // Vérifier si l'image a de la transparence
+      const hasTransparency = img.bitmap.some((pixel, index) => {
+        // Vérifier le canal alpha (chaque 4ème byte)
+        return index % 4 === 3 && pixel < 255;
+      });
+      
+      console.log(`🔍 Image a de la transparence: ${hasTransparency}`);
+      
+      // Encoder selon la transparence
+      let optimizedBuffer: Uint8Array;
+      let contentType: string;
+      let fileExtension: string;
+      
+      if (hasTransparency) {
+        // Garder PNG pour préserver la transparence
+        optimizedBuffer = await resizedImage.encodePNG();
+        contentType = 'image/png';
+        fileExtension = 'png';
+        console.log(`📦 Encodé en PNG pour préserver la transparence: ${optimizedBuffer.length} bytes`);
+      } else {
+        // Utiliser JPEG avec compression pour les images opaques
+        optimizedBuffer = await resizedImage.encodeJPEG(70);
+        contentType = 'image/jpeg';
+        fileExtension = 'jpg';
+        console.log(`📦 Encodé en JPEG avec compression: ${optimizedBuffer.length} bytes`);
+      }
       
       // Créer le blob optimisé
-      finalBlob = new Blob([optimizedBuffer], { type: 'image/jpeg' });
+      finalBlob = new Blob([optimizedBuffer], { type: contentType });
       
       // Calculer le ratio de compression
       compressionRatio = ((originalSize - finalBlob.size) / originalSize * 100);
@@ -116,8 +139,8 @@ serve(async (req) => {
       finalBlob = imageData;
     }
     
-    // 5. Créer le nom du fichier optimisé (toujours en .jpg)
-    const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, '-optimized.jpg');
+    // 5. Créer le nom du fichier optimisé selon le format final
+    const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, `-optimized.${fileExtension || 'jpg'}`);
     console.log(`📝 Optimized filename: ${optimizedFileName}`);
 
     // 6. Upload l'image optimisée
@@ -127,7 +150,7 @@ serve(async (req) => {
       .upload(optimizedFileName, finalBlob, {
         cacheControl: '3600',
         upsert: true,
-        contentType: 'image/jpeg'
+        contentType: finalBlob.type
       });
 
     if (uploadError) {
