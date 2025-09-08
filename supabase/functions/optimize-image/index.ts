@@ -99,12 +99,24 @@ serve(async (req) => {
       const resizedImage = img.resize(newWidth, newHeight);
       console.log(`✅ Image redimensionnée: ${resizedImage.width}x${resizedImage.height}`);
       
-      // Encoder en JPEG avec compression
-      const optimizedBuffer = await resizedImage.encodeJPEG(70); // 70% de qualité
+      // Encoder selon le format original pour conserver la transparence
+      let optimizedBuffer: Uint8Array;
+      let contentType: string;
+      
+      if (fileExtension === 'png') {
+        console.log('🔄 Encodage en PNG pour conserver la transparence...');
+        optimizedBuffer = await resizedImage.encodePNG();
+        contentType = 'image/png';
+      } else {
+        console.log('🔄 Encodage en JPEG avec compression...');
+        optimizedBuffer = await resizedImage.encodeJPEG(70); // 70% de qualité
+        contentType = 'image/jpeg';
+      }
+      
       console.log(`📦 Buffer optimisé: ${optimizedBuffer.length} bytes`);
       
       // Créer le blob optimisé
-      finalBlob = new Blob([optimizedBuffer], { type: 'image/jpeg' });
+      finalBlob = new Blob([optimizedBuffer], { type: contentType });
       
       // Calculer le ratio de compression
       compressionRatio = ((originalSize - finalBlob.size) / originalSize * 100);
@@ -116,8 +128,8 @@ serve(async (req) => {
       finalBlob = imageData;
     }
     
-    // 5. Créer le nom du fichier optimisé (toujours en .jpg)
-    const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, '-optimized.jpg');
+    // 5. Créer le nom du fichier optimisé (conserver le format original)
+    const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, `-optimized.${fileExtension}`);
     console.log(`📝 Optimized filename: ${optimizedFileName}`);
 
     // 6. Upload l'image optimisée
@@ -127,7 +139,7 @@ serve(async (req) => {
       .upload(optimizedFileName, finalBlob, {
         cacheControl: '3600',
         upsert: true,
-        contentType: 'image/jpeg'
+        contentType: fileExtension === 'png' ? 'image/png' : 'image/jpeg'
       });
 
     if (uploadError) {
