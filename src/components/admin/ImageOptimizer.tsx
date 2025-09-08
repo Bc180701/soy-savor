@@ -25,18 +25,18 @@ export const ImageOptimizer = () => {
 
       if (error) throw error;
 
-      console.log("✅ Optimisation réussie:", data);
+      console.log("✅ Redimensionnement réussi:", data);
       setResult(data);
       
       toast({
-        title: "Optimisation réussie",
-        description: `Image optimisée pour ${data.original?.fileName}`,
+        title: "Redimensionnement réussi",
+        description: `Image redimensionnée pour ${data.original?.fileName}`,
       });
 
     } catch (error: any) {
-      console.error("❌ Erreur d'optimisation:", error);
+      console.error("❌ Erreur de redimensionnement:", error);
       toast({
-        title: "Erreur d'optimisation",
+        title: "Erreur de redimensionnement",
         description: error.message || "Une erreur est survenue",
         variant: "destructive",
       });
@@ -50,12 +50,12 @@ export const ImageOptimizer = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Zap className="h-5 w-5" />
-          Test d'optimisation d'image
+          Test de redimensionnement d'image
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-gray-600">
-          Teste l'optimisation sur le produit "LE GRILLÉ" pour comparer la taille avant/après.
+          Teste le redimensionnement sur le produit "LE GRILLÉ". L'image originale sera remplacée par la version redimensionnée.
         </div>
 
         <Button 
@@ -66,45 +66,42 @@ export const ImageOptimizer = () => {
           {isOptimizing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Optimisation en cours...
+              Redimensionnement en cours...
             </>
           ) : (
             <>
               <Image className="mr-2 h-4 w-4" />
-              Optimiser l'image test
+              Redimensionner l'image test
             </>
           )}
         </Button>
 
         {result && (
           <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 className="font-semibold text-green-800 mb-2">Résultat de l'optimisation :</h4>
+            <h4 className="font-semibold text-green-800 mb-2">Résultat du redimensionnement :</h4>
             
             <div className="space-y-2 text-sm">
               <div>
-                <strong>Fichier original :</strong> {result.original?.fileName}
+                <strong>Fichier traité :</strong> {result.original?.fileName}
               </div>
               <div>
                 <strong>Taille originale :</strong> {result.original?.size ? `${(result.original.size / 1024).toFixed(1)} KB` : 'N/A'}
               </div>
               <div>
-                <strong>Fichier optimisé :</strong> {result.optimized?.fileName}
-              </div>
-              <div>
-                <strong>Nouvelle URL :</strong> 
+                <strong>URL de l'image :</strong> 
                 <a 
-                  href={result.optimized?.url} 
+                  href={result.original?.url} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline ml-1"
                 >
-                  Voir l'image optimisée
+                  Voir l'image redimensionnée
                 </a>
               </div>
             </div>
 
             <div className="mt-3 p-2 bg-white border rounded text-xs">
-              <strong>Note :</strong> L'image originale est conservée. Vous pouvez comparer les deux images pour vérifier la qualité et la taille.
+              <strong>Note :</strong> L'image a été redimensionnée et remplace maintenant l'original dans le stockage.
             </div>
           </div>
         )}
