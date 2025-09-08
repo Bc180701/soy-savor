@@ -46,19 +46,26 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
               <p className="text-sm text-gray-500 mt-1">{item.specialInstructions}</p>
             )}
             <div className="flex items-center mt-2">
-              <button
-                className="w-6 h-6 flex items-center justify-center border rounded-full"
-                onClick={() => updateQuantity(item.menuItem.id, Math.max(1, item.quantity - 1))}
-              >
-                -
-              </button>
-              <span className="mx-2">{item.quantity}</span>
-              <button
-                className="w-6 h-6 flex items-center justify-center border rounded-full"
-                onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
-              >
-                +
-              </button>
+              {/* Masquer les contrôles de quantité pour les accompagnements */}
+              {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) ? (
+                <>
+                  <button
+                    className="w-6 h-6 flex items-center justify-center border rounded-full"
+                    onClick={() => updateQuantity(item.menuItem.id, Math.max(1, item.quantity - 1))}
+                  >
+                    -
+                  </button>
+                  <span className="mx-2">{item.quantity}</span>
+                  <button
+                    className="w-6 h-6 flex items-center justify-center border rounded-full"
+                    onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
+                  >
+                    +
+                  </button>
+                </>
+              ) : (
+                <span className="text-sm text-gray-600">Quantité: {item.quantity}</span>
+              )}
             </div>
           </div>
           <div className="text-right">
