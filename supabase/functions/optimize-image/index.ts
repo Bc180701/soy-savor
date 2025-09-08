@@ -68,16 +68,68 @@ serve(async (req) => {
     const originalSize = imageData.size;
     console.log(`✅ Image downloaded successfully, size: ${originalSize} bytes`);
 
-    // 4. Optimiser l'image - approche simplifiée pour Deno
-    console.log('🔄 Début de l\'optimisation...');
+    // 4. Optimiser l'image en utilisant l'API Web standard
+    console.log('🔄 Début de l\'optimisation avec redimensionnement...');
     
-    // Pour l'instant, créer une version "optimisée" en gardant l'image originale
-    // mais en forçant une re-compression via le processus d'upload
-    const optimizedBlob = imageData;
-    
-    // Calculer le ratio de compression (même si minimal pour l'instant)
-    const compressionRatio = 0; // Sera amélioré plus tard
-    console.log(`🔄 Image traitée, taille: ${optimizedBlob.size} bytes`);
+    try {
+      // Créer un canvas virtuel pour le redimensionnement
+      const img = new Image();
+      
+      // Convertir le blob en URL d'objet
+      const imageUrl = URL.createObjectURL(imageData);
+      
+      // Charger l'image
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = imageUrl;
+      });
+      
+      console.log(`📐 Dimensions originales: ${img.width}x${img.height}`);
+      
+      // Calculer les nouvelles dimensions (max 600x400)
+      const maxWidth = 600;
+      const maxHeight = 400;
+      const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1); // Ne pas agrandir
+      const newWidth = Math.floor(img.width * ratio);
+      const newHeight = Math.floor(img.height * ratio);
+      
+      console.log(`📐 Nouvelles dimensions: ${newWidth}x${newHeight} (ratio: ${ratio.toFixed(3)})`);
+      
+      // Créer un canvas pour le redimensionnement
+      const canvas = new OffscreenCanvas(newWidth, newHeight);
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Impossible de créer le contexte Canvas');
+      }
+      
+      // Configurer la qualité de rendu
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Dessiner l'image redimensionnée
+      ctx.drawImage(img, 0, 0, newWidth, newHeight);
+      
+      // Nettoyer l'URL d'objet
+      URL.revokeObjectURL(imageUrl);
+      
+      // Convertir en JPEG avec compression
+      const optimizedBlob = await canvas.convertToBlob({
+        type: 'image/jpeg',
+        quality: 0.7 // 70% de qualité pour un bon compromis
+      });
+      
+      const compressionRatio = ((originalSize - optimizedBlob.size) / originalSize * 100).toFixed(1);
+      console.log(`✅ Image optimisée: ${newWidth}x${newHeight}, taille: ${optimizedBlob.size} bytes (${compressionRatio}% de compression)`);
+      
+      // Assigner le blob optimisé
+      var finalBlob = optimizedBlob;
+      
+    } catch (error) {
+      console.error('⚠️ Erreur pendant l\'optimisation, utilisation de l\'image originale:', error);
+      var finalBlob = imageData;
+    }
     
     // 5. Créer le nom du fichier optimisé (toujours en .jpg)
     const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, '-optimized.jpg');
@@ -87,7 +139,7 @@ serve(async (req) => {
     console.log('⬆️ Uploading optimized image...');
     const { error: uploadError } = await supabase.storage
       .from('products')
-      .upload(optimizedFileName, optimizedBlob, {
+      .upload(optimizedFileName, finalBlob, {
         cacheControl: '3600',
         upsert: true,
         contentType: 'image/jpeg'
