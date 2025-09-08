@@ -76,6 +76,7 @@ serve(async (req) => {
     let compressionRatio = 0;
     let newWidth = 0;
     let newHeight = 0;
+    let fileExtension = 'jpg';
     
     try {
       // Convertir le blob en Uint8Array
@@ -83,6 +84,7 @@ serve(async (req) => {
       console.log(`📊 Buffer size: ${imageBuffer.length} bytes`);
       
       // Décoder l'image avec ImageScript
+      console.log('🔍 Décodage de l\'image...');
       const img = await Image.decode(imageBuffer);
       console.log(`📐 Dimensions originales: ${img.width}x${img.height}`);
       
@@ -93,33 +95,52 @@ serve(async (req) => {
       newWidth = Math.floor(img.width * ratio);
       newHeight = Math.floor(img.height * ratio);
       
-      console.log(`📐 Nouvelles dimensions: ${newWidth}x${newHeight} (ratio: ${ratio.toFixed(3)})`);
+      console.log(`📐 Nouvelles dimensions calculées: ${newWidth}x${newHeight} (ratio: ${ratio.toFixed(3)})`);
       
-      // Redimensionner l'image
-      const resizedImage = img.resize(newWidth, newHeight);
-      console.log(`✅ Image redimensionnée: ${resizedImage.width}x${resizedImage.height}`);
+      // Redimensionner seulement si nécessaire
+      let resizedImage;
+      if (ratio < 1) {
+        console.log('🔄 Redimensionnement nécessaire...');
+        resizedImage = img.resize(newWidth, newHeight);
+        console.log(`✅ Image redimensionnée: ${resizedImage.width}x${resizedImage.height}`);
+      } else {
+        console.log('ℹ️ Aucun redimensionnement nécessaire');
+        resizedImage = img;
+        newWidth = img.width;
+        newHeight = img.height;
+      }
       
-      // Vérifier si l'image a de la transparence
-      const hasTransparency = img.bitmap.some((pixel, index) => {
-        // Vérifier le canal alpha (chaque 4ème byte)
-        return index % 4 === 3 && pixel < 255;
-      });
+      // Vérifier si l'image a de la transparence en analysant les pixels
+      console.log('🔍 Vérification de la transparence...');
+      let hasTransparency = false;
+      
+      // Vérifier s'il y a un canal alpha et s'il contient des valeurs < 255
+      if (resizedImage.bitmap.length === resizedImage.width * resizedImage.height * 4) {
+        // Format RGBA
+        for (let i = 3; i < resizedImage.bitmap.length; i += 4) {
+          if (resizedImage.bitmap[i] < 255) {
+            hasTransparency = true;
+            break;
+          }
+        }
+      }
       
       console.log(`🔍 Image a de la transparence: ${hasTransparency}`);
       
       // Encoder selon la transparence
       let optimizedBuffer: Uint8Array;
       let contentType: string;
-      let fileExtension: string;
       
       if (hasTransparency) {
         // Garder PNG pour préserver la transparence
+        console.log('🔄 Encodage en PNG...');
         optimizedBuffer = await resizedImage.encodePNG();
         contentType = 'image/png';
         fileExtension = 'png';
         console.log(`📦 Encodé en PNG pour préserver la transparence: ${optimizedBuffer.length} bytes`);
       } else {
         // Utiliser JPEG avec compression pour les images opaques
+        console.log('🔄 Encodage en JPEG...');
         optimizedBuffer = await resizedImage.encodeJPEG(70);
         contentType = 'image/jpeg';
         fileExtension = 'jpg';
@@ -131,12 +152,13 @@ serve(async (req) => {
       
       // Calculer le ratio de compression
       compressionRatio = ((originalSize - finalBlob.size) / originalSize * 100);
-      console.log(`✅ Image optimisée: ${newWidth}x${newHeight}, taille: ${finalBlob.size} bytes (${compressionRatio.toFixed(1)}% de compression)`);
+      console.log(`✅ Image optimisée: ${newWidth}x${newHeight}, taille finale: ${finalBlob.size} bytes (${compressionRatio.toFixed(1)}% de compression)`);
       
     } catch (error) {
       console.error('⚠️ Erreur pendant l\'optimisation avec ImageScript:', error);
       console.log('🔄 Fallback: utilisation de l\'image originale');
       finalBlob = imageData;
+      fileExtension = fileExtension || 'jpg';
     }
     
     // 5. Créer le nom du fichier optimisé selon le format final
