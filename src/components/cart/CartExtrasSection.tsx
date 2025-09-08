@@ -27,6 +27,46 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const { addItem, selectedRestaurantId, items } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
+  // Vérifier quels accompagnements sont déjà dans le panier
+  const getDisabledSauces = () => {
+    const sauceItems = items.filter(item => item.menuItem.category === "Sauce");
+    const disabledSauces: string[] = [];
+    
+    sauceItems.forEach(item => {
+      const sauceName = item.menuItem.name.replace("Sauces: ", "");
+      saucesOptions.forEach(sauce => {
+        if (sauceName.includes(sauce)) {
+          disabledSauces.push(sauce);
+        }
+      });
+    });
+    
+    return disabledSauces;
+  };
+
+  const getDisabledAccompagnements = () => {
+    const accompagnementItems = items.filter(item => item.menuItem.category === "Accompagnement");
+    const disabledAccompagnements: string[] = [];
+    
+    accompagnementItems.forEach(item => {
+      const accompagnementName = item.menuItem.name.replace("Accompagnements: ", "");
+      accompagnementsOptions.forEach(accompagnement => {
+        if (accompagnementName.includes(accompagnement)) {
+          disabledAccompagnements.push(accompagnement);
+        }
+      });
+    });
+    
+    return disabledAccompagnements;
+  };
+
+  const isBaguettesDisabled = items.some(item => item.menuItem.name === "Baguettes");
+  const isCouvertsDisabled = items.some(item => item.menuItem.name === "Couverts");
+  const isCuilleresDisabled = items.some(item => item.menuItem.name === "Cuillères");
+
+  const disabledSauces = getDisabledSauces();
+  const disabledAccompagnements = getDisabledAccompagnements();
+
   const saucesOptions = [
     "Soja sucrée",
     "Soja salée",
@@ -193,21 +233,25 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             🥢 Sauces
           </h4>
           <div className="grid grid-cols-1 gap-3">
-            {saucesOptions.map((sauce) => (
-              <div key={sauce} className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
-                <Checkbox
-                  id={`sauce-${sauce}`}
-                  checked={selectedSauces.includes(sauce)}
-                  onCheckedChange={() => handleSauceToggle(sauce)}
-                />
-                <label 
-                  htmlFor={`sauce-${sauce}`} 
-                  className="text-sm font-medium cursor-pointer flex-1"
-                >
-                  {sauce}
-                </label>
-              </div>
-            ))}
+            {saucesOptions.map((sauce) => {
+              const isDisabled = disabledSauces.includes(sauce);
+              return (
+                <div key={sauce} className={`flex items-center space-x-3 p-3 border rounded-lg ${isDisabled ? 'bg-gray-100' : 'bg-white'}`}>
+                  <Checkbox
+                    id={`sauce-${sauce}`}
+                    checked={selectedSauces.includes(sauce)}
+                    onCheckedChange={() => !isDisabled && handleSauceToggle(sauce)}
+                    disabled={isDisabled}
+                  />
+                  <label 
+                    htmlFor={`sauce-${sauce}`} 
+                    className={`text-sm font-medium flex-1 ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    {sauce} {isDisabled && "(déjà ajouté)"}
+                  </label>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -215,35 +259,40 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🌶️ Accompagnements</h4>
           <div className="grid grid-cols-1 gap-3">
-            {accompagnementsOptions.map((accompagnement) => (
-              <div key={accompagnement} className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
-                <Checkbox
-                  id={`accompagnement-${accompagnement}`}
-                  checked={selectedAccompagnements.includes(accompagnement)}
-                  onCheckedChange={() => handleAccompagnementToggle(accompagnement)}
-                />
-                <label 
-                  htmlFor={`accompagnement-${accompagnement}`} 
-                  className="text-sm font-medium cursor-pointer flex-1"
-                >
-                  {accompagnement}
-                </label>
-              </div>
-            ))}
+            {accompagnementsOptions.map((accompagnement) => {
+              const isDisabled = disabledAccompagnements.includes(accompagnement);
+              return (
+                <div key={accompagnement} className={`flex items-center space-x-3 p-3 border rounded-lg ${isDisabled ? 'bg-gray-100' : 'bg-white'}`}>
+                  <Checkbox
+                    id={`accompagnement-${accompagnement}`}
+                    checked={selectedAccompagnements.includes(accompagnement)}
+                    onCheckedChange={() => !isDisabled && handleAccompagnementToggle(accompagnement)}
+                    disabled={isDisabled}
+                  />
+                  <label 
+                    htmlFor={`accompagnement-${accompagnement}`} 
+                    className={`text-sm font-medium flex-1 ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    {accompagnement} {isDisabled && "(déjà ajouté)"}
+                  </label>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Baguettes */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🥢 Baguettes</h4>
-          <div className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+          <div className={`flex items-center space-x-3 p-3 border rounded-lg ${isBaguettesDisabled ? 'bg-gray-100' : 'bg-white'}`}>
             <Checkbox
               id="baguettes"
               checked={baguettesSelected}
-              onCheckedChange={(checked) => setBaguettesSelected(checked as boolean)}
+              onCheckedChange={(checked) => !isBaguettesDisabled && setBaguettesSelected(checked as boolean)}
+              disabled={isBaguettesDisabled}
             />
-            <label htmlFor="baguettes" className="text-sm font-medium cursor-pointer flex-1">
-              Baguettes japonaises
+            <label htmlFor="baguettes" className={`text-sm font-medium flex-1 ${isBaguettesDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
+              Baguettes japonaises {isBaguettesDisabled && "(déjà ajouté)"}
             </label>
           </div>
         </div>
@@ -251,14 +300,15 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         {/* Couverts */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🍽️ Couverts</h4>
-          <div className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+          <div className={`flex items-center space-x-3 p-3 border rounded-lg ${isCouvertsDisabled ? 'bg-gray-100' : 'bg-white'}`}>
             <Checkbox
               id="couverts"
               checked={couvertsSelected}
-              onCheckedChange={(checked) => setCouvertsSelected(checked as boolean)}
+              onCheckedChange={(checked) => !isCouvertsDisabled && setCouvertsSelected(checked as boolean)}
+              disabled={isCouvertsDisabled}
             />
-            <label htmlFor="couverts" className="text-sm font-medium cursor-pointer flex-1">
-              Couteau et fourchette
+            <label htmlFor="couverts" className={`text-sm font-medium flex-1 ${isCouvertsDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
+              Couteau et fourchette {isCouvertsDisabled && "(déjà ajouté)"}
             </label>
           </div>
         </div>
@@ -266,14 +316,15 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         {/* Cuillères */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🥄 Cuillères</h4>
-          <div className="flex items-center space-x-3 p-3 border rounded-lg bg-white">
+          <div className={`flex items-center space-x-3 p-3 border rounded-lg ${isCuilleresDisabled ? 'bg-gray-100' : 'bg-white'}`}>
             <Checkbox
               id="cuilleres"
               checked={cuilleresSelected}
-              onCheckedChange={(checked) => setCuilleresSelected(checked as boolean)}
+              onCheckedChange={(checked) => !isCuilleresDisabled && setCuilleresSelected(checked as boolean)}
+              disabled={isCuilleresDisabled}
             />
-            <label htmlFor="cuilleres" className="text-sm font-medium cursor-pointer flex-1">
-              Cuillères
+            <label htmlFor="cuilleres" className={`text-sm font-medium flex-1 ${isCuilleresDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
+              Cuillères {isCuilleresDisabled && "(déjà ajouté)"}
             </label>
           </div>
         </div>
