@@ -27,6 +27,17 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const { addItem, selectedRestaurantId, items } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
+  const saucesOptions = [
+    "Soja sucrée",
+    "Soja salée",
+    "Aucune"
+  ];
+
+  const accompagnementsOptions = [
+    "Wasabi",
+    "Gingembre"
+  ];
+
   // Vérifier quels accompagnements sont déjà dans le panier
   const getDisabledSauces = () => {
     const sauceItems = items.filter(item => item.menuItem.category === "Sauce");
@@ -66,18 +77,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
   const disabledSauces = getDisabledSauces();
   const disabledAccompagnements = getDisabledAccompagnements();
-
-  const saucesOptions = [
-    "Soja sucrée",
-    "Soja salée",
-    "Aucune"
-  ];
-
-  const accompagnementsOptions = [
-    "Wasabi",
-    "Gingembre"
-  ];
-
 
   const handleAddAccompagnements = () => {
     const restaurantId = getRestaurantId();
