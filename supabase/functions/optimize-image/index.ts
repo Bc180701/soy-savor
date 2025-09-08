@@ -69,14 +69,10 @@ serve(async (req) => {
     const originalSize = imageData.size;
     console.log(`✅ Image downloaded successfully, size: ${originalSize} bytes`);
 
-    // 4. Optimiser l'image avec ImageScript (compatible Deno)
-    console.log('🔄 Début de l\'optimisation avec ImageScript...');
+    // 4. Redimensionner l'image avec ImageScript
+    console.log('🔄 Redimensionnement de l\'image...');
     
     let finalBlob: Blob;
-    let compressionRatio = 0;
-    let newWidth = 0;
-    let newHeight = 0;
-    let finalExtension: string;
     
     try {
       // Convertir le blob en Uint8Array
@@ -91,108 +87,65 @@ serve(async (req) => {
       const maxWidth = 600;
       const maxHeight = 400;
       const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
-      newWidth = Math.floor(img.width * ratio);
-      newHeight = Math.floor(img.height * ratio);
+      const newWidth = Math.floor(img.width * ratio);
+      const newHeight = Math.floor(img.height * ratio);
       
-      console.log(`📐 Nouvelles dimensions: ${newWidth}x${newHeight} (ratio: ${ratio.toFixed(3)})`);
+      console.log(`📐 Nouvelles dimensions: ${newWidth}x${newHeight}`);
       
       // Redimensionner l'image
       const resizedImage = img.resize(newWidth, newHeight);
       console.log(`✅ Image redimensionnée: ${resizedImage.width}x${resizedImage.height}`);
       
-      // Détecter la transparence de l'image originale
-      const hasTransparency = img.bitmap.some((pixel, index) => {
-        // Vérifier le canal alpha (chaque pixel a 4 valeurs: R, G, B, A)
-        return index % 4 === 3 && pixel < 255;
-      });
-      
-      console.log(`🔍 Image a de la transparence: ${hasTransparency}`);
-      
-      // Encoder selon la présence de transparence pour la conserver
+      // Encoder selon le format original
       let optimizedBuffer: Uint8Array;
       let contentType: string;
       
-      if (hasTransparency) {
-        console.log('🔄 Encodage en PNG pour conserver la transparence...');
+      if (fileExtension === 'png') {
+        console.log('🔄 Encodage en PNG...');
         optimizedBuffer = await resizedImage.encodePNG();
         contentType = 'image/png';
-        finalExtension = 'png';
       } else {
-        console.log('🔄 Encodage en JPEG avec compression...');
-        optimizedBuffer = await resizedImage.encodeJPEG(70); // 70% de qualité
+        console.log('🔄 Encodage en JPEG...');
+        optimizedBuffer = await resizedImage.encodeJPEG(85);
         contentType = 'image/jpeg';
-        finalExtension = 'jpg';
       }
       
-      console.log(`📦 Buffer optimisé: ${optimizedBuffer.length} bytes`);
-      
-      // Créer le blob optimisé
       finalBlob = new Blob([optimizedBuffer], { type: contentType });
-      
-      // Calculer le ratio de compression
-      compressionRatio = ((originalSize - finalBlob.size) / originalSize * 100);
-      console.log(`✅ Image optimisée: ${newWidth}x${newHeight}, taille: ${finalBlob.size} bytes (${compressionRatio.toFixed(1)}% de compression)`);
+      console.log(`✅ Image optimisée: ${finalBlob.size} bytes`);
       
     } catch (error) {
-      console.error('⚠️ Erreur pendant l\'optimisation avec ImageScript:', error);
-      console.log('🔄 Fallback: utilisation de l\'image originale');
+      console.error('⚠️ Erreur redimensionnement:', error);
       finalBlob = imageData;
     }
     
-    // 5. Créer le nom du fichier optimisé (utiliser l'extension déterminée)
-    const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, `-optimized.${finalExtension || fileExtension}`);
-    console.log(`📝 Optimized filename: ${optimizedFileName}`);
-
-    // 6. Upload l'image optimisée
-    console.log('⬆️ Uploading optimized image...');
+    // 5. Remplacer directement l'image originale
+    console.log('⬆️ Remplacement de l\'image originale...');
     const { error: uploadError } = await supabase.storage
       .from('products')
-      .upload(optimizedFileName, finalBlob, {
+      .upload(originalFileName, finalBlob, {
         cacheControl: '3600',
         upsert: true,
-        contentType: finalExtension === 'png' ? 'image/png' : 'image/jpeg'
+        contentType: fileExtension === 'png' ? 'image/png' : 'image/jpeg'
       });
+
 
     if (uploadError) {
       console.error('❌ Upload error:', uploadError);
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
-    console.log('✅ Image uploaded successfully');
+    console.log('✅ Image remplacée avec succès');
 
-    // 7. Build new URL
-    const optimizedImageUrl = `https://tdykegnmomyyucbhslok.supabase.co/storage/v1/object/public/products/${encodeURIComponent(optimizedFileName)}`;
-    console.log(`🔗 New URL: ${optimizedImageUrl}`);
-
-    // 8. Update product to point to optimized image
-    console.log('🔄 Updating product...');
-    const { error: updateError } = await supabase
-      .from('products')
-      .update({ 
-        image_url: optimizedImageUrl,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', product.id);
-
-    if (updateError) {
-      console.error('❌ Update error:', updateError);
-      throw new Error(`Product update failed: ${updateError.message}`);
-    }
-
-    console.log('🎉 Optimization completed successfully!');
+    console.log('🎉 Redimensionnement terminé !');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Image optimized successfully for ${product.name}`,
+        message: `Image redimensionnée avec succès pour ${product.name}`,
         original: {
           fileName: originalFileName,
           url: product.image_url,
           size: originalSize
-        },
-        optimized: {
-          fileName: optimizedFileName,
-          url: optimizedImageUrl
         },
         productId: product.id
       }),
