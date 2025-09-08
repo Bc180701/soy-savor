@@ -24,6 +24,7 @@ import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import TestOrderNotification from "./TestOrderNotification";
 import DeliveryPhoneManager from "./DeliveryPhoneManager";
 import { BluetoothManager } from "./BluetoothManager";
+import { ImageOptimizer } from "./ImageOptimizer";
 
 const AdminManager = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -100,6 +101,7 @@ const AdminManager = () => {
           <div className="grid gap-6">
             <OrderingLockControl />
             <DeliveryPhoneManager />
+            <ImageOptimizer />
             <div className="bg-white p-6 rounded-lg shadow-sm border">
               <h3 className="text-lg font-semibold mb-4">Test de notifications</h3>
               <TestOrderNotification audioEnabled={audioEnabled} enableAudio={enableAudio} />
