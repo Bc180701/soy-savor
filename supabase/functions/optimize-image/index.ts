@@ -56,20 +56,19 @@ serve(async (req) => {
 
     console.log(`⬇️ Image téléchargée, taille: ${imageData.size} bytes`);
 
-    // 4. Optimiser l'image avec Canvas API
-    const arrayBuffer = await imageData.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    
-    // Créer un nom pour l'image optimisée
+    // 4. Créer un nom pour l'image optimisée
     const optimizedFileName = originalFileName.replace(`.${fileExtension}`, `-optimized.${fileExtension}`);
     
-    // Pour ce test, on va simplement re-encoder l'image avec une qualité réduite
-    // En production, on pourrait utiliser une bibliothèque comme sharp ou imagemagick
+    console.log(`🔄 Création du fichier optimisé: ${optimizedFileName}`);
     
-    // 5. Sauvegarder l'image optimisée
+    // 5. Pour ce test, on va simplement copier le fichier avec un nom différent
+    // En production, on utiliserait une véritable optimisation d'image
+    const arrayBuffer = await imageData.arrayBuffer();
+    
+    // 6. Sauvegarder l'image "optimisée" (pour l'instant, c'est juste une copie)
     const { error: uploadError } = await supabase.storage
       .from('products')
-      .upload(optimizedFileName, uint8Array, {
+      .upload(optimizedFileName, arrayBuffer, {
         cacheControl: '3600',
         upsert: true,
         contentType: fileExtension === 'png' ? 'image/png' : 'image/jpeg'
