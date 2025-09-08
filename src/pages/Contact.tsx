@@ -364,7 +364,8 @@ const Contact = () => {
                             // Convertir l'index d'affichage vers l'index de la base de données
                             const dbDayIndex = displayIndex === 6 ? 0 : displayIndex + 1;
                             const dayHours = restaurant.hours.filter(hour => hour.day_of_week === dbDayIndex);
-                            const openSlots = dayHours.filter(hour => hour.is_open && hour.open_time && hour.close_time);
+                            const openSlots = dayHours.filter(hour => hour.is_open && hour.open_time && hour.close_time)
+                              .sort((a, b) => a.open_time!.localeCompare(b.open_time!));
                             
                             return (
                               <div key={displayIndex} className="flex justify-between items-center text-sm">
