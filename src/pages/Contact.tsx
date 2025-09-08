@@ -43,8 +43,13 @@ interface RestaurantHour {
 }
 
 const dayNames = [
-  "Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"
+  "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"
 ];
+
+const getDayDisplayOrder = (dayOfWeek: number) => {
+  // Convertit l'index de base de données (0=Dimanche, 1=Lundi...) vers l'ordre d'affichage français (0=Lundi, 1=Mardi...)
+  return dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+};
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -355,13 +360,15 @@ const Contact = () => {
                           <h3 className="font-medium">Horaires d'ouverture</h3>
                         </div>
                         <div className="space-y-1">
-                          {dayNames.map((dayName, dayIndex) => {
-                            const dayHours = restaurant.hours.filter(hour => hour.day_of_week === dayIndex);
+                          {dayNames.map((dayName, displayIndex) => {
+                            // Convertir l'index d'affichage vers l'index de la base de données
+                            const dbDayIndex = displayIndex === 6 ? 0 : displayIndex + 1;
+                            const dayHours = restaurant.hours.filter(hour => hour.day_of_week === dbDayIndex);
                             const openSlots = dayHours.filter(hour => hour.is_open && hour.open_time && hour.close_time);
                             
                             return (
-                              <div key={dayIndex} className="flex justify-between items-center text-sm">
-                                <span className={`font-medium ${dayIndex === 0 || dayIndex === 1 ? 'text-red-500' : 'text-gray-900'}`}>
+                              <div key={displayIndex} className="flex justify-between items-center text-sm">
+                                <span className={`font-medium ${displayIndex === 5 || displayIndex === 6 ? 'text-red-500' : 'text-gray-900'}`}>
                                   {dayName}:
                                 </span>
                                 {openSlots.length > 0 ? (
