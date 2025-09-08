@@ -76,6 +76,7 @@ serve(async (req) => {
     let compressionRatio = 0;
     let newWidth = 0;
     let newHeight = 0;
+    let finalExtension: string;
     
     try {
       // Convertir le blob en Uint8Array
@@ -99,18 +100,28 @@ serve(async (req) => {
       const resizedImage = img.resize(newWidth, newHeight);
       console.log(`✅ Image redimensionnée: ${resizedImage.width}x${resizedImage.height}`);
       
-      // Encoder selon le format original pour conserver la transparence
+      // Détecter la transparence de l'image originale
+      const hasTransparency = img.bitmap.some((pixel, index) => {
+        // Vérifier le canal alpha (chaque pixel a 4 valeurs: R, G, B, A)
+        return index % 4 === 3 && pixel < 255;
+      });
+      
+      console.log(`🔍 Image a de la transparence: ${hasTransparency}`);
+      
+      // Encoder selon la présence de transparence pour la conserver
       let optimizedBuffer: Uint8Array;
       let contentType: string;
       
-      if (fileExtension === 'png') {
+      if (hasTransparency) {
         console.log('🔄 Encodage en PNG pour conserver la transparence...');
         optimizedBuffer = await resizedImage.encodePNG();
         contentType = 'image/png';
+        finalExtension = 'png';
       } else {
         console.log('🔄 Encodage en JPEG avec compression...');
         optimizedBuffer = await resizedImage.encodeJPEG(70); // 70% de qualité
         contentType = 'image/jpeg';
+        finalExtension = 'jpg';
       }
       
       console.log(`📦 Buffer optimisé: ${optimizedBuffer.length} bytes`);
@@ -128,8 +139,8 @@ serve(async (req) => {
       finalBlob = imageData;
     }
     
-    // 5. Créer le nom du fichier optimisé (conserver le format original)
-    const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, `-optimized.${fileExtension}`);
+    // 5. Créer le nom du fichier optimisé (utiliser l'extension déterminée)
+    const optimizedFileName = originalFileName.replace(/\.(png|jpg|jpeg)$/i, `-optimized.${finalExtension || fileExtension}`);
     console.log(`📝 Optimized filename: ${optimizedFileName}`);
 
     // 6. Upload l'image optimisée
@@ -139,7 +150,7 @@ serve(async (req) => {
       .upload(optimizedFileName, finalBlob, {
         cacheControl: '3600',
         upsert: true,
-        contentType: fileExtension === 'png' ? 'image/png' : 'image/jpeg'
+        contentType: finalExtension === 'png' ? 'image/png' : 'image/jpeg'
       });
 
     if (uploadError) {
