@@ -22,11 +22,12 @@ serve(async (req) => {
     const { productName } = await req.json();
     console.log(`📦 Processing product: ${productName}`);
 
-    // 1. Get product information
+    // 1. Get product information (handle duplicates by taking the first one)
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('id, name, image_url')
       .eq('name', productName)
+      .limit(1)
       .single();
 
     if (productError) {
