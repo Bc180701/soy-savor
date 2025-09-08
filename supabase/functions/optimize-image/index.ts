@@ -76,6 +76,7 @@ serve(async (req) => {
     let compressionRatio = 0;
     let newWidth = 0;
     let newHeight = 0;
+    let fileExtension = 'jpg'; // Valeur par défaut
     
     try {
       // Convertir le blob en Uint8Array
@@ -157,7 +158,7 @@ serve(async (req) => {
       console.error('⚠️ Erreur pendant l\'optimisation avec ImageScript:', error);
       console.log('🔄 Fallback: utilisation de l\'image originale');
       finalBlob = imageData;
-      fileExtension = fileExtension || 'jpg';
+      // fileExtension garde sa valeur par défaut
     }
     
     // 5. Créer le nom du fichier optimisé selon le format final
