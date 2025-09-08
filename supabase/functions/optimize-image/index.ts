@@ -76,7 +76,6 @@ serve(async (req) => {
     let compressionRatio = 0;
     let newWidth = 0;
     let newHeight = 0;
-    let fileExtension = 'jpg';
     
     try {
       // Convertir le blob en Uint8Array
