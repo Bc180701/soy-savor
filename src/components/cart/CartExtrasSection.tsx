@@ -596,8 +596,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                   onCheckedChange={(checked) => {
                     if (!isBaguettesDisabled) {
                       setBaguettesSelected(checked as boolean);
-                      if (!checked) {
+                      if (checked) {
+                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${baguettesQuantity}x)`, true);
+                      } else {
                         setBaguettesQuantity(1);
+                        addAccessoireToCart("Baguettes", "", false);
                       }
                     }
                   }}
@@ -614,7 +617,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setBaguettesQuantity(Math.max(1, baguettesQuantity - 1))}
+                      onClick={() => {
+                        const newQuantity = Math.max(1, baguettesQuantity - 1);
+                        setBaguettesQuantity(newQuantity);
+                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true);
+                      }}
                       disabled={baguettesQuantity <= 1}
                     >
                       <Minus className="h-3 w-3" />
@@ -623,7 +630,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setBaguettesQuantity(baguettesQuantity + 1)}
+                      onClick={() => {
+                        const newQuantity = baguettesQuantity + 1;
+                        setBaguettesQuantity(newQuantity);
+                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true);
+                      }}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
