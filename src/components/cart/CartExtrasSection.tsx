@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/hooks/use-cart";
 
 interface CartExtrasSectionProps {
@@ -25,6 +25,22 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [cuilleresSelected, setCuilleresSelected] = useState<boolean>(false);
   const { addItem, removeItem, selectedRestaurantId, items, getTotalPrice } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
+
+  // Notifier le parent des changements pour débloquer le bouton continuer
+  useEffect(() => {
+    const hasAnySauceSelection = selectedSauces.length > 0 || 
+      items.some(item => item.menuItem.category === "Sauce");
+    
+    if (hasAnySauceSelection) {
+      onExtrasChange({
+        sauces: selectedSauces,
+        accompagnements: selectedAccompagnements,
+        baguettes: baguettesSelected,
+        couverts: couvertsSelected,
+        cuilleres: cuilleresSelected
+      });
+    }
+  }, [selectedSauces, selectedAccompagnements, baguettesSelected, couvertsSelected, cuilleresSelected, items, onExtrasChange]);
 
   const saucesOptions = [
     "Soja sucrée",
