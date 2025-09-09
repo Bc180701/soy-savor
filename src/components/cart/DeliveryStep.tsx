@@ -323,7 +323,15 @@ export const DeliveryStep = ({
           <div className="bg-gold-50 border border-gold-200 rounded-lg p-4">
             <h3 className="font-semibold text-gold-800 mb-2">🍜 Vos options sélectionnées :</h3>
             <div className="space-y-1 text-sm text-gold-700">
-              <p><strong>Sauces :</strong> {cartExtras.sauces.length > 0 ? cartExtras.sauces.join(', ') : 'Aucune'}</p>
+              <p><strong>Sauces :</strong> {
+                cartExtras.sauces.length > 0 
+                  ? cartExtras.sauces.map(sauce => 
+                      sauce.name === "Aucune" 
+                        ? sauce.name 
+                        : `${sauce.name}${sauce.quantity > 1 ? ` (${sauce.quantity}x)` : ''}`
+                    ).join(', ')
+                  : 'Aucune'
+              }</p>
               <p><strong>Accompagnements :</strong> {cartExtras.accompagnements.length > 0 ? cartExtras.accompagnements.join(', ') : 'Aucun'}</p>
               <p><strong>Baguettes :</strong> {cartExtras.baguettes ? 'Demandées' : 'Non demandées'}</p>
               <p><strong>Couverts :</strong> {cartExtras.couverts ? 'Demandés' : 'Non demandés'}</p>
