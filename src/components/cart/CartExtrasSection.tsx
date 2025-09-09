@@ -97,7 +97,8 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     return disabledAccompagnements;
   };
 
-  const isBaguettesDisabled = items.some(item => item.menuItem.name === "Baguettes");
+  // Ne plus désactiver les baguettes - permettre l'ajustement de quantité
+  const isBaguettesInCart = items.some(item => item.menuItem.name === "Baguettes");
   const isCouvertsDisabled = items.some(item => item.menuItem.name === "Couverts");
   const isCuilleresDisabled = items.some(item => item.menuItem.name === "Cuillères");
 
@@ -588,29 +589,26 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🥢 Baguettes</h4>
           <div className="grid grid-cols-1 gap-3">
-            <div className={`space-y-2 p-3 border rounded-lg ${isBaguettesDisabled ? 'bg-gray-100' : 'bg-white'}`}>
+            <div className="space-y-2 p-3 border rounded-lg bg-white">
               <div className="flex items-center space-x-3">
                 <Checkbox
                   id="baguettes"
                   checked={baguettesSelected}
                   onCheckedChange={(checked) => {
-                    if (!isBaguettesDisabled) {
-                      setBaguettesSelected(checked as boolean);
-                      if (checked) {
-                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${baguettesQuantity}x)`, true, baguettesQuantity);
-                      } else {
-                        setBaguettesQuantity(1);
-                        addAccessoireToCart("Baguettes", "", false, 0);
-                      }
+                    setBaguettesSelected(checked as boolean);
+                    if (checked) {
+                      addAccessoireToCart("Baguettes", `Baguettes japonaises (${baguettesQuantity}x)`, true, baguettesQuantity);
+                    } else {
+                      setBaguettesQuantity(1);
+                      addAccessoireToCart("Baguettes", "", false, 0);
                     }
                   }}
-                  disabled={isBaguettesDisabled}
                 />
-                <label htmlFor="baguettes" className={`text-sm font-medium flex-1 ${isBaguettesDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
-                  Baguettes japonaises {isBaguettesDisabled && "(déjà ajouté)"}
+                <label htmlFor="baguettes" className="text-sm font-medium flex-1 cursor-pointer">
+                  Baguettes japonaises {isBaguettesInCart && `(${baguettesQuantity}x dans le panier)`}
                 </label>
               </div>
-              {baguettesSelected && !isBaguettesDisabled && (
+              {baguettesSelected && (
                 <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
                   <span className="text-sm text-gray-600">Quantité :</span>
                   <div className="flex items-center space-x-2">
