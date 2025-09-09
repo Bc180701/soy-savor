@@ -404,7 +404,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     }
   };
 
-  const addAccessoireToCart = (name: string, description: string, isSelected: boolean) => {
+  const addAccessoireToCart = (name: string, description: string, isSelected: boolean, quantity: number = 1) => {
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
@@ -414,7 +414,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       removeItem(item.menuItem.id);
     });
 
-    if (isSelected) {
+    if (isSelected && quantity > 0) {
       const accessoireItem = {
         id: `${name.toLowerCase()}-${Date.now()}`,
         name: name,
@@ -432,7 +432,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         pieces: null,
         prepTime: null
       };
-      addItem(accessoireItem, 1);
+      addItem(accessoireItem, quantity);
     }
   };
 
@@ -597,10 +597,10 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                     if (!isBaguettesDisabled) {
                       setBaguettesSelected(checked as boolean);
                       if (checked) {
-                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${baguettesQuantity}x)`, true);
+                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${baguettesQuantity}x)`, true, baguettesQuantity);
                       } else {
                         setBaguettesQuantity(1);
-                        addAccessoireToCart("Baguettes", "", false);
+                        addAccessoireToCart("Baguettes", "", false, 0);
                       }
                     }
                   }}
@@ -620,7 +620,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                       onClick={() => {
                         const newQuantity = Math.max(1, baguettesQuantity - 1);
                         setBaguettesQuantity(newQuantity);
-                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true);
+                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true, newQuantity);
                       }}
                       disabled={baguettesQuantity <= 1}
                     >
@@ -633,7 +633,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                       onClick={() => {
                         const newQuantity = baguettesQuantity + 1;
                         setBaguettesQuantity(newQuantity);
-                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true);
+                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true, newQuantity);
                       }}
                     >
                       <Plus className="h-3 w-3" />
