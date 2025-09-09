@@ -24,7 +24,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [couvertsSelected, setCouvertsSelected] = useState<boolean>(false);
   const [cuilleresSelected, setCuilleresSelected] = useState<boolean>(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const { addItem, selectedRestaurantId, items, total } = useCart();
+  const { addItem, selectedRestaurantId, items, getTotalPrice } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
   const saucesOptions = [
@@ -40,6 +40,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
   // Calculer le nombre de sauces gratuites selon le total du panier
   const getFreeSaucesCount = () => {
+    const total = getTotalPrice();
     return Math.floor(total / 10);
   };
 
