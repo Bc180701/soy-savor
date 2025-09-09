@@ -77,9 +77,9 @@ export const createOrder = async (
 
     console.log(`🏪 Création de commande pour le restaurant: ${targetRestaurantId}`);
 
-    // 🚨 VÉRIFICATION CRITIQUE DU CRÉNEAU CÔTÉ SERVEUR POUR LES LIVRAISONS UNIQUEMENT
-    if (orderInput.orderType === 'delivery') {
-      console.log("🔒 Vérification finale du créneau de livraison...");
+    // 🚨 VÉRIFICATION CRITIQUE DU CRÉNEAU CÔTÉ SERVEUR POUR LES LIVRAISONS ET RETRAITS
+    if (orderInput.orderType === 'delivery' || orderInput.orderType === 'pickup') {
+      console.log(`🔒 Vérification finale du créneau de ${orderInput.orderType}...`);
       const verification = await verifyTimeSlot(
         targetRestaurantId,
         orderInput.orderType,
@@ -88,9 +88,10 @@ export const createOrder = async (
 
       if (!verification.available) {
         console.log("🚫 CRÉNEAU BLOQUÉ - Commande refusée");
+        const serviceType = orderInput.orderType === 'delivery' ? 'livraison' : 'retrait';
         return { 
           success: false, 
-          error: `Créneau de livraison non disponible: ${verification.message}` 
+          error: `Créneau de ${serviceType} non disponible: ${verification.message}` 
         };
       }
       console.log("✅ Créneau vérifié et disponible, création de la commande...");
