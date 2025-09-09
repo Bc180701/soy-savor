@@ -94,21 +94,45 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
     const itemsToAdd: any[] = [];
 
+    // Calculer les sauces à ajouter (logique globale simplifiée)
     const freeSaucesCount = getFreeSaucesCount();
     const totalSaucesSelected = getTotalSelectedSauces();
     
+    let freeSaucesRemaining = freeSaucesCount;
+    
     selectedSauces.forEach(sauce => {
       if (sauce.quantity > 0) {
-        const freeSauces = Math.min(sauce.quantity, freeSaucesCount);
-        const paidSauces = Math.max(0, sauce.quantity - freeSauces);
+        // Calculer combien de cette sauce sont gratuites
+        const freeSaucesForThisSauce = Math.min(sauce.quantity, freeSaucesRemaining);
+        const paidSaucesForThisSauce = sauce.quantity - freeSaucesForThisSauce;
         
-        // Ajouter les sauces gratuites
-        if (freeSauces > 0) {
+        freeSaucesRemaining -= freeSaucesForThisSauce;
+        
+        // Ajouter une seule entrée avec le bon prix et description
+        if (sauce.quantity > 0) {
+          const isAllFree = freeSaucesForThisSauce === sauce.quantity;
+          const isAllPaid = freeSaucesForThisSauce === 0;
+          
+          let name = sauce.name;
+          let description = "";
+          let price = 0;
+          
+          if (isAllFree) {
+            description = `Sauce gratuite (${sauce.quantity}x)`;
+            price = 0;
+          } else if (isAllPaid) {
+            description = `Sauce supplémentaire (${sauce.quantity}x)`;
+            price = 0.5;
+          } else {
+            description = `${freeSaucesForThisSauce}x gratuite + ${paidSaucesForThisSauce}x supplémentaire`;
+            price = paidSaucesForThisSauce * 0.5 / sauce.quantity; // Prix moyen par unité
+          }
+          
           itemsToAdd.push({
-            id: `sauce-free-${sauce.name}-${Date.now()}`,
-            name: `${sauce.name}`,
-            description: `Sauce gratuite (${freeSauces}x)`,
-            price: 0,
+            id: `sauce-${sauce.name}-${Date.now()}`,
+            name: name,
+            description: description,
+            price: price,
             imageUrl: "",
             category: "Sauce" as const,
             restaurant_id: restaurantId,
@@ -121,29 +145,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             pieces: null,
             prepTime: null
           });
-          addItem(itemsToAdd[itemsToAdd.length - 1], freeSauces);
-        }
-        
-        // Ajouter les sauces payantes
-        if (paidSauces > 0) {
-          itemsToAdd.push({
-            id: `sauce-paid-${sauce.name}-${Date.now()}`,
-            name: `${sauce.name}`,
-            description: `Sauce supplémentaire (${paidSauces}x)`,
-            price: 0.5,
-            imageUrl: "",
-            category: "Sauce" as const,
-            restaurant_id: restaurantId,
-            isVegetarian: true,
-            isSpicy: false,
-            isNew: false,
-            isBestSeller: false,
-            isGlutenFree: true,
-            allergens: [],
-            pieces: null,
-            prepTime: null
-          });
-          addItem(itemsToAdd[itemsToAdd.length - 1], paidSauces);
+          addItem(itemsToAdd[itemsToAdd.length - 1], sauce.quantity);
         }
       }
     });
@@ -313,9 +315,23 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
               const selectedSauce = selectedSauces.find(s => s.name === sauce);
               const isSelected = !!selectedSauce;
               const quantity = selectedSauce?.quantity || 0;
-              const freeSauces = getFreeSaucesCount();
+              
+              // Calculer les coûts de manière globale et simple
+              const freeSaucesCount = getFreeSaucesCount();
               const totalSelected = getTotalSelectedSauces();
-              const extraCost = Math.max(0, quantity - Math.max(0, freeSauces - (totalSelected - quantity))) * 0.5;
+              
+              // Calculer combien de sauces gratuites il reste avant cette sauce
+              let freeSaucesUsedBefore = 0;
+              selectedSauces.forEach(s => {
+                if (s.name !== sauce) {
+                  freeSaucesUsedBefore += s.quantity;
+                }
+              });
+              
+              const freeSaucesRemaining = Math.max(0, freeSaucesCount - freeSaucesUsedBefore);
+              const freeSaucesForThisSauce = Math.min(quantity, freeSaucesRemaining);
+              const paidSaucesForThisSauce = Math.max(0, quantity - freeSaucesForThisSauce);
+              const totalCost = paidSaucesForThisSauce * 0.5;
               
               return (
                 <div key={sauce} className={`space-y-2 p-3 border rounded-lg ${isDisabled ? 'bg-gray-100' : 'bg-white'}`}>
@@ -332,14 +348,24 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                     >
                       {sauce} {isDisabled && "(déjà ajouté)"}
                     </label>
-                    {extraCost > 0 && (
-                      <span className="text-xs text-orange-600 font-medium">
-                        +{extraCost.toFixed(2)}€
-                      </span>
+                    {isSelected && (
+                      <div className="text-xs">
+                        {freeSaucesForThisSauce > 0 && (
+                          <span className="text-green-600 font-medium">
+                            {freeSaucesForThisSauce}x gratuit
+                          </span>
+                        )}
+                        {freeSaucesForThisSauce > 0 && paidSaucesForThisSauce > 0 && <span className="text-gray-400"> + </span>}
+                        {paidSaucesForThisSauce > 0 && (
+                          <span className="text-orange-600 font-medium">
+                            {paidSaucesForThisSauce}x +{totalCost.toFixed(2)}€
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                   
-                  {isSelected && (
+                  {isSelected && sauce !== "Aucune" && (
                     <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
                       <span className="text-sm text-gray-600">Quantité:</span>
                       <div className="flex items-center gap-2">
