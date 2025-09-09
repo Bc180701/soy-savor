@@ -23,8 +23,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [baguettesSelected, setBaguettesSelected] = useState<boolean>(false);
   const [couvertsSelected, setCouvertsSelected] = useState<boolean>(false);
   const [cuilleresSelected, setCuilleresSelected] = useState<boolean>(false);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-  const { addItem, selectedRestaurantId, items, getTotalPrice } = useCart();
+  const { addItem, removeItem, selectedRestaurantId, items, getTotalPrice } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
   const saucesOptions = [
@@ -257,34 +256,177 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     setBaguettesSelected(false);
     setCouvertsSelected(false);
     setCuilleresSelected(false);
-    setHasSubmitted(true);
+  };
+
+  const addSauceToCart = (sauce: string, quantity: number) => {
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+
+    // Calculer les sauces gratuites/payantes
+    const freeSaucesCount = getFreeSaucesCount();
+    const existingSauceItems = items.filter(item => 
+      item.menuItem.category === "Sauce" && 
+      (item.menuItem.name === sauce || item.menuItem.name.includes(sauce))
+    );
+    
+    // Supprimer les anciennes entrées de cette sauce
+    existingSauceItems.forEach(item => {
+      removeItem(item.menuItem.id);
+    });
+
+    if (quantity > 0) {
+      // Calculer combien de sauces sont déjà dans le panier (autres que celle-ci)
+      const otherSauceItems = items.filter(item => 
+        item.menuItem.category === "Sauce" && 
+        !item.menuItem.name.includes(sauce)
+      );
+      const otherSaucesCount = otherSauceItems.reduce((sum, item) => sum + item.quantity, 0);
+      
+      const freeSaucesRemaining = Math.max(0, freeSaucesCount - otherSaucesCount);
+      const freeSaucesForThisSauce = Math.min(quantity, freeSaucesRemaining);
+      const paidSaucesForThisSauce = quantity - freeSaucesForThisSauce;
+      
+      let description = "";
+      let price = 0;
+      
+      if (freeSaucesForThisSauce > 0 && paidSaucesForThisSauce > 0) {
+        description = `${freeSaucesForThisSauce}x gratuite + ${paidSaucesForThisSauce}x supplémentaire`;
+        price = paidSaucesForThisSauce * 0.5 / quantity;
+      } else if (freeSaucesForThisSauce > 0) {
+        description = `Sauce gratuite (${quantity}x)`;
+        price = 0;
+      } else {
+        description = `Sauce supplémentaire (${quantity}x)`;
+        price = 0.5;
+      }
+      
+      const sauceItem = {
+        id: `sauce-${sauce}-${Date.now()}`,
+        name: sauce,
+        description: description,
+        price: price,
+        imageUrl: "",
+        category: "Sauce" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      
+      addItem(sauceItem, quantity);
+    }
   };
 
   const handleSauceToggle = (sauce: string) => {
     const existingSauce = selectedSauces.find(s => s.name === sauce);
     if (existingSauce) {
-      setSelectedSauces(selectedSauces.filter(s => s.name !== sauce));
+      const newSauces = selectedSauces.filter(s => s.name !== sauce);
+      setSelectedSauces(newSauces);
+      addSauceToCart(sauce, 0); // Supprimer du panier
     } else {
-      setSelectedSauces([...selectedSauces, { name: sauce, quantity: 1 }]);
+      const newSauces = [...selectedSauces, { name: sauce, quantity: 1 }];
+      setSelectedSauces(newSauces);
+      if (sauce !== "Aucune") {
+        addSauceToCart(sauce, 1); // Ajouter au panier
+      }
     }
   };
 
   const updateSauceQuantity = (sauce: string, change: number) => {
-    setSelectedSauces(prev => 
-      prev.map(s => 
+    setSelectedSauces(prev => {
+      const newSauces = prev.map(s => 
         s.name === sauce 
           ? { ...s, quantity: Math.max(0, s.quantity + change) }
           : s
-      ).filter(s => s.quantity > 0)
-    );
+      ).filter(s => s.quantity > 0);
+      
+      // Ajouter automatiquement au panier avec la nouvelle quantité
+      const updatedSauce = newSauces.find(s => s.name === sauce);
+      const newQuantity = updatedSauce ? updatedSauce.quantity : 0;
+      addSauceToCart(sauce, newQuantity);
+      
+      return newSauces;
+    });
+  };
+
+  const addAccompagnementToCart = (accompagnements: string[]) => {
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+
+    // Supprimer l'ancien item d'accompagnements
+    const existingAccompagnementItems = items.filter(item => item.menuItem.category === "Accompagnement");
+    existingAccompagnementItems.forEach(item => {
+      removeItem(item.menuItem.id);
+    });
+
+    if (accompagnements.length > 0) {
+      const accompagnementItem = {
+        id: `accompagnements-${Date.now()}`,
+        name: `Accompagnements: ${accompagnements.join(', ')}`,
+        description: "Accompagnements pour la commande",
+        price: 0,
+        imageUrl: "",
+        category: "Accompagnement" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      addItem(accompagnementItem, 1);
+    }
+  };
+
+  const addAccessoireToCart = (name: string, description: string, isSelected: boolean) => {
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+
+    // Supprimer l'ancien item de cet accessoire
+    const existingAccessoireItems = items.filter(item => item.menuItem.name === name);
+    existingAccessoireItems.forEach(item => {
+      removeItem(item.menuItem.id);
+    });
+
+    if (isSelected) {
+      const accessoireItem = {
+        id: `${name.toLowerCase()}-${Date.now()}`,
+        name: name,
+        description: description,
+        price: 0,
+        imageUrl: "",
+        category: "Accessoire" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      addItem(accessoireItem, 1);
+    }
   };
 
   const handleAccompagnementToggle = (accompagnement: string) => {
+    let newAccompagnements;
     if (selectedAccompagnements.includes(accompagnement)) {
-      setSelectedAccompagnements(selectedAccompagnements.filter(a => a !== accompagnement));
+      newAccompagnements = selectedAccompagnements.filter(a => a !== accompagnement);
     } else {
-      setSelectedAccompagnements([...selectedAccompagnements, accompagnement]);
+      newAccompagnements = [...selectedAccompagnements, accompagnement];
     }
+    setSelectedAccompagnements(newAccompagnements);
+    addAccompagnementToCart(newAccompagnements);
   };
 
   return (
@@ -431,7 +573,12 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             <Checkbox
               id="baguettes"
               checked={baguettesSelected}
-              onCheckedChange={(checked) => !isBaguettesDisabled && setBaguettesSelected(checked as boolean)}
+              onCheckedChange={(checked) => {
+                if (!isBaguettesDisabled) {
+                  setBaguettesSelected(checked as boolean);
+                  addAccessoireToCart("Baguettes", "Baguettes japonaises demandées", checked as boolean);
+                }
+              }}
               disabled={isBaguettesDisabled}
             />
             <label htmlFor="baguettes" className={`text-sm font-medium flex-1 ${isBaguettesDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
@@ -447,7 +594,12 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             <Checkbox
               id="couverts"
               checked={couvertsSelected}
-              onCheckedChange={(checked) => !isCouvertsDisabled && setCouvertsSelected(checked as boolean)}
+              onCheckedChange={(checked) => {
+                if (!isCouvertsDisabled) {
+                  setCouvertsSelected(checked as boolean);
+                  addAccessoireToCart("Couverts", "Couverts demandés", checked as boolean);
+                }
+              }}
               disabled={isCouvertsDisabled}
             />
             <label htmlFor="couverts" className={`text-sm font-medium flex-1 ${isCouvertsDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
@@ -463,25 +615,18 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             <Checkbox
               id="cuilleres"
               checked={cuilleresSelected}
-              onCheckedChange={(checked) => !isCuilleresDisabled && setCuilleresSelected(checked as boolean)}
+              onCheckedChange={(checked) => {
+                if (!isCuilleresDisabled) {
+                  setCuilleresSelected(checked as boolean);
+                  addAccessoireToCart("Cuillères", "Cuillères demandées", checked as boolean);
+                }
+              }}
               disabled={isCuilleresDisabled}
             />
             <label htmlFor="cuilleres" className={`text-sm font-medium flex-1 ${isCuilleresDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
               Cuillères {isCuilleresDisabled && "(déjà ajouté)"}
             </label>
           </div>
-        </div>
-
-        {/* Bouton pour ajouter tous les extras sélectionnés */}
-        <div className="pt-4">
-          <Button
-            type="button"
-            onClick={handleAddAccompagnements}
-            className="w-full bg-gold-600 hover:bg-gold-700 text-white"
-            disabled={getTotalSelectedSauces() === 0 && selectedAccompagnements.length === 0 && !baguettesSelected && !couvertsSelected && !cuilleresSelected}
-          >
-            Ajouter les accompagnements sélectionnés
-          </Button>
         </div>
       </CardContent>
     </Card>
