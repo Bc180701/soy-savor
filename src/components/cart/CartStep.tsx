@@ -58,12 +58,11 @@ export const CartStep = ({
   const orderTotal = subtotal - discount;
   const isCartEmpty = items.length === 0;
   
-  // Vérifier qu'une SAUCE (0€) a bien été AJOUTÉE au panier via le bouton "Ajouter mes accompagnements"
+  // Vérifier qu'une SAUCE (gratuite OU payante) a bien été AJOUTÉE au panier via le bouton "Ajouter mes accompagnements"
   const areExtrasValid = items.some((it) => {
     const nm = it.menuItem?.name || (it as any).name;
     const cat = it.menuItem?.category || (it as any).category;
-    const price = it.menuItem?.price ?? (it as any).price;
-    return price === 0 && (
+    return (
       (typeof nm === 'string' && nm.startsWith('Sauces:'))
       || (typeof cat === 'string' && cat === 'Sauce')
     );
