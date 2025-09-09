@@ -10,7 +10,7 @@ interface CartExtrasSectionProps {
 }
 
 export interface CartExtras {
-  sauces: string[];
+  sauces: { name: string; quantity: number }[];
   accompagnements: string[];
   baguettes: boolean;
   couverts: boolean;
@@ -18,13 +18,13 @@ export interface CartExtras {
 }
 
 export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) => {
-  const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
+  const [selectedSauces, setSelectedSauces] = useState<{ name: string; quantity: number }[]>([]);
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<string[]>([]);
   const [baguettesSelected, setBaguettesSelected] = useState<boolean>(false);
   const [couvertsSelected, setCouvertsSelected] = useState<boolean>(false);
   const [cuilleresSelected, setCuilleresSelected] = useState<boolean>(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const { addItem, selectedRestaurantId, items } = useCart();
+  const { addItem, selectedRestaurantId, items, total } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
   const saucesOptions = [
@@ -37,6 +37,15 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     "Wasabi",
     "Gingembre"
   ];
+
+  // Calculer le nombre de sauces gratuites selon le total du panier
+  const getFreeSaucesCount = () => {
+    return Math.floor(total / 10);
+  };
+
+  const getTotalSelectedSauces = () => {
+    return selectedSauces.reduce((sum, sauce) => sum + sauce.quantity, 0);
+  };
 
   // Vérifier quels accompagnements sont déjà dans le panier
   const getDisabledSauces = () => {
@@ -84,25 +93,59 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
     const itemsToAdd: any[] = [];
 
-    if (selectedSauces.length > 0) {
-      itemsToAdd.push({
-        id: `sauces-${Date.now()}`,
-        name: `Sauces: ${selectedSauces.join(', ')}`,
-        description: "Sauces pour la commande",
-        price: 0,
-        imageUrl: "",
-        category: "Sauce" as const,
-        restaurant_id: restaurantId,
-        isVegetarian: true,
-        isSpicy: false,
-        isNew: false,
-        isBestSeller: false,
-        isGlutenFree: true,
-        allergens: [],
-        pieces: null,
-        prepTime: null
-      });
-    }
+    const freeSaucesCount = getFreeSaucesCount();
+    const totalSaucesSelected = getTotalSelectedSauces();
+    
+    selectedSauces.forEach(sauce => {
+      if (sauce.quantity > 0) {
+        const freeSauces = Math.min(sauce.quantity, freeSaucesCount);
+        const paidSauces = Math.max(0, sauce.quantity - freeSauces);
+        
+        // Ajouter les sauces gratuites
+        if (freeSauces > 0) {
+          itemsToAdd.push({
+            id: `sauce-free-${sauce.name}-${Date.now()}`,
+            name: `${sauce.name}`,
+            description: `Sauce gratuite (${freeSauces}x)`,
+            price: 0,
+            imageUrl: "",
+            category: "Sauce" as const,
+            restaurant_id: restaurantId,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          });
+          addItem(itemsToAdd[itemsToAdd.length - 1], freeSauces);
+        }
+        
+        // Ajouter les sauces payantes
+        if (paidSauces > 0) {
+          itemsToAdd.push({
+            id: `sauce-paid-${sauce.name}-${Date.now()}`,
+            name: `${sauce.name}`,
+            description: `Sauce supplémentaire (${paidSauces}x)`,
+            price: 0.5,
+            imageUrl: "",
+            category: "Sauce" as const,
+            restaurant_id: restaurantId,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          });
+          addItem(itemsToAdd[itemsToAdd.length - 1], paidSauces);
+        }
+      }
+    });
 
     if (selectedAccompagnements.length > 0) {
       itemsToAdd.push({
@@ -184,9 +227,27 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       });
     }
 
-    if (itemsToAdd.length === 0) return;
-
-    itemsToAdd.forEach((it) => addItem(it, 1));
+    // Les sauces sont déjà ajoutées individuellement ci-dessus
+    // Ajouter les autres items normalement
+    if (selectedAccompagnements.length > 0) {
+      const accompItem = itemsToAdd.find(item => item.category === "Accompagnement");
+      if (accompItem) addItem(accompItem, 1);
+    }
+    
+    if (baguettesSelected) {
+      const baguettesItem = itemsToAdd.find(item => item.name === "Baguettes");
+      if (baguettesItem) addItem(baguettesItem, 1);
+    }
+    
+    if (couvertsSelected) {
+      const couvertsItem = itemsToAdd.find(item => item.name === "Couverts");
+      if (couvertsItem) addItem(couvertsItem, 1);
+    }
+    
+    if (cuilleresSelected) {
+      const cuilleresItem = itemsToAdd.find(item => item.name === "Cuillères");
+      if (cuilleresItem) addItem(cuilleresItem, 1);
+    }
 
     setSelectedSauces([]);
     setSelectedAccompagnements([]);
@@ -197,11 +258,22 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   };
 
   const handleSauceToggle = (sauce: string) => {
-    if (selectedSauces.includes(sauce)) {
-      setSelectedSauces(selectedSauces.filter(s => s !== sauce));
+    const existingSauce = selectedSauces.find(s => s.name === sauce);
+    if (existingSauce) {
+      setSelectedSauces(selectedSauces.filter(s => s.name !== sauce));
     } else {
-      setSelectedSauces([...selectedSauces, sauce]);
+      setSelectedSauces([...selectedSauces, { name: sauce, quantity: 1 }]);
     }
+  };
+
+  const updateSauceQuantity = (sauce: string, change: number) => {
+    setSelectedSauces(prev => 
+      prev.map(s => 
+        s.name === sauce 
+          ? { ...s, quantity: Math.max(0, s.quantity + change) }
+          : s
+      ).filter(s => s.quantity > 0)
+    );
   };
 
   const handleAccompagnementToggle = (accompagnement: string) => {
@@ -230,24 +302,69 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🥢 Sauces
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+              {getFreeSaucesCount()} gratuite{getFreeSaucesCount() > 1 ? 's' : ''} (1 tous les 10€)
+            </span>
           </h4>
           <div className="grid grid-cols-1 gap-3">
             {saucesOptions.map((sauce) => {
               const isDisabled = disabledSauces.includes(sauce);
+              const selectedSauce = selectedSauces.find(s => s.name === sauce);
+              const isSelected = !!selectedSauce;
+              const quantity = selectedSauce?.quantity || 0;
+              const freeSauces = getFreeSaucesCount();
+              const totalSelected = getTotalSelectedSauces();
+              const extraCost = Math.max(0, quantity - Math.max(0, freeSauces - (totalSelected - quantity))) * 0.5;
+              
               return (
-                <div key={sauce} className={`flex items-center space-x-3 p-3 border rounded-lg ${isDisabled ? 'bg-gray-100' : 'bg-white'}`}>
-                  <Checkbox
-                    id={`sauce-${sauce}`}
-                    checked={selectedSauces.includes(sauce)}
-                    onCheckedChange={() => !isDisabled && handleSauceToggle(sauce)}
-                    disabled={isDisabled}
-                  />
-                  <label 
-                    htmlFor={`sauce-${sauce}`} 
-                    className={`text-sm font-medium flex-1 ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}
-                  >
-                    {sauce} {isDisabled && "(déjà ajouté)"}
-                  </label>
+                <div key={sauce} className={`space-y-2 p-3 border rounded-lg ${isDisabled ? 'bg-gray-100' : 'bg-white'}`}>
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`sauce-${sauce}`}
+                      checked={isSelected}
+                      onCheckedChange={() => !isDisabled && handleSauceToggle(sauce)}
+                      disabled={isDisabled}
+                    />
+                    <label 
+                      htmlFor={`sauce-${sauce}`} 
+                      className={`text-sm font-medium flex-1 ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      {sauce} {isDisabled && "(déjà ajouté)"}
+                    </label>
+                    {extraCost > 0 && (
+                      <span className="text-xs text-orange-600 font-medium">
+                        +{extraCost.toFixed(2)}€
+                      </span>
+                    )}
+                  </div>
+                  
+                  {isSelected && (
+                    <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <span className="text-sm text-gray-600">Quantité:</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateSauceQuantity(sauce, -1)}
+                          disabled={quantity <= 1}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-medium">{quantity}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateSauceQuantity(sauce, 1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -334,7 +451,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
             type="button"
             onClick={handleAddAccompagnements}
             className="w-full bg-gold-600 hover:bg-gold-700 text-white"
-            disabled={selectedSauces.length === 0 && selectedAccompagnements.length === 0 && !baguettesSelected && !couvertsSelected && !cuilleresSelected}
+            disabled={getTotalSelectedSauces() === 0 && selectedAccompagnements.length === 0 && !baguettesSelected && !couvertsSelected && !cuilleresSelected}
           >
             Ajouter les accompagnements sélectionnés
           </Button>
