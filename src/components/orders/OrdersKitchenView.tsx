@@ -154,7 +154,7 @@ const OrdersKitchenView = ({
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-lg">
-                    Commande #{order.id.substring(0, 6)}
+                    {order.clientName || `Commande #${order.id.substring(0, 6)}`}
                   </CardTitle>
                   <div className="flex items-center space-x-1 text-gray-600">
                     <Clock className="h-4 w-4" />
