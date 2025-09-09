@@ -587,58 +587,50 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         {/* Baguettes */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🥢 Baguettes</h4>
-          <div className={`space-y-2 p-3 border rounded-lg ${isBaguettesDisabled ? 'bg-gray-100' : 'bg-white'}`}>
-            <div className="flex items-center space-x-3">
-              <Checkbox
-                id="baguettes"
-                checked={baguettesSelected}
-                onCheckedChange={(checked) => {
-                  if (!isBaguettesDisabled) {
-                    setBaguettesSelected(checked as boolean);
-                    if (checked) {
-                      addAccessoireToCart("Baguettes", `Baguettes japonaises (${baguettesQuantity}x)`, true);
-                    } else {
-                      addAccessoireToCart("Baguettes", "", false);
+          <div className="grid grid-cols-1 gap-3">
+            <div className={`space-y-2 p-3 border rounded-lg ${isBaguettesDisabled ? 'bg-gray-100' : 'bg-white'}`}>
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="baguettes"
+                  checked={baguettesSelected}
+                  onCheckedChange={(checked) => {
+                    if (!isBaguettesDisabled) {
+                      setBaguettesSelected(checked as boolean);
+                      if (!checked) {
+                        setBaguettesQuantity(1);
+                      }
                     }
-                  }
-                }}
-                disabled={isBaguettesDisabled}
-              />
-              <label htmlFor="baguettes" className={`text-sm font-medium flex-1 ${isBaguettesDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
-                Baguettes japonaises {isBaguettesDisabled && "(déjà ajouté)"}
-              </label>
-            </div>
-            {baguettesSelected && !isBaguettesDisabled && (
-              <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                <span className="text-sm text-gray-600">Quantité :</span>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const newQuantity = Math.max(1, baguettesQuantity - 1);
-                      setBaguettesQuantity(newQuantity);
-                      addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true);
-                    }}
-                    disabled={baguettesQuantity <= 1}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="w-8 text-center font-medium">{baguettesQuantity}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const newQuantity = baguettesQuantity + 1;
-                      setBaguettesQuantity(newQuantity);
-                      addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true);
-                    }}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
+                  }}
+                  disabled={isBaguettesDisabled}
+                />
+                <label htmlFor="baguettes" className={`text-sm font-medium flex-1 ${isBaguettesDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
+                  Baguettes japonaises {isBaguettesDisabled && "(déjà ajouté)"}
+                </label>
               </div>
-            )}
+              {baguettesSelected && !isBaguettesDisabled && (
+                <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                  <span className="text-sm text-gray-600">Quantité :</span>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBaguettesQuantity(Math.max(1, baguettesQuantity - 1))}
+                      disabled={baguettesQuantity <= 1}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="w-8 text-center font-medium">{baguettesQuantity}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBaguettesQuantity(baguettesQuantity + 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
