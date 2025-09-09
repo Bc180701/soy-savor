@@ -111,53 +111,59 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
     const itemsToAdd: any[] = [];
 
-    // Définir les limites spécifiques par sauce
-    const sauceLimits: { [key: string]: number } = {
-      "Soja sucrée": 2,  // 2 sauces gratuites max
-      "Soja salée": 1,   // 1 sauce gratuite max
-      "Aucune": 999      // Pas de limite pour "Aucune"
-    };
+    // Calculer les sauces à ajouter (logique globale simplifiée)
+    const freeSaucesCount = getFreeSaucesCount();
+    const totalSaucesSelected = getTotalSelectedSauces();
+    
+    let freeSaucesRemaining = freeSaucesCount;
     
     selectedSauces.forEach(sauce => {
       if (sauce.quantity > 0) {
-        const freeLimit = sauceLimits[sauce.name] || 0;
-        const freeSaucesForThisSauce = Math.min(sauce.quantity, freeLimit);
-        const paidSaucesForThisSauce = Math.max(0, sauce.quantity - freeLimit);
+        // Calculer combien de cette sauce sont gratuites
+        const freeSaucesForThisSauce = Math.min(sauce.quantity, freeSaucesRemaining);
+        const paidSaucesForThisSauce = sauce.quantity - freeSaucesForThisSauce;
         
-        let name = sauce.name;
-        let description = "";
-        let price = 0;
+        freeSaucesRemaining -= freeSaucesForThisSauce;
         
-        if (freeSaucesForThisSauce > 0 && paidSaucesForThisSauce > 0) {
-          description = `${freeSaucesForThisSauce}x gratuite + ${paidSaucesForThisSauce}x supplémentaire`;
-          // Prix moyen par sauce = (nombre payantes * 0.17€) / quantité totale
-          price = (paidSaucesForThisSauce * 0.17) / sauce.quantity;
-        } else if (freeSaucesForThisSauce > 0) {
-          description = `Sauce gratuite (${sauce.quantity}x)`;
-          price = 0;
-        } else {
-          description = `Sauce supplémentaire (${sauce.quantity}x)`;
-          price = 0.17; // Prix unitaire pour sauces supplémentaires
+        // Ajouter une seule entrée avec le bon prix et description
+        if (sauce.quantity > 0) {
+          const isAllFree = freeSaucesForThisSauce === sauce.quantity;
+          const isAllPaid = freeSaucesForThisSauce === 0;
+          
+          let name = sauce.name;
+          let description = "";
+          let price = 0;
+          
+          if (isAllFree) {
+            description = `Sauce gratuite (${sauce.quantity}x)`;
+            price = 0;
+          } else if (isAllPaid) {
+            description = `Sauce supplémentaire (${sauce.quantity}x)`;
+            price = 0.5;
+          } else {
+            description = `${freeSaucesForThisSauce}x gratuite + ${paidSaucesForThisSauce}x supplémentaire`;
+            price = paidSaucesForThisSauce * 0.5 / sauce.quantity; // Prix moyen par unité
+          }
+          
+          itemsToAdd.push({
+            id: `sauce-${sauce.name}-${Date.now()}`,
+            name: name,
+            description: description,
+            price: price,
+            imageUrl: "",
+            category: "Sauce" as const,
+            restaurant_id: restaurantId,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          });
+          addItem(itemsToAdd[itemsToAdd.length - 1], sauce.quantity);
         }
-        
-        itemsToAdd.push({
-          id: `sauce-${sauce.name}-${Date.now()}`,
-          name: name,
-          description: description,
-          price: price,
-          imageUrl: "",
-          category: "Sauce" as const,
-          restaurant_id: restaurantId,
-          isVegetarian: true,
-          isSpicy: false,
-          isNew: false,
-          isBestSeller: false,
-          isGlutenFree: true,
-          allergens: [],
-          pieces: null,
-          prepTime: null
-        });
-        addItem(itemsToAdd[itemsToAdd.length - 1], sauce.quantity);
       }
     });
 
@@ -275,41 +281,42 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
-    // Définir les limites spécifiques par sauce
-    const sauceLimits: { [key: string]: number } = {
-      "Soja sucrée": 2,  // 2 sauces gratuites max
-      "Soja salée": 1,   // 1 sauce gratuite max
-      "Aucune": 999      // Pas de limite pour "Aucune"
-    };
-
-    // Supprimer les anciennes entrées de cette sauce
+    // Calculer les sauces gratuites/payantes
+    const freeSaucesCount = getFreeSaucesCount();
     const existingSauceItems = items.filter(item => 
       item.menuItem.category === "Sauce" && 
       (item.menuItem.name === sauce || item.menuItem.name.includes(sauce))
     );
     
+    // Supprimer les anciennes entrées de cette sauce
     existingSauceItems.forEach(item => {
       removeItem(item.menuItem.id);
     });
 
     if (quantity > 0) {
-      const freeLimit = sauceLimits[sauce] || 0;
-      const freeSaucesForThisSauce = Math.min(quantity, freeLimit);
-      const paidSaucesForThisSauce = Math.max(0, quantity - freeLimit);
+      // Calculer combien de sauces sont déjà dans le panier (autres que celle-ci)
+      const otherSauceItems = items.filter(item => 
+        item.menuItem.category === "Sauce" && 
+        !item.menuItem.name.includes(sauce)
+      );
+      const otherSaucesCount = otherSauceItems.reduce((sum, item) => sum + item.quantity, 0);
+      
+      const freeSaucesRemaining = Math.max(0, freeSaucesCount - otherSaucesCount);
+      const freeSaucesForThisSauce = Math.min(quantity, freeSaucesRemaining);
+      const paidSaucesForThisSauce = quantity - freeSaucesForThisSauce;
       
       let description = "";
       let price = 0;
       
       if (freeSaucesForThisSauce > 0 && paidSaucesForThisSauce > 0) {
         description = `${freeSaucesForThisSauce}x gratuite + ${paidSaucesForThisSauce}x supplémentaire`;
-        // Prix moyen par sauce = (nombre payantes * 0.17€) / quantité totale
-        price = (paidSaucesForThisSauce * 0.17) / quantity;
+        price = paidSaucesForThisSauce * 0.5 / quantity;
       } else if (freeSaucesForThisSauce > 0) {
         description = `Sauce gratuite (${quantity}x)`;
         price = 0;
       } else {
         description = `Sauce supplémentaire (${quantity}x)`;
-        price = 0.17; // Prix unitaire pour sauces supplémentaires
+        price = 0.5;
       }
       
       const sauceItem = {
@@ -470,17 +477,22 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
               const isSelected = !!selectedSauce;
               const quantity = selectedSauce?.quantity || 0;
               
-              // Définir les limites spécifiques par sauce pour l'affichage
-              const sauceLimits: { [key: string]: number } = {
-                "Soja sucrée": 2,  // 2 sauces gratuites max
-                "Soja salée": 1,   // 1 sauce gratuite max
-                "Aucune": 999      // Pas de limite pour "Aucune"
-              };
+              // Calculer les coûts de manière globale et simple
+              const freeSaucesCount = getFreeSaucesCount();
+              const totalSelected = getTotalSelectedSauces();
               
-              const freeLimit = sauceLimits[sauce] || 0;
-              const freeSaucesForThisSauce = Math.min(quantity, freeLimit);
-              const paidSaucesForThisSauce = Math.max(0, quantity - freeLimit);
-              const totalCost = paidSaucesForThisSauce * 0.17;
+              // Calculer combien de sauces gratuites il reste avant cette sauce
+              let freeSaucesUsedBefore = 0;
+              selectedSauces.forEach(s => {
+                if (s.name !== sauce) {
+                  freeSaucesUsedBefore += s.quantity;
+                }
+              });
+              
+              const freeSaucesRemaining = Math.max(0, freeSaucesCount - freeSaucesUsedBefore);
+              const freeSaucesForThisSauce = Math.min(quantity, freeSaucesRemaining);
+              const paidSaucesForThisSauce = Math.max(0, quantity - freeSaucesForThisSauce);
+              const totalCost = paidSaucesForThisSauce * 0.5;
               
               return (
                 <div key={sauce} className={`space-y-2 p-3 border rounded-lg ${isDisabled ? 'bg-gray-100' : 'bg-white'}`}>
