@@ -21,6 +21,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [selectedSauces, setSelectedSauces] = useState<{ name: string; quantity: number }[]>([]);
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<string[]>([]);
   const [baguettesSelected, setBaguettesSelected] = useState<boolean>(false);
+  const [baguettesQuantity, setBaguettesQuantity] = useState<number>(1);
   const [couvertsSelected, setCouvertsSelected] = useState<boolean>(false);
   const [cuilleresSelected, setCuilleresSelected] = useState<boolean>(false);
   const { addItem, removeItem, selectedRestaurantId, items, getTotalPrice } = useCart();
@@ -189,7 +190,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       itemsToAdd.push({
         id: `baguettes-${Date.now()}`,
         name: `Baguettes`,
-        description: "Baguettes japonaises demandées",
+        description: `Baguettes japonaises (${baguettesQuantity}x)`,
         price: 0,
         imageUrl: "",
         category: "Accessoire" as const,
@@ -254,7 +255,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     
     if (baguettesSelected) {
       const baguettesItem = itemsToAdd.find(item => item.name === "Baguettes");
-      if (baguettesItem) addItem(baguettesItem, 1);
+      if (baguettesItem) addItem(baguettesItem, baguettesQuantity);
     }
     
     if (couvertsSelected) {
@@ -270,6 +271,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     setSelectedSauces([]);
     setSelectedAccompagnements([]);
     setBaguettesSelected(false);
+    setBaguettesQuantity(1);
     setCouvertsSelected(false);
     setCuilleresSelected(false);
   };
@@ -585,21 +587,58 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         {/* Baguettes */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800">🥢 Baguettes</h4>
-          <div className={`flex items-center space-x-3 p-3 border rounded-lg ${isBaguettesDisabled ? 'bg-gray-100' : 'bg-white'}`}>
-            <Checkbox
-              id="baguettes"
-              checked={baguettesSelected}
-              onCheckedChange={(checked) => {
-                if (!isBaguettesDisabled) {
-                  setBaguettesSelected(checked as boolean);
-                  addAccessoireToCart("Baguettes", "Baguettes japonaises demandées", checked as boolean);
-                }
-              }}
-              disabled={isBaguettesDisabled}
-            />
-            <label htmlFor="baguettes" className={`text-sm font-medium flex-1 ${isBaguettesDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
-              Baguettes japonaises {isBaguettesDisabled && "(déjà ajouté)"}
-            </label>
+          <div className={`space-y-2 p-3 border rounded-lg ${isBaguettesDisabled ? 'bg-gray-100' : 'bg-white'}`}>
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="baguettes"
+                checked={baguettesSelected}
+                onCheckedChange={(checked) => {
+                  if (!isBaguettesDisabled) {
+                    setBaguettesSelected(checked as boolean);
+                    if (checked) {
+                      addAccessoireToCart("Baguettes", `Baguettes japonaises (${baguettesQuantity}x)`, true);
+                    } else {
+                      addAccessoireToCart("Baguettes", "", false);
+                    }
+                  }
+                }}
+                disabled={isBaguettesDisabled}
+              />
+              <label htmlFor="baguettes" className={`text-sm font-medium flex-1 ${isBaguettesDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
+                Baguettes japonaises {isBaguettesDisabled && "(déjà ajouté)"}
+              </label>
+            </div>
+            {baguettesSelected && !isBaguettesDisabled && (
+              <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                <span className="text-sm text-gray-600">Quantité :</span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newQuantity = Math.max(1, baguettesQuantity - 1);
+                      setBaguettesQuantity(newQuantity);
+                      addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true);
+                    }}
+                    disabled={baguettesQuantity <= 1}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="w-8 text-center font-medium">{baguettesQuantity}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newQuantity = baguettesQuantity + 1;
+                      setBaguettesQuantity(newQuantity);
+                      addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true);
+                    }}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
