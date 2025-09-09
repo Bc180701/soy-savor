@@ -316,11 +316,16 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                                           transition: { duration: 0.3, ease: "easeInOut" }
                                         } : {}}
                                       >
-                                        <Button
-                                          onClick={() => handleAddToCart(item)}
-                                          className="bg-gold-500 hover:bg-gold-600 text-black rounded-full px-3 text-xs h-7"
-                                          size="sm"
-                                        >
+                                         <Button
+                                           onClick={() => handleAddToCart(item)}
+                                           className={`rounded-full px-3 text-xs h-7 ${
+                                             isBoxDuMidi(category) && isAfter2PM() 
+                                               ? 'bg-gray-300 hover:bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                               : 'bg-gold-500 hover:bg-gold-600 text-black'
+                                           }`}
+                                           size="sm"
+                                           disabled={isBoxDuMidi(category) && isAfter2PM()}
+                                         >
                                           <Plus className="mr-1 h-3 w-3" /> Ajouter
                                         </Button>
                                       </motion.div>
@@ -477,11 +482,16 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                                           transition: { duration: 0.3, ease: "easeInOut" }
                                         } : {}}
                                       >
-                                        <Button
-                                          onClick={() => handleAddToCart(item)}
-                                          className="bg-gold-500 hover:bg-gold-600 text-black rounded-full px-6"
-                                          size="sm"
-                                        >
+                                         <Button
+                                           onClick={() => handleAddToCart(item)}
+                                           className={`rounded-full px-6 ${
+                                             isBoxDuMidi(category) && isAfter2PM() 
+                                               ? 'bg-gray-300 hover:bg-gray-300 text-gray-500 cursor-not-allowed' 
+                                               : 'bg-gold-500 hover:bg-gold-600 text-black'
+                                           }`}
+                                           size="sm"
+                                           disabled={isBoxDuMidi(category) && isAfter2PM()}
+                                         >
                                           <Plus className="mr-2 h-4 w-4" /> Ajouter
                                         </Button>
                                       </motion.div>
