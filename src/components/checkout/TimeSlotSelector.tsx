@@ -303,9 +303,15 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
             console.log(`✅ LIVRAISON DISPONIBLE: ${timeValue} (${currentDeliveries}/1) - Restaurant: ${cartRestaurant?.name}`);
           }
         } else {
-          // Pour un retrait : pas de limitation de créneaux
-          isSlotFull = false;
-          console.log(`✅ RETRAIT: ${timeValue} - Pas de limitation`);
+          // Pour un retrait : limitation à 2 retraits par créneau
+          const currentPickups = orderCounts[timeValue]?.pickup || 0;
+          isSlotFull = currentPickups >= 2;
+          
+          if (isSlotFull) {
+            console.log(`🚫 CRÉNEAU RETRAIT BLOQUÉ: ${timeValue} (${currentPickups} retrait(s) déjà programmé(s)) - Restaurant: ${cartRestaurant?.name}`);
+          } else {
+            console.log(`✅ RETRAIT DISPONIBLE: ${timeValue} (${currentPickups}/2) - Restaurant: ${cartRestaurant?.name}`);
+          }
         }
 
         // Vérifier si le créneau est bloqué par l'admin
