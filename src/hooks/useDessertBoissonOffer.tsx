@@ -29,7 +29,7 @@ export const DessertBoissonOfferProvider = ({ children }: DessertBoissonOfferPro
     toast({
       title: "🎉 Offre spéciale débloquée !",
       description: "Ajoutez un dessert et recevez une boisson soft offerte !",
-      duration: 8000,
+      duration: 2000,
     });
   };
 
