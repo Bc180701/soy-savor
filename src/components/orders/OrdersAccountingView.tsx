@@ -216,7 +216,7 @@ const OrdersAccountingView = ({
               <CardHeader className="pb-2 px-3 py-2">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-sm">Commande #{order.id.substring(0, 6)}</CardTitle>
+                    <CardTitle className="text-sm">{order.clientName || 'Client'}</CardTitle>
                     <p className="text-xs text-gray-500">{formatDateMobile(order.scheduledFor)}</p>
                   </div>
                   <div className="text-right">
@@ -306,7 +306,7 @@ const OrdersAccountingView = ({
           <TableBody>
             {orders.map((order) => (
               <TableRow key={order.id} className="border-b hover:bg-gray-50">
-                <TableCell className="p-2 border">Commande #{order.id.substring(0, 8)}</TableCell>
+                <TableCell className="p-2 border">{order.clientName || 'Client'}</TableCell>
                 <TableCell className="p-2 border">{formatDate(order.scheduledFor)}</TableCell>
                 <TableCell className="p-2 border">
                   {order.orderType === 'delivery' ? 'Livraison' : 
