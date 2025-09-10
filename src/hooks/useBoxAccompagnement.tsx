@@ -30,8 +30,14 @@ export const useBoxAccompagnement = () => {
 
   // Fonction pour vérifier si un item est une box
   const isBoxItem = (item: MenuItem): boolean => {
-    const boxCategories = ['box', 'box_du_midi'];
-    return boxCategories.includes(item.category);
+    console.log("🟦 DEBUG: Vérification box pour item:", item.name, "category:", item.category);
+    
+    // Vérification plus flexible pour détecter toute catégorie contenant "box"
+    const isBox = item.category.toLowerCase().includes('box') || 
+                  ['box', 'box_du_midi', 'box_du_midi_stmartin'].includes(item.category);
+    
+    console.log("🟦 DEBUG: isBox result:", isBox);
+    return isBox;
   };
 
   // Fonction principale d'ajout au panier (appelée depuis ProductsDisplay)
