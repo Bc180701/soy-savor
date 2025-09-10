@@ -304,7 +304,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
           }
         } else {
           // Pour un retrait : limitation à 2 retraits par créneau
-          const currentPickups = orderCounts[timeValue]?.pickup || 0;
+          const currentPickups = pickupCounts[timeValue] || 0;
           isSlotFull = currentPickups >= 2;
           
           if (isSlotFull) {
