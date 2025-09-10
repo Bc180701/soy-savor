@@ -33,9 +33,15 @@ export const useCartWithRestaurant = () => {
     }
   };
 
+  // Fonction pour vérifier si un dessert déclenche l'offre boisson
+  const checkDessertForBoissonOffer = (item: MenuItem) => {
+    return item.category === 'desserts';
+  };
+
   return {
     ...cart,
     addItem: addItemWithRestaurant,
-    currentRestaurant
+    currentRestaurant,
+    checkDessertForBoissonOffer
   };
 };

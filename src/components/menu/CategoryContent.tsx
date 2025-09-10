@@ -13,6 +13,7 @@ import { generateProductImageUrl, generateProductImageAlt } from "@/utils/produc
 import { useBoxAccompagnement } from "@/hooks/useBoxAccompagnement";
 import { AccompagnementSelector } from "@/components/AccompagnementSelector";
 import { useToast } from "@/hooks/use-toast";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -27,6 +28,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { currentRestaurant } = useRestaurantContext();
   
   // Vérifier si c'est après 14h
   const isAfter2PM = () => {
@@ -45,7 +47,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     handleAddToCart: handleBoxAddToCart,
     handleAccompagnementSelected,
     handleCloseAccompagnementSelector,
-    pendingBoxItem
+    pendingBoxItem,
+    dessertBoissonOfferActive
   } = useBoxAccompagnement();
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
@@ -237,6 +240,12 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                           <div className="p-3 flex flex-col flex-1">
                             {/* Badges sans badge de catégorie */}
                             <div className="flex gap-1 mb-2 flex-wrap">
+                              {/* Badge spécial pour l'offre dessert/boisson */}
+                              {category.id === 'desserts' && dessertBoissonOfferActive && (
+                                <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white animate-pulse text-xs">
+                                  🍹 Boisson offerte !
+                                </Badge>
+                              )}
                               {item.isVegetarian && (
                                 <Badge variant="outline" className="border-green-500 text-green-700 text-xs">
                                   Végétarien
@@ -391,6 +400,12 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                               <div className="flex-1">
                                 {/* Badges sans badge de catégorie */}
                                 <div className="flex gap-2 mb-2 flex-wrap">
+                                  {/* Badge spécial pour l'offre dessert/boisson */}
+                                  {category.id === 'desserts' && dessertBoissonOfferActive && (
+                                    <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white animate-pulse text-xs">
+                                      🍹 Boisson offerte !
+                                    </Badge>
+                                  )}
                                   {item.isBestSeller && (
                                     <Badge className="bg-gold-600 text-white text-xs">
                                       Populaire

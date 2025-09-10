@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { MenuItem } from "@/types";
 import { useCartWithRestaurant } from "./useCartWithRestaurant";
+import { toast } from "@/hooks/use-toast";
 
 export const useBoxAccompagnement = () => {
   const [showAccompagnementSelector, setShowAccompagnementSelector] = useState(false);
@@ -10,10 +11,16 @@ export const useBoxAccompagnement = () => {
     specialInstructions?: string;
   } | null>(null);
   
+  // États pour l'offre dessert/boisson en cascade
+  const [hasSelectedFreeAccompagnement, setHasSelectedFreeAccompagnement] = useState(false);
+  const [dessertBoissonOfferActive, setDessertBoissonOfferActive] = useState(false);
+  const [showBoissonSelector, setShowBoissonSelector] = useState(false);
+  const [pendingDessertForBoisson, setPendingDessertForBoisson] = useState<MenuItem | null>(null);
+  
   // Flag pour éviter la double exécution lors de la fermeture du popup
   const hasProcessedSelection = useRef(false);
   
-  const { addItem } = useCartWithRestaurant();
+  const { addItem, checkDessertForBoissonOffer } = useCartWithRestaurant();
 
   const isBoxItem = (item: MenuItem) => {
     return item.category === 'box' || 
@@ -55,6 +62,17 @@ export const useBoxAccompagnement = () => {
         id: `accompagnement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }, 1, "Accompagnement offert avec box");
       
+      // ✨ ACTIVATION DE L'OFFRE DESSERT/BOISSON EN CASCADE
+      setHasSelectedFreeAccompagnement(true);
+      setDessertBoissonOfferActive(true);
+      
+      // Notification de l'offre débloquée
+      toast({
+        title: "🎉 Offre débloquée !",
+        description: "Achetez un dessert et recevez une boisson soft offerte !",
+        duration: 5000,
+      });
+      
       // Nettoyer les états
       setPendingBoxItem(null);
       setShowAccompagnementSelector(false);
@@ -75,11 +93,55 @@ export const useBoxAccompagnement = () => {
     setShowAccompagnementSelector(false);
   };
 
+  // Gestion de la sélection de boisson offerte
+  const handleBoissonSelected = (boisson: MenuItem) => {
+    console.log("🍹 Boisson offerte sélectionnée:", boisson.name);
+    
+    // Ajouter la boisson gratuite au panier
+    addItem({
+      ...boisson,
+      id: `boisson-offerte-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }, 1, "Boisson offerte avec dessert");
+    
+    // Désactiver l'offre (une seule fois par commande)
+    setDessertBoissonOfferActive(false);
+    setShowBoissonSelector(false);
+    setPendingDessertForBoisson(null);
+    
+    toast({
+      title: "🍹 Boisson ajoutée !",
+      description: `${boisson.name} offerte ajoutée à votre commande`,
+    });
+  };
+
+  const handleCloseBoissonSelector = () => {
+    console.log("🍹 Fermeture du popup boisson offerte");
+    setShowBoissonSelector(false);
+    setPendingDessertForBoisson(null);
+  };
+
+  // Fonction pour déclencher l'offre boisson quand un dessert est ajouté
+  const triggerBoissonOffer = (dessert: MenuItem) => {
+    if (dessertBoissonOfferActive) {
+      console.log("🍰 Déclenchement offre boisson pour dessert:", dessert.name);
+      setPendingDessertForBoisson(dessert);
+      setShowBoissonSelector(true);
+    }
+  };
+
   return {
     showAccompagnementSelector,
     handleAddToCart,
     handleAccompagnementSelected,
     handleCloseAccompagnementSelector,
-    pendingBoxItem
+    pendingBoxItem,
+    // Nouveaux états et fonctions pour l'offre dessert/boisson
+    hasSelectedFreeAccompagnement,
+    dessertBoissonOfferActive,
+    showBoissonSelector,
+    handleBoissonSelected,
+    handleCloseBoissonSelector,
+    triggerBoissonOffer,
+    pendingDessertForBoisson
   };
 };

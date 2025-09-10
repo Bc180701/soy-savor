@@ -17,6 +17,9 @@ import RestaurantSelectionDialog from "@/components/menu/RestaurantSelectionDial
 import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
 import { useCart } from "@/hooks/use-cart";
 import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
+import { useBoxAccompagnement } from "@/hooks/useBoxAccompagnement";
+import { AccompagnementSelector } from "@/components/AccompagnementSelector";
+import { BoissonOfferteSelector } from "@/components/BoissonOfferteSelector";
 import SEOHead from "@/components/SEOHead";
 import commanderHeroImage from "@/assets/commander-hero.jpg";
 
@@ -24,10 +27,26 @@ import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
 
 const CommanderContent = () => {
   const { toast } = useToast();
-  const { addItem: addToCart, checkRestaurantCompatibility, clearCart, selectedRestaurantId } = useCartWithRestaurant();
+  const { addItem: addToCart, checkRestaurantCompatibility, clearCart, selectedRestaurantId, checkDessertForBoissonOffer } = useCartWithRestaurant();
   const { setOrderingLocked } = useCart();
   const { isOrderingLocked, isLoading: isOrderingStatusLoading } = useOrderingLockStatus();
   const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
+  
+  // Hook pour gérer l'offre box avec accompagnement et boisson
+  const {
+    showAccompagnementSelector,
+    handleAddToCart: handleBoxAddToCart,
+    handleAccompagnementSelected,
+    handleCloseAccompagnementSelector,
+    pendingBoxItem,
+    hasSelectedFreeAccompagnement,
+    dessertBoissonOfferActive,
+    showBoissonSelector,
+    handleBoissonSelected,
+    handleCloseBoissonSelector,
+    triggerBoissonOffer,
+    pendingDessertForBoisson
+  } = useBoxAccompagnement();
   const [showRestaurantDialog, setShowRestaurantDialog] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -217,8 +236,23 @@ const CommanderContent = () => {
       clearCart();
     }
 
-    
-    addToCart(item, 1);
+    // 🍰 Vérifier si c'est un dessert ET si l'offre boisson est active
+    if (checkDessertForBoissonOffer(item) && dessertBoissonOfferActive) {
+      console.log("🍰 Dessert détecté avec offre boisson active:", item.name);
+      // Ajouter le dessert d'abord
+      addToCart(item, 1);
+      // Puis déclencher l'offre boisson
+      triggerBoissonOffer(item);
+      
+      toast({
+        title: "Dessert ajouté !",
+        description: `${item.name} ajouté. Choisissez votre boisson offerte !`,
+      });
+      return;
+    }
+
+    // 📦 Gérer les box avec la logique d'accompagnement
+    handleBoxAddToCart(item, 1);
     
     toast({
       title: "Ajouté au panier",
@@ -364,6 +398,22 @@ const CommanderContent = () => {
         )}
         </motion.div>
       </div>
+
+      {/* Popup de sélection d'accompagnement pour les box */}
+      <AccompagnementSelector
+        isOpen={showAccompagnementSelector}
+        onClose={handleCloseAccompagnementSelector}
+        onAccompagnementSelected={handleAccompagnementSelected}
+        restaurantId={currentRestaurant?.id}
+      />
+
+      {/* Popup de sélection de boisson offerte */}
+      <BoissonOfferteSelector
+        isOpen={showBoissonSelector}
+        onClose={handleCloseBoissonSelector}
+        onBoissonSelected={handleBoissonSelected}
+        restaurantId={currentRestaurant?.id}
+      />
     </>
   );
 };
