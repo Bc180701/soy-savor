@@ -432,7 +432,10 @@ const CommanderContent = () => {
         {showDessertSelector && (
           <DessertSelector
             isOpen={showDessertSelector}
-            onClose={declineGourmetOffer}
+            onClose={() => {
+              // Ne pas désactiver l'offre quand on ferme le popup dessert
+              // car on veut pouvoir afficher ensuite le popup boisson
+            }}
             onDessertSelected={handleDessertSelectedForOffer}
           />
         )}

@@ -75,7 +75,10 @@ export const DessertBoissonOfferProvider = ({ children }: DessertBoissonOfferPro
     });
     
     // Afficher le popup boisson immédiatement
-    setShowBoissonSelector(true);
+    setTimeout(() => {
+      console.log("🍹 Affichage du popup boisson offerte");
+      setShowBoissonSelector(true);
+    }, 100);
   };
 
   const deactivateOffer = () => {
