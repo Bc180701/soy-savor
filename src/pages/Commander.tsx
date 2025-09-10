@@ -33,14 +33,13 @@ const CommanderContent = () => {
   const { isOrderingLocked, isLoading: isOrderingStatusLoading } = useOrderingLockStatus();
   const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
   
-  // Hook pour gérer l'offre box avec accompagnement et boisson
+  // Hook pour gérer l'offre box avec accompagnement
   const {
     showAccompagnementSelector,
     handleAddToCart: handleBoxAddToCart,
     handleAccompagnementSelected,
     handleCloseAccompagnementSelector,
     pendingBoxItem,
-    showBoissonSelector,
     handleBoissonSelected,
     handleCloseBoissonSelector,
     triggerBoissonOffer,
@@ -48,7 +47,7 @@ const CommanderContent = () => {
   } = useBoxAccompagnement();
 
   // Utiliser le contexte global pour l'offre dessert/boisson
-  const { dessertBoissonOfferActive } = useDessertBoissonOffer();
+  const { dessertBoissonOfferActive, showBoissonSelector } = useDessertBoissonOffer();
   const [showRestaurantDialog, setShowRestaurantDialog] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);

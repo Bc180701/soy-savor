@@ -13,8 +13,7 @@ export const useBoxAccompagnement = () => {
   } | null>(null);
   
   // États pour l'offre dessert/boisson en cascade - MAINTENANT GLOBAL
-  const { activateOffer, deactivateOffer, dessertBoissonOfferActive } = useDessertBoissonOffer();
-  const [showBoissonSelector, setShowBoissonSelector] = useState(false);
+  const { activateOffer, deactivateOffer, dessertBoissonOfferActive, showBoissonSelector, setShowBoissonSelector } = useDessertBoissonOffer();
   const [pendingDessertForBoisson, setPendingDessertForBoisson] = useState<MenuItem | null>(null);
   
   // Flag pour éviter la double exécution lors de la fermeture du popup
@@ -68,20 +67,8 @@ export const useBoxAccompagnement = () => {
         id: `accompagnement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }, 1, "Accompagnement offert avec box");
       
-      // ✨ ACTIVATION DE L'OFFRE DESSERT/BOISSON EN CASCADE
+      // ✨ ACTIVATION DE L'OFFRE DESSERT/BOISSON EN CASCADE (avec popup automatique)
       activateOffer();
-      
-      // 🍹 AFFICHAGE AUTOMATIQUE DU POPUP BOISSON APRÈS 2 SECONDES
-      toast({
-        title: "🍹 Boisson offerte arrive !",
-        description: "Votre boisson offerte arrive dans 2 secondes...",
-        duration: 2000,
-      });
-      
-      setTimeout(() => {
-        console.log("🍹 Affichage automatique du popup boisson après 2 secondes");
-        setShowBoissonSelector(true);
-      }, 2000);
       
       // Nettoyer les états
       setPendingBoxItem(null);
