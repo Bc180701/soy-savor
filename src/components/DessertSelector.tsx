@@ -33,7 +33,15 @@ export const DessertSelector = ({
       setIsLoading(true);
       try {
         const menuData = await getMenuData(currentRestaurant.id);
-        const dessertCategory = menuData.find(cat => cat.id === 'desserts');
+        console.log("🍰 DEBUG: Categories disponibles:", menuData.map(cat => ({ id: cat.id, name: cat.name })));
+        
+        // Recherche flexible pour trouver la catégorie desserts
+        const dessertCategory = menuData.find(cat => 
+          cat.id.toLowerCase().includes('dessert') || 
+          cat.name.toLowerCase().includes('dessert')
+        );
+        
+        console.log("🍰 DEBUG: Catégorie desserts trouvée:", dessertCategory?.id, "avec", dessertCategory?.items?.length, "items");
         setDesserts(dessertCategory?.items || []);
       } catch (error) {
         console.error('Erreur lors du chargement des desserts:', error);
