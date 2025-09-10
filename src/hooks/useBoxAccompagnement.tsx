@@ -81,6 +81,11 @@ export const useBoxAccompagnement = () => {
       // Nettoyer les états
       setPendingBoxItem(null);
       setShowAccompagnementSelector(false);
+      
+      // Remettre le flag à false après un court délai
+      setTimeout(() => {
+        hasProcessedSelection.current = false;
+      }, 100);
     }
   };
 
@@ -88,18 +93,13 @@ export const useBoxAccompagnement = () => {
   const handleCloseAccompagnementSelector = () => {
     console.log("🟦 Fermeture du popup d'accompagnement");
     
-    if (pendingBoxItem && !hasProcessedSelection.current) {
-      console.log("🟦 Sélection déjà traitée, pas d'ajout supplémentaire");
-      return;
-    }
-    
     // Si aucune sélection n'a été faite, ajouter juste la box sans accompagnement
-    if (pendingBoxItem) {
+    if (pendingBoxItem && !hasProcessedSelection.current) {
       console.log("🟦 Ajout de la box sans accompagnement:", pendingBoxItem.item.name);
       addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
     }
     
-    // Nettoyer
+    // Nettoyer et remettre à zéro le flag
     setPendingBoxItem(null);
     setShowAccompagnementSelector(false);
     hasProcessedSelection.current = false;
