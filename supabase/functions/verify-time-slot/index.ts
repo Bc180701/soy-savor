@@ -47,22 +47,26 @@ serve(async (req) => {
     }
 
     // Compter les commandes existantes pour ce créneau et ce restaurant du type demandé
+    const scheduledDate = new Date(scheduledFor);
+    const startTime = scheduledDate.toISOString();
+    const endTime = new Date(scheduledDate.getTime() + 60000).toISOString(); // +1 minute
+    
     console.log('🔍 Requête SQL pour:', {
       restaurantId,
       orderType,
       scheduledFor,
-      startTime: scheduledFor,
-      endTime: new Date(new Date(scheduledFor).getTime() + 60000).toISOString()
+      startTime,
+      endTime
     });
 
     const { data: existingOrders, error } = await supabase
       .from('orders')
-      .select('id, scheduled_for, restaurant_id, payment_status, order_type')
+      .select('id, scheduled_for, restaurant_id, payment_status, order_type, client_name')
       .eq('restaurant_id', restaurantId)
       .eq('order_type', orderType) // Filtrer par le type de commande actuel
       .in('payment_status', ['paid', 'pending']) // Inclure les commandes en attente de paiement
-      .gte('scheduled_for', scheduledFor)
-      .lt('scheduled_for', new Date(new Date(scheduledFor).getTime() + 60000).toISOString()); // +1 minute
+      .gte('scheduled_for', startTime)
+      .lt('scheduled_for', endTime);
 
     console.log('📊 Commandes trouvées:', existingOrders);
 
