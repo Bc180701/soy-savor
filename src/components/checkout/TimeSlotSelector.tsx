@@ -246,12 +246,16 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
 
       const startDate = new Date();
       startDate.setHours(openHour, openMinute, 0, 0);
+      
+      // Ajouter 30 minutes après l'heure d'ouverture pour le premier créneau disponible
+      const adjustedStartDate = addMinutes(startDate, 30);
 
       const endDate = new Date();
       endDate.setHours(closeHour, closeMinute, 0, 0);
 
       console.log("🔍 [TimeSlotSelector] Créneau horaire:", {
-        startDate: startDate.toLocaleTimeString(),
+        originalOpenTime: startDate.toLocaleTimeString(),
+        adjustedStartTime: adjustedStartDate.toLocaleTimeString(),
         endDate: endDate.toLocaleTimeString(),
         slotNumber: timeSlot.slot_number
       });
@@ -276,7 +280,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       
       console.log(`🕐 [TimeSlotSelector] Commande à ${format(now, 'HH:mm')} → Premier créneau ${format(finalMinTime, 'HH:mm')} (délai: ${delayMinutes}min)`);
 
-      let currentTime = new Date(startDate);
+      let currentTime = new Date(Math.max(adjustedStartDate.getTime(), finalMinTime.getTime()));
 
       while (currentTime <= endDate) {
         const timeValue = format(currentTime, "HH:mm");
