@@ -12,9 +12,9 @@ export const calculateCreationExtraCost = (
     extraCost += enrobage.price;
   }
 
-  // Extra cost for garnitures (first 2 included)
-  if (garnitures.length > 2) {
-    extraCost += (garnitures.length - 2) * 1; // +1€ per extra garniture
+  // Extra cost for garnitures (first 1 included)
+  if (garnitures.length > 1) {
+    extraCost += (garnitures.length - 1) * 1; // +1€ per extra garniture
   }
 
   return extraCost;
@@ -32,8 +32,8 @@ export const calculateTotalExtraCost = (
     if (creation.enrobage && !creation.enrobage.included) {
       totalExtraCost += creation.enrobage.price;
     }
-    if (creation.garnitures.length > 2) {
-      totalExtraCost += (creation.garnitures.length - 2) * 1;
+    if (creation.garnitures.length > 1) {
+      totalExtraCost += (creation.garnitures.length - 1) * 1;
     }
   });
   
