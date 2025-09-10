@@ -82,7 +82,6 @@ serve(async (req) => {
     console.log(`📊 Commandes ${orderType} existantes pour ${scheduledFor}:`, orderCount);
 
     // 🚨 VÉRIFICATION CRITIQUE: Créneaux bloqués par l'admin
-    const scheduledDate = new Date(scheduledFor);
     const timeOnly = scheduledDate.toTimeString().slice(0, 5); // Format HH:MM
     const dateOnly = scheduledDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
     
