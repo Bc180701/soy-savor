@@ -71,6 +71,18 @@ export const useBoxAccompagnement = () => {
       // ✨ ACTIVATION DE L'OFFRE DESSERT/BOISSON EN CASCADE
       activateOffer();
       
+      // 🍹 AFFICHAGE AUTOMATIQUE DU POPUP BOISSON APRÈS 2 SECONDES
+      toast({
+        title: "🍹 Boisson offerte arrive !",
+        description: "Votre boisson offerte arrive dans 2 secondes...",
+        duration: 2000,
+      });
+      
+      setTimeout(() => {
+        console.log("🍹 Affichage automatique du popup boisson après 2 secondes");
+        setShowBoissonSelector(true);
+      }, 2000);
+      
       // Nettoyer les états
       setPendingBoxItem(null);
       setShowAccompagnementSelector(false);
