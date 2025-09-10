@@ -18,6 +18,7 @@ import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
 import { useCart } from "@/hooks/use-cart";
 import { useCartWithRestaurant } from "@/hooks/useCartWithRestaurant";
 import { useBoxAccompagnement } from "@/hooks/useBoxAccompagnement";
+import { useDessertBoissonOffer, DessertBoissonOfferProvider } from "@/hooks/useDessertBoissonOffer";
 import { AccompagnementSelector } from "@/components/AccompagnementSelector";
 import { BoissonOfferteSelector } from "@/components/BoissonOfferteSelector";
 import SEOHead from "@/components/SEOHead";
@@ -39,14 +40,15 @@ const CommanderContent = () => {
     handleAccompagnementSelected,
     handleCloseAccompagnementSelector,
     pendingBoxItem,
-    hasSelectedFreeAccompagnement,
-    dessertBoissonOfferActive,
     showBoissonSelector,
     handleBoissonSelected,
     handleCloseBoissonSelector,
     triggerBoissonOffer,
     pendingDessertForBoisson
   } = useBoxAccompagnement();
+
+  // Utiliser le contexte global pour l'offre dessert/boisson
+  const { dessertBoissonOfferActive } = useDessertBoissonOffer();
   const [showRestaurantDialog, setShowRestaurantDialog] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -421,7 +423,9 @@ const CommanderContent = () => {
 const Commander = () => {
   return (
     <RestaurantProvider>
-      <CommanderContent />
+      <DessertBoissonOfferProvider>
+        <CommanderContent />
+      </DessertBoissonOfferProvider>
     </RestaurantProvider>
   );
 };

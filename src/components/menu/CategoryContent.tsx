@@ -14,6 +14,7 @@ import { useBoxAccompagnement } from "@/hooks/useBoxAccompagnement";
 import { AccompagnementSelector } from "@/components/AccompagnementSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { useDessertBoissonOffer } from "@/hooks/useDessertBoissonOffer";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -47,9 +48,11 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     handleAddToCart: handleBoxAddToCart,
     handleAccompagnementSelected,
     handleCloseAccompagnementSelector,
-    pendingBoxItem,
-    dessertBoissonOfferActive
+    pendingBoxItem
   } = useBoxAccompagnement();
+
+  // Utiliser le contexte global pour l'offre dessert/boisson
+  const { dessertBoissonOfferActive } = useDessertBoissonOffer();
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { MenuItem } from "@/types";
 import { useCartWithRestaurant } from "./useCartWithRestaurant";
 import { toast } from "@/hooks/use-toast";
+import { useDessertBoissonOffer } from "./useDessertBoissonOffer";
 
 export const useBoxAccompagnement = () => {
   const [showAccompagnementSelector, setShowAccompagnementSelector] = useState(false);
@@ -11,9 +12,8 @@ export const useBoxAccompagnement = () => {
     specialInstructions?: string;
   } | null>(null);
   
-  // États pour l'offre dessert/boisson en cascade
-  const [hasSelectedFreeAccompagnement, setHasSelectedFreeAccompagnement] = useState(false);
-  const [dessertBoissonOfferActive, setDessertBoissonOfferActive] = useState(false);
+  // États pour l'offre dessert/boisson en cascade - MAINTENANT GLOBAL
+  const { activateOffer, deactivateOffer, dessertBoissonOfferActive } = useDessertBoissonOffer();
   const [showBoissonSelector, setShowBoissonSelector] = useState(false);
   const [pendingDessertForBoisson, setPendingDessertForBoisson] = useState<MenuItem | null>(null);
   
@@ -21,6 +21,12 @@ export const useBoxAccompagnement = () => {
   const hasProcessedSelection = useRef(false);
   
   const { addItem, checkDessertForBoissonOffer } = useCartWithRestaurant();
+
+  // Vérifier si c'est après 14h
+  const isAfter2PM = () => {
+    const now = new Date();
+    return now.getHours() >= 14;
+  };
 
   const isBoxItem = (item: MenuItem) => {
     return item.category === 'box' || 
@@ -63,15 +69,7 @@ export const useBoxAccompagnement = () => {
       }, 1, "Accompagnement offert avec box");
       
       // ✨ ACTIVATION DE L'OFFRE DESSERT/BOISSON EN CASCADE
-      setHasSelectedFreeAccompagnement(true);
-      setDessertBoissonOfferActive(true);
-      
-      // Notification de l'offre débloquée
-      toast({
-        title: "🎉 Offre débloquée !",
-        description: "Achetez un dessert et recevez une boisson soft offerte !",
-        duration: 5000,
-      });
+      activateOffer();
       
       // Nettoyer les états
       setPendingBoxItem(null);
@@ -104,7 +102,7 @@ export const useBoxAccompagnement = () => {
     }, 1, "Boisson offerte avec dessert");
     
     // Désactiver l'offre (une seule fois par commande)
-    setDessertBoissonOfferActive(false);
+    deactivateOffer();
     setShowBoissonSelector(false);
     setPendingDessertForBoisson(null);
     
@@ -136,8 +134,6 @@ export const useBoxAccompagnement = () => {
     handleCloseAccompagnementSelector,
     pendingBoxItem,
     // Nouveaux états et fonctions pour l'offre dessert/boisson
-    hasSelectedFreeAccompagnement,
-    dessertBoissonOfferActive,
     showBoissonSelector,
     handleBoissonSelected,
     handleCloseBoissonSelector,
