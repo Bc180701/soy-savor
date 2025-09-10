@@ -28,51 +28,52 @@ export const useBoxAccompagnement = () => {
   
   const { addItem, checkDessertForBoissonOffer } = useCartWithRestaurant();
 
-  // Vérifier si c'est après 14h
-  const isAfter2PM = () => {
-    const now = new Date();
-    return now.getHours() >= 14;
+  // Fonction pour vérifier si un item est une box
+  const isBoxItem = (item: MenuItem): boolean => {
+    const boxCategories = ['box', 'box_du_midi'];
+    return boxCategories.includes(item.category);
   };
 
-  const isBoxItem = (item: MenuItem) => {
-    return item.category === 'box' || 
-           item.category === 'box_du_midi' || 
-           item.category.toLowerCase().includes('box') ||
-           item.name.toLowerCase().includes('box');
-  };
-
-  const handleAddToCart = (item: MenuItem, quantity: number = 1, specialInstructions?: string) => {
+  // Fonction principale d'ajout au panier (appelée depuis ProductsDisplay)
+  const handleAddToCart = (item: MenuItem, quantity = 1, specialInstructions?: string) => {
     console.log("🟦 useBoxAccompagnement.handleAddToCart called with:", item.name);
+    
     if (isBoxItem(item)) {
       console.log("🟦 C'est une box, ouverture du popup pour:", item.name);
-      // Réinitialiser le flag à chaque ouverture du popup
-      hasProcessedSelection.current = false;
-      // Si c'est une box, ouvrir le popup de sélection d'accompagnement SANS ajouter encore la box
       setPendingBoxItem({ item, quantity, specialInstructions });
       setShowAccompagnementSelector(true);
     } else {
       console.log("🟦 Pas une box, ajout direct:", item.name);
-      // Sinon, ajouter directement au panier
       addItem(item, quantity, specialInstructions);
+
+      // Vérifier si c'est un dessert et si l'offre boisson est active
+      if (checkDessertForBoissonOffer(item) && dessertBoissonOfferActive) {
+        triggerBoissonOffer(item);
+      }
     }
   };
 
+  // Fonction pour gérer la sélection d'accompagnement
   const handleAccompagnementSelected = (accompagnement: MenuItem) => {
     console.log("🟦 Accompagnement sélectionné:", accompagnement.name);
-    if (pendingBoxItem) {
-      console.log("🟦 Ajout de la box au panier:", pendingBoxItem.item.name);
-      // Marquer qu'on a traité la sélection pour éviter la double exécution
+    
+    if (pendingBoxItem && !hasProcessedSelection.current) {
       hasProcessedSelection.current = true;
       
-      // Ajouter la box au panier
+      // Ajouter d'abord la box au panier
+      console.log("🟦 Ajout de la box au panier:", pendingBoxItem.item.name);
       addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
       
+      // Ensuite ajouter l'accompagnement GRATUIT
       console.log("🟦 Ajout de l'accompagnement gratuit:", accompagnement.name);
-      // Ajouter l'accompagnement gratuit avec instruction spéciale
-      addItem({
+      const freeAccompagnement = {
         ...accompagnement,
+        price: 0,
+        originalPrice: accompagnement.price,
         id: `accompagnement-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      }, 1, "Accompagnement offert avec box");
+      };
+      
+      addItem(freeAccompagnement, 1, "Accompagnement offert avec box");
       
       // ✨ ACTIVATION DE L'OFFRE DESSERT/BOISSON EN CASCADE (avec popup automatique)
       activateOffer();
@@ -83,45 +84,57 @@ export const useBoxAccompagnement = () => {
     }
   };
 
+  // Fonction pour fermer le popup d'accompagnement
   const handleCloseAccompagnementSelector = () => {
     console.log("🟦 Fermeture du popup d'accompagnement");
-    // Vérifier si on a déjà traité une sélection pour éviter la duplication
+    
     if (pendingBoxItem && !hasProcessedSelection.current) {
-      console.log("🟦 Ajout de la box sans accompagnement:", pendingBoxItem.item.name);
-      // Si l'utilisateur ferme le popup, ajouter quand même la box sans accompagnement
-      addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
-      setPendingBoxItem(null);
-    } else if (hasProcessedSelection.current) {
       console.log("🟦 Sélection déjà traitée, pas d'ajout supplémentaire");
+      return;
     }
+    
+    // Si aucune sélection n'a été faite, ajouter juste la box sans accompagnement
+    if (pendingBoxItem) {
+      console.log("🟦 Ajout de la box sans accompagnement:", pendingBoxItem.item.name);
+      addItem(pendingBoxItem.item, pendingBoxItem.quantity, pendingBoxItem.specialInstructions);
+    }
+    
+    // Nettoyer
+    setPendingBoxItem(null);
     setShowAccompagnementSelector(false);
+    hasProcessedSelection.current = false;
   };
 
-  // Gestion de la sélection de boisson offerte
+  // Fonction pour gérer la sélection d'une boisson offerte
   const handleBoissonSelected = (boisson: MenuItem) => {
-    console.log("🍹 Boisson offerte sélectionnée:", boisson.name);
+    console.log("🍹 Boisson sélectionnée:", boisson.name);
     
-    // Ajouter la boisson gratuite au panier
-    addItem({
+    // Ajouter la boisson au panier avec prix 0 (offerte)
+    const freeBoisson = {
       ...boisson,
+      price: 0,
+      originalPrice: boisson.price,
       id: `boisson-offerte-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    }, 1, "Boisson offerte avec dessert");
+    };
     
-    // Désactiver l'offre (une seule fois par commande)
-    deactivateOffer();
+    addItem(freeBoisson, 1, "Boisson offerte avec dessert");
+    
+    // Fermer le popup et désactiver l'offre
     setShowBoissonSelector(false);
-    setPendingDessertForBoisson(null);
+    deactivateOffer();
     
+    // Toast de confirmation
     toast({
-      title: "🍹 Boisson ajoutée !",
-      description: `${boisson.name} offerte ajoutée à votre commande`,
+      title: "🍹 Boisson offerte ajoutée !",
+      description: `${boisson.name} a été ajoutée gratuitement à votre panier !`,
+      duration: 5000,
     });
   };
 
   const handleCloseBoissonSelector = () => {
-    console.log("🍹 Fermeture du popup boisson offerte");
+    console.log("🍹 Fermeture du popup boisson sans sélection");
     setShowBoissonSelector(false);
-    setPendingDessertForBoisson(null);
+    deactivateOffer();
   };
 
   // Fonction pour déclencher l'offre boisson quand un dessert est ajouté
