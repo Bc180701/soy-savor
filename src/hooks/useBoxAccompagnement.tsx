@@ -13,7 +13,14 @@ export const useBoxAccompagnement = () => {
   } | null>(null);
   
   // États pour l'offre dessert/boisson en cascade - MAINTENANT GLOBAL
-  const { activateOffer, deactivateOffer, dessertBoissonOfferActive, showBoissonSelector, setShowBoissonSelector } = useDessertBoissonOffer();
+  const { 
+    activateOffer, 
+    deactivateOffer, 
+    dessertBoissonOfferActive, 
+    showBoissonSelector, 
+    setShowBoissonSelector,
+    selectDessert 
+  } = useDessertBoissonOffer();
   const [pendingDessertForBoisson, setPendingDessertForBoisson] = useState<MenuItem | null>(null);
   
   // Flag pour éviter la double exécution lors de la fermeture du popup
@@ -126,17 +133,29 @@ export const useBoxAccompagnement = () => {
     }
   };
 
+  // Fonction pour gérer la sélection d'un dessert dans l'offre gourmande
+  const handleDessertSelectedForOffer = (dessert: MenuItem) => {
+    console.log("🍰 Dessert sélectionné pour l'offre:", dessert.name);
+    
+    // Ajouter le dessert au panier (payant)
+    addItem(dessert, 1);
+    
+    // Déclencher le popup boisson via le contexte
+    selectDessert(dessert);
+  };
+
   return {
     showAccompagnementSelector,
     handleAddToCart,
     handleAccompagnementSelected,
     handleCloseAccompagnementSelector,
     pendingBoxItem,
-    // Nouveaux états et fonctions pour l'offre dessert/boisson
     showBoissonSelector,
     handleBoissonSelected,
     handleCloseBoissonSelector,
+    handleDessertSelectedForOffer,
     triggerBoissonOffer,
+    dessertBoissonOfferActive,
     pendingDessertForBoisson
   };
 };

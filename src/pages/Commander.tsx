@@ -21,6 +21,8 @@ import { useBoxAccompagnement } from "@/hooks/useBoxAccompagnement";
 import { useDessertBoissonOffer, DessertBoissonOfferProvider } from "@/hooks/useDessertBoissonOffer";
 import { AccompagnementSelector } from "@/components/AccompagnementSelector";
 import { BoissonOfferteSelector } from "@/components/BoissonOfferteSelector";
+import { OffreGourmandeSelector } from "@/components/OffreGourmandeSelector";
+import { DessertSelector } from "@/components/DessertSelector";
 import SEOHead from "@/components/SEOHead";
 import commanderHeroImage from "@/assets/commander-hero.jpg";
 
@@ -42,12 +44,20 @@ const CommanderContent = () => {
     pendingBoxItem,
     handleBoissonSelected,
     handleCloseBoissonSelector,
+    handleDessertSelectedForOffer,
     triggerBoissonOffer,
+    dessertBoissonOfferActive,
     pendingDessertForBoisson
   } = useBoxAccompagnement();
 
   // Utiliser le contexte global pour l'offre dessert/boisson
-  const { dessertBoissonOfferActive, showBoissonSelector } = useDessertBoissonOffer();
+  const { 
+    showOffreGourmande, 
+    showDessertSelector, 
+    showBoissonSelector,
+    acceptGourmetOffer,
+    declineGourmetOffer
+  } = useDessertBoissonOffer();
   const [showRestaurantDialog, setShowRestaurantDialog] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -400,21 +410,40 @@ const CommanderContent = () => {
         </motion.div>
       </div>
 
-      {/* Popup de sélection d'accompagnement pour les box */}
-      <AccompagnementSelector
-        isOpen={showAccompagnementSelector}
-        onClose={handleCloseAccompagnementSelector}
-        onAccompagnementSelected={handleAccompagnementSelected}
-        restaurantId={currentRestaurant?.id}
-      />
+        {/* Popup de sélection d'accompagnement pour les box */}
+        <AccompagnementSelector
+          isOpen={showAccompagnementSelector}
+          onClose={handleCloseAccompagnementSelector}
+          onAccompagnementSelected={handleAccompagnementSelected}
+          restaurantId={currentRestaurant?.id}
+        />
 
-      {/* Popup de sélection de boisson offerte */}
-      <BoissonOfferteSelector
-        isOpen={showBoissonSelector}
-        onClose={handleCloseBoissonSelector}
-        onBoissonSelected={handleBoissonSelected}
-        restaurantId={currentRestaurant?.id}
-      />
+        {/* Popup d'offre gourmande */}
+        {showOffreGourmande && (
+          <OffreGourmandeSelector
+            isOpen={showOffreGourmande}
+            onClose={declineGourmetOffer}
+            onAcceptOffer={acceptGourmetOffer}
+            onDeclineOffer={declineGourmetOffer}
+          />
+        )}
+
+        {/* Popup de sélection de dessert */}
+        {showDessertSelector && (
+          <DessertSelector
+            isOpen={showDessertSelector}
+            onClose={declineGourmetOffer}
+            onDessertSelected={handleDessertSelectedForOffer}
+          />
+        )}
+
+        {/* Popup de sélection de boisson offerte */}
+        <BoissonOfferteSelector
+          isOpen={showBoissonSelector}
+          onClose={handleCloseBoissonSelector}
+          onBoissonSelected={handleBoissonSelected}
+          restaurantId={currentRestaurant?.id}
+        />
     </>
   );
 };

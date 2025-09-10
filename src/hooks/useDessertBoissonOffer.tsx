@@ -4,12 +4,19 @@ import { toast } from "@/hooks/use-toast";
 interface DessertBoissonOfferContextType {
   hasSelectedFreeAccompagnement: boolean;
   dessertBoissonOfferActive: boolean;
+  showOffreGourmande: boolean;
+  showDessertSelector: boolean;
   showBoissonSelector: boolean;
   setHasSelectedFreeAccompagnement: (value: boolean) => void;
   setDessertBoissonOfferActive: (value: boolean) => void;
+  setShowOffreGourmande: (value: boolean) => void;
+  setShowDessertSelector: (value: boolean) => void;
   setShowBoissonSelector: (value: boolean) => void;
   activateOffer: () => void;
   deactivateOffer: () => void;
+  acceptGourmetOffer: () => void;
+  declineGourmetOffer: () => void;
+  selectDessert: (dessert: any) => void;
 }
 
 const DessertBoissonOfferContext = createContext<DessertBoissonOfferContextType | undefined>(undefined);
@@ -21,6 +28,8 @@ interface DessertBoissonOfferProviderProps {
 export const DessertBoissonOfferProvider = ({ children }: DessertBoissonOfferProviderProps) => {
   const [hasSelectedFreeAccompagnement, setHasSelectedFreeAccompagnement] = useState(false);
   const [dessertBoissonOfferActive, setDessertBoissonOfferActive] = useState(false);
+  const [showOffreGourmande, setShowOffreGourmande] = useState(false);
+  const [showDessertSelector, setShowDessertSelector] = useState(false);
   const [showBoissonSelector, setShowBoissonSelector] = useState(false);
 
   const activateOffer = () => {
@@ -31,38 +40,68 @@ export const DessertBoissonOfferProvider = ({ children }: DessertBoissonOfferPro
     // Notification immédiate de l'offre débloquée
     toast({
       title: "🎉 Offre spéciale débloquée !",
-      description: "Ajoutez un dessert et recevez une boisson soft offerte !",
-      duration: 8000,
+      description: "Voulez-vous profiter de l'offre gourmande ?",
+      duration: 5000,
     });
 
-    // 🍹 AFFICHAGE AUTOMATIQUE DU POPUP BOISSON APRÈS 2 SECONDES
+    // 🍰 AFFICHAGE DU POPUP OFFRE GOURMANDE APRÈS 2 SECONDES
+    setTimeout(() => {
+      console.log("🍰 Affichage du popup offre gourmande après 2 secondes");
+      setShowOffreGourmande(true);
+    }, 2000);
+  };
+
+  const acceptGourmetOffer = () => {
+    console.log("🍰 Utilisateur accepte l'offre gourmande");
+    setShowOffreGourmande(false);
+    setShowDessertSelector(true);
+  };
+
+  const declineGourmetOffer = () => {
+    console.log("❌ Utilisateur refuse l'offre gourmande");
+    setShowOffreGourmande(false);
+    deactivateOffer();
+  };
+
+  const selectDessert = (dessert: any) => {
+    console.log("🍰 Dessert sélectionné, déclenchement du popup boisson");
+    setShowDessertSelector(false);
+    
+    // Toast pour indiquer que la boisson arrive
     toast({
-      title: "🍹 Boisson offerte arrive !",
-      description: "Votre boisson offerte arrive dans 2 secondes...",
-      duration: 2000,
+      title: "🍹 Boisson offerte !",
+      description: "Choisissez votre boisson gratuite !",
+      duration: 3000,
     });
     
-    setTimeout(() => {
-      console.log("🍹 Affichage automatique du popup boisson après 2 secondes");
-      setShowBoissonSelector(true);
-    }, 2000);
+    // Afficher le popup boisson immédiatement
+    setShowBoissonSelector(true);
   };
 
   const deactivateOffer = () => {
     console.log("🔚 Désactivation de l'offre dessert/boisson");
     setDessertBoissonOfferActive(false);
+    setShowOffreGourmande(false);
+    setShowDessertSelector(false);
     setShowBoissonSelector(false);
   };
 
   const value = {
     hasSelectedFreeAccompagnement,
     dessertBoissonOfferActive,
+    showOffreGourmande,
+    showDessertSelector,
     showBoissonSelector,
     setHasSelectedFreeAccompagnement,
     setDessertBoissonOfferActive,
+    setShowOffreGourmande,
+    setShowDessertSelector,
     setShowBoissonSelector,
     activateOffer,
-    deactivateOffer
+    deactivateOffer,
+    acceptGourmetOffer,
+    declineGourmetOffer,
+    selectDessert
   };
 
   return (
