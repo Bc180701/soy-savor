@@ -384,9 +384,16 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
     const orderItemsPromises = formattedOrders.map(async (order) => {
       const rawOrder = orders.find(o => o.id === order.id);
       
+      console.log(`🔍 [ORDERSERVICE] Traitement commande ${order.id}:`, {
+        hasItemsSummary: !!rawOrder?.items_summary,
+        itemsSummaryType: typeof rawOrder?.items_summary,
+        itemsSummaryLength: Array.isArray(rawOrder?.items_summary) ? rawOrder.items_summary.length : 'N/A',
+        itemsSummaryContent: rawOrder?.items_summary
+      });
+      
       // Si items_summary a des éléments, l'utiliser directement
       if (rawOrder?.items_summary && Array.isArray(rawOrder.items_summary) && rawOrder.items_summary.length > 0) {
-        console.log(`✅ Utilisation items_summary pour commande ${order.id}: ${rawOrder.items_summary.length} articles`);
+        console.log(`✅ [ORDERSERVICE] Utilisation items_summary pour commande ${order.id}: ${rawOrder.items_summary.length} articles`);
         order.items = rawOrder.items_summary.map((item: any) => ({
           menuItem: {
             id: item.id || item.product_id,

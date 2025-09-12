@@ -39,6 +39,11 @@ export const MissingItemsAlert = ({ order, onOrderRefresh, onClearCache }: Missi
   };
 
   const handleRecoverItems = async () => {
+    console.log('🔍 Diagnostic avant récupération pour commande:', order.id);
+    console.log('📋 Order.itemsSummary:', order.itemsSummary);
+    console.log('📦 Order.items:', order.items);
+    console.log('💰 Order.total:', order.total);
+    
     setIsRecovering(true);
     
     try {
@@ -47,7 +52,7 @@ export const MissingItemsAlert = ({ order, onOrderRefresh, onClearCache }: Missi
       });
 
       if (error) {
-        console.error('Erreur lors de la récupération:', error);
+        console.error('❌ Erreur lors de la récupération:', error);
         toast({
           title: "Erreur de récupération",
           description: "Impossible de récupérer les articles automatiquement",
@@ -56,6 +61,8 @@ export const MissingItemsAlert = ({ order, onOrderRefresh, onClearCache }: Missi
         return;
       }
 
+      console.log('✅ Résultat de la récupération:', data);
+
       if (data?.success) {
         toast({
           title: "Articles récupérés",
@@ -63,17 +70,39 @@ export const MissingItemsAlert = ({ order, onOrderRefresh, onClearCache }: Missi
           variant: "default"
         });
         
-        // Vider le cache pour forcer le rechargement
+        console.log('🔄 Récupération terminée, mise à jour des données...');
+        
+        // FORCER un refresh complet avec cache vidé
         if (onClearCache) {
+          console.log('🗑️ Vidage du cache...');
           onClearCache();
         }
         
-        // Attendre un peu puis rafraîchir les détails de la commande
-        setTimeout(() => {
-          if (onOrderRefresh) {
+        // Refresh immédiat puis refresh retardé pour s'assurer
+        if (onOrderRefresh) {
+          console.log('🔄 Refresh immédiat...');
+          onOrderRefresh();
+          
+          // Deuxième refresh après 1 seconde pour être sûr
+          setTimeout(() => {
+            console.log('🔄 Refresh retardé...');
             onOrderRefresh();
+          }, 1000);
+        }
+        
+        // Forcer un reload de la page en dernier recours si rien ne marche
+        setTimeout(() => {
+          const hasItemsAfter = (order.itemsSummary && order.itemsSummary.length > 0) || 
+                               (order.items && order.items.length > 0);
+          if (!hasItemsAfter) {
+            console.log('⚠️ Les articles ne sont toujours pas visibles, reload forcé dans 2s...');
+            setTimeout(() => {
+              console.log('🔄 RELOAD FORCÉ DE LA PAGE');
+              window.location.reload();
+            }, 2000);
           }
-        }, 500);
+        }, 1500);
+        
       } else {
         toast({
           title: "Récupération impossible",
@@ -82,7 +111,7 @@ export const MissingItemsAlert = ({ order, onOrderRefresh, onClearCache }: Missi
         });
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération:', error);
+      console.error('💥 Erreur lors de la récupération:', error);
       toast({
         title: "Erreur technique",
         description: "Une erreur est survenue lors de la récupération",

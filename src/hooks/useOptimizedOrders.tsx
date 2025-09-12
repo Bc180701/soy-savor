@@ -215,9 +215,17 @@ export function useOptimizedOrders(restaurantId: string | null) {
 
   // Fonction pour vider le cache
   const clearCache = useCallback(() => {
+    console.log('🗑️ AVANT - Cache keys:', Array.from(cacheMapRef.current.keys()));
     cacheMapRef.current.clear();
     console.log('🗑️ Cache commandes vidé complètement');
-  }, []);
+    console.log('🗑️ APRÈS - Cache keys:', Array.from(cacheMapRef.current.keys()));
+    
+    // Forcer un rechargement immédiat après vidage du cache
+    console.log('🔄 Rechargement forcé après vidage cache pour restaurant:', restaurantId);
+    setTimeout(() => {
+      fetchOrders(restaurantId, true);
+    }, 100);
+  }, [restaurantId, fetchOrders]);
 
   // Effect principal pour charger les commandes
   useEffect(() => {
