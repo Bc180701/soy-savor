@@ -248,7 +248,11 @@ serve(async (req) => {
     if (existingItemsCount === 0 && decodedItems.length > 0) {
       console.log('🚨 RÉCUPÉRATION NÉCESSAIRE: Aucun order_item existant');
       
-      const recoveryItems = decodedItems.map((item: any, index: number) => {
+      // Séparer les items valides et invalides
+      const validItems: any[] = [];
+      const ignoredItems: any[] = [];
+
+      decodedItems.forEach((item: any, index: number) => {
         const productId = productsMap.get(item.name);
         
         const orderItem = {
@@ -266,29 +270,50 @@ serve(async (req) => {
           price: orderItem.price,
           special_instructions: orderItem.special_instructions
         });
-        
-        return orderItem;
+
+        if (productId) {
+          validItems.push(orderItem);
+        } else {
+          ignoredItems.push({
+            name: item.name,
+            reason: 'product_id not found',
+            item: orderItem
+          });
+        }
       });
 
-      const { data: insertedItems, error: insertError } = await supabase
-        .from('order_items')
-        .insert(recoveryItems)
-        .select();
+      console.log(`📦 Items à traiter: ${validItems.length} valides, ${ignoredItems.length} ignorés`);
+      
+      if (ignoredItems.length > 0) {
+        console.log('⚠️ Items ignorés (product_id manquant):', ignoredItems.map(i => i.name));
+      }
 
-      if (insertError) {
-        console.error('❌ Erreur insertion order_items de récupération:', insertError);
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: insertError.message,
-          existing_items: existingItemsCount
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+      let insertedItems = null;
+      if (validItems.length > 0) {
+        const { data, error: insertError } = await supabase
+          .from('order_items')
+          .insert(validItems)
+          .select();
+
+        if (insertError) {
+          console.error('❌ Erreur insertion order_items de récupération:', insertError);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: insertError.message,
+            existing_items: existingItemsCount,
+            valid_items: validItems.length,
+            ignored_items: ignoredItems.length
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        insertedItems = data;
       }
 
       recoveredItems = insertedItems?.length || 0;
-      console.log('✅ Récupération réussie:', recoveredItems, 'order_items créés');
+      const ignoredCount = ignoredItems.length;
+      console.log('✅ Récupération réussie:', recoveredItems, 'order_items créés,', ignoredCount, 'items ignorés');
 
     } else if (existingItemsCount > 0) {
       console.log('✅ Order_items déjà présents, pas de récupération nécessaire');
