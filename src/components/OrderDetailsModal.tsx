@@ -328,7 +328,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 </div>
                 
                 {/* Alert pour les commandes sans articles */}
-                {order && <MissingItemsAlert order={order} onOrderRefresh={() => fetchOrderDetails(order.id)} />}
+                {orderDetails && <MissingItemsAlert order={orderDetails} onOrderRefresh={() => fetchOrderDetails(order!.id)} />}
                 
                 {/* Produits commandés */}
                 <div className="space-y-2">

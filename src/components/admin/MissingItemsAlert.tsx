@@ -15,7 +15,11 @@ export const MissingItemsAlert = ({ order, onOrderRefresh }: MissingItemsAlertPr
   const { toast } = useToast();
   const [isRecovering, setIsRecovering] = useState(false);
 
-  if (order.items && order.items.length > 0) {
+  // Vérifier s'il y a des articles (itemsSummary ou items)
+  const hasItems = (order.itemsSummary && order.itemsSummary.length > 0) || 
+                   (order.items && order.items.length > 0);
+  
+  if (hasItems) {
     return null;
   }
 
