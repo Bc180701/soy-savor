@@ -27,10 +27,10 @@ serve(async (req) => {
 
     console.log('🔄 Début de la récupération pour la commande:', orderId);
 
-    // 1. Récupérer la commande avec items_summary
+    // 1. Récupérer la commande avec stripe_session_id
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, items_summary, restaurant_id, total')
+      .select('id, items_summary, restaurant_id, total, stripe_session_id')
       .eq('id', orderId)
       .single();
 
@@ -46,7 +46,8 @@ serve(async (req) => {
       id: order.id,
       restaurant_id: order.restaurant_id,
       items_summary_count: Array.isArray(order.items_summary) ? order.items_summary.length : 0,
-      total: order.total
+      total: order.total,
+      stripe_session_id: order.stripe_session_id ? 'présent' : 'absent'
     });
 
     // 2. Vérifier les order_items existants
@@ -62,41 +63,108 @@ serve(async (req) => {
     const existingItemsCount = existingItems?.length || 0;
     console.log('📦 Order_items existants:', existingItemsCount);
 
-    // 3. Analyser items_summary encodé
-    if (!order.items_summary || !Array.isArray(order.items_summary)) {
-      console.log('⚠️ Pas d\'items_summary valide à traiter');
+    // 3. Essayer de récupérer depuis items_summary s'il existe, sinon depuis Stripe
+    let decodedItems = [];
+    
+    if (order.items_summary && Array.isArray(order.items_summary) && order.items_summary.length > 0) {
+      console.log('📝 Items_summary trouvé en base, décodage...');
+      const { data: decodedItemsResult, error: decodeError } = await supabase
+        .rpc('decode_items_summary', { encoded_summary: order.items_summary });
+
+      if (decodeError) {
+        console.error('❌ Erreur décodage items_summary:', decodeError);
+      } else {
+        decodedItems = decodedItemsResult || [];
+        console.log('✅ Articles décodés depuis la base:', decodedItems.length);
+      }
+    }
+
+    // 4. Si pas d'items décodés, essayer de récupérer depuis Stripe
+    if (decodedItems.length === 0 && order.stripe_session_id) {
+      console.log('🔍 Récupération depuis Stripe session:', order.stripe_session_id);
+      
+      try {
+        // Récupérer les clés Stripe pour ce restaurant
+        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-stripe-key', {
+          body: { restaurantId: order.restaurant_id }
+        });
+
+        if (stripeError || !stripeData?.key) {
+          console.error('❌ Impossible de récupérer la clé Stripe:', stripeError);
+          throw new Error('Clé Stripe non trouvée');
+        }
+
+        // Récupérer la session Stripe
+        const stripeResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${order.stripe_session_id}`, {
+          headers: {
+            'Authorization': `Bearer ${stripeData.key}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
+
+        if (!stripeResponse.ok) {
+          throw new Error(`Stripe API error: ${stripeResponse.status}`);
+        }
+
+        const stripeSession = await stripeResponse.json();
+        console.log('✅ Session Stripe récupérée');
+
+        // Extraire les items depuis les métadonnées
+        const metadata = stripeSession.metadata || {};
+        let itemsFromStripe = [];
+
+        if (metadata.items_summary) {
+          console.log('📦 Items_summary trouvé dans les métadonnées Stripe');
+          try {
+            const parsedItems = JSON.parse(metadata.items_summary);
+            if (Array.isArray(parsedItems)) {
+              // Décoder les items encodés
+              const { data: decodedFromStripe, error: decodeStripeError } = await supabase
+                .rpc('decode_items_summary', { encoded_summary: parsedItems });
+              
+              if (!decodeStripeError && decodedFromStripe) {
+                itemsFromStripe = decodedFromStripe;
+                console.log('✅ Items décodés depuis Stripe metadata:', itemsFromStripe.length);
+              }
+            }
+          } catch (parseError) {
+            console.error('❌ Erreur parsing items_summary de Stripe:', parseError);
+          }
+        } else if (metadata.items) {
+          console.log('📦 Items trouvé dans les métadonnées Stripe');
+          try {
+            const parsedItems = JSON.parse(metadata.items);
+            if (Array.isArray(parsedItems)) {
+              itemsFromStripe = parsedItems;
+              console.log('✅ Items récupérés depuis Stripe metadata:', itemsFromStripe.length);
+            }
+          } catch (parseError) {
+            console.error('❌ Erreur parsing items de Stripe:', parseError);
+          }
+        }
+
+        decodedItems = itemsFromStripe;
+        
+      } catch (stripeRecoveryError) {
+        console.error('❌ Erreur récupération depuis Stripe:', stripeRecoveryError);
+      }
+    }
+
+    if (decodedItems.length === 0) {
+      console.log('⚠️ Aucun article trouvé ni en base ni dans Stripe');
       return new Response(JSON.stringify({ 
         success: false, 
-        message: 'No valid items_summary found',
-        existing_items: existingItemsCount
+        message: 'Aucun article trouvé à récupérer',
+        existing_items: existingItemsCount,
+        tried_database: order.items_summary && order.items_summary.length > 0,
+        tried_stripe: !!order.stripe_session_id
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const encodedItemsSummary = order.items_summary;
-    console.log('📝 Items_summary encodé à décoder:', encodedItemsSummary.length, 'articles');
-
-    // 4. Décoder les codes produits avec la fonction decode_items_summary
-    console.log('🔍 Décodage des codes produits...');
-    const { data: decodedItemsResult, error: decodeError } = await supabase
-      .rpc('decode_items_summary', { encoded_summary: encodedItemsSummary });
-
-    if (decodeError) {
-      console.error('❌ Erreur décodage items_summary:', decodeError);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Failed to decode items_summary: ' + decodeError.message,
-        existing_items: existingItemsCount
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const decodedItems = decodedItemsResult || [];
-    console.log('✅ Articles décodés:', decodedItems.length);
+    console.log('✅ Articles à traiter:', decodedItems.length);
 
     // 5. Logger chaque article décodé
     decodedItems.forEach((item: any, index: number) => {
@@ -196,24 +264,23 @@ serve(async (req) => {
 
     console.log('📊 Résumé de la récupération:', {
       orderId,
-      encoded_items_summary_count: encodedItemsSummary.length,
-      decoded_items_count: decodedItems.length,
-      existing_items_before: existingItemsCount,
-      recovered_items: recoveredItems,
-      skipped_items: skippedItems,
-      final_items_count: finalCount
-    });
-
-    return new Response(JSON.stringify({
-      success: true,
-      orderId,
-      encoded_items_summary_count: encodedItemsSummary.length,
       decoded_items_count: decodedItems.length,
       existing_items_before: existingItemsCount,
       recovered_items: recoveredItems,
       skipped_items: skippedItems,
       final_items_count: finalCount,
-      message: recoveredItems > 0 ? `Récupération réussie: ${recoveredItems} order_items créés depuis ${decodedItems.length} articles décodés` : 
+      had_stripe_session: !!order.stripe_session_id
+    });
+
+    return new Response(JSON.stringify({
+      success: true,
+      orderId,
+      decoded_items_count: decodedItems.length,
+      existing_items_before: existingItemsCount,
+      recovered_items: recoveredItems,
+      skipped_items: skippedItems,
+      final_items_count: finalCount,
+      message: recoveredItems > 0 ? `Récupération réussie: ${recoveredItems} order_items créés depuis ${decodedItems.length} articles trouvés` : 
                skippedItems > 0 ? 'Order_items déjà présents' : 'Aucune récupération nécessaire'
     }), {
       status: 200,
