@@ -68,10 +68,12 @@ export const MissingItemsAlert = ({ order, onOrderRefresh, onClearCache }: Missi
           onClearCache();
         }
         
-        // Rafraîchir les détails de la commande
-        if (onOrderRefresh) {
-          onOrderRefresh();
-        }
+        // Attendre un peu puis rafraîchir les détails de la commande
+        setTimeout(() => {
+          if (onOrderRefresh) {
+            onOrderRefresh();
+          }
+        }, 500);
       } else {
         toast({
           title: "Récupération impossible",
