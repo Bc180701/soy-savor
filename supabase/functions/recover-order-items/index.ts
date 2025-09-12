@@ -93,13 +93,13 @@ serve(async (req) => {
 
         console.log('📋 Résultat get-stripe-key:', {
           hasData: !!stripeData,
-          hasKey: !!(stripeData?.key),
+          hasKey: !!(stripeData?.stripeKey),
           error: stripeError?.message,
-          keyPreview: stripeData?.key ? stripeData.key.substring(0, 20) + '...' : 'none'
+          keyPreview: stripeData?.stripeKey ? stripeData.stripeKey.substring(0, 20) + '...' : 'none'
         });
 
-        if (stripeError || !stripeData?.key) {
-          console.error('❌ Impossible de récupérer la clé Stripe:', stripeError);
+        if (stripeError || !stripeData?.stripeKey) {
+          console.error('❌ Impossible de récupérer la clé Stripe:', stripeData?.stripeKey);
           throw new Error('Clé Stripe non trouvée');
         }
 
@@ -108,7 +108,7 @@ serve(async (req) => {
         // Récupérer la session Stripe
         const stripeResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${order.stripe_session_id}`, {
           headers: {
-            'Authorization': `Bearer ${stripeData.key}`,
+            'Authorization': `Bearer ${stripeData.stripeKey}`,
             'Content-Type': 'application/x-www-form-urlencoded'
           }
         });
