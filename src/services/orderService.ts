@@ -1,5 +1,5 @@
 import { CartItem, Order } from "@/types";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getOrderItems } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { sendOrderStatusSMS } from "./smsService";
 
@@ -300,7 +300,8 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
         client_email,
         delivery_street,
         delivery_city,
-        delivery_postal_code
+        delivery_postal_code,
+        items_summary
       `)
       .order('created_at', { ascending: false });
 
@@ -379,32 +380,18 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       items: [] // Nous allons les récupérer séparément
     }));
 
-    // Récupérer les articles de commande pour chaque commande
+    // Récupérer les articles de commande pour chaque commande avec la logique unifiée
     for (const order of formattedOrders) {
-      const { data: items, error: itemsError } = await supabase
-        .from('order_items')
-        .select(`
-          id,
-          product_id,
-          quantity,
-          price,
-          special_instructions,
-          products(name)
-        `)
-        .eq('order_id', order.id);
-
-      if (itemsError) {
-        console.error(`Erreur lors de la récupération des articles pour la commande ${order.id}:`, itemsError);
-        continue;
-      }
-
-      // Mettre en forme les articles de commande
-      if (items && items.length > 0) {
-        console.log(`${items.length} articles trouvés pour la commande ${order.id}`);
-        order.items = items.map(item => ({
+      // Get items_summary from raw order data to pass to unified function
+      const rawOrder = orders.find(o => o.id === order.id);
+      const processedItems = await getOrderItems(order.id, rawOrder?.items_summary);
+      
+      if (processedItems && processedItems.length > 0) {
+        console.log(`${processedItems.length} articles trouvés pour la commande ${order.id}`);
+        order.items = processedItems.map(item => ({
           menuItem: {
-            id: item.product_id,
-            name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
+            id: item.id,
+            name: item.name,
             price: item.price,
             category: "plateaux" // Catégorie par défaut
           },
