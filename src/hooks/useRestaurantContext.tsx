@@ -8,6 +8,7 @@ const RestaurantContextObj = createContext<RestaurantContext | undefined>(undefi
 
 export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);

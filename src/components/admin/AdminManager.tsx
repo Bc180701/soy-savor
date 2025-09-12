@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import { Menu, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -27,14 +26,14 @@ import { BluetoothManager } from "./BluetoothManager";
 import { ImageOptimizer } from "./ImageOptimizer";
 
 const AdminManager = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [urlParams] = useState(() => new URLSearchParams(window.location.search));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const { currentRestaurant } = useRestaurantContext();
   
   // Get active section from URL params or default to dashboard
-  const activeSection = searchParams.get("section") || "dashboard";
+  const activeSection = urlParams.get("section") || "dashboard";
   
   // Enable order notifications for admins
   const { hasNewOrders, audioEnabled, enableAudio, clearNotifications } = useOrderNotifications(true, currentRestaurant?.id);
@@ -62,9 +61,10 @@ const AdminManager = () => {
   }, [clearNotifications]);
 
   const handleSectionChange = (section: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("section", section);
-    setSearchParams(newParams);
+    const url = new URL(window.location.href);
+    url.searchParams.set("section", section);
+    window.history.replaceState({}, '', url.toString());
+    window.location.reload();
   };
 
   const handleManualRefresh = () => {
@@ -77,7 +77,7 @@ const AdminManager = () => {
       case "dashboard":
         return <DashboardStats />;
       case "orders":
-        return <OrderList defaultTab={searchParams.get("tab") || "kitchen"} />;
+        return <OrderList defaultTab={urlParams.get("tab") || "kitchen"} />;
       case "products":
         return <ProductManager />;
       case "users":
