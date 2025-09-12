@@ -62,7 +62,7 @@ serve(async (req) => {
     const existingItemsCount = existingItems?.length || 0;
     console.log('📦 Order_items existants:', existingItemsCount);
 
-    // 3. Analyser items_summary
+    // 3. Analyser items_summary encodé
     if (!order.items_summary || !Array.isArray(order.items_summary)) {
       console.log('⚠️ Pas d\'items_summary valide à traiter');
       return new Response(JSON.stringify({ 
@@ -75,38 +75,87 @@ serve(async (req) => {
       });
     }
 
-    const itemsSummary = order.items_summary;
-    console.log('📝 Items_summary à traiter:', itemsSummary.length, 'articles');
+    const encodedItemsSummary = order.items_summary;
+    console.log('📝 Items_summary encodé à décoder:', encodedItemsSummary.length, 'articles');
 
-    // 4. Logger chaque article dans items_summary
-    itemsSummary.forEach((item: any, index: number) => {
-      console.log(`📋 Article ${index + 1} dans items_summary:`, {
-        id: item.id,
+    // 4. Décoder les codes produits avec la fonction decode_items_summary
+    console.log('🔍 Décodage des codes produits...');
+    const { data: decodedItemsResult, error: decodeError } = await supabase
+      .rpc('decode_items_summary', { encoded_summary: encodedItemsSummary });
+
+    if (decodeError) {
+      console.error('❌ Erreur décodage items_summary:', decodeError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Failed to decode items_summary: ' + decodeError.message,
+        existing_items: existingItemsCount
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const decodedItems = decodedItemsResult || [];
+    console.log('✅ Articles décodés:', decodedItems.length);
+
+    // 5. Logger chaque article décodé
+    decodedItems.forEach((item: any, index: number) => {
+      console.log(`📋 Article décodé ${index + 1}:`, {
         name: item.name,
+        description: item.description,
         quantity: item.quantity,
-        price: item.price,
-        unit_price: item.unit_price,
-        description: item.description
+        price: item.price
       });
     });
 
-    // 5. Créer les order_items manquants si nécessaire
+    // 6. Récupérer les produits correspondants pour obtenir les product_id
+    const productNames = decodedItems.map((item: any) => item.name);
+    console.log('🔍 Recherche des produits dans la base:', productNames);
+
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id, name')
+      .in('name', productNames)
+      .eq('restaurant_id', order.restaurant_id);
+
+    if (productsError) {
+      console.error('❌ Erreur récupération produits:', productsError);
+    }
+
+    const productsMap = new Map();
+    if (products) {
+      products.forEach((product: any) => {
+        productsMap.set(product.name, product.id);
+      });
+    }
+    console.log('📦 Produits trouvés:', productsMap.size, 'sur', productNames.length);
+
+    // 7. Créer les order_items manquants si nécessaire
     let recoveredItems = 0;
     let skippedItems = 0;
 
-    if (existingItemsCount === 0 && itemsSummary.length > 0) {
+    if (existingItemsCount === 0 && decodedItems.length > 0) {
       console.log('🚨 RÉCUPÉRATION NÉCESSAIRE: Aucun order_item existant');
       
-      const recoveryItems = itemsSummary.map((item: any, index: number) => {
+      const recoveryItems = decodedItems.map((item: any, index: number) => {
+        const productId = productsMap.get(item.name);
+        
         const orderItem = {
           order_id: orderId,
-          product_id: (item.id && item.id !== 'unknown') ? item.id : null,
+          product_id: productId || null,
           quantity: item.quantity || 1,
-          price: item.unit_price || item.price || 0,
-          special_instructions: item.name ? `RÉCUPÉRÉ: ${item.name}` : `Article récupéré ${index + 1}`
+          price: item.price || 0,
+          special_instructions: item.description || null
         };
 
-        console.log(`💾 Order_item de récupération ${index + 1}:`, orderItem);
+        console.log(`💾 Order_item de récupération ${index + 1}:`, {
+          name: item.name,
+          product_id: productId,
+          quantity: orderItem.quantity,
+          price: orderItem.price,
+          special_instructions: orderItem.special_instructions
+        });
+        
         return orderItem;
       });
 
@@ -134,7 +183,7 @@ serve(async (req) => {
       console.log('✅ Order_items déjà présents, pas de récupération nécessaire');
       skippedItems = existingItemsCount;
     } else {
-      console.log('⚠️ Pas d\'items_summary à récupérer');
+      console.log('⚠️ Pas d\'items décodés à récupérer');
     }
 
     // 6. Vérification finale
@@ -147,7 +196,8 @@ serve(async (req) => {
 
     console.log('📊 Résumé de la récupération:', {
       orderId,
-      items_summary_count: itemsSummary.length,
+      encoded_items_summary_count: encodedItemsSummary.length,
+      decoded_items_count: decodedItems.length,
       existing_items_before: existingItemsCount,
       recovered_items: recoveredItems,
       skipped_items: skippedItems,
@@ -157,12 +207,13 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       orderId,
-      items_summary_count: itemsSummary.length,
+      encoded_items_summary_count: encodedItemsSummary.length,
+      decoded_items_count: decodedItems.length,
       existing_items_before: existingItemsCount,
       recovered_items: recoveredItems,
       skipped_items: skippedItems,
       final_items_count: finalCount,
-      message: recoveredItems > 0 ? `Récupération réussie: ${recoveredItems} order_items créés` : 
+      message: recoveredItems > 0 ? `Récupération réussie: ${recoveredItems} order_items créés depuis ${decodedItems.length} articles décodés` : 
                skippedItems > 0 ? 'Order_items déjà présents' : 'Aucune récupération nécessaire'
     }), {
       status: 200,
