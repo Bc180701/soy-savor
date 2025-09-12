@@ -39,7 +39,12 @@ export const fetchOrderWithDetails = async (orderId: string) => {
     
     // Process items_summary to group duplicates by name, OR fallback to order_items for old orders
     let processedItems = [];
-    if ((order as any).items_summary && Array.isArray((order as any).items_summary) && (order as any).items_summary.length > 0) {
+    // Check if items_summary has actual content, if not fallback to order_items
+    const hasValidItemsSummary = (order as any).items_summary && 
+      Array.isArray((order as any).items_summary) && 
+      (order as any).items_summary.length > 0;
+    
+    if (hasValidItemsSummary) {
       // NEW: Use items_summary (from webhook)
       const itemsMap = new Map();
       
