@@ -380,14 +380,14 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       items: [] // Nous allons les récupérer séparément
     }));
 
-    // Récupérer les articles de commande pour chaque commande avec la logique unifiée
-    for (const order of formattedOrders) {
+    // Récupérer les articles de commande pour toutes les commandes en parallèle
+    const orderItemsPromises = formattedOrders.map(async (order) => {
       // Get items_summary from raw order data to pass to unified function
       const rawOrder = orders.find(o => o.id === order.id);
       const processedItems = await getOrderItems(order.id, rawOrder?.items_summary);
       
       if (processedItems && processedItems.length > 0) {
-        console.log(`${processedItems.length} articles trouvés pour la commande ${order.id}`);
+        console.log(`✅ ${processedItems.length} articles trouvés pour la commande ${order.id}`);
         order.items = processedItems.map(item => ({
           menuItem: {
             id: item.id,
@@ -399,9 +399,19 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
           specialInstructions: item.special_instructions
         }));
       } else {
-        console.log(`Aucun article trouvé pour la commande ${order.id}`);
+        console.log(`❌ Aucun article trouvé pour la commande ${order.id}`);
       }
-    }
+      
+      return order;
+    });
+
+    // Attendre que tous les articles soient traités
+    await Promise.all(orderItemsPromises);
+    
+    // Log final pour vérifier que les articles sont bien assignés
+    formattedOrders.forEach(order => {
+      console.log(`📋 Commande ${order.id} - Articles finaux: ${order.items.length}`);
+    });
 
     console.log(`${formattedOrders.length} commandes formatées avec succès`);
     return { orders: formattedOrders, error: null };
