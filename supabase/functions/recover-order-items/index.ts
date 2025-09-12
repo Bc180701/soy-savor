@@ -84,9 +84,18 @@ serve(async (req) => {
       console.log('🔍 Récupération depuis Stripe session:', order.stripe_session_id);
       
       try {
+        console.log('🔑 Tentative de récupération des clés Stripe pour restaurant:', order.restaurant_id);
+        
         // Récupérer les clés Stripe pour ce restaurant
         const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-stripe-key', {
           body: { restaurantId: order.restaurant_id }
+        });
+
+        console.log('📋 Résultat get-stripe-key:', {
+          hasData: !!stripeData,
+          hasKey: !!(stripeData?.key),
+          error: stripeError?.message,
+          keyPreview: stripeData?.key ? stripeData.key.substring(0, 20) + '...' : 'none'
         });
 
         if (stripeError || !stripeData?.key) {
@@ -94,6 +103,8 @@ serve(async (req) => {
           throw new Error('Clé Stripe non trouvée');
         }
 
+        console.log('🌐 Appel API Stripe pour session:', order.stripe_session_id);
+        
         // Récupérer la session Stripe
         const stripeResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${order.stripe_session_id}`, {
           headers: {
@@ -102,19 +113,39 @@ serve(async (req) => {
           }
         });
 
+        console.log('📡 Réponse Stripe API:', {
+          status: stripeResponse.status,
+          statusText: stripeResponse.statusText,
+          ok: stripeResponse.ok
+        });
+
         if (!stripeResponse.ok) {
-          throw new Error(`Stripe API error: ${stripeResponse.status}`);
+          const errorText = await stripeResponse.text();
+          console.error('❌ Erreur API Stripe:', errorText);
+          throw new Error(`Stripe API error: ${stripeResponse.status} - ${errorText}`);
         }
 
         const stripeSession = await stripeResponse.json();
-        console.log('✅ Session Stripe récupérée');
+        console.log('✅ Session Stripe récupérée:', {
+          id: stripeSession.id,
+          payment_status: stripeSession.payment_status,
+          has_metadata: !!stripeSession.metadata,
+          metadata_keys: stripeSession.metadata ? Object.keys(stripeSession.metadata) : []
+        });
 
         // Extraire les items depuis les métadonnées
         const metadata = stripeSession.metadata || {};
+        console.log('🔍 Analyse des métadonnées Stripe:', {
+          total_metadata_keys: Object.keys(metadata).length,
+          has_items_summary: !!metadata.items_summary,
+          has_items: !!metadata.items,
+          metadata_preview: Object.keys(metadata).slice(0, 5)
+        });
+        
         let itemsFromStripe = [];
 
         if (metadata.items_summary) {
-          console.log('📦 Items_summary trouvé dans les métadonnées Stripe');
+          console.log('📦 Items_summary trouvé dans les métadonnées Stripe, longueur:', metadata.items_summary.length);
           try {
             const parsedItems = JSON.parse(metadata.items_summary);
             if (Array.isArray(parsedItems)) {
@@ -125,13 +156,15 @@ serve(async (req) => {
               if (!decodeStripeError && decodedFromStripe) {
                 itemsFromStripe = decodedFromStripe;
                 console.log('✅ Items décodés depuis Stripe metadata:', itemsFromStripe.length);
+              } else {
+                console.error('❌ Erreur décodage depuis Stripe:', decodeStripeError);
               }
             }
           } catch (parseError) {
             console.error('❌ Erreur parsing items_summary de Stripe:', parseError);
           }
         } else if (metadata.items) {
-          console.log('📦 Items trouvé dans les métadonnées Stripe');
+          console.log('📦 Items trouvé dans les métadonnées Stripe, longueur:', metadata.items.length);
           try {
             const parsedItems = JSON.parse(metadata.items);
             if (Array.isArray(parsedItems)) {
@@ -141,12 +174,22 @@ serve(async (req) => {
           } catch (parseError) {
             console.error('❌ Erreur parsing items de Stripe:', parseError);
           }
+        } else {
+          console.log('⚠️ Aucun items_summary ni items trouvé dans les métadonnées Stripe');
         }
 
         decodedItems = itemsFromStripe;
+        console.log('📊 Résultat final récupération Stripe:', {
+          items_found: itemsFromStripe.length,
+          first_item_preview: itemsFromStripe[0] ? {
+            name: itemsFromStripe[0].name,
+            quantity: itemsFromStripe[0].quantity,
+            price: itemsFromStripe[0].price
+          } : null
+        });
         
       } catch (stripeRecoveryError) {
-        console.error('❌ Erreur récupération depuis Stripe:', stripeRecoveryError);
+        console.error('❌ Erreur récupération depuis Stripe:', stripeRecoveryError.message);
       }
     }
 
