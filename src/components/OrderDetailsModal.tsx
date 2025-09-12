@@ -24,9 +24,10 @@ interface OrderDetailsModalProps {
   order: Order | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onClearCache?: () => void;
 }
 
-const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps) => {
+const OrderDetailsModal = ({ order, open, onOpenChange, onClearCache }: OrderDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<any | null>(null);
   const [customerDetails, setCustomerDetails] = useState<any | null>(null);
@@ -328,7 +329,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 </div>
                 
                 {/* Alert pour les commandes sans articles */}
-                {orderDetails && <MissingItemsAlert order={orderDetails} onOrderRefresh={() => fetchOrderDetails(order!.id)} />}
+                {orderDetails && <MissingItemsAlert order={orderDetails} onOrderRefresh={() => fetchOrderDetails(order!.id)} onClearCache={onClearCache} />}
                 
                 {/* Produits commandés */}
                 <div className="space-y-2">

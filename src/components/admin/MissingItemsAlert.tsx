@@ -9,9 +9,10 @@ import { useState } from "react";
 interface MissingItemsAlertProps {
   order: Order;
   onOrderRefresh?: () => void;
+  onClearCache?: () => void;
 }
 
-export const MissingItemsAlert = ({ order, onOrderRefresh }: MissingItemsAlertProps) => {
+export const MissingItemsAlert = ({ order, onOrderRefresh, onClearCache }: MissingItemsAlertProps) => {
   const { toast } = useToast();
   const [isRecovering, setIsRecovering] = useState(false);
 
@@ -61,6 +62,11 @@ export const MissingItemsAlert = ({ order, onOrderRefresh }: MissingItemsAlertPr
           description: `${data.recovered_items || 0} articles récupérés avec succès`,
           variant: "default"
         });
+        
+        // Vider le cache pour forcer le rechargement
+        if (onClearCache) {
+          onClearCache();
+        }
         
         // Rafraîchir les détails de la commande
         if (onOrderRefresh) {
