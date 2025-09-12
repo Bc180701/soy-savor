@@ -21,74 +21,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   }
 });
 
-// Unified function to get order items from items_summary or order_items fallback
-export const getOrderItems = async (orderId: string, itemsSummary: any) => {
-  let processedItems = [];
-  
-  // Check if items_summary has actual content, if not fallback to order_items
-  const hasValidItemsSummary = itemsSummary && 
-    Array.isArray(itemsSummary) && 
-    itemsSummary.length > 0;
-  
-  if (hasValidItemsSummary) {
-    // NEW: Use items_summary (from webhook)
-    const itemsMap = new Map();
-    
-    // Group items by name and sum quantities
-    itemsSummary.forEach((item: any) => {
-      const name = item.name;
-      if (itemsMap.has(name)) {
-        const existing = itemsMap.get(name);
-        existing.quantity += (item.quantity || 1);
-        // Keep the highest price if different
-        if (item.price && item.price > existing.price) {
-          existing.price = item.price;
-        }
-      } else {
-        itemsMap.set(name, {
-          id: item.id,
-          name: item.name,
-          price: item.price || 0,
-          quantity: item.quantity || 1
-        });
-      }
-    });
-    
-    processedItems = Array.from(itemsMap.values());
-  } else {
-    // FALLBACK: Use order_items table for old orders
-    const { data: orderItems, error: itemsError } = await supabase
-      .from('order_items')
-      .select('*, products(*)')
-      .eq('order_id', orderId);
-      
-    if (!itemsError && orderItems) {
-      // Convert order_items to same format as items_summary
-      const itemsMap = new Map();
-      
-      orderItems.forEach((item: any) => {
-        const name = item.products?.name || `Produit ${item.product_id?.substring(0, 8)}`;
-        if (itemsMap.has(name)) {
-          const existing = itemsMap.get(name);
-          existing.quantity += (item.quantity || 1);
-        } else {
-          itemsMap.set(name, {
-            id: item.id,
-            name: name,
-            price: item.price || 0,
-            quantity: item.quantity || 1,
-            special_instructions: item.special_instructions
-          });
-        }
-      });
-      
-      processedItems = Array.from(itemsMap.values());
-    }
-  }
-  
-  return processedItems;
-};
-
 export const fetchOrderWithDetails = async (orderId: string) => {
   if (!orderId) {
     console.error("No order ID provided");
@@ -105,8 +37,63 @@ export const fetchOrderWithDetails = async (orderId: string) => {
       
     if (orderError) throw orderError;
     
-    // Use unified function to get order items
-    const processedItems = await getOrderItems(orderId, (order as any).items_summary);
+    // Process items_summary to group duplicates by name, OR fallback to order_items for old orders
+    let processedItems = [];
+    if ((order as any).items_summary && Array.isArray((order as any).items_summary) && (order as any).items_summary.length > 0) {
+      // NEW: Use items_summary (from webhook)
+      const itemsMap = new Map();
+      
+      // Group items by name and sum quantities
+      (order as any).items_summary.forEach((item: any) => {
+        const name = item.name;
+        if (itemsMap.has(name)) {
+          const existing = itemsMap.get(name);
+          existing.quantity += (item.quantity || 1);
+          // Keep the highest price if different
+          if (item.price && item.price > existing.price) {
+            existing.price = item.price;
+          }
+        } else {
+          itemsMap.set(name, {
+            id: item.id,
+            name: item.name,
+            price: item.price || 0,
+            quantity: item.quantity || 1
+          });
+        }
+      });
+      
+      processedItems = Array.from(itemsMap.values());
+    } else {
+      // FALLBACK: Use order_items table for old orders
+      const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*, products(*)')
+        .eq('order_id', orderId);
+        
+      if (!itemsError && orderItems) {
+        // Convert order_items to same format as items_summary
+        const itemsMap = new Map();
+        
+        orderItems.forEach((item: any) => {
+          const name = item.products?.name || `Produit ${item.product_id?.substring(0, 8)}`;
+          if (itemsMap.has(name)) {
+            const existing = itemsMap.get(name);
+            existing.quantity += (item.quantity || 1);
+          } else {
+            itemsMap.set(name, {
+              id: item.id,
+              name: name,
+              price: item.price || 0,
+              quantity: item.quantity || 1,
+              special_instructions: item.special_instructions
+            });
+          }
+        });
+        
+        processedItems = Array.from(itemsMap.values());
+      }
+    }
     
     // Fetch customer profile details
     let customerDetails = null;

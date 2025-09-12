@@ -31,8 +31,6 @@ const AdminManager = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  
-  // Safe access to restaurant context with fallback
   const { currentRestaurant } = useRestaurantContext();
   
   // Get active section from URL params or default to dashboard

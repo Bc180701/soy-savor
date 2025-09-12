@@ -27,10 +27,10 @@ serve(async (req) => {
 
     console.log('🔄 Début de la récupération pour la commande:', orderId);
 
-    // 1. Récupérer la commande avec stripe_session_id
+    // 1. Récupérer la commande avec items_summary
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, items_summary, restaurant_id, total, stripe_session_id')
+      .select('id, items_summary, restaurant_id, total')
       .eq('id', orderId)
       .single();
 
@@ -46,8 +46,7 @@ serve(async (req) => {
       id: order.id,
       restaurant_id: order.restaurant_id,
       items_summary_count: Array.isArray(order.items_summary) ? order.items_summary.length : 0,
-      total: order.total,
-      stripe_session_id: order.stripe_session_id ? 'présent' : 'absent'
+      total: order.total
     });
 
     // 2. Vérifier les order_items existants
@@ -63,263 +62,79 @@ serve(async (req) => {
     const existingItemsCount = existingItems?.length || 0;
     console.log('📦 Order_items existants:', existingItemsCount);
 
-    // 3. Essayer de récupérer depuis items_summary s'il existe, sinon depuis Stripe
-    let decodedItems = [];
-    
-    if (order.items_summary && Array.isArray(order.items_summary) && order.items_summary.length > 0) {
-      console.log('📝 Items_summary trouvé en base, décodage...');
-      const { data: decodedItemsResult, error: decodeError } = await supabase
-        .rpc('decode_items_summary', { encoded_summary: order.items_summary });
-
-      if (decodeError) {
-        console.error('❌ Erreur décodage items_summary:', decodeError);
-      } else {
-        decodedItems = decodedItemsResult || [];
-        console.log('✅ Articles décodés depuis la base:', decodedItems.length);
-      }
-    }
-
-    // 4. Si pas d'items décodés, essayer de récupérer depuis Stripe
-    if (decodedItems.length === 0 && order.stripe_session_id) {
-      console.log('🔍 Récupération depuis Stripe session:', order.stripe_session_id);
-      
-      try {
-        console.log('🔑 Tentative de récupération des clés Stripe pour restaurant:', order.restaurant_id);
-        
-        // Récupérer les clés Stripe pour ce restaurant
-        const { data: stripeData, error: stripeError } = await supabase.functions.invoke('get-stripe-key', {
-          body: { restaurantId: order.restaurant_id }
-        });
-
-        console.log('📋 Résultat get-stripe-key:', {
-          hasData: !!stripeData,
-          hasKey: !!(stripeData?.stripeKey),
-          error: stripeError?.message,
-          keyPreview: stripeData?.stripeKey ? stripeData.stripeKey.substring(0, 20) + '...' : 'none'
-        });
-
-        if (stripeError || !stripeData?.stripeKey) {
-          console.error('❌ Impossible de récupérer la clé Stripe:', stripeData?.stripeKey);
-          throw new Error('Clé Stripe non trouvée');
-        }
-
-        console.log('🌐 Appel API Stripe pour session:', order.stripe_session_id);
-        
-        // Récupérer la session Stripe
-        const stripeResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${order.stripe_session_id}`, {
-          headers: {
-            'Authorization': `Bearer ${stripeData.stripeKey}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        });
-
-        console.log('📡 Réponse Stripe API:', {
-          status: stripeResponse.status,
-          statusText: stripeResponse.statusText,
-          ok: stripeResponse.ok
-        });
-
-        if (!stripeResponse.ok) {
-          const errorText = await stripeResponse.text();
-          console.error('❌ Erreur API Stripe:', errorText);
-          throw new Error(`Stripe API error: ${stripeResponse.status} - ${errorText}`);
-        }
-
-        const stripeSession = await stripeResponse.json();
-        console.log('✅ Session Stripe récupérée:', {
-          id: stripeSession.id,
-          payment_status: stripeSession.payment_status,
-          has_metadata: !!stripeSession.metadata,
-          metadata_keys: stripeSession.metadata ? Object.keys(stripeSession.metadata) : []
-        });
-
-        // Extraire les items depuis les métadonnées
-        const metadata = stripeSession.metadata || {};
-        console.log('🔍 Analyse des métadonnées Stripe:', {
-          total_metadata_keys: Object.keys(metadata).length,
-          has_items_summary: !!metadata.items_summary,
-          has_items: !!metadata.items,
-          metadata_preview: Object.keys(metadata).slice(0, 5)
-        });
-        
-        let itemsFromStripe = [];
-
-        if (metadata.items_summary) {
-          console.log('📦 Items_summary trouvé dans les métadonnées Stripe, longueur:', metadata.items_summary.length);
-          try {
-            const parsedItems = JSON.parse(metadata.items_summary);
-            if (Array.isArray(parsedItems)) {
-              // Décoder les items encodés
-              const { data: decodedFromStripe, error: decodeStripeError } = await supabase
-                .rpc('decode_items_summary', { encoded_summary: parsedItems });
-              
-              if (!decodeStripeError && decodedFromStripe) {
-                itemsFromStripe = decodedFromStripe;
-                console.log('✅ Items décodés depuis Stripe metadata:', itemsFromStripe.length);
-              } else {
-                console.error('❌ Erreur décodage depuis Stripe:', decodeStripeError);
-              }
-            }
-          } catch (parseError) {
-            console.error('❌ Erreur parsing items_summary de Stripe:', parseError);
-          }
-        } else if (metadata.items) {
-          console.log('📦 Items trouvé dans les métadonnées Stripe, longueur:', metadata.items.length);
-          try {
-            const parsedItems = JSON.parse(metadata.items);
-            if (Array.isArray(parsedItems)) {
-              itemsFromStripe = parsedItems;
-              console.log('✅ Items récupérés depuis Stripe metadata:', itemsFromStripe.length);
-            }
-          } catch (parseError) {
-            console.error('❌ Erreur parsing items de Stripe:', parseError);
-          }
-        } else {
-          console.log('⚠️ Aucun items_summary ni items trouvé dans les métadonnées Stripe');
-        }
-
-        decodedItems = itemsFromStripe;
-        console.log('📊 Résultat final récupération Stripe:', {
-          items_found: itemsFromStripe.length,
-          first_item_preview: itemsFromStripe[0] ? {
-            name: itemsFromStripe[0].name,
-            quantity: itemsFromStripe[0].quantity,
-            price: itemsFromStripe[0].price
-          } : null
-        });
-        
-      } catch (stripeRecoveryError) {
-        console.error('❌ Erreur récupération depuis Stripe:', stripeRecoveryError.message);
-      }
-    }
-
-    if (decodedItems.length === 0) {
-      console.log('⚠️ Aucun article trouvé ni en base ni dans Stripe');
+    // 3. Analyser items_summary
+    if (!order.items_summary || !Array.isArray(order.items_summary)) {
+      console.log('⚠️ Pas d\'items_summary valide à traiter');
       return new Response(JSON.stringify({ 
         success: false, 
-        message: 'Aucun article trouvé à récupérer',
-        existing_items: existingItemsCount,
-        tried_database: order.items_summary && order.items_summary.length > 0,
-        tried_stripe: !!order.stripe_session_id
+        message: 'No valid items_summary found',
+        existing_items: existingItemsCount
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log('✅ Articles à traiter:', decodedItems.length);
+    const itemsSummary = order.items_summary;
+    console.log('📝 Items_summary à traiter:', itemsSummary.length, 'articles');
 
-    // 5. Logger chaque article décodé
-    decodedItems.forEach((item: any, index: number) => {
-      console.log(`📋 Article décodé ${index + 1}:`, {
+    // 4. Logger chaque article dans items_summary
+    itemsSummary.forEach((item: any, index: number) => {
+      console.log(`📋 Article ${index + 1} dans items_summary:`, {
+        id: item.id,
         name: item.name,
-        description: item.description,
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
+        unit_price: item.unit_price,
+        description: item.description
       });
     });
 
-    // 6. Récupérer les produits correspondants pour obtenir les product_id
-    const productNames = decodedItems.map((item: any) => item.name);
-    console.log('🔍 Recherche des produits dans la base:', productNames);
-
-    const { data: products, error: productsError } = await supabase
-      .from('products')
-      .select('id, name')
-      .in('name', productNames)
-      .eq('restaurant_id', order.restaurant_id);
-
-    if (productsError) {
-      console.error('❌ Erreur récupération produits:', productsError);
-    }
-
-    const productsMap = new Map();
-    if (products) {
-      products.forEach((product: any) => {
-        productsMap.set(product.name, product.id);
-      });
-    }
-    console.log('📦 Produits trouvés:', productsMap.size, 'sur', productNames.length);
-
-    // 7. Créer les order_items manquants si nécessaire
+    // 5. Créer les order_items manquants si nécessaire
     let recoveredItems = 0;
     let skippedItems = 0;
 
-    if (existingItemsCount === 0 && decodedItems.length > 0) {
+    if (existingItemsCount === 0 && itemsSummary.length > 0) {
       console.log('🚨 RÉCUPÉRATION NÉCESSAIRE: Aucun order_item existant');
       
-      // Séparer les items valides et invalides
-      const validItems: any[] = [];
-      const ignoredItems: any[] = [];
-
-      decodedItems.forEach((item: any, index: number) => {
-        const productId = productsMap.get(item.name);
-        
+      const recoveryItems = itemsSummary.map((item: any, index: number) => {
         const orderItem = {
           order_id: orderId,
-          product_id: productId || null,
+          product_id: (item.id && item.id !== 'unknown') ? item.id : null,
           quantity: item.quantity || 1,
-          price: item.price || 0,
-          special_instructions: item.description || null
+          price: item.unit_price || item.price || 0,
+          special_instructions: item.name ? `RÉCUPÉRÉ: ${item.name}` : `Article récupéré ${index + 1}`
         };
 
-        console.log(`💾 Order_item de récupération ${index + 1}:`, {
-          name: item.name,
-          product_id: productId,
-          quantity: orderItem.quantity,
-          price: orderItem.price,
-          special_instructions: orderItem.special_instructions
-        });
-
-        if (productId) {
-          validItems.push(orderItem);
-        } else {
-          ignoredItems.push({
-            name: item.name,
-            reason: 'product_id not found',
-            item: orderItem
-          });
-        }
+        console.log(`💾 Order_item de récupération ${index + 1}:`, orderItem);
+        return orderItem;
       });
 
-      console.log(`📦 Items à traiter: ${validItems.length} valides, ${ignoredItems.length} ignorés`);
-      
-      if (ignoredItems.length > 0) {
-        console.log('⚠️ Items ignorés (product_id manquant):', ignoredItems.map(i => i.name));
-      }
+      const { data: insertedItems, error: insertError } = await supabase
+        .from('order_items')
+        .insert(recoveryItems)
+        .select();
 
-      let insertedItems = null;
-      if (validItems.length > 0) {
-        const { data, error: insertError } = await supabase
-          .from('order_items')
-          .insert(validItems)
-          .select();
-
-        if (insertError) {
-          console.error('❌ Erreur insertion order_items de récupération:', insertError);
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: insertError.message,
-            existing_items: existingItemsCount,
-            valid_items: validItems.length,
-            ignored_items: ignoredItems.length
-          }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        insertedItems = data;
+      if (insertError) {
+        console.error('❌ Erreur insertion order_items de récupération:', insertError);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: insertError.message,
+          existing_items: existingItemsCount
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
 
       recoveredItems = insertedItems?.length || 0;
-      const ignoredCount = ignoredItems.length;
-      console.log('✅ Récupération réussie:', recoveredItems, 'order_items créés,', ignoredCount, 'items ignorés');
+      console.log('✅ Récupération réussie:', recoveredItems, 'order_items créés');
 
     } else if (existingItemsCount > 0) {
       console.log('✅ Order_items déjà présents, pas de récupération nécessaire');
       skippedItems = existingItemsCount;
     } else {
-      console.log('⚠️ Pas d\'items décodés à récupérer');
+      console.log('⚠️ Pas d\'items_summary à récupérer');
     }
 
     // 6. Vérification finale
@@ -332,23 +147,22 @@ serve(async (req) => {
 
     console.log('📊 Résumé de la récupération:', {
       orderId,
-      decoded_items_count: decodedItems.length,
+      items_summary_count: itemsSummary.length,
       existing_items_before: existingItemsCount,
       recovered_items: recoveredItems,
       skipped_items: skippedItems,
-      final_items_count: finalCount,
-      had_stripe_session: !!order.stripe_session_id
+      final_items_count: finalCount
     });
 
     return new Response(JSON.stringify({
       success: true,
       orderId,
-      decoded_items_count: decodedItems.length,
+      items_summary_count: itemsSummary.length,
       existing_items_before: existingItemsCount,
       recovered_items: recoveredItems,
       skipped_items: skippedItems,
       final_items_count: finalCount,
-      message: recoveredItems > 0 ? `Récupération réussie: ${recoveredItems} order_items créés depuis ${decodedItems.length} articles trouvés` : 
+      message: recoveredItems > 0 ? `Récupération réussie: ${recoveredItems} order_items créés` : 
                skippedItems > 0 ? 'Order_items déjà présents' : 'Aucune récupération nécessaire'
     }), {
       status: 200,

@@ -47,8 +47,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     loading, 
     error, 
     refreshOrders, 
-    updateOrderLocally,
-    clearCache,
+    updateOrderLocally, 
     isFromCache 
   } = useOptimizedOrders(restaurantId);
 
@@ -270,7 +269,6 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
           order={selectedOrder}
           open={!!selectedOrder}
           onOpenChange={() => setSelectedOrder(null)}
-          onClearCache={clearCache}
         />
       )}
     </div>

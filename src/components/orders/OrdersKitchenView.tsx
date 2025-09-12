@@ -2,7 +2,7 @@
 import { Order } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Eye, AlertCircle, RefreshCw } from "lucide-react";
+import { Clock, Eye, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -27,7 +27,6 @@ const OrdersKitchenView = ({
   const [delayMinutes, setDelayMinutes] = useState(15);
   const [delayReason, setDelayReason] = useState("");
   const [isNotifying, setIsNotifying] = useState(false);
-  const [isRecovering, setIsRecovering] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Filtrer uniquement les commandes pertinentes pour la cuisine
@@ -138,65 +137,6 @@ const OrdersKitchenView = ({
   const openDelayDialog = (orderId: string) => {
     setSelectedOrderId(orderId);
     setDelayDialogOpen(true);
-  };
-
-  const handleRecoverOrderItems = async (orderId: string, onSuccess?: () => void) => {
-    const order = orders.find(o => o.id === orderId);
-    console.log('🔍 Diagnostic avant récupération pour commande:', orderId);
-    console.log('📋 Order.itemsSummary:', order?.itemsSummary);
-    console.log('📦 Order.items:', order?.items);
-    console.log('💰 Order.total:', order?.total);
-    
-    setIsRecovering(orderId);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('recover-order-items', {
-        body: { orderId }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      console.log('✅ Résultat de la récupération:', data);
-
-      toast({
-        title: "Articles récupérés",
-        description: data.message || `${data.recovered_items || 0} articles ont été récupérés.`,
-        variant: "default",
-      });
-
-      // Appeler le callback de succès au lieu de recharger la page
-      if (onSuccess) {
-        onSuccess();
-      }
-
-    } catch (error: any) {
-      console.error("Erreur lors de la récupération des articles:", error);
-      toast({
-        title: "Erreur",
-        description: `Impossible de récupérer les articles: ${error.message || "Erreur inconnue"}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsRecovering(null);
-    }
-  };
-
-  const hasItems = (order: Order) => {
-    const hasItemsSummary = order.itemsSummary && order.itemsSummary.length > 0;
-    const hasItems = order.items && order.items.length > 0;
-    const hasTotal = order.total && order.total > 0;
-    
-    console.log(`🔍 Diagnostic hasItems pour commande ${order.id.substring(0, 8)}:`, {
-      hasItemsSummary,
-      hasItems,
-      hasTotal,
-      shouldShowRecoverButton: !hasItemsSummary && !hasItems && hasTotal
-    });
-    
-    // Une commande devrait avoir des articles si elle a un total > 0
-    return hasItemsSummary || hasItems;
   };
 
   return (
@@ -310,24 +250,6 @@ const OrdersKitchenView = ({
                   <AlertCircle className="h-4 w-4 mr-1" />
                   Signaler retard
                 </Button>
-
-                {!hasItems(order) && order.total > 0 && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-red-100 border-red-300 hover:bg-red-200 text-red-800"
-                    onClick={() => handleRecoverOrderItems(order.id, () => {
-                      // Callback pour rafraîchir les données sans recharger la page
-                      console.log('🔄 Récupération terminée, mise à jour des données...');
-                      // Note: Dans une vraie implémentation, on devrait appeler une fonction
-                      // du parent pour recharger les données
-                    })}
-                    disabled={isRecovering === order.id}
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-1 ${isRecovering === order.id ? 'animate-spin' : ''}`} />
-                    {isRecovering === order.id ? 'Récupération...' : 'Récupérer articles'}
-                  </Button>
-                )}
                 
                 {order.status === 'confirmed' && (
                   <Button

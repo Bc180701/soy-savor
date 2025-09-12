@@ -1,5 +1,5 @@
 import { CartItem, Order } from "@/types";
-import { supabase, getOrderItems } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { sendOrderStatusSMS } from "./smsService";
 
@@ -300,8 +300,7 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
         client_email,
         delivery_street,
         delivery_city,
-        delivery_postal_code,
-        items_summary
+        delivery_postal_code
       `)
       .order('created_at', { ascending: false });
 
@@ -380,78 +379,42 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       items: [] // Nous allons les récupérer séparément
     }));
 
-    // Récupérer les articles de commande avec logique simplifiée
-    const orderItemsPromises = formattedOrders.map(async (order) => {
-      const rawOrder = orders.find(o => o.id === order.id);
-      
-      console.log(`🔍 [ORDERSERVICE] Traitement commande ${order.id}:`, {
-        hasItemsSummary: !!rawOrder?.items_summary,
-        itemsSummaryType: typeof rawOrder?.items_summary,
-        itemsSummaryLength: Array.isArray(rawOrder?.items_summary) ? rawOrder.items_summary.length : 'N/A',
-        itemsSummaryContent: rawOrder?.items_summary
-      });
-      
-      // Si items_summary a des éléments, l'utiliser directement
-      if (rawOrder?.items_summary && Array.isArray(rawOrder.items_summary) && rawOrder.items_summary.length > 0) {
-        console.log(`✅ [ORDERSERVICE] Utilisation items_summary pour commande ${order.id}: ${rawOrder.items_summary.length} articles`);
-        order.items = rawOrder.items_summary.map((item: any) => ({
+    // Récupérer les articles de commande pour chaque commande
+    for (const order of formattedOrders) {
+      const { data: items, error: itemsError } = await supabase
+        .from('order_items')
+        .select(`
+          id,
+          product_id,
+          quantity,
+          price,
+          special_instructions,
+          products(name)
+        `)
+        .eq('order_id', order.id);
+
+      if (itemsError) {
+        console.error(`Erreur lors de la récupération des articles pour la commande ${order.id}:`, itemsError);
+        continue;
+      }
+
+      // Mettre en forme les articles de commande
+      if (items && items.length > 0) {
+        console.log(`${items.length} articles trouvés pour la commande ${order.id}`);
+        order.items = items.map(item => ({
           menuItem: {
-            id: item.id || item.product_id,
-            name: item.name || item.product_name,
+            id: item.product_id,
+            name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
             price: item.price,
-            category: "plateaux"
+            category: "plateaux" // Catégorie par défaut
           },
           quantity: item.quantity,
-          price: item.price,
           specialInstructions: item.special_instructions
         }));
       } else {
-        // Sinon, récupérer order_items directement depuis la DB
-        console.log(`🔍 Récupération order_items pour commande ${order.id}`);
-        const { data: orderItems, error } = await supabase
-          .from('order_items')
-          .select(`
-            *,
-            products!inner(
-              id,
-              name,
-              price
-            )
-          `)
-          .eq('order_id', order.id);
-
-        if (error) {
-          console.error(`❌ Erreur récupération order_items pour ${order.id}:`, error);
-          order.items = [];
-        } else if (orderItems && orderItems.length > 0) {
-          console.log(`✅ ${orderItems.length} order_items trouvés pour commande ${order.id}`);
-          order.items = orderItems.map((item: any) => ({
-            menuItem: {
-              id: item.products.id,
-              name: item.products.name,
-              price: item.products.price,
-              category: "plateaux"
-            },
-            quantity: item.quantity,
-            price: item.price,
-            specialInstructions: item.special_instructions
-          }));
-        } else {
-          console.log(`❌ Aucun order_item trouvé pour commande ${order.id}`);
-          order.items = [];
-        }
+        console.log(`Aucun article trouvé pour la commande ${order.id}`);
       }
-      
-      return order;
-    });
-
-    // Attendre que tous les articles soient traités
-    await Promise.all(orderItemsPromises);
-    
-    // Log final
-    formattedOrders.forEach(order => {
-      console.log(`📋 Commande ${order.id} - Articles finaux: ${order.items.length}`);
-    });
+    }
 
     console.log(`${formattedOrders.length} commandes formatées avec succès`);
     return { orders: formattedOrders, error: null };
