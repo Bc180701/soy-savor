@@ -1,13 +1,20 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Phone, Mail } from "lucide-react";
+import { AlertTriangle, Phone, Mail, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Order } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface MissingItemsAlertProps {
   order: Order;
+  onOrderRefresh?: () => void;
 }
 
-export const MissingItemsAlert = ({ order }: MissingItemsAlertProps) => {
+export const MissingItemsAlert = ({ order, onOrderRefresh }: MissingItemsAlertProps) => {
+  const { toast } = useToast();
+  const [isRecovering, setIsRecovering] = useState(false);
+
   if (order.items && order.items.length > 0) {
     return null;
   }
@@ -26,6 +33,54 @@ export const MissingItemsAlert = ({ order }: MissingItemsAlertProps) => {
     }
   };
 
+  const handleRecoverItems = async () => {
+    setIsRecovering(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('recover-order-items', {
+        body: { orderId: order.id }
+      });
+
+      if (error) {
+        console.error('Erreur lors de la récupération:', error);
+        toast({
+          title: "Erreur de récupération",
+          description: "Impossible de récupérer les articles automatiquement",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Articles récupérés",
+          description: `${data.recovered_items || 0} articles récupérés avec succès`,
+          variant: "default"
+        });
+        
+        // Rafraîchir les détails de la commande
+        if (onOrderRefresh) {
+          onOrderRefresh();
+        }
+      } else {
+        toast({
+          title: "Récupération impossible",
+          description: data?.message || "Aucun article à récupérer",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération:', error);
+      toast({
+        title: "Erreur technique",
+        description: "Une erreur est survenue lors de la récupération",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
   return (
     <Alert className="border-destructive bg-destructive/10 mb-4">
       <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -38,6 +93,16 @@ export const MissingItemsAlert = ({ order }: MissingItemsAlertProps) => {
           Il s'agit probablement d'un problème technique survenu lors de la création de la commande.
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button 
+            size="sm" 
+            variant="default" 
+            onClick={handleRecoverItems}
+            disabled={isRecovering}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <RefreshCw className={`h-3 w-3 mr-1 ${isRecovering ? 'animate-spin' : ''}`} />
+            {isRecovering ? 'Récupération...' : 'Récupérer automatiquement'}
+          </Button>
           <Button 
             size="sm" 
             variant="outline" 
@@ -60,7 +125,7 @@ export const MissingItemsAlert = ({ order }: MissingItemsAlertProps) => {
           </Button>
         </div>
         <div className="text-xs text-muted-foreground">
-          Contactez immédiatement le client pour connaître sa commande et préparer manuellement.
+          Essayez d'abord la récupération automatique. Si elle échoue, contactez le client pour connaître sa commande.
         </div>
       </AlertDescription>
     </Alert>
