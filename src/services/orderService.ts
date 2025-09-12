@@ -380,26 +380,59 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       items: [] // Nous allons les récupérer séparément
     }));
 
-    // Récupérer les articles de commande pour toutes les commandes en parallèle
+    // Récupérer les articles de commande avec logique simplifiée
     const orderItemsPromises = formattedOrders.map(async (order) => {
-      // Get items_summary from raw order data to pass to unified function
       const rawOrder = orders.find(o => o.id === order.id);
-      const processedItems = await getOrderItems(order.id, rawOrder?.items_summary);
       
-      if (processedItems && processedItems.length > 0) {
-        console.log(`✅ ${processedItems.length} articles trouvés pour la commande ${order.id}`);
-        order.items = processedItems.map(item => ({
+      // Si items_summary a des éléments, l'utiliser directement
+      if (rawOrder?.items_summary && Array.isArray(rawOrder.items_summary) && rawOrder.items_summary.length > 0) {
+        console.log(`✅ Utilisation items_summary pour commande ${order.id}: ${rawOrder.items_summary.length} articles`);
+        order.items = rawOrder.items_summary.map((item: any) => ({
           menuItem: {
-            id: item.id,
-            name: item.name,
+            id: item.id || item.product_id,
+            name: item.name || item.product_name,
             price: item.price,
-            category: "plateaux" // Catégorie par défaut
+            category: "plateaux"
           },
           quantity: item.quantity,
+          price: item.price,
           specialInstructions: item.special_instructions
         }));
       } else {
-        console.log(`❌ Aucun article trouvé pour la commande ${order.id}`);
+        // Sinon, récupérer order_items directement depuis la DB
+        console.log(`🔍 Récupération order_items pour commande ${order.id}`);
+        const { data: orderItems, error } = await supabase
+          .from('order_items')
+          .select(`
+            *,
+            products!inner(
+              id,
+              name,
+              price
+            )
+          `)
+          .eq('order_id', order.id);
+
+        if (error) {
+          console.error(`❌ Erreur récupération order_items pour ${order.id}:`, error);
+          order.items = [];
+        } else if (orderItems && orderItems.length > 0) {
+          console.log(`✅ ${orderItems.length} order_items trouvés pour commande ${order.id}`);
+          order.items = orderItems.map((item: any) => ({
+            menuItem: {
+              id: item.products.id,
+              name: item.products.name,
+              price: item.products.price,
+              category: "plateaux"
+            },
+            quantity: item.quantity,
+            price: item.price,
+            specialInstructions: item.special_instructions
+          }));
+        } else {
+          console.log(`❌ Aucun order_item trouvé pour commande ${order.id}`);
+          order.items = [];
+        }
       }
       
       return order;
@@ -408,7 +441,7 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
     // Attendre que tous les articles soient traités
     await Promise.all(orderItemsPromises);
     
-    // Log final pour vérifier que les articles sont bien assignés
+    // Log final
     formattedOrders.forEach(order => {
       console.log(`📋 Commande ${order.id} - Articles finaux: ${order.items.length}`);
     });
