@@ -1,7 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './AppWithGeoRoutes.tsx'; // Utilise les routes géographiques
+import App from './App.tsx';
 import './index.css';
 
 // Vérification pour déboguer l'erreur React.useState null
