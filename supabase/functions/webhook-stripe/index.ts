@@ -112,9 +112,66 @@ serve(async (req) => {
           console.error('❌ Erreur vérification order_items existants:', itemsCheckError);
         }
         
+        const hasOrderItems = existingItems && existingItems.length > 0;
+        
         // Si la commande n'a pas d'order_items, essayer de les recréer
-        if (!existingItems || existingItems.length === 0) {
+        if (!hasOrderItems) {
           console.log('🚨 Commande existante SANS order_items détectée - tentative de récupération...');
+          
+          // D'abord essayer de récupérer depuis la sauvegarde préventive
+          const customerEmail = session.customer_details?.email || session.metadata?.clientEmail;
+          if (customerEmail) {
+            console.log("🔍 Recherche de sauvegarde préventive pour:", customerEmail);
+            try {
+              const { data: backupData, error: backupError } = await supabase
+                .from('cart_backup')
+                .select('*')
+                .eq('session_id', customerEmail)
+                .eq('is_used', false)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+              if (!backupError && backupData && backupData.length > 0) {
+                console.log("✅ Sauvegarde trouvée, récupération des items...");
+                const backup = backupData[0];
+                const cartItems = backup.cart_items;
+
+                if (Array.isArray(cartItems) && cartItems.length > 0) {
+                  // Créer les order_items depuis la sauvegarde
+                  const orderItemsToInsert = cartItems.map(item => ({
+                    order_id: existingOrder.id,
+                    product_id: item.id || null,
+                    quantity: item.quantity || 1,
+                    price: item.price || 0,
+                    special_instructions: item.special_instructions || null
+                  }));
+
+                  const { error: insertError } = await supabase
+                    .from('order_items')
+                    .insert(orderItemsToInsert);
+
+                  if (!insertError) {
+                    console.log("✅ Items récupérés depuis la sauvegarde préventive");
+                    
+                    // Marquer la sauvegarde comme utilisée
+                    await supabase
+                      .from('cart_backup')
+                      .update({ is_used: true })
+                      .eq('id', backup.id);
+                      
+                    return new Response(JSON.stringify({ received: true, existing: true, orderId: existingOrder.id, source: 'cart_backup' }), {
+                      status: 200,
+                      headers: { 'Content-Type': 'application/json' }
+                    });
+                  } else {
+                    console.error("Erreur lors de l'insertion des items depuis la sauvegarde:", insertError);
+                  }
+                }
+              }
+            } catch (backupError) {
+              console.error("Erreur lors de la récupération depuis la sauvegarde:", backupError);
+            }
+          }
           
           // Récupérer les métadonnées pour recréer les order_items
           const metadata = session.metadata;

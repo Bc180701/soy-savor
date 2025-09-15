@@ -47,6 +47,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cart_backup: {
+        Row: {
+          cart_items: Json
+          created_at: string
+          id: string
+          is_used: boolean
+          restaurant_id: string
+          session_id: string
+        }
+        Insert: {
+          cart_items: Json
+          created_at?: string
+          id?: string
+          is_used?: boolean
+          restaurant_id: string
+          session_id: string
+        }
+        Update: {
+          cart_items?: Json
+          created_at?: string
+          id?: string
+          is_used?: boolean
+          restaurant_id?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           description: string | null
@@ -1321,6 +1348,10 @@ export type Database = {
       check_table_exists: {
         Args: { table_name: string }
         Returns: boolean
+      }
+      cleanup_old_cart_backups: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       count_table_rows: {
         Args: { table_name: string }

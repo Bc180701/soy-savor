@@ -270,6 +270,26 @@ const PanierContent = () => {
         return;
       }
 
+      // 💾 SAUVEGARDE PRÉVENTIVE DU PANIER AVANT LE CHECKOUT
+      console.log("💾 Sauvegarde préventive du panier...");
+      try {
+        const { error: backupError } = await supabase
+          .from('cart_backup')
+          .insert({
+            session_id: deliveryInfo.email || 'anonymous',
+            cart_items: items as any,
+            restaurant_id: cartRestaurant?.id || selectedRestaurantId || ''
+          });
+        
+        if (backupError) {
+          console.error("Erreur lors de la sauvegarde du panier:", backupError);
+        } else {
+          console.log("✅ Panier sauvegardé avec succès pour:", deliveryInfo.email);
+        }
+      } catch (backupError) {
+        console.error("Erreur critique lors de la sauvegarde:", backupError);
+      }
+
       // 🚨 VÉRIFICATION FINALE DU CRÉNEAU AVANT PAIEMENT
       if (deliveryInfo.orderType === 'delivery' && cartRestaurant && deliveryInfo.pickupTime) {
         try {
