@@ -1,8 +1,7 @@
-
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { MenuCategory } from "@/types";
+import { CarteCategory } from "@/types";
 import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
 import { RESTAURANTS } from "@/services/restaurantService";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,11 +14,11 @@ import { RestaurantProvider, useRestaurantContext } from "@/hooks/useRestaurantC
 import SEOHead from "@/components/SEOHead";
 import menuHeroImage from "@/assets/menu-hero.jpg";
 
-const MenuContent = () => {
+const CarteContent = () => {
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
   const [activeCategory, setActiveCategory] = useState("");
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [categories, setCategories] = useState<CarteCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -36,18 +35,18 @@ const MenuContent = () => {
     
     checkAuth();
     
-    const loadMenuData = async () => {
+    const loadCarteData = async () => {
       setIsLoading(true);
       try {
-        console.time('Loading Menu Data');
+        console.time('Loading Carte Data');
         // Utiliser le premier restaurant par défaut si aucun n'est sélectionné
         const restaurantId = currentRestaurant?.id || RESTAURANTS.CHATEAURENARD;
-        let menuData = await getMenuData(restaurantId);
-        console.timeEnd('Loading Menu Data');
+        let carteData = await getMenuData(restaurantId);
+        console.timeEnd('Loading Carte Data');
         
         // Si aucune donnée n'existe, initialiser automatiquement
-        if (menuData.length === 0) {
-          console.log("Aucune donnée de menu trouvée, initialisation automatique...");
+        if (carteData.length === 0) {
+          console.log("Aucune donnée de carte trouvée, initialisation automatique...");
           setIsInitializing(true);
           
           // D'abord initialiser les catégories avec l'ID du restaurant
@@ -66,28 +65,28 @@ const MenuContent = () => {
           }
           console.log("Produits initialisés avec succès");
           
-          // Récupérer les données du menu après l'initialisation
-          menuData = await getMenuData(restaurantId);
+          // Récupérer les données de la carte après l'initialisation
+          carteData = await getMenuData(restaurantId);
           
           toast({
-            title: "Menu initialisé",
+            title: "Carte initialisée",
             description: "Les catégories et produits ont été chargés avec succès.",
           });
           
           setIsInitializing(false);
         }
         
-        setCategories(menuData);
+        setCategories(carteData);
         
         // Set the active category to the first one if available
-        if (menuData.length > 0 && !activeCategory) {
-          setActiveCategory(menuData[0].id);
+        if (carteData.length > 0 && !activeCategory) {
+          setActiveCategory(carteData[0].id);
         }
       } catch (error) {
-        console.error("Error loading menu data:", error);
+        console.error("Error loading carte data:", error);
         toast({
           title: "Erreur",
-          description: "Impossible de charger les données du menu. Vérifiez les autorisations de la base de données.",
+          description: "Impossible de charger les données de la carte. Vérifiez les autorisations de la base de données.",
           variant: "destructive"
         });
       } finally {
@@ -95,14 +94,14 @@ const MenuContent = () => {
       }
     };
 
-    loadMenuData();
+    loadCarteData();
   }, [toast, activeCategory, currentRestaurant]);
 
   // Afficher uniquement le chargement initial, pas lors des changements de catégorie
   if ((isLoading && categories.length === 0) || isInitializing) {
     return (
       <LoadingSpinner 
-        message={isInitializing ? "Initialisation du menu..." : "Chargement du menu..."}
+        message={isInitializing ? "Initialisation de la carte..." : "Chargement de la carte..."}
       />
     );
   }
@@ -114,7 +113,7 @@ const MenuContent = () => {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Menu",
-    "name": "Menu Restaurant Sushieats",
+    "name": "Carte Restaurant Sushieats",
     "description": "Découvrez notre carte de spécialités japonaises : sushis, makis, sashimis, poke bowls et bien plus",
     "provider": {
       "@type": "Restaurant",
@@ -131,10 +130,10 @@ const MenuContent = () => {
   return (
     <>
       <SEOHead 
-        title="Menu Restaurant Japonais - Sushis, Makis & Poke Bowls | Sushieats"
+        title="Carte Restaurant Japonais - Sushis, Makis & Poke Bowls | Sushieats"
         description="Découvrez notre carte de spécialités japonaises fraîches : sushis, makis, sashimis, poke bowls, plateaux et desserts. Commandez en ligne ou réservez votre table."
-        keywords="menu sushi, restaurant japonais, makis, sashimis, poke bowl, plateaux sushi, livraison sushi, commande en ligne"
-        canonical={`${window.location.origin}/menu`}
+        keywords="carte sushi, restaurant japonais, makis, sashimis, poke bowl, plateaux sushi, livraison sushi, commande en ligne"
+        canonical={`${window.location.origin}/carte`}
         ogImage={menuHeroImage}
         ogType="website"
         structuredData={structuredData}
@@ -145,13 +144,13 @@ const MenuContent = () => {
         <div className="mb-12 relative rounded-xl overflow-hidden">
           <img 
             src={menuHeroImage} 
-            alt="Menu de spécialités japonaises - sushis, makis et poke bowls"
+            alt="Carte de spécialités japonaises - sushis, makis et poke bowls"
             className="w-full h-64 md:h-80 object-cover"
             loading="eager"
           />
           <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
             <div className="text-center text-white">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Notre Menu</h1>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">Notre Carte</h1>
               <p className="text-lg md:text-xl max-w-2xl">
                 Découvrez nos spécialités japonaises préparées avec soin
               </p>
@@ -202,12 +201,12 @@ const MenuContent = () => {
   );
 };
 
-const Menu = () => {
+const Carte = () => {
   return (
     <RestaurantProvider>
-      <MenuContent />
+      <CarteContent />
     </RestaurantProvider>
   );
 };
 
-export default Menu;
+export default Carte;

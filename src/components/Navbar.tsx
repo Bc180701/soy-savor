@@ -107,7 +107,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Accueil", path: "/" },
-    { name: "Menu", path: "/menu" },
+    { name: "Carte", path: "/carte" },
     { name: "Commander", path: "/commander" },
     { name: "Contact", path: "/contact" },
   ];

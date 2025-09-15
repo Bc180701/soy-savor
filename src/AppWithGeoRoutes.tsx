@@ -8,7 +8,7 @@ import { RestaurantProvider } from "@/hooks/useRestaurantContext";
 
 // Pages principales
 import Index from "@/pages/Index";
-import Menu from "@/pages/Menu";
+import Carte from "@/pages/Carte";
 import Commander from "@/pages/Commander";
 import Contact from "@/pages/Contact";
 import Panier from "@/pages/Panier";
@@ -81,7 +81,8 @@ function App() {
             <Routes>
         {/* Pages principales avec Layout */}
         <Route path="/" element={<Layout><Index /></Layout>} />
-        <Route path="/menu" element={<Layout><Menu /></Layout>} />
+        <Route path="/carte" element={<Layout><Carte /></Layout>} />
+        <Route path="/menu" element={<Layout><Carte /></Layout>} />
         <Route path="/commander" element={<Layout><Commander /></Layout>} />
         <Route path="/contact" element={<Layout><Contact /></Layout>} />
         <Route path="/panier" element={<Layout><Panier /></Layout>} />

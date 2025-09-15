@@ -19,7 +19,7 @@ const SushiCodePostal13160 = () => {
       "addressCountry": "FR"
     },
     "servesCuisine": "Japonaise",
-    "hasMenu": `${window.location.origin}/menu`
+    "hasMenu": `${window.location.origin}/carte`
   };
 
   return (
@@ -144,7 +144,7 @@ const SushiCodePostal13160 = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild className="bg-gold-600 hover:bg-gold-700">
-                <a href="/menu">Voir le menu complet</a>
+                <a href="/carte">Voir la carte complète</a>
               </Button>
               <Button asChild variant="outline">
                 <a href="/commander">Commander maintenant</a>

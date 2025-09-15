@@ -10,7 +10,7 @@ const NavItems = () => {
         <Link to="/">Accueil</Link>
       </Button>
       <Button variant="ghost" size="sm" asChild>
-        <Link to="/menu">Menu</Link>
+        <Link to="/carte">Carte</Link>
       </Button>
       <Button variant="ghost" size="sm" asChild>
         <Link to="/commander">Commander</Link>

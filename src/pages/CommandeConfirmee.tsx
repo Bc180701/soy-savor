@@ -326,7 +326,7 @@ const CommandeConfirmee = () => {
           </Button>
           
           <Button variant="outline" asChild className="w-full">
-            <Link to="/menu">
+            <Link to="/carte">
               Continuer mes achats
             </Link>
           </Button>

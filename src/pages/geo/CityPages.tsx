@@ -24,7 +24,7 @@ const generateCityPage = ({ cityName, postalCode, region, restaurantName }: City
       "addressCountry": "FR"
     },
     "servesCuisine": "Japonaise",
-    "hasMenu": `${window.location.origin}/menu`
+    "hasMenu": `${window.location.origin}/carte`
   };
 
   return (
@@ -63,7 +63,7 @@ const generateCityPage = ({ cityName, postalCode, region, restaurantName }: City
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild className="bg-gold-600 hover:bg-gold-700">
-              <a href="/menu">Voir le menu</a>
+              <a href="/carte">Voir la carte</a>
             </Button>
             <Button asChild variant="outline">
               <a href="/commander">Commander à {cityName}</a>

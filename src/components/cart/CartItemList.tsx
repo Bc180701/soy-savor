@@ -18,7 +18,7 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
     return (
       <div className="text-center py-8">
         <p className="text-lg text-gray-600">Votre panier est vide.</p>
-        <Link to="/menu" className="mt-4 inline-block text-gold-500 hover:text-gold-600">
+        <Link to="/carte" className="mt-4 inline-block text-gold-500 hover:text-gold-600">
           Parcourir le menu
         </Link>
       </div>

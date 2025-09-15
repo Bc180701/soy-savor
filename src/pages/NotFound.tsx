@@ -38,7 +38,7 @@ const NotFound = () => {
               </Link>
             </Button>
             <Button asChild variant="outline" className="border-gold-200 text-gold-600 hover:bg-gold-50">
-              <Link to="/menu">
+              <Link to="/carte">
                 Voir notre menu
               </Link>
             </Button>

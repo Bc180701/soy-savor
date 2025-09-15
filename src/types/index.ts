@@ -27,7 +27,7 @@ export type SushiCategory =
   | "Accompagnement"
   | "Accessoire";
 
-export interface MenuItem {
+export interface CarteItem {
   id: string;
   name: string;
   description?: string;
@@ -46,12 +46,16 @@ export interface MenuItem {
   originalPrice?: number; // Added for free dessert promotion
 }
 
-export interface MenuCategory {
+export interface CarteCategory {
   id: SushiCategory;
   name: string;
   description?: string;
-  items: MenuItem[];
+  items: CarteItem[];
 }
+
+// Compatibility aliases - will be removed gradually
+export type MenuItem = CarteItem;
+export type MenuCategory = CarteCategory;
 
 export interface DeliveryZone {
   name: string;
@@ -76,7 +80,7 @@ export interface Promotion {
 }
 
 export interface CartItem {
-  menuItem: MenuItem;
+  menuItem: CarteItem; // Keep menuItem for compatibility, refers to CarteItem
   quantity: number;
   specialInstructions?: string;
 }

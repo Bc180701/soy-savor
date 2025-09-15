@@ -35,7 +35,7 @@ const LivraisonChateaurenard = () => {
     ],
     "servesCuisine": "Japonaise",
     "priceRange": "€€",
-    "hasMenu": `${window.location.origin}/menu`,
+    "hasMenu": `${window.location.origin}/carte`,
     "acceptsReservations": true,
     "paymentAccepted": ["Cash", "Credit Card"]
   };
@@ -216,7 +216,7 @@ const LivraisonChateaurenard = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild className="bg-gold-600 hover:bg-gold-700">
-                <a href="/menu">Voir le menu</a>
+                <a href="/carte">Voir la carte</a>
               </Button>
               <Button asChild variant="outline">
                 <a href="/commander">Commander maintenant</a>

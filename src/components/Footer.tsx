@@ -91,8 +91,8 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/menu" className="text-gray-400 hover:text-white transition-colors">
-                  {homepageData?.header_section?.nav_links?.menu || "Notre Menu"}
+                <Link to="/carte" className="text-gray-400 hover:text-white transition-colors">
+                  {homepageData?.header_section?.nav_links?.menu || "Notre Carte"}
                 </Link>
               </li>
               <li>

@@ -18,6 +18,7 @@ const DesktopNavLinks = ({ navLinks }: DesktopNavLinksProps) => {
     switch (path) {
       case "/":
         return homepageData.header_section.nav_links.home;
+      case "/carte":
       case "/menu":
         return homepageData.header_section.nav_links.menu;
       case "/commander":

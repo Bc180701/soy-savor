@@ -18,7 +18,7 @@ const HeaderSectionEditor = ({ data, onSave }: HeaderSectionEditorProps) => {
     logo_alt: "SushiEats Logo",
     nav_links: {
       home: "Accueil",
-      menu: "Menu",
+      menu: "Carte",
       order: "Commander",
       contact: "Contact"
     },
@@ -114,7 +114,7 @@ const HeaderSectionEditor = ({ data, onSave }: HeaderSectionEditorProps) => {
             />
           </div>
           <div>
-            <Label htmlFor="nav-menu">Menu</Label>
+            <Label htmlFor="nav-menu">Carte</Label>
             <Input
               id="nav-menu"
               value={formData.nav_links.menu}

@@ -71,7 +71,7 @@ const generatePostalCodePage = ({ postalCode, mainCity, description }: PostalCod
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild className="bg-gold-600 hover:bg-gold-700">
-              <a href="/menu">Découvrir le menu</a>
+              <a href="/carte">Découvrir la carte</a>
             </Button>
             <Button asChild variant="outline">
               <a href="/commander">Commander dans le {postalCode}</a>

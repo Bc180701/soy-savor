@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
-import Menu from "./pages/Menu";
+import Carte from "./pages/Carte";
 import Commander from "./pages/Commander";
 import ComposerSushi from "./pages/ComposerSushi";
 import ComposerPoke from "./pages/ComposerPoke";
@@ -37,7 +37,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Layout><Outlet /></Layout>}>
               <Route index element={<Index />} />
-              <Route path="menu" element={<Menu />} />
+              <Route path="carte" element={<Carte />} />
+              <Route path="menu" element={<Carte />} />
               <Route path="commander" element={<Commander />} />
               <Route path="composer-sushi" element={<ComposerSushi />} />
               <Route path="composer-poke" element={<ComposerPoke />} />

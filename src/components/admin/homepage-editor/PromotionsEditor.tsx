@@ -60,7 +60,7 @@ const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
         description: "Description de la promotion",
         imageUrl: "",
         buttonText: "En profiter",
-        buttonLink: "/menu",
+        buttonLink: "/carte",
       },
     ]);
   };

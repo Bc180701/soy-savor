@@ -18,7 +18,7 @@ const RestaurantJaponaisBouchesDuRhone = () => {
       "addressCountry": "FR"
     },
     "servesCuisine": "Japonaise",
-    "hasMenu": `${window.location.origin}/menu`,
+    "hasMenu": `${window.location.origin}/carte`,
     "areaServed": [
       "Châteaurenard", "Saint-Martin-de-Crau", "Eyragues", "Barbentane", 
       "Graveson", "Maillane", "Noves", "Rognonas", "Saint-Rémy de Provence"
@@ -158,7 +158,7 @@ const RestaurantJaponaisBouchesDuRhone = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild className="bg-gold-600 hover:bg-gold-700">
-                <a href="/menu">Voir nos spécialités</a>
+                <a href="/carte">Voir nos spécialités</a>
               </Button>
               <Button asChild variant="outline">
                 <a href="/commander">Trouver mon restaurant</a>
