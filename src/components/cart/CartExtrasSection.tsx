@@ -467,7 +467,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🥢 Sauces
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getFreeSaucesCount()} gratuite{getFreeSaucesCount() > 1 ? 's' : ''} (1 tous les 10€)
+              {getFreeSaucesCount()} gratuite{getFreeSaucesCount() > 1 ? 's' : ''}
             </span>
           </h4>
           <div className="grid grid-cols-1 gap-3">
