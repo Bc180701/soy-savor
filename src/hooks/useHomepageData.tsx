@@ -174,7 +174,7 @@ export const useHomepageData = (): UseHomepageDataResult => {
       logo_alt: "SushiEats Logo",
       nav_links: {
         home: "Accueil",
-        menu: "Menu",
+        menu: "Carte",
         order: "Commander",
         contact: "Contact",
       },
