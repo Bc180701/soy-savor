@@ -145,7 +145,7 @@ const CarteContent = () => {
           <img 
             src={menuHeroImage} 
             alt="Carte de spécialités japonaises - sushis, makis et poke bowls"
-            className="w-full h-64 md:h-96 lg:h-[500px] object-cover object-center"
+            className="w-full h-64 md:h-96 lg:h-[500px] object-contain bg-gray-100"
             loading="eager"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/40 flex items-center justify-center">
