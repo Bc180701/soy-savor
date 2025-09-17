@@ -145,13 +145,13 @@ const CarteContent = () => {
           <img 
             src={menuHeroImage} 
             alt="Carte de spécialités japonaises - sushis, makis et poke bowls"
-            className="w-full h-64 md:h-80 object-cover"
+            className="w-full h-64 md:h-96 lg:h-[500px] object-cover object-center"
             loading="eager"
           />
-          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-            <div className="text-center text-white">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Notre Carte</h1>
-              <p className="text-lg md:text-xl max-w-2xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/40 flex items-center justify-center">
+            <div className="text-center text-white px-4">
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-shadow-lg">Notre Carte</h1>
+              <p className="text-lg md:text-2xl lg:text-3xl max-w-4xl text-shadow">
                 Découvrez nos spécialités japonaises préparées avec soin
               </p>
             </div>
