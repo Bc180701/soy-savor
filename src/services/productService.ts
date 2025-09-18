@@ -27,7 +27,7 @@ export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]
       throw categoriesError;
     }
 
-    // Récupérer TOUS les produits actifs pour ce restaurant
+    // Récupérer TOUS les produits pour ce restaurant (y compris désactivés)
     const { data: productsData, error: productsError } = await supabase
       .from('products')
       .select(`
@@ -35,7 +35,6 @@ export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]
         categories!inner(name)
       `)
       .eq('restaurant_id', targetRestaurantId)
-      .or('is_new.eq.true,is_new.is.null')
       .order('price', { ascending: true });
 
     if (productsError) {
