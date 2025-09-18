@@ -171,7 +171,7 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
           restaurant_id: targetRestaurantId,
           isVegetarian: product.is_vegetarian || false,
           isSpicy: product.is_spicy || false,
-          isNew: false, // Not managed in produits_carte
+          isNew: true, // Tous les produits de la carte sont considérés comme actifs
           isBestSeller: false, // Not managed in produits_carte
           isGlutenFree: product.is_gluten_free || false,
           allergens: product.allergens || [],
