@@ -118,7 +118,16 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
         'maki_wrap': 'Maki Wraps',
         'custom': 'Sushi Créa',
         'accompagnements': 'Accompagnements',
-        'yakitori': 'Yakitori & Gyoza'
+        'yakitori': 'Yakitori & Gyoza',
+        'makis': 'Makis',
+        'sashimis': 'Sashimis',
+        'nigiris': 'Nigiris',
+        'california': 'California',
+        'plateaux': 'Plateaux',
+        'chirashis': 'Chirashis',
+        'soupes': 'Soupes',
+        'boissons': 'Boissons',
+        'desserts': 'Desserts'
       };
 
       const categoryName = categoryNames[categoryId] || categoryId;
@@ -154,6 +163,38 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
 
     const finalCategories = updatedCategories || categories;
     
+    // Fonction pour formater les noms de catégories
+    const formatCategoryName = (name: string): string => {
+      const categoryNameMap: { [key: string]: string } = {
+        'makis': 'Makis',
+        'sashimis': 'Sashimis', 
+        'nigiris': 'Nigiris',
+        'california': 'California',
+        'plateaux': 'Plateaux',
+        'chirashis': 'Chirashis',
+        'soupes': 'Soupes',
+        'boissons': 'Boissons',
+        'desserts': 'Desserts',
+        'signature': 'Signature',
+        'poke': 'Poké Bowls',
+        'spring': 'Spring Rolls',
+        'gunkan': 'Gunkan',
+        'triangle': 'Triangle Sankaku',
+        'temaki': 'Temaki',
+        'green': 'Green Rolls',
+        'crispy': 'Crispy Rolls',
+        'salmon': 'Salmon Rolls',
+        'tartare': 'Tartares',
+        'box_du_midi': 'Box du Midi',
+        'maki_wrap': 'Maki Wraps',
+        'custom': 'Sushi Créa',
+        'accompagnements': 'Accompagnements',
+        'yakitori': 'Yakitori & Gyoza'
+      };
+      
+      return categoryNameMap[name.toLowerCase()] || name;
+    };
+
     // Group products by category and transform data
     const menuCategories: MenuCategory[] = finalCategories.map(category => {
       const categoryProducts = products
@@ -167,7 +208,7 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
           description: product.description || '',
           price: parseFloat(product.price?.toString() || '0'),
           imageUrl: product.image_url || '',
-          category: category.name as any,
+          category: formatCategoryName(category.name) as any,
           restaurant_id: targetRestaurantId,
           isVegetarian: product.is_vegetarian || false,
           isSpicy: product.is_spicy || false,
@@ -179,11 +220,11 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
           prepTime: product.prep_time || 10
         })) || [];
       
-      console.log(`📂 Catégorie ${category.name}: ${categoryProducts.length} produits`);
+      console.log(`📂 Catégorie ${formatCategoryName(category.name)}: ${categoryProducts.length} produits`);
       
       return {
         id: category.id as any,
-        name: category.name,
+        name: formatCategoryName(category.name),
         description: category.description || '',
         items: categoryProducts
       } as MenuCategory;
