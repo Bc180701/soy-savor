@@ -27,7 +27,19 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
     }
 
     if (!categories || categories.length === 0) {
-      return [];
+      console.log("⚠️ Aucune catégorie trouvée, création des catégories par défaut...");
+      // Créer les catégories par défaut si elles n'existent pas
+      await initializeCategories(targetRestaurantId);
+      const { data: newCategories } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('restaurant_id', targetRestaurantId)
+        .order('display_order', { ascending: true });
+      
+      if (!newCategories || newCategories.length === 0) {
+        return [];
+      }
+      categories.push(...newCategories);
     }
     
     // Fetch products from produits_carte table
@@ -40,11 +52,115 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
       console.error("❌ Erreur lors de la récupération des produits de la carte:", productsError);
       throw productsError;
     }
+
+    console.log("📦 Produits récupérés de produits_carte:", products?.length || 0);
+    console.log("🏷️ Catégories disponibles:", categories.map(c => ({ id: c.id, name: c.name })));
+    
+    // Mapping des category_id textuels vers les catégories existantes
+    const categoryMapping: { [key: string]: string } = {
+      'makis': 'makis',
+      'maki': 'makis',
+      'sashimi': 'sashimis',
+      'sashimis': 'sashimis',
+      'nigiri': 'nigiris',
+      'nigiris': 'nigiris',
+      'california': 'california',
+      'plateaux': 'plateaux',
+      'chirashi': 'chirashis',
+      'chirashis': 'chirashis',
+      'soupes': 'soupes',
+      'boissons': 'boissons',
+      'desserts': 'desserts',
+      'signature': 'signature',
+      'poke': 'poke',
+      'spring': 'spring',
+      'gunkan': 'gunkan',
+      'triangle': 'triangle',
+      'temaki': 'temaki',
+      'green': 'green',
+      'crispy': 'crispy',
+      'salmon': 'salmon',
+      'tartare': 'tartare',
+      'box_du_midi': 'box_du_midi',
+      'maki_wrap': 'maki_wrap',
+      'custom': 'custom',
+      'accompagnements': 'accompagnements',
+      'yakitori': 'yakitori'
+    };
+
+    // Créer les catégories manquantes si nécessaire
+    const existingCategoryIds = categories.map(c => c.id);
+    const missingCategories = new Set<string>();
+    
+    if (products) {
+      products.forEach(product => {
+        const mappedCategoryId = categoryMapping[product.category_id];
+        if (mappedCategoryId && !existingCategoryIds.includes(mappedCategoryId)) {
+          missingCategories.add(mappedCategoryId);
+        }
+      });
+    }
+
+    // Créer les catégories manquantes
+    for (const categoryId of missingCategories) {
+      const categoryNames: { [key: string]: string } = {
+        'signature': 'Signature',
+        'poke': 'Poké Bowls',
+        'spring': 'Spring Rolls',
+        'gunkan': 'Gunkan',
+        'triangle': 'Triangle Sankaku',
+        'temaki': 'Temaki',
+        'green': 'Green Rolls',
+        'crispy': 'Crispy Rolls',
+        'salmon': 'Salmon Rolls',
+        'tartare': 'Tartares',
+        'box_du_midi': 'Box du Midi',
+        'maki_wrap': 'Maki Wraps',
+        'custom': 'Sushi Créa',
+        'accompagnements': 'Accompagnements',
+        'yakitori': 'Yakitori & Gyoza'
+      };
+
+      const categoryName = categoryNames[categoryId] || categoryId;
+      const displayOrder = Object.keys(categoryNames).indexOf(categoryId) + 10; // Commencer après les catégories existantes
+
+      try {
+        const { error: insertError } = await supabase
+          .from('categories')
+          .insert({
+            id: categoryId,
+            name: categoryName,
+            description: `Catégorie ${categoryName}`,
+            restaurant_id: targetRestaurantId,
+            display_order: displayOrder
+          });
+
+        if (insertError) {
+          console.error(`❌ Erreur lors de la création de la catégorie ${categoryId}:`, insertError);
+        } else {
+          console.log(`✅ Catégorie créée: ${categoryName} (${categoryId})`);
+        }
+      } catch (error) {
+        console.error(`❌ Erreur lors de la création de la catégorie ${categoryId}:`, error);
+      }
+    }
+
+    // Re-fetch categories après création des nouvelles
+    const { data: updatedCategories } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('restaurant_id', targetRestaurantId)
+      .order('display_order', { ascending: true });
+
+    const finalCategories = updatedCategories || categories;
     
     // Group products by category and transform data
-    const menuCategories: MenuCategory[] = categories.map(category => {
+    const menuCategories: MenuCategory[] = finalCategories.map(category => {
       const categoryProducts = products
-        ?.filter(product => product.category_id === category.id)
+        ?.filter(product => {
+          const mappedCategoryId = categoryMapping[product.category_id];
+          return mappedCategoryId === category.id;
+        })
         ?.map(product => ({
           id: product.id,
           name: product.name,
@@ -63,6 +179,8 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
           prepTime: product.prep_time || 10
         })) || [];
       
+      console.log(`📂 Catégorie ${category.name}: ${categoryProducts.length} produits`);
+      
       return {
         id: category.id as any,
         name: category.name,
@@ -71,7 +189,11 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
       } as MenuCategory;
     });
 
-    return menuCategories;
+    // Filtrer les catégories vides
+    const nonEmptyCategories = menuCategories.filter(cat => cat.items.length > 0);
+    console.log(`✅ ${nonEmptyCategories.length} catégories avec des produits trouvées`);
+
+    return nonEmptyCategories;
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des données de la carte:", error);
     return [];
