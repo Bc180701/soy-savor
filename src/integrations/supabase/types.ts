@@ -698,6 +698,60 @@ export type Database = {
           },
         ]
       }
+      produits_carte: {
+        Row: {
+          allergens: string[] | null
+          category_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_gluten_free: boolean | null
+          is_spicy: boolean | null
+          is_vegetarian: boolean | null
+          name: string
+          pieces: number | null
+          prep_time: number | null
+          price: number
+          source_product_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allergens?: string[] | null
+          category_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_gluten_free?: boolean | null
+          is_spicy?: boolean | null
+          is_vegetarian?: boolean | null
+          name: string
+          pieces?: number | null
+          prep_time?: number | null
+          price: number
+          source_product_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allergens?: string[] | null
+          category_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_gluten_free?: boolean | null
+          is_spicy?: boolean | null
+          is_vegetarian?: boolean | null
+          name?: string
+          pieces?: number | null
+          prep_time?: number | null
+          price?: number
+          source_product_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

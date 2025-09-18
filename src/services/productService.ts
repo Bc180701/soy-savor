@@ -10,6 +10,80 @@ import {
   insertProduct 
 } from "@/integrations/supabase/client";
 
+// Nouvelle fonction pour récupérer les données de la carte depuis produits_carte
+export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
+  try {
+    console.log("🍣 Récupération des données de la carte depuis produits_carte");
+    
+    // Fetch categories (using Châteaurenard restaurant id)
+    const targetRestaurantId = '11111111-1111-1111-1111-111111111111';
+    const { data: categories, error: categoriesError } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('restaurant_id', targetRestaurantId)
+      .order('display_order', { ascending: true });
+
+    if (categoriesError) {
+      console.error("❌ Erreur lors de la récupération des catégories:", categoriesError);
+      throw categoriesError;
+    }
+
+    if (!categories || categories.length === 0) {
+      console.log("⚠️ Aucune catégorie trouvée");
+      return [];
+    }
+    
+    // Fetch products from produits_carte table
+    const { data: products, error: productsError } = await supabase
+      .from('produits_carte')
+      .select('*')
+      .order('price', { ascending: true });
+    
+    if (productsError) {
+      console.error("❌ Erreur lors de la récupération des produits de la carte:", productsError);
+      throw productsError;
+    }
+
+    console.log(`✅ ${products?.length || 0} produits récupérés de la carte`);
+    
+    // Group products by category and transform data
+    const menuCategories: MenuCategory[] = categories.map(category => {
+      const categoryProducts = products
+        ?.filter(product => product.category_id === category.id)
+        ?.map(product => ({
+          id: product.id,
+          name: product.name,
+          description: product.description || '',
+          price: parseFloat(product.price?.toString() || '0'),
+          imageUrl: product.image_url || '',
+          category: category.name as any,
+          restaurant_id: targetRestaurantId,
+          isVegetarian: product.is_vegetarian || false,
+          isSpicy: product.is_spicy || false,
+          isNew: false, // Not managed in produits_carte
+          isBestSeller: false, // Not managed in produits_carte
+          isGlutenFree: product.is_gluten_free || false,
+          allergens: product.allergens || [],
+          pieces: product.pieces,
+          prepTime: product.prep_time || 10
+        })) || [];
+
+      return {
+        id: category.id as any,
+        name: category.name,
+        description: category.description || '',
+        items: categoryProducts
+      } as MenuCategory;
+    });
+
+    console.log("🎯 Données de la carte structurées:", menuCategories.length, "catégories");
+    return menuCategories;
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération des données de la carte:", error);
+    return [];
+  }
+};
+
 export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]> => {
   try {
     // Si aucun restaurant spécifié, utiliser Châteaurenard par défaut

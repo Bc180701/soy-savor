@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { CarteCategory } from "@/types";
-import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
+import { MenuCategory } from "@/types";
+import { getCarteMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
 import { RESTAURANTS } from "@/services/restaurantService";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/menu/LoadingSpinner";
@@ -18,7 +18,7 @@ const CarteContent = () => {
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
   const [activeCategory, setActiveCategory] = useState("");
-  const [categories, setCategories] = useState<CarteCategory[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -39,42 +39,9 @@ const CarteContent = () => {
       setIsLoading(true);
       try {
         console.time('Loading Carte Data');
-        // Utiliser le premier restaurant par défaut si aucun n'est sélectionné
-        const restaurantId = currentRestaurant?.id || RESTAURANTS.CHATEAURENARD;
-        let carteData = await getMenuData(restaurantId);
+        // Utiliser directement la nouvelle fonction pour récupérer les données de la carte
+        let carteData = await getCarteMenuData();
         console.timeEnd('Loading Carte Data');
-        
-        // Si aucune donnée n'existe, initialiser automatiquement
-        if (carteData.length === 0) {
-          console.log("Aucune donnée de carte trouvée, initialisation automatique...");
-          setIsInitializing(true);
-          
-          // D'abord initialiser les catégories avec l'ID du restaurant
-          console.log("Initialisation des catégories...");
-          const categoriesInitialized = await initializeCategories(restaurantId);
-          if (!categoriesInitialized) {
-            throw new Error("Échec de l'initialisation des catégories");
-          }
-          console.log("Catégories initialisées avec succès");
-          
-          // Ensuite, initialiser les produits complets
-          console.log("Initialisation des produits...");
-          const productsInitialized = await initializeFullMenu(restaurantId);
-          if (!productsInitialized) {
-            throw new Error("Échec de l'initialisation des produits");
-          }
-          console.log("Produits initialisés avec succès");
-          
-          // Récupérer les données de la carte après l'initialisation
-          carteData = await getMenuData(restaurantId);
-          
-          toast({
-            title: "Carte initialisée",
-            description: "Les catégories et produits ont été chargés avec succès.",
-          });
-          
-          setIsInitializing(false);
-        }
         
         setCategories(carteData);
         
@@ -86,7 +53,7 @@ const CarteContent = () => {
         console.error("Error loading carte data:", error);
         toast({
           title: "Erreur",
-          description: "Impossible de charger les données de la carte. Vérifiez les autorisations de la base de données.",
+          description: "Impossible de charger les données de la carte.",
           variant: "destructive"
         });
       } finally {
@@ -107,7 +74,7 @@ const CarteContent = () => {
   }
 
   // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
-  const nonEmptyCategories = categories.filter(cat => cat.items.length > 0);
+  const nonEmptyCategories = categories.filter(cat => cat.items && cat.items.length > 0);
 
   // Structured data for SEO
   const structuredData = {
