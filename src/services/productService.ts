@@ -49,7 +49,13 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
     // Group products by category and transform data
     const menuCategories: MenuCategory[] = categories.map(category => {
       const categoryProducts = products
-        ?.filter(product => product.category_id === category.id)
+        ?.filter(product => {
+          const matches = product.category_id === category.id;
+          if (category.id === 'california' || category.id === 'crispy' || category.id === 'spring') {
+            console.log(`🔍 Catégorie ${category.id}: produit ${product.name} (category_id: ${product.category_id}) - matches: ${matches}`);
+          }
+          return matches;
+        })
         ?.map(product => ({
           id: product.id,
           name: product.name,
@@ -68,6 +74,8 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
           prepTime: product.prep_time || 10
         })) || [];
 
+      console.log(`📂 Catégorie ${category.name} (${category.id}): ${categoryProducts.length} produits trouvés`);
+      
       return {
         id: category.id as any,
         name: category.name,
