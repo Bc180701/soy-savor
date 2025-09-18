@@ -12,7 +12,7 @@ import MenuProductsDisplay from "@/components/menu/MenuProductsDisplay";
 import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
 import { RestaurantProvider, useRestaurantContext } from "@/hooks/useRestaurantContext";
 import SEOHead from "@/components/SEOHead";
-import menuHeroImage from "@/assets/carte-hero.jpg";
+import menuHeroImage from "@/assets/carte-hero-new.jpg";
 
 const CarteContent = () => {
   const { toast } = useToast();
