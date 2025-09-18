@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { MenuCategory } from "@/types";
-import { getCarteMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
+import { useCarteMenuData } from "@/hooks/useCarteMenuData";
+import { initializeCategories, initializeFullMenu } from "@/services/productService";
 import { RESTAURANTS } from "@/services/restaurantService";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingSpinner from "@/components/menu/LoadingSpinner";
@@ -18,8 +19,7 @@ const CarteContent = () => {
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
   const [activeCategory, setActiveCategory] = useState("");
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { categories, loading: isLoading, error, isFromCache } = useCarteMenuData();
   const [isInitializing, setIsInitializing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
@@ -34,35 +34,24 @@ const CarteContent = () => {
     };
     
     checkAuth();
-    
-    const loadCarteData = async () => {
-      setIsLoading(true);
-      try {
-        console.time('Loading Carte Data');
-        // Utiliser directement la nouvelle fonction pour récupérer les données de la carte
-        let carteData = await getCarteMenuData();
-        console.timeEnd('Loading Carte Data');
-        
-        setCategories(carteData);
-        
-        // Set the active category to the first one if available
-        if (carteData.length > 0 && !activeCategory) {
-          setActiveCategory(carteData[0].id);
-        }
-      } catch (error) {
-        console.error("Error loading carte data:", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les données de la carte.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  }, []);
 
-    loadCarteData();
-  }, [toast, activeCategory, currentRestaurant]);
+  useEffect(() => {
+    // Set the active category to the first one if available
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].id);
+    }
+  }, [categories, activeCategory]);
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données de la carte.",
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
 
   // Afficher uniquement le chargement initial, pas lors des changements de catégorie
   if ((isLoading && categories.length === 0) || isInitializing) {

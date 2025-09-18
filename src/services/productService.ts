@@ -13,8 +13,6 @@ import {
 // Nouvelle fonction pour récupérer les données de la carte depuis produits_carte
 export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
   try {
-    console.log("🍣 Récupération des données de la carte depuis produits_carte");
-    
     // Fetch categories (using Châteaurenard restaurant id)
     const targetRestaurantId = '11111111-1111-1111-1111-111111111111';
     const { data: categories, error: categoriesError } = await supabase
@@ -29,7 +27,6 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
     }
 
     if (!categories || categories.length === 0) {
-      console.log("⚠️ Aucune catégorie trouvée");
       return [];
     }
     
@@ -43,19 +40,11 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
       console.error("❌ Erreur lors de la récupération des produits de la carte:", productsError);
       throw productsError;
     }
-
-    console.log(`✅ ${products?.length || 0} produits récupérés de la carte`);
     
     // Group products by category and transform data
     const menuCategories: MenuCategory[] = categories.map(category => {
       const categoryProducts = products
-        ?.filter(product => {
-          const matches = product.category_id === category.id;
-          if (category.id === 'california' || category.id === 'crispy' || category.id === 'spring') {
-            console.log(`🔍 Catégorie ${category.id}: produit ${product.name} (category_id: ${product.category_id}) - matches: ${matches}`);
-          }
-          return matches;
-        })
+        ?.filter(product => product.category_id === category.id)
         ?.map(product => ({
           id: product.id,
           name: product.name,
@@ -73,8 +62,6 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
           pieces: product.pieces,
           prepTime: product.prep_time || 10
         })) || [];
-
-      console.log(`📂 Catégorie ${category.name} (${category.id}): ${categoryProducts.length} produits trouvés`);
       
       return {
         id: category.id as any,
@@ -84,7 +71,6 @@ export const getCarteMenuData = async (): Promise<MenuCategory[]> => {
       } as MenuCategory;
     });
 
-    console.log("🎯 Données de la carte structurées:", menuCategories.length, "catégories");
     return menuCategories;
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des données de la carte:", error);
