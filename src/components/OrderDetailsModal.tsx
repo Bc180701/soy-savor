@@ -40,19 +40,19 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     }
   }, [order, open]);
 
-  const fetchCartBackupItems = async (orderId: string) => {
+  const fetchCartBackupItems = async (clientEmail: string) => {
     try {
       const { data, error } = await supabase
         .from('cart_backup')
         .select('cart_items')
-        .eq('id', orderId)
+        .eq('session_id', clientEmail)
         .single();
-      
+
       if (error || !data) {
-        console.log('No cart backup found for order:', orderId);
+        console.log('No cart backup found for email:', clientEmail);
         return [];
       }
-      
+
       return data.cart_items || [];
     } catch (error) {
       console.error('Error fetching cart backup:', error);
@@ -76,8 +76,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         const hasItems = (completeOrderDetails.items_summary && completeOrderDetails.items_summary.length > 0) ||
                         (completeOrderDetails.order_items && completeOrderDetails.order_items.length > 0);
         
-        if (!hasItems) {
-          const backupItems = await fetchCartBackupItems(orderId);
+        if (!hasItems && completeOrderDetails.client_email) {
+          const backupItems = await fetchCartBackupItems(completeOrderDetails.client_email);
           setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
         } else {
           setCartBackupItems([]);
