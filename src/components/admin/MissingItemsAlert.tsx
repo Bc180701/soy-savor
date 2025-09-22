@@ -2,12 +2,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Order } from "@/types";
+import { CartBackupDisplay } from "./CartBackupDisplay";
 
 interface MissingItemsAlertProps {
   order: Order;
+  onItemsRecovered?: () => void;
 }
 
-export const MissingItemsAlert = ({ order }: MissingItemsAlertProps) => {
+export const MissingItemsAlert = ({ order, onItemsRecovered }: MissingItemsAlertProps) => {
   if (order.items && order.items.length > 0) {
     return null;
   }
@@ -27,7 +29,10 @@ export const MissingItemsAlert = ({ order }: MissingItemsAlertProps) => {
   };
 
   return (
-    <Alert className="border-destructive bg-destructive/10 mb-4">
+    <div>
+      <CartBackupDisplay order={order} onItemsRecovered={onItemsRecovered} />
+      
+      <Alert className="border-destructive bg-destructive/10 mb-4">
       <AlertTriangle className="h-4 w-4 text-destructive" />
       <AlertDescription className="space-y-3">
         <div className="font-semibold text-destructive">
@@ -64,5 +69,6 @@ export const MissingItemsAlert = ({ order }: MissingItemsAlertProps) => {
         </div>
       </AlertDescription>
     </Alert>
+    </div>
   );
 };
