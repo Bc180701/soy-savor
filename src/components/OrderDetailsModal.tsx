@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { fetchOrderWithDetails } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare, Calendar, Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
@@ -31,12 +32,33 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
   const [orderDetails, setOrderDetails] = useState<any | null>(null);
   const [customerDetails, setCustomerDetails] = useState<any | null>(null);
   const [addressDetails, setAddressDetails] = useState<any | null>(null);
+  const [cartBackupItems, setCartBackupItems] = useState<any[]>([]);
 
   useEffect(() => {
     if (order && open) {
       fetchOrderDetails(order.id);
     }
   }, [order, open]);
+
+  const fetchCartBackupItems = async (orderId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('cart_backup')
+        .select('cart_items')
+        .eq('id', orderId)
+        .single();
+      
+      if (error || !data) {
+        console.log('No cart backup found for order:', orderId);
+        return [];
+      }
+      
+      return data.cart_items || [];
+    } catch (error) {
+      console.error('Error fetching cart backup:', error);
+      return [];
+    }
+  };
 
   const fetchOrderDetails = async (orderId: string) => {
     if (!orderId) return;
@@ -49,6 +71,17 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         setOrderDetails(completeOrderDetails);
         setCustomerDetails(completeOrderDetails.customer);
         setAddressDetails(completeOrderDetails.delivery_address);
+        
+        // Si aucun produit trouvé, récupérer les items du cart_backup
+        const hasItems = (completeOrderDetails.items_summary && completeOrderDetails.items_summary.length > 0) ||
+                        (completeOrderDetails.order_items && completeOrderDetails.order_items.length > 0);
+        
+        if (!hasItems) {
+          const backupItems = await fetchCartBackupItems(orderId);
+          setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
+        } else {
+          setCartBackupItems([]);
+        }
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des détails de la commande:", error);
@@ -377,11 +410,33 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                           </div>
                         </div>
                       ))
-                    ) : (
-                      <div className="p-3 text-center text-muted-foreground">
-                        Aucun produit trouvé
-                      </div>
-                    )}
+                     ) : cartBackupItems.length > 0 ? (
+                       cartBackupItems.map((item: any, index: number) => (
+                         <div key={index} className="p-4 flex justify-between bg-blue-50">
+                           <div className="flex-1">
+                             <div className="font-medium text-lg">
+                               {item.menuItem?.name || 'Produit inconnu'}
+                               <span className="ml-2 text-xs text-blue-600 font-normal">(depuis sauvegarde)</span>
+                             </div>
+                             {item.menuItem?.description && (
+                               <div className="text-sm text-muted-foreground mt-1">
+                                 {item.menuItem.description}
+                               </div>
+                             )}
+                           </div>
+                           <div className="text-right min-w-[100px]">
+                             <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
+                             <div className="font-semibold text-lg">
+                               {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                             </div>
+                           </div>
+                         </div>
+                       ))
+                     ) : (
+                       <div className="p-3 text-center text-muted-foreground">
+                         Aucun produit trouvé
+                       </div>
+                     )}
                     
                     {/* Afficher le produit offert comme un élément distinct dans la liste des produits commandés */}
                     {freeProduct && (
@@ -614,11 +669,33 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                          </div>
                        </div>
                      ))
-                   ) : (
-                     <div className="p-3 text-center text-muted-foreground">
-                       Aucun produit trouvé
-                     </div>
-                   )}
+                    ) : cartBackupItems.length > 0 ? (
+                      cartBackupItems.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between bg-blue-50">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.menuItem?.name || 'Produit inconnu'}
+                              <span className="ml-2 text-xs text-blue-600 font-normal">(depuis sauvegarde)</span>
+                            </div>
+                            {item.menuItem?.description && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {item.menuItem.description}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 text-center text-muted-foreground">
+                        Aucun produit trouvé
+                      </div>
+                    )}
                   
                   {/* Afficher le produit offert comme un élément distinct dans la liste des produits commandés */}
                   {freeProduct && (
