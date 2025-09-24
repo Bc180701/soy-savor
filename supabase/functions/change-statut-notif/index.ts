@@ -90,7 +90,7 @@ serve(async (req) => {
     console.log("📧 Destinataire:", email);
     
     const emailResponse = await resend.emails.send({
-      from: Deno.env.get("EMAIL_FROM") || "SushiEats <noreply@emailsend.clwebdesign.fr>",
+      from: Deno.env.get("EMAIL_FROM") || "SushiEats <commande@email.contact.sushieats.fr>",
       to: [email],
       subject: subject,
       html: htmlContent,
