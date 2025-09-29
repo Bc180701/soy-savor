@@ -280,10 +280,8 @@ const CommanderContent = () => {
     return <OrderingLockedMessage />;
   }
   
-  // Si le restaurant est fermé ET qu'un restaurant est sélectionné, afficher le message de fermeture
-  if (currentRestaurant && !isRestaurantOpen && nextOpenDay) {
-    return <RestaurantClosedMessage nextOpenDay={nextOpenDay} restaurantName={currentRestaurant.name} />;
-  }
+  // Note: On supprime la vérification qui bloque l'accès au menu quand le restaurant est fermé
+  // Les clients peuvent maintenant commander 24h/24 pour les créneaux d'ouverture du jour
 
   // Afficher uniquement le chargement initial, pas lors des changements de catégorie
   if ((isLoading && categories.length === 0) || isInitializing) {
