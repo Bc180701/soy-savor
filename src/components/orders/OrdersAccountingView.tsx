@@ -103,16 +103,6 @@ const OrdersAccountingView = ({
   };
 
   const generateOrderPrintContent = (order: Order): string => {
-    const formatDate = (date: Date) => {
-      return new Intl.DateTimeFormat('fr-FR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).format(date);
-    };
-
     const formatTime = (date: Date) => {
       return new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
@@ -120,29 +110,16 @@ const OrdersAccountingView = ({
       }).format(date);
     };
 
-    const getStatusLabel = (status: string) => {
-      switch(status) {
-        case 'pending': return 'En attente';
-        case 'confirmed': return 'Confirmée';
-        case 'preparing': return 'En préparation';
-        case 'ready': return 'Prête';
-        case 'out-for-delivery': return 'En livraison';
-        case 'delivered': return 'Livrée';
-        case 'completed': return 'Terminée';
-        case 'cancelled': return 'Annulée';
-        default: return status;
-      }
-    };
-
     const getOrderTypeLabel = (orderType: string) => {
       switch(orderType) {
-        case 'delivery': return 'Livraison';
-        case 'pickup': return 'À emporter';
-        case 'dine-in': return 'Sur place';
+        case 'delivery': return 'LIVRAISON';
+        case 'pickup': return 'EMPORTE';
+        case 'dine-in': return 'SUR PLACE';
         default: return orderType;
       }
     };
 
+    // Format optimisé pour imprimante thermique Epson TM-M30III-H
     return `
       <!DOCTYPE html>
       <html lang="fr">
@@ -152,178 +129,129 @@ const OrdersAccountingView = ({
         <title>Commande #${order.id.slice(-8)}</title>
         <style>
           body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Courier New', monospace;
             margin: 0;
-            padding: 20px;
+            padding: 5px;
             background: white;
-            color: #333;
-            line-height: 1.4;
+            color: #000;
+            line-height: 1.2;
+            font-size: 12px;
+            width: 80mm;
           }
           
           .header {
             text-align: center;
-            border-bottom: 3px solid #d4af37;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
           }
           
           .restaurant-name {
-            font-size: 24px;
+            font-size: 16px;
             font-weight: bold;
-            color: #d4af37;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
           }
           
           .order-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-          }
-          
-          .order-details {
-            flex: 1;
+            margin-bottom: 8px;
+            font-size: 11px;
           }
           
           .order-number {
-            font-size: 18px;
             font-weight: bold;
-            color: #d4af37;
-            margin-bottom: 10px;
+            font-size: 13px;
           }
-          
-          .status {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-          }
-          
-          .status.confirmed { background: #3b82f6; color: white; }
-          .status.preparing { background: #f59e0b; color: white; }
-          .status.ready { background: #10b981; color: white; }
           
           .client-info {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f0f9ff;
-            border-left: 4px solid #3b82f6;
-            border-radius: 0 8px 8px 0;
+            margin-bottom: 8px;
+            font-size: 11px;
           }
           
           .client-name {
-            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 8px;
           }
           
           .items-section {
-            margin-bottom: 20px;
+            margin-bottom: 8px;
           }
           
           .section-title {
-            font-size: 16px;
             font-weight: bold;
-            color: #d4af37;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #d4af37;
+            text-decoration: underline;
+            margin-bottom: 5px;
+            font-size: 11px;
           }
           
           .item {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 3px;
+            font-size: 11px;
           }
           
-          .item:last-child {
-            border-bottom: none;
+          .item-line {
+            display: flex;
+            justify-content: space-between;
           }
           
           .item-name {
-            font-weight: 500;
             flex: 1;
-          }
-          
-          .item-description {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 2px;
           }
           
           .item-price {
             font-weight: bold;
-            color: #d4af37;
+          }
+          
+          .special-instructions {
+            font-size: 10px;
+            color: #000;
+            margin-top: 2px;
+            font-style: italic;
           }
           
           .total-section {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 2px solid #d4af37;
+            margin-top: 8px;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+            font-size: 11px;
           }
           
           .total-line {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
           }
           
           .total-final {
-            font-size: 18px;
             font-weight: bold;
-            color: #d4af37;
-            border-top: 2px solid #d4af37;
-            padding-top: 10px;
-            margin-top: 10px;
+            font-size: 12px;
+            border-top: 1px solid #000;
+            padding-top: 3px;
+            margin-top: 3px;
           }
           
           .notes {
-            margin-top: 20px;
-            padding: 15px;
-            background: #fef3c7;
-            border-radius: 8px;
-            border-left: 4px solid #f59e0b;
-          }
-          
-          .notes-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #92400e;
+            margin-top: 8px;
+            font-size: 10px;
+            border-top: 1px dashed #000;
+            padding-top: 5px;
           }
           
           .delivery-info {
-            margin-top: 15px;
-            padding: 15px;
-            background: #ecfdf5;
-            border-radius: 8px;
-            border-left: 4px solid #10b981;
-          }
-          
-          .delivery-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #065f46;
+            margin-top: 5px;
+            font-size: 10px;
+            border-top: 1px dashed #000;
+            padding-top: 3px;
           }
           
           .footer {
-            margin-top: 30px;
+            margin-top: 10px;
             text-align: center;
-            font-size: 12px;
-            color: #6b7280;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 15px;
+            font-size: 10px;
+            border-top: 1px solid #000;
+            padding-top: 5px;
           }
           
           @media print {
-            body { margin: 0; padding: 10px; }
+            body { margin: 0; padding: 2px; }
             .no-print { display: none; }
           }
         </style>
@@ -331,45 +259,28 @@ const OrdersAccountingView = ({
       <body>
         <div class="header">
           <div class="restaurant-name">SUSHI EATS</div>
-          <div>Commande de ${getOrderTypeLabel(order.orderType).toLowerCase()}</div>
+          <div>${getOrderTypeLabel(order.orderType)}</div>
         </div>
         
         <div class="order-info">
-          <div class="order-details">
-            <div class="order-number">Commande #${order.id.slice(-8)}</div>
-            <div>Date: ${formatDate(order.createdAt)}</div>
-            <div>Heure de livraison/retrait: ${formatTime(order.scheduledFor)}</div>
-            <div>Type: ${getOrderTypeLabel(order.orderType)}</div>
-          </div>
-          <div>
-            <span class="status ${order.status}">${getStatusLabel(order.status)}</span>
-          </div>
-        </div>
-        
-        <div class="client-info">
-          <div class="client-name">${order.clientName || 'Client'}</div>
-          <div>Téléphone: ${order.clientPhone || 'Non renseigné'}</div>
-          ${order.clientEmail ? `<div>Email: ${order.clientEmail}</div>` : ''}
+          <div class="order-number">#${order.id.slice(-8)}</div>
+          <div>${formatTime(order.scheduledFor)} - ${order.clientName || 'Client'}</div>
+          <div>Tel: ${order.clientPhone || 'N/A'}</div>
         </div>
         
         <div class="items-section">
-          <div class="section-title">Articles commandés</div>
+          <div class="section-title">ARTICLES</div>
           ${order.items.map(item => `
             <div class="item">
-              <div>
-                <div class="item-name">${item.quantity}x ${item.menuItem.name}</div>
-                ${item.menuItem.description ? `
-                  <div class="item-description">
-                    ${item.menuItem.description}
-                  </div>
-                ` : ''}
-                ${item.specialInstructions ? `
-                  <div class="item-description" style="color: #dc2626; font-weight: bold;">
-                    ⚠️ Instructions spéciales: ${item.specialInstructions}
-                  </div>
-                ` : ''}
+              <div class="item-line">
+                <span class="item-name">${item.quantity}x ${item.menuItem.name}</span>
+                <span class="item-price">${(item.menuItem.price * item.quantity).toFixed(2)}€</span>
               </div>
-              <div class="item-price">${(item.menuItem.price * item.quantity).toFixed(2)}€</div>
+              ${item.specialInstructions ? `
+                <div class="special-instructions">
+                  * ${item.specialInstructions}
+                </div>
+              ` : ''}
             </div>
           `).join('')}
         </div>
@@ -385,7 +296,7 @@ const OrdersAccountingView = ({
           </div>
           ${order.deliveryFee > 0 ? `
             <div class="total-line">
-              <span>Frais de livraison:</span>
+              <span>Livraison:</span>
               <span>${order.deliveryFee.toFixed(2)}€</span>
             </div>
           ` : ''}
@@ -409,23 +320,20 @@ const OrdersAccountingView = ({
         
         ${order.deliveryInstructions || order.customerNotes || order.allergies ? `
           <div class="notes">
-            <div class="notes-title">Notes importantes:</div>
-            ${order.deliveryInstructions ? `<div>📋 Instructions de livraison: ${order.deliveryInstructions}</div>` : ''}
-            ${order.customerNotes ? `<div>💬 Notes du client: ${order.customerNotes}</div>` : ''}
-            ${order.allergies && order.allergies.length > 0 ? `<div>⚠️ Allergies: ${order.allergies.join(', ')}</div>` : ''}
+            ${order.deliveryInstructions ? `LIVRAISON: ${order.deliveryInstructions}\n` : ''}
+            ${order.customerNotes ? `NOTES: ${order.customerNotes}\n` : ''}
+            ${order.allergies && order.allergies.length > 0 ? `ALLERGIES: ${order.allergies.join(', ')}\n` : ''}
           </div>
         ` : ''}
         
         ${order.orderType === 'delivery' && (order.deliveryStreet || order.deliveryCity) ? `
           <div class="delivery-info">
-            <div class="delivery-title">Adresse de livraison:</div>
-            <div>${order.deliveryStreet || ''} ${order.deliveryCity || ''} ${order.deliveryPostalCode || ''}</div>
+            ADRESSE: ${order.deliveryStreet || ''} ${order.deliveryCity || ''} ${order.deliveryPostalCode || ''}
           </div>
         ` : ''}
         
         <div class="footer">
-          <div>Commande imprimée le ${formatDate(new Date())}</div>
-          <div>Merci pour votre commande !</div>
+          ${new Date().toLocaleString('fr-FR')}
         </div>
       </body>
       </html>
