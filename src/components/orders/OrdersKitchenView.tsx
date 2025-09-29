@@ -146,35 +146,35 @@ const OrdersKitchenView = ({
     if (isIOS) {
       // Sur iOS, lancer la récupération des données en arrière-plan
       // et déclencher l'impression après un délai suffisant
-      let cartBackupItems = [];
-      let printWindow: Window | null = null;
+      console.log('🍎 [iOS] Début impression commande:', order.id);
       
       // Lancer la récupération des données immédiatement
-      if (order.clientEmail) {
-        supabase
-          .from('cart_backup')
-          .select('cart_items')
-          .eq('session_id', order.clientEmail)
-          .eq('is_used', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-          .then(({ data, error }) => {
+      const fetchCartBackup = async () => {
+        let cartBackupItems = [];
+        if (order.clientEmail) {
+          try {
+            const { data, error } = await supabase
+              .from('cart_backup')
+              .select('cart_items')
+              .eq('session_id', order.clientEmail)
+              .eq('is_used', false)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
             if (!error && data && data.cart_items) {
               cartBackupItems = data.cart_items;
               console.log('🍎 [iOS] Articles récupérés:', cartBackupItems);
             }
-          })
-          .catch(error => {
+          } catch (error) {
             console.error('🍎 [iOS] Erreur récupération cart_backup:', error);
-          });
-      }
-      
-      // Délai pour permettre la récupération des données (2 secondes)
-      setTimeout(() => {
-        console.log('🍎 [iOS] Déclenchement impression avec délai');
+          }
+        }
+        
+        // Maintenant déclencher l'impression avec les données
+        console.log('🍎 [iOS] Déclenchement impression avec données');
         const printContent = generateOrderPrintContent(order, cartBackupItems);
-        printWindow = window.open('', '_blank');
+        const printWindow = window.open('', '_blank');
         
         if (!printWindow) {
           console.error('Impossible d\'ouvrir la fenêtre d\'impression');
@@ -188,12 +188,16 @@ const OrdersKitchenView = ({
         // Essayer d'ouvrir le menu d'impression après un délai
         setTimeout(() => {
           try {
-            printWindow?.print();
+            printWindow.print();
+            console.log('🍎 [iOS] print() appelé avec succès');
           } catch (error) {
             console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
           }
         }, 1000);
-      }, 2000); // 2 secondes pour récupérer les données
+      };
+      
+      // Lancer la récupération et l'impression
+      fetchCartBackup();
       
     } else {
       // Comportement normal pour les autres plateformes - récupérer les données
