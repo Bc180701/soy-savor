@@ -139,44 +139,40 @@ const OrdersKitchenView = ({
     setDelayDialogOpen(true);
   };
 
-  // Cache pour les cart_backup items
-  const cartBackupCache = new Map<string, any[]>();
-
-  const printOrder = (order: Order) => {
+  const printOrder = async (order: Order) => {
     // Détecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
     if (isIOS) {
       console.log('🍎 [iOS] Début impression commande:', order.id);
       
-      // Vérifier le cache d'abord
-      let cartBackupItems = cartBackupCache.get(order.id) || [];
-      
-      // Si pas en cache, lancer la récupération en arrière-plan
-      if (cartBackupItems.length === 0 && order.clientEmail) {
-        console.log('🍎 [iOS] Récupération cart_backup en arrière-plan...');
-        supabase
-          .from('cart_backup')
-          .select('cart_items')
-          .eq('session_id', order.clientEmail)
-          .eq('is_used', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-          .then(({ data, error }) => {
-            if (!error && data && data.cart_items) {
-              cartBackupItems = data.cart_items;
-              cartBackupCache.set(order.id, cartBackupItems);
-              console.log('🍎 [iOS] Articles mis en cache:', cartBackupItems);
-            }
-          })
-          .catch(error => {
-            console.error('🍎 [iOS] Erreur récupération cart_backup:', error);
-          });
+      // Récupérer les données cart_backup d'abord
+      let cartBackupItems = [];
+      if (order.clientEmail) {
+        try {
+          console.log('🍎 [iOS] Récupération cart_backup...');
+          const { data, error } = await supabase
+            .from('cart_backup')
+            .select('cart_items')
+            .eq('session_id', order.clientEmail)
+            .eq('is_used', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (!error && data && data.cart_items) {
+            cartBackupItems = data.cart_items;
+            console.log('🍎 [iOS] Articles récupérés:', cartBackupItems);
+          } else {
+            console.log('🍎 [iOS] Aucun cart_backup trouvé:', error);
+          }
+        } catch (error) {
+          console.error('🍎 [iOS] Erreur récupération cart_backup:', error);
+        }
       }
       
-      // Ouvrir IMMÉDIATEMENT la fenêtre (comme ça marchait avant)
-      console.log('🍎 [iOS] Ouverture immédiate de la fenêtre');
+      // Maintenant ouvrir la fenêtre avec les données
+      console.log('🍎 [iOS] Ouverture fenêtre avec données');
       const printContent = generateOrderPrintContent(order, cartBackupItems);
       const printWindow = window.open('', '_blank');
       
@@ -625,7 +621,13 @@ const OrdersKitchenView = ({
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => printOrder(order)}
+                  onClick={async () => {
+                    try {
+                      await printOrder(order);
+                    } catch (error) {
+                      console.error('Erreur impression:', error);
+                    }
+                  }}
                   className="text-blue-600 hover:text-blue-800"
                 >
                   <Printer className="h-4 w-4 mr-1" />
