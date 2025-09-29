@@ -80,19 +80,44 @@ const OrdersAccountingView = ({
     }
   };
 
-  const printOrder = async (order: Order) => {
-    console.log('🖨️ [PRINT] Début impression commande:', order.id);
-    console.log('🖨️ [PRINT] Email client:', order.clientEmail);
-    
+  const printOrder = (order: Order) => {
     // Détecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    console.log('🖨️ [PRINT] iOS détecté:', isIOS);
     
-    // Récupérer les articles depuis cart_backup
+    if (isIOS) {
+      // Sur iOS, ouvrir IMMÉDIATEMENT sans attendre les données
+      const printContent = generateOrderPrintContent(order, []);
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+        return;
+      }
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      
+      // Essayer d'ouvrir le menu d'impression après un délai
+      setTimeout(() => {
+        try {
+          printWindow.print();
+        } catch (error) {
+          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+        }
+      }, 1000);
+      
+    } else {
+      // Comportement normal pour les autres plateformes - récupérer les données
+      printOrderWithData(order);
+    }
+  };
+
+  const printOrderWithData = async (order: Order) => {
+    // Récupérer les articles depuis cart_backup pour les autres plateformes
     let cartBackupItems = [];
     if (order.clientEmail) {
       try {
-        console.log('🖨️ [PRINT] Recherche cart_backup pour:', order.clientEmail);
         const { data, error } = await supabase
           .from('cart_backup')
           .select('cart_items')
@@ -102,73 +127,31 @@ const OrdersAccountingView = ({
           .limit(1)
           .single();
 
-        console.log('🖨️ [PRINT] Résultat cart_backup:', { data, error });
-
         if (!error && data && data.cart_items) {
           cartBackupItems = data.cart_items;
-          console.log('🔍 [PRINT] Articles récupérés depuis cart_backup:', cartBackupItems);
-        } else {
-          console.log('⚠️ [PRINT] Aucun cart_backup trouvé ou erreur:', error);
         }
       } catch (error) {
-        console.error('❌ [PRINT] Erreur lors de la récupération du cart_backup:', error);
+        console.error('Erreur lors de la récupération du cart_backup:', error);
       }
-    } else {
-      console.log('⚠️ [PRINT] Pas d\'email client pour récupérer cart_backup');
     }
     
-    if (isIOS) {
-      console.log('🍎 [PRINT] Mode iOS activé');
-      // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
-      const printContent = generateOrderPrintContent(order, cartBackupItems);
-      console.log('🍎 [PRINT] Contenu généré, longueur:', printContent.length);
-      
-      const printWindow = window.open('', '_blank');
-      
-      if (!printWindow) {
-        console.error('❌ [PRINT] Impossible d\'ouvrir la fenêtre d\'impression');
-        return;
-      }
-      
-      console.log('🍎 [PRINT] Fenêtre ouverte, écriture du contenu...');
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
-      printWindow.focus();
-      console.log('🍎 [PRINT] Focus appliqué, démarrage du setTimeout...');
-      
-      // Essayer d'ouvrir le menu d'impression après un délai
-      setTimeout(() => {
-        console.log('🍎 [PRINT] Timeout exécuté, tentative d\'impression...');
-        try {
-          printWindow.print();
-          console.log('🍎 [PRINT] print() appelé avec succès');
-        } catch (error) {
-          console.log('⚠️ [PRINT] Impression automatique non supportée sur iOS, utilisez le menu partage:', error);
-        }
-      }, 1000);
-      
-    } else {
-      // Comportement normal pour les autres plateformes
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-        return;
-      }
-
-      const printContent = generateOrderPrintContent(order, cartBackupItems);
-      
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      // Attendre que le contenu soit chargé avant d'imprimer
-      printWindow.onload = () => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      };
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+      return;
     }
+
+    const printContent = generateOrderPrintContent(order, cartBackupItems);
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Attendre que le contenu soit chargé avant d'imprimer
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    };
   };
 
   const generateOrderPrintContent = (order: Order, cartBackupItems: any[] = []): string => {
@@ -632,13 +615,7 @@ const OrdersAccountingView = ({
                     variant="outline" 
                     size="sm"
                     className="text-xs text-blue-600 hover:text-blue-800"
-                    onClick={async () => {
-                      try {
-                        await printOrder(order);
-                      } catch (error) {
-                        console.error('Erreur impression:', error);
-                      }
-                    }}
+                    onClick={() => printOrder(order)}
                   >
                     <Printer className="h-3 w-3 mr-1" />
                     Imprimer
@@ -709,13 +686,7 @@ const OrdersAccountingView = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={async () => {
-                      try {
-                        await printOrder(order);
-                      } catch (error) {
-                        console.error('Erreur impression:', error);
-                      }
-                    }}
+                    onClick={() => printOrder(order)}
                     className="text-blue-600 hover:text-blue-800"
                   >
                     <Printer className="h-4 w-4" />

@@ -139,11 +139,41 @@ const OrdersKitchenView = ({
     setDelayDialogOpen(true);
   };
 
-  const printOrder = async (order: Order) => {
+  const printOrder = (order: Order) => {
     // Détecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
-    // Récupérer les articles depuis cart_backup
+    if (isIOS) {
+      // Sur iOS, ouvrir IMMÉDIATEMENT sans attendre les données
+      const printContent = generateOrderPrintContent(order, []);
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+        return;
+      }
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      
+      // Essayer d'ouvrir le menu d'impression après un délai
+      setTimeout(() => {
+        try {
+          printWindow.print();
+        } catch (error) {
+          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+        }
+      }, 1000);
+      
+    } else {
+      // Comportement normal pour les autres plateformes - récupérer les données
+      printOrderWithData(order);
+    }
+  };
+
+  const printOrderWithData = async (order: Order) => {
+    // Récupérer les articles depuis cart_backup pour les autres plateformes
     let cartBackupItems = [];
     if (order.clientEmail) {
       try {
@@ -158,58 +188,29 @@ const OrdersKitchenView = ({
 
         if (!error && data && data.cart_items) {
           cartBackupItems = data.cart_items;
-          console.log('🔍 [PRINT] Articles récupérés depuis cart_backup:', cartBackupItems);
         }
       } catch (error) {
         console.error('Erreur lors de la récupération du cart_backup:', error);
       }
     }
     
-    if (isIOS) {
-      // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
-      const printContent = generateOrderPrintContent(order, cartBackupItems);
-      const printWindow = window.open('', '_blank');
-      
-      if (!printWindow) {
-        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-        return;
-      }
-      
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
-      printWindow.focus();
-      
-      // Essayer d'ouvrir le menu d'impression après un délai
-      setTimeout(() => {
-        try {
-          printWindow.print();
-        } catch (error) {
-          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
-        }
-      }, 1000);
-      
-    } else {
-      // Comportement normal pour les autres plateformes
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-        return;
-      }
-
-      const printContent = generateOrderPrintContent(order, cartBackupItems);
-      
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      // Attendre que le contenu soit chargé avant d'imprimer
-      printWindow.onload = () => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      };
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+      return;
     }
+
+    const printContent = generateOrderPrintContent(order, cartBackupItems);
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Attendre que le contenu soit chargé avant d'imprimer
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    };
   };
 
   const generateOrderPrintContent = (order: Order, cartBackupItems: any[] = []): string => {
@@ -591,13 +592,7 @@ const OrdersKitchenView = ({
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={async () => {
-                    try {
-                      await printOrder(order);
-                    } catch (error) {
-                      console.error('Erreur impression:', error);
-                    }
-                  }}
+                  onClick={() => printOrder(order)}
                   className="text-blue-600 hover:text-blue-800"
                 >
                   <Printer className="h-4 w-4 mr-1" />
