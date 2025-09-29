@@ -532,7 +532,11 @@ const OrdersDeliveryView = ({
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => printOrder(order)}
+                  onClick={() => {
+                    printOrder(order).catch(error => {
+                      console.error('Erreur impression:', error);
+                    });
+                  }}
                   className="text-blue-600 hover:text-blue-800"
                 >
                   <Printer className="h-4 w-4 mr-1" />
