@@ -76,14 +76,14 @@ const AdminManager = () => {
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
-        return <DashboardStats />;
-      case "orders":
         return (
           <div className="space-y-6">
+            <DashboardStats />
             <OrdersCSVExport />
-            <OrderList defaultTab={urlParams.get("tab") || "kitchen"} />
           </div>
         );
+      case "orders":
+        return <OrderList defaultTab={urlParams.get("tab") || "kitchen"} />;
       case "products":
         return <ProductManager />;
       case "users":
