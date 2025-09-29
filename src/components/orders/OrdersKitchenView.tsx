@@ -139,58 +139,71 @@ const OrdersKitchenView = ({
     setDelayDialogOpen(true);
   };
 
-  const printOrder = (order: Order) => {
-    // Détecter iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
-    if (isIOS) {
-      // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
-      const printContent = generateOrderPrintContent(order);
-      const printWindow = window.open('', '_blank');
+  const printOrder = async (order: Order) => {
+    // Récupérer les détails complets de la commande comme dans OrderDetailsModal
+    try {
+      const { fetchOrderWithDetails } = await import('@/integrations/supabase/client');
+      const orderDetails = await fetchOrderWithDetails(order.id);
       
-      if (!printWindow) {
-        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+      if (!orderDetails) {
+        console.error('Impossible de récupérer les détails de la commande');
         return;
       }
       
-      printWindow.document.write(printContent);
-      printWindow.document.close();
+      // Détecter iOS
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
-      // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
-      printWindow.focus();
-      
-      // Optionnel: essayer d'ouvrir le menu d'impression après un délai
-      setTimeout(() => {
-        try {
-          printWindow.print();
-        } catch (error) {
-          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+      if (isIOS) {
+        // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
+        const printContent = generateOrderPrintContent(orderDetails);
+        const printWindow = window.open('', '_blank');
+        
+        if (!printWindow) {
+          console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+          return;
         }
-      }, 1000);
-      
-    } else {
-      // Comportement normal pour les autres plateformes
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-        return;
-      }
-
-      const printContent = generateOrderPrintContent(order);
-      
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      // Attendre que le contenu soit chargé avant d'imprimer
-      printWindow.onload = () => {
+        
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        
+        // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
         printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-      };
+        
+        // Optionnel: essayer d'ouvrir le menu d'impression après un délai
+        setTimeout(() => {
+          try {
+            printWindow.print();
+          } catch (error) {
+            console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+          }
+        }, 1000);
+        
+      } else {
+        // Comportement normal pour les autres plateformes
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+          return;
+        }
+
+        const printContent = generateOrderPrintContent(orderDetails);
+        
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        
+        // Attendre que le contenu soit chargé avant d'imprimer
+        printWindow.onload = () => {
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+        };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des détails de la commande:', error);
     }
   };
 
-  const generateOrderPrintContent = (order: Order): string => {
+  const generateOrderPrintContent = (orderDetails: any): string => {
     const formatTime = (date: Date) => {
       return new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
@@ -347,108 +360,90 @@ const OrdersKitchenView = ({
       <body>
         <div class="header">
           <div class="restaurant-name">SUSHI EATS</div>
-          <div>${getOrderTypeLabel(order.orderType)}</div>
+          <div>${getOrderTypeLabel(orderDetails.order_type)}</div>
         </div>
         
         <div class="order-info">
-          <div class="order-number">#${order.id.slice(-8)}</div>
-          <div>${formatTime(order.scheduledFor)} - ${order.clientName || 'Client'}</div>
-          <div>Tel: ${order.clientPhone || 'N/A'}</div>
+          <div class="order-number">#${orderDetails.id.slice(-8)}</div>
+          <div>${formatTime(new Date(orderDetails.scheduled_for))} - ${orderDetails.client_name || 'Client'}</div>
+          <div>Tel: ${orderDetails.client_phone || 'N/A'}</div>
         </div>
         
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
           ${(() => {
-            // DEBUG: Afficher les données de la commande
-            console.log('🔍 [DEBUG PRINT] Commande complète:', order);
-            console.log('🔍 [DEBUG PRINT] order.items:', order.items);
-            console.log('🔍 [DEBUG PRINT] order.itemsSummary:', order.itemsSummary);
-            
-            // Les données sont dans order.items (format CartItem[])
-            let itemsToDisplay = [];
-            
-            if (order.items && order.items.length > 0) {
-              console.log('🔍 [DEBUG PRINT] Utilisation items:', order.items);
-              itemsToDisplay = order.items;
+            // Utiliser exactement la même logique que OrderDetailsModal
+            if (orderDetails.order_items && orderDetails.order_items.length > 0) {
+              return orderDetails.order_items.map((item: any, index: number) => {
+                const itemName = item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`;
+                const itemQuantity = item.quantity || 1;
+                const itemPrice = item.price || 0;
+                const specialInstructions = item.special_instructions || '';
+                
+                return `
+                  <div class="item">
+                    <div class="item-line">
+                      <span class="item-name">${itemQuantity}x ${itemName}</span>
+                      <span class="item-price">${(itemQuantity * itemPrice).toFixed(2)}€</span>
+                    </div>
+                    ${specialInstructions ? `
+                      <div class="special-instructions">
+                        * ${specialInstructions}
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('');
             } else {
-              console.log('🔍 [DEBUG PRINT] Aucun article trouvé - items:', order.items);
               return '<div class="item">Aucun article trouvé</div>';
             }
-            
-            console.log('🔍 [DEBUG PRINT] Articles à afficher:', itemsToDisplay);
-            
-            return itemsToDisplay.map((item, index) => {
-              console.log('🔍 [DEBUG PRINT] Article', index, ':', item);
-              
-              // Format CartItem[] (comme dans getAllOrders)
-              const itemName = item.menuItem?.name || `Produit ${item.menuItem?.id?.substring(0, 8) || 'inconnu'}`;
-              const itemQuantity = item.quantity || 1;
-              const itemPrice = item.menuItem?.price || 0;
-              const specialInstructions = item.specialInstructions || '';
-              
-              console.log('🔍 [DEBUG PRINT] Article formaté:', { itemName, itemQuantity, itemPrice, specialInstructions });
-              
-              return `
-                <div class="item">
-                  <div class="item-line">
-                    <span class="item-name">${itemQuantity}x ${itemName}</span>
-                    <span class="item-price">${(itemQuantity * itemPrice).toFixed(2)}€</span>
-                  </div>
-                  ${specialInstructions ? `
-                    <div class="special-instructions">
-                      * ${specialInstructions}
-                    </div>
-                  ` : ''}
-                </div>
-              `;
-            }).join('');
           })()}
         </div>
         
         <div class="total-section">
           <div class="total-line">
             <span>Sous-total:</span>
-            <span>${order.subtotal.toFixed(2)}€</span>
+            <span>${orderDetails.subtotal.toFixed(2)}€</span>
           </div>
           <div class="total-line">
             <span>Taxes:</span>
-            <span>${order.tax.toFixed(2)}€</span>
+            <span>${orderDetails.tax.toFixed(2)}€</span>
           </div>
-          ${order.deliveryFee > 0 ? `
+          ${orderDetails.delivery_fee > 0 ? `
             <div class="total-line">
               <span>Livraison:</span>
-              <span>${order.deliveryFee.toFixed(2)}€</span>
+              <span>${orderDetails.delivery_fee.toFixed(2)}€</span>
             </div>
           ` : ''}
-          ${order.tip && order.tip > 0 ? `
+          ${orderDetails.tip && orderDetails.tip > 0 ? `
             <div class="total-line">
               <span>Pourboire:</span>
-              <span>${order.tip.toFixed(2)}€</span>
+              <span>${orderDetails.tip.toFixed(2)}€</span>
             </div>
           ` : ''}
-          ${order.discount && order.discount > 0 ? `
+          ${orderDetails.discount && orderDetails.discount > 0 ? `
             <div class="total-line">
               <span>Remise:</span>
-              <span>-${order.discount.toFixed(2)}€</span>
+              <span>-${orderDetails.discount.toFixed(2)}€</span>
             </div>
           ` : ''}
           <div class="total-line total-final">
             <span>TOTAL:</span>
-            <span>${order.total.toFixed(2)}€</span>
+            <span>${orderDetails.total.toFixed(2)}€</span>
           </div>
         </div>
         
-        ${order.deliveryInstructions || order.customerNotes || order.allergies ? `
+        ${orderDetails.delivery_instructions || orderDetails.customer_notes || orderDetails.allergies ? `
           <div class="notes">
-            ${order.deliveryInstructions ? `LIVRAISON: ${order.deliveryInstructions}\n` : ''}
-            ${order.customerNotes ? `NOTES: ${order.customerNotes}\n` : ''}
-            ${order.allergies && order.allergies.length > 0 ? `ALLERGIES: ${order.allergies.join(', ')}\n` : ''}
+            ${orderDetails.delivery_instructions ? `LIVRAISON: ${orderDetails.delivery_instructions}\n` : ''}
+            ${orderDetails.customer_notes ? `NOTES: ${orderDetails.customer_notes}\n` : ''}
+            ${orderDetails.allergies && orderDetails.allergies.length > 0 ? `ALLERGIES: ${orderDetails.allergies.join(', ')}\n` : ''}
           </div>
         ` : ''}
         
-        ${order.orderType === 'delivery' && (order.deliveryStreet || order.deliveryCity) ? `
+        ${orderDetails.order_type === 'delivery' && (orderDetails.delivery_street || orderDetails.delivery_city) ? `
           <div class="delivery-info">
-            ADRESSE: ${order.deliveryStreet || ''} ${order.deliveryCity || ''} ${order.deliveryPostalCode || ''}
+            ADRESSE: ${orderDetails.delivery_street || ''} ${orderDetails.delivery_city || ''} ${orderDetails.delivery_postal_code || ''}
           </div>
         ` : ''}
         
