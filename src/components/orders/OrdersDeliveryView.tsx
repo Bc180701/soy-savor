@@ -10,7 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { fetchOrderWithDetails } from "@/integrations/supabase/client";
 
 interface OrdersDeliveryViewProps {
   orders: Order[];
@@ -66,48 +65,49 @@ const OrdersDeliveryView = ({
     window.open(url, '_blank');
   };
 
-  const printOrder = async (order: Order) => {
-    try {
-      // Récupérer les détails complets de la commande
-      const orderDetails = await fetchOrderWithDetails(order.id);
+  const printOrder = (order: Order) => {
+    // Détecter iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isIOS) {
+      // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
+      const printContent = generateOrderPrintContent(order);
+      const printWindow = window.open('', '_blank');
       
-      if (!orderDetails) {
-        console.error('Impossible de récupérer les détails de la commande');
+      if (!printWindow) {
+        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
         return;
       }
       
-      // Détecter iOS
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      printWindow.document.write(printContent);
+      printWindow.document.close();
       
-      // Créer le contenu d'impression
-      const printContent = generateOrderPrintContent(orderDetails);
+      // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
+      printWindow.focus();
       
-      if (isIOS) {
-        // Sur iOS, ouvrir dans une nouvelle fenêtre
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(printContent);
-          printWindow.document.close();
-          printWindow.focus();
-        }
-      } else {
-        // Sur desktop, impression directe
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(printContent);
-          printWindow.document.close();
-          printWindow.onload = () => {
-            printWindow.print();
-            printWindow.close();
-          };
-        }
+    } else {
+      // Comportement normal pour les autres plateformes
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+        return;
       }
-    } catch (error) {
-      console.error('Erreur lors de l\'impression:', error);
+
+      const printContent = generateOrderPrintContent(order);
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Attendre que le contenu soit chargé avant d'imprimer
+      printWindow.onload = () => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      };
     }
   };
 
-  const generateOrderPrintContent = (orderDetails: any): string => {
+  const generateOrderPrintContent = (order: Order): string => {
     const formatTime = (date: Date) => {
       return new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
@@ -264,90 +264,95 @@ const OrdersDeliveryView = ({
       <body>
         <div class="header">
           <div class="restaurant-name">SUSHI EATS</div>
-          <div>${getOrderTypeLabel(orderDetails.order_type)}</div>
+          <div>${getOrderTypeLabel(order.orderType)}</div>
         </div>
         
         <div class="order-info">
-          <div class="order-number">#${orderDetails.id.slice(-8)}</div>
-          <div>${formatTime(new Date(orderDetails.scheduled_for))} - ${orderDetails.client_name || 'Client'}</div>
-          <div>Tel: ${orderDetails.client_phone || 'N/A'}</div>
+          <div class="order-number">#${order.id.slice(-8)}</div>
+          <div>${formatTime(order.scheduledFor)} - ${order.clientName || 'Client'}</div>
+          <div>Tel: ${order.clientPhone || 'N/A'}</div>
         </div>
         
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
           ${(() => {
-            // Utiliser exactement la même logique que OrderDetailsModal
-            if (orderDetails.order_items && orderDetails.order_items.length > 0) {
-              return orderDetails.order_items.map((item: any, index: number) => {
-                const itemName = item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`;
-                const itemQuantity = item.quantity || 1;
-                const itemPrice = item.price || 0;
-                const specialInstructions = item.special_instructions || '';
-                
-                return `
-                  <div class="item">
-                    <div class="item-line">
-                      <span class="item-name">${itemQuantity}x ${itemName}</span>
-                      <span class="item-price">${(itemQuantity * itemPrice).toFixed(2)}€</span>
-                    </div>
-                    ${specialInstructions ? `
-                      <div class="special-instructions">
-                        * ${specialInstructions}
-                      </div>
-                    ` : ''}
-                  </div>
-                `;
-              }).join('');
+            // Les données sont dans order.items (format CartItem[])
+            let itemsToDisplay = [];
+            
+            if (order.items && order.items.length > 0) {
+              itemsToDisplay = order.items;
             } else {
               return '<div class="item">Aucun article trouvé</div>';
             }
+            
+            return itemsToDisplay.map((item, index) => {
+              // Format CartItem[] (comme dans getAllOrders)
+              const itemName = item.menuItem?.name || `Produit ${item.menuItem?.id?.substring(0, 8) || 'inconnu'}`;
+              const itemQuantity = item.quantity || 1;
+              const itemPrice = item.menuItem?.price || 0;
+              const specialInstructions = item.specialInstructions || '';
+              
+              return `
+                <div class="item">
+                  <div class="item-line">
+                    <span class="item-name">${itemQuantity}x ${itemName}</span>
+                    <span class="item-price">${(itemQuantity * itemPrice).toFixed(2)}€</span>
+                  </div>
+                  ${specialInstructions ? `
+                    <div class="special-instructions">
+                      * ${specialInstructions}
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('');
           })()}
         </div>
         
         <div class="total-section">
           <div class="total-line">
             <span>Sous-total:</span>
-            <span>${orderDetails.subtotal.toFixed(2)}€</span>
+            <span>${order.subtotal.toFixed(2)}€</span>
           </div>
           <div class="total-line">
             <span>Taxes:</span>
-            <span>${orderDetails.tax.toFixed(2)}€</span>
+            <span>${order.tax.toFixed(2)}€</span>
           </div>
-          ${orderDetails.delivery_fee > 0 ? `
+          ${order.deliveryFee > 0 ? `
             <div class="total-line">
               <span>Livraison:</span>
-              <span>${orderDetails.delivery_fee.toFixed(2)}€</span>
+              <span>${order.deliveryFee.toFixed(2)}€</span>
             </div>
           ` : ''}
-          ${orderDetails.tip && orderDetails.tip > 0 ? `
+          ${order.tip && order.tip > 0 ? `
             <div class="total-line">
               <span>Pourboire:</span>
-              <span>${orderDetails.tip.toFixed(2)}€</span>
+              <span>${order.tip.toFixed(2)}€</span>
             </div>
           ` : ''}
-          ${orderDetails.discount && orderDetails.discount > 0 ? `
+          ${order.discount && order.discount > 0 ? `
             <div class="total-line">
               <span>Remise:</span>
-              <span>-${orderDetails.discount.toFixed(2)}€</span>
+              <span>-${order.discount.toFixed(2)}€</span>
             </div>
           ` : ''}
           <div class="total-line total-final">
             <span>TOTAL:</span>
-            <span>${orderDetails.total.toFixed(2)}€</span>
+            <span>${order.total.toFixed(2)}€</span>
           </div>
         </div>
         
-        ${orderDetails.delivery_instructions || orderDetails.customer_notes || orderDetails.allergies ? `
+        ${order.deliveryInstructions || order.customerNotes || order.allergies ? `
           <div class="notes">
-            ${orderDetails.delivery_instructions ? `LIVRAISON: ${orderDetails.delivery_instructions}\n` : ''}
-            ${orderDetails.customer_notes ? `NOTES: ${orderDetails.customer_notes}\n` : ''}
-            ${orderDetails.allergies && orderDetails.allergies.length > 0 ? `ALLERGIES: ${orderDetails.allergies.join(', ')}\n` : ''}
+            ${order.deliveryInstructions ? `LIVRAISON: ${order.deliveryInstructions}\n` : ''}
+            ${order.customerNotes ? `NOTES: ${order.customerNotes}\n` : ''}
+            ${order.allergies && order.allergies.length > 0 ? `ALLERGIES: ${order.allergies.join(', ')}\n` : ''}
           </div>
         ` : ''}
         
-        ${orderDetails.order_type === 'delivery' && (orderDetails.delivery_street || orderDetails.delivery_city) ? `
+        ${order.orderType === 'delivery' && (order.deliveryStreet || order.deliveryCity) ? `
           <div class="delivery-info">
-            ADRESSE: ${orderDetails.delivery_street || ''} ${orderDetails.delivery_city || ''} ${orderDetails.delivery_postal_code || ''}
+            ADRESSE: ${order.deliveryStreet || ''} ${order.deliveryCity || ''} ${order.deliveryPostalCode || ''}
           </div>
         ` : ''}
         
