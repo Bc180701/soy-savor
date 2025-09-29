@@ -140,25 +140,54 @@ const OrdersKitchenView = ({
   };
 
   const printOrder = (order: Order) => {
-    // Créer une nouvelle fenêtre pour l'impression
-    const printWindow = window.open('', '_blank');
+    // Détecter iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
-    if (!printWindow) {
-      console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-      return;
-    }
+    if (isIOS) {
+      // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
+      const printContent = generateOrderPrintContent(order);
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+        return;
+      }
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
+      printWindow.focus();
+      
+      // Optionnel: essayer d'ouvrir le menu d'impression après un délai
+      setTimeout(() => {
+        try {
+          printWindow.print();
+        } catch (error) {
+          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+        }
+      }, 1000);
+      
+    } else {
+      // Comportement normal pour les autres plateformes
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+        return;
+      }
 
-    // Générer le contenu HTML pour l'impression
-    const printContent = generateOrderPrintContent(order);
-    
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    // Attendre que le contenu soit chargé puis imprimer
-    printWindow.onload = () => {
-      printWindow.print();
-      printWindow.close();
-    };
+      const printContent = generateOrderPrintContent(order);
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Attendre que le contenu soit chargé avant d'imprimer
+      printWindow.onload = () => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      };
+    }
   };
 
   const generateOrderPrintContent = (order: Order): string => {
