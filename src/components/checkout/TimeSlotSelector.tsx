@@ -263,28 +263,47 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       // Ajuster pour le délai de livraison ou de retrait
       const interval = 15; // 15 minutes pour tous les types
       
-      // Calculer le délai minimum : 30 minutes pour livraison ET retrait
-      const delayMinutes = 30; // 30 min pour tous les types de commande
-      const minTime = addMinutes(now, delayMinutes);
+      // NOUVELLE LOGIQUE: Permettre les commandes toute la journée sur les créneaux d'ouverture
+      // Au lieu de calculer un délai basé sur l'heure actuelle, on utilise directement l'heure d'ouverture
+      let finalMinTime = new Date(adjustedStartDate);
       
-      // Arrondir au prochain créneau de 15 minutes
-      const minutes = minTime.getMinutes();
-      const roundedMinutes = Math.ceil(minutes / 15) * 15;
-      const finalMinTime = new Date(minTime);
+      // Seule restriction: si on est déjà dans les 30 dernières minutes avant la fermeture,
+      // on applique un délai minimum pour s'assurer que la commande peut être préparée
+      const closingTime = new Date(endDate);
+      const timeUntilClosing = closingTime.getTime() - now.getTime();
+      const thirtyMinutes = 30 * 60 * 1000; // 30 minutes en millisecondes
       
-      if (roundedMinutes >= 60) {
-        finalMinTime.setHours(minTime.getHours() + 1, roundedMinutes - 60, 0, 0);
+      if (timeUntilClosing < thirtyMinutes) {
+        // Si on est dans les 30 dernières minutes, appliquer un délai minimum
+        const delayMinutes = 30;
+        const minTime = addMinutes(now, delayMinutes);
+        
+        // Arrondir au prochain créneau de 15 minutes
+        const minutes = minTime.getMinutes();
+        const roundedMinutes = Math.ceil(minutes / 15) * 15;
+        const calculatedMinTime = new Date(minTime);
+        
+        if (roundedMinutes >= 60) {
+          calculatedMinTime.setHours(minTime.getHours() + 1, roundedMinutes - 60, 0, 0);
+        } else {
+          calculatedMinTime.setMinutes(roundedMinutes, 0, 0);
+        }
+        
+        // Utiliser le maximum entre l'heure d'ouverture ajustée et le délai minimum
+        finalMinTime = new Date(Math.max(adjustedStartDate.getTime(), calculatedMinTime.getTime()));
+        
+        console.log(`🕐 [TimeSlotSelector] Délai appliqué (fin de journée) - Commande à ${format(now, 'HH:mm')} → Premier créneau ${format(finalMinTime, 'HH:mm')}`);
       } else {
-        finalMinTime.setMinutes(roundedMinutes, 0, 0);
+        console.log(`🕐 [TimeSlotSelector] Commande libre - Tous les créneaux d'ouverture disponibles à partir de ${format(adjustedStartDate, 'HH:mm')}`);
       }
-      
-      console.log(`🕐 [TimeSlotSelector] Commande à ${format(now, 'HH:mm')} → Premier créneau ${format(finalMinTime, 'HH:mm')} (délai: ${delayMinutes}min)`);
 
-      let currentTime = new Date(Math.max(adjustedStartDate.getTime(), finalMinTime.getTime()));
+      let currentTime = new Date(finalMinTime);
 
       while (currentTime <= endDate) {
         const timeValue = format(currentTime, "HH:mm");
-        const isPassedTime = isAfter(finalMinTime, currentTime);
+        // NOUVELLE LOGIQUE: Ne plus considérer les créneaux comme "passés" 
+        // si on est dans la logique de commande libre toute la journée
+        const isPassedTime = timeUntilClosing < thirtyMinutes ? isAfter(finalMinTime, currentTime) : false;
         
         // Vérifier la capacité du créneau selon le type de commande
         const currentOrders = orderCounts[timeValue] || 0;
