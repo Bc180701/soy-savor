@@ -24,6 +24,7 @@ import TestOrderNotification from "./TestOrderNotification";
 import DeliveryPhoneManager from "./DeliveryPhoneManager";
 import { BluetoothManager } from "./BluetoothManager";
 import { ImageOptimizer } from "./ImageOptimizer";
+import OrdersCSVExport from "./OrdersCSVExport";
 
 const AdminManager = () => {
   const [urlParams] = useState(() => new URLSearchParams(window.location.search));
@@ -77,7 +78,12 @@ const AdminManager = () => {
       case "dashboard":
         return <DashboardStats />;
       case "orders":
-        return <OrderList defaultTab={urlParams.get("tab") || "kitchen"} />;
+        return (
+          <div className="space-y-6">
+            <OrdersCSVExport />
+            <OrderList defaultTab={urlParams.get("tab") || "kitchen"} />
+          </div>
+        );
       case "products":
         return <ProductManager />;
       case "users":
