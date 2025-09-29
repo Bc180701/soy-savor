@@ -184,10 +184,14 @@ const OrdersCSVExport: React.FC<OrdersCSVExportProps> = ({ className }) => {
           order_items (
             id,
             quantity,
-            menu_item_id,
-            menu_item_name,
-            menu_item_price,
-            special_instructions
+            price,
+            special_instructions,
+            product_id,
+            products (
+              id,
+              name,
+              price
+            )
           )
         `)
         .gte('created_at', startDate.toISOString())
@@ -220,9 +224,9 @@ const OrdersCSVExport: React.FC<OrdersCSVExportProps> = ({ className }) => {
         restaurant_id: order.restaurant_id,
         items: order.order_items?.map((item: any) => ({
           menuItem: {
-            id: item.menu_item_id,
-            name: item.menu_item_name,
-            price: item.menu_item_price,
+            id: item.product_id || 'unknown',
+            name: item.products?.name || item.special_instructions || 'Article inconnu',
+            price: item.price || 0,
             category: 'Sushi' as const,
             description: '',
             imageUrl: '',
