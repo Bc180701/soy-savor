@@ -591,10 +591,12 @@ const OrdersKitchenView = ({
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => {
-                    printOrder(order).catch(error => {
+                  onClick={async () => {
+                    try {
+                      await printOrder(order);
+                    } catch (error) {
                       console.error('Erreur impression:', error);
-                    });
+                    }
                   }}
                   className="text-blue-600 hover:text-blue-800"
                 >

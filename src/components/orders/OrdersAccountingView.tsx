@@ -614,10 +614,12 @@ const OrdersAccountingView = ({
                     variant="outline" 
                     size="sm"
                     className="text-xs text-blue-600 hover:text-blue-800"
-                    onClick={() => {
-                      printOrder(order).catch(error => {
+                    onClick={async () => {
+                      try {
+                        await printOrder(order);
+                      } catch (error) {
                         console.error('Erreur impression:', error);
-                      });
+                      }
                     }}
                   >
                     <Printer className="h-3 w-3 mr-1" />
@@ -689,10 +691,12 @@ const OrdersAccountingView = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => {
-                      printOrder(order).catch(error => {
+                    onClick={async () => {
+                      try {
+                        await printOrder(order);
+                      } catch (error) {
                         console.error('Erreur impression:', error);
-                      });
+                      }
                     }}
                     className="text-blue-600 hover:text-blue-800"
                   >
