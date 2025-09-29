@@ -1,0 +1,51 @@
+
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+
+interface Promotion {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl: string;
+  buttonText: string;
+  buttonLink: string;
+  isActive?: boolean;
+}
+
+interface PromotionCardProps {
+  promotion: Promotion;
+}
+
+export const PromotionCard = ({ promotion }: PromotionCardProps) => {
+  return (
+    <motion.div 
+      whileHover={{ y: -5 }}
+      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow relative"
+    >
+      {promotion.isActive && (
+        <Badge className="absolute top-2 right-2 bg-green-500 hover:bg-green-600 z-10">
+          Promotion active
+        </Badge>
+      )}
+      <div className="relative pb-[60%]">
+        <img 
+          src={promotion.imageUrl} 
+          alt={promotion.title}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute bottom-0 left-0 p-4 text-white">
+          <h3 className="font-bold text-xl mb-1">{promotion.title}</h3>
+        </div>
+      </div>
+      <div className="p-5">
+        <p className="text-gray-600 mb-4">{promotion.description}</p>
+        <Button asChild variant="destructive">
+          <Link to={promotion.buttonLink}>{promotion.buttonText}</Link>
+        </Button>
+      </div>
+    </motion.div>
+  );
+};

@@ -1,0 +1,174 @@
+
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Bar, BarChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { getOrderAnalytics, OrderAnalytics } from "@/services/analyticsService";
+import { TrendingUp, ChartBar } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+const OrdersChart = () => {
+  const [data, setData] = useState<OrderAnalytics[]>([]);
+  const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const analytics = await getOrderAnalytics(7);
+      // Reverse to show in chronological order
+      setData(analytics.reverse());
+      setLoading(false);
+    };
+
+    fetchData();
+  }, []);
+
+  // Format date for display
+  const formatData = (data: OrderAnalytics[]) => {
+    return data.map(item => ({
+      ...item,
+      date: new Date(item.date).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit'
+      }),
+      // Format revenue for display
+      formattedRevenue: `${Number(item.total_revenue).toFixed(2)} €`,
+      formattedOrders: `${item.total_orders} commandes`
+    }));
+  };
+
+  // Calculate the domain for revenue Y-axis
+  const getRevenueYAxisDomain = () => {
+    if (data.length === 0) return [0, 10];
+    
+    const maxRevenue = Math.max(...data.map(item => Number(item.total_revenue)));
+    // Add 20% padding to the top
+    return [0, maxRevenue * 1.2];
+  };
+
+  // Calculate the domain for orders Y-axis
+  const getOrdersYAxisDomain = () => {
+    if (data.length === 0) return [0, 10];
+    
+    const maxOrders = Math.max(...data.map(item => item.total_orders));
+    // Add 20% padding to the top
+    return [0, maxOrders * 1.2];
+  };
+
+  return (
+    <Card className={`w-full mb-8 ${isMobile ? 'mx-2' : ''}`}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="flex items-center space-x-2">
+          <ChartBar className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-primary`} />
+          <CardTitle className={`${isMobile ? 'text-sm' : 'text-lg'}`}>
+            {isMobile ? 'Évolution (7j)' : 'Évolution des commandes et revenus (7 derniers jours)'}
+          </CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className={`flex ${isMobile ? 'h-[200px]' : 'h-[300px]'} items-center justify-center`}>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          </div>
+        ) : data.length === 0 ? (
+          <div className={`flex ${isMobile ? 'h-[200px]' : 'h-[300px]'} items-center justify-center`}>
+            <p className="text-muted-foreground">Aucune donnée disponible</p>
+          </div>
+        ) : (
+          <div className={isMobile ? 'h-[200px]' : 'h-[300px]'}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ChartContainer 
+                config={{
+                  orders: {
+                    label: "Commandes",
+                    color: "#1E40AF" // Blue
+                  },
+                  revenue: {
+                    label: "Revenus (€)",
+                    color: "#047857" // Green
+                  }
+                }}
+              >
+                <BarChart
+                  data={formatData(data)}
+                  margin={{ 
+                    top: 20, 
+                    right: isMobile ? 10 : 30, 
+                    left: isMobile ? 10 : 20, 
+                    bottom: 20 
+                  }}
+                >
+                  <XAxis
+                    dataKey="date"
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                    fontSize={isMobile ? 10 : 12}
+                    dy={10}
+                  />
+                  {/* Primary Y-axis for orders */}
+                  <YAxis
+                    yAxisId="left"
+                    orientation="left"
+                    tickFormatter={(value) => `${value}`}
+                    domain={getOrdersYAxisDomain()}
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                    fontSize={isMobile ? 8 : 12}
+                    width={isMobile ? 25 : 40}
+                  />
+                  {/* Secondary Y-axis for revenue */}
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tickFormatter={(value) => `${value} €`}
+                    domain={getRevenueYAxisDomain()}
+                    axisLine={{ strokeWidth: 1 }}
+                    tickLine={false}
+                    fontSize={isMobile ? 8 : 12}
+                    width={isMobile ? 35 : 60}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar
+                    dataKey="total_orders"
+                    yAxisId="left"
+                    fill="#93C5FD" // Light blue
+                    stroke="#1E40AF"
+                    strokeWidth={1}
+                    name="orders"
+                    barSize={isMobile ? 15 : 20}
+                  />
+                  <Bar
+                    dataKey="total_revenue"
+                    yAxisId="right"
+                    fill="#86EFAC" // Light green
+                    stroke="#047857"
+                    strokeWidth={1}
+                    name="revenue"
+                    barSize={isMobile ? 15 : 20}
+                  />
+                </BarChart>
+              </ChartContainer>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Custom tooltip to better format the values
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <p className="text-sm font-medium">{`Date: ${label}`}</p>
+        <p className="text-sm text-blue-600">{`Commandes: ${payload[0].value}`}</p>
+        <p className="text-sm text-green-600">{`Revenus: ${Number(payload[1].value).toFixed(2)} €`}</p>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export default OrdersChart;

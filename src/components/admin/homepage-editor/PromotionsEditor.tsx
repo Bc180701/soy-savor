@@ -1,0 +1,251 @@
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm, FormProvider } from "react-hook-form";
+import {
+  Form,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription
+} from "@/components/ui/form";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Trash, AlertCircle, Loader2 } from "lucide-react";
+import FileUpload from "@/components/ui/file-upload";
+import { useToast } from "@/components/ui/use-toast";
+
+interface Promotion {
+  id: number;
+  title: string;
+  description: string;
+  imageUrl: string;
+  buttonText: string;
+  buttonLink: string;
+}
+
+interface PromotionsEditorProps {
+  data: Promotion[];
+  onSave: (data: Promotion[]) => Promise<void>;
+}
+
+const PromotionsEditor = ({ data, onSave }: PromotionsEditorProps) => {
+  const [promotions, setPromotions] = useState<Promotion[]>(data || []);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  
+  const form = useForm();
+
+  const handleChange = (index: number, field: string, value: string) => {
+    const updatedPromotions = [...promotions];
+    updatedPromotions[index] = {
+      ...updatedPromotions[index],
+      [field]: value,
+    };
+    setPromotions(updatedPromotions);
+  };
+
+  const addPromotion = () => {
+    const newId = promotions.length > 0 
+      ? Math.max(...promotions.map(p => p.id)) + 1 
+      : 1;
+      
+    setPromotions([
+      ...promotions,
+      {
+        id: newId,
+        title: "Nouvelle promotion",
+        description: "Description de la promotion",
+        imageUrl: "",
+        buttonText: "En profiter",
+        buttonLink: "/carte",
+      },
+    ]);
+  };
+
+  const removePromotion = (index: number) => {
+    setPromotions(promotions.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    
+    try {
+      // S'assurer que les données sont correctement formatées avant de les envoyer
+      const cleanedPromotions = promotions.map(promo => ({
+        id: promo.id,
+        title: promo.title.trim(),
+        description: promo.description.trim(),
+        imageUrl: promo.imageUrl,
+        buttonText: promo.buttonText.trim(),
+        buttonLink: promo.buttonLink.trim(),
+      }));
+      
+      await onSave(cleanedPromotions);
+      
+      toast({
+        title: "Modifications enregistrées",
+        description: "Les promotions ont été sauvegardées avec succès",
+        variant: "success"
+      });
+    } catch (error: any) {
+      console.error("Erreur lors de la sauvegarde des promotions:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'enregistrement",
+        description: error.message || "Impossible de sauvegarder les promotions"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
+          {promotions.length === 0 ? (
+            <div className="bg-gray-100 rounded-lg p-8 text-center text-gray-500">
+              <AlertCircle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+              <p className="font-medium">Aucune promotion disponible</p>
+              <p className="text-sm mt-1">Ajoutez une promotion pour commencer</p>
+            </div>
+          ) : (
+            promotions.map((promotion, index) => (
+              <Card key={promotion.id} className="border border-gray-200">
+                <CardContent className="pt-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-medium">Promotion {index + 1}</h3>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePromotion(index)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash className="h-4 w-4 mr-1" /> Supprimer
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <FormItem>
+                        <FormLabel>Titre</FormLabel>
+                        <FormControl>
+                          <Input
+                            value={promotion.title}
+                            onChange={(e) => handleChange(index, 'title', e.target.value)}
+                            placeholder="Titre de la promotion"
+                          />
+                        </FormControl>
+                      </FormItem>
+
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            value={promotion.description}
+                            onChange={(e) => handleChange(index, 'description', e.target.value)}
+                            placeholder="Description de la promotion"
+                            rows={3}
+                          />
+                        </FormControl>
+                      </FormItem>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormItem>
+                          <FormLabel>Texte du bouton</FormLabel>
+                          <FormControl>
+                            <Input
+                              value={promotion.buttonText}
+                              onChange={(e) => handleChange(index, 'buttonText', e.target.value)}
+                              placeholder="Texte du bouton"
+                            />
+                          </FormControl>
+                        </FormItem>
+
+                        <FormItem>
+                          <FormLabel>Lien du bouton</FormLabel>
+                          <FormControl>
+                            <Input
+                              value={promotion.buttonLink}
+                              onChange={(e) => handleChange(index, 'buttonLink', e.target.value)}
+                              placeholder="/lien"
+                            />
+                          </FormControl>
+                        </FormItem>
+                      </div>
+                    </div>
+
+                    <FormItem>
+                      <FormLabel>Image</FormLabel>
+                      <FormControl>
+                        <div className="space-y-2">
+                          {promotion.imageUrl ? (
+                            <div className="bg-gray-100 rounded-lg overflow-hidden h-40 relative">
+                              <img 
+                                src={promotion.imageUrl} 
+                                alt={promotion.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="bg-gray-100 rounded-lg overflow-hidden h-40 relative flex items-center justify-center text-gray-400">
+                              <AlertCircle className="h-6 w-6 mr-2" />
+                              <span>Aucune image</span>
+                            </div>
+                          )}
+                          
+                          <FileUpload 
+                            accept="image/*" 
+                            value={promotion.imageUrl}
+                            onChange={(value) => handleChange(index, 'imageUrl', value)}
+                            buttonText="Choisir une image"
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Format recommandé : 800x600px
+                      </FormDescription>
+                    </FormItem>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={addPromotion}
+            className="w-full py-6 border-dashed"
+          >
+            <Plus className="h-4 w-4 mr-2" /> Ajouter une promotion
+          </Button>
+        </div>
+
+        <Separator className="my-6" />
+
+        <div>
+          <Button 
+            type="submit" 
+            className="bg-gold-600 hover:bg-gold-700 text-white"
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Enregistrement...
+              </>
+            ) : "Enregistrer les modifications"}
+          </Button>
+        </div>
+      </form>
+    </FormProvider>
+  );
+};
+
+export default PromotionsEditor;

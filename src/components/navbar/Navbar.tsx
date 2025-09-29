@@ -1,0 +1,178 @@
+
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import Logo from "@/components/navbar/Logo";
+import DesktopNavLinks from "@/components/navbar/DesktopNavLinks";
+import UserActions from "@/components/navbar/UserActions";
+import MobileActions from "@/components/navbar/MobileActions";
+import MobileMenu from "@/components/navbar/MobileMenu";
+
+const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Vérifier si l'utilisateur est connecté
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user || null);
+    };
+    
+    checkUser();
+    
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("Auth state change event:", event);
+        setUser(session?.user || null);
+      }
+    );
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Détecter le scroll pour changer l'apparence de la navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      const offset = window.scrollY;
+      if (offset > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      console.log("Tentative de déconnexion...");
+      
+      // Tenter une déconnexion normale d'abord
+      const { error } = await supabase.auth.signOut({
+        scope: 'global'
+      });
+      
+      // Si l'erreur indique que l'utilisateur n'existe pas, on force la déconnexion locale
+      if (error && (error.message.includes("User from sub claim in JWT does not exist") || error.status === 403)) {
+        console.log("Utilisateur inexistant côté serveur, forçage de la déconnexion locale...");
+        
+        // Supprimer manuellement les données de session locale
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.removeItem('supabase.auth.token');
+        
+        // Forcer la mise à jour de l'état
+        setUser(null);
+        
+        toast({
+          title: "Déconnexion réussie",
+          description: "Vous avez été déconnecté avec succès",
+        });
+        
+        // Rediriger vers la page d'accueil
+        navigate("/");
+        return;
+      }
+      
+      // Si une autre erreur survient, la signaler
+      if (error) {
+        console.error("Erreur lors de la déconnexion:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la déconnexion. Veuillez réessayer.",
+        });
+        return;
+      }
+      
+      console.log("Déconnexion réussie");
+      
+      // Si la déconnexion réussit normalement
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès",
+      });
+      
+      // Réinitialiser l'état utilisateur
+      setUser(null);
+      
+      // Rediriger vers la page d'accueil
+      navigate("/");
+    } catch (err) {
+      console.error("Exception lors de la déconnexion:", err);
+      
+      // En cas d'exception, forcer la déconnexion locale
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.removeItem('supabase.auth.token');
+      setUser(null);
+      
+      toast({
+        title: "Déconnexion forcée",
+        description: "Vous avez été déconnecté localement",
+      });
+      
+      navigate("/");
+    }
+  };
+
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
+  
+  const closeMenu = () => {
+    setIsOpen(false);
+  };
+
+  const navLinks = [
+    { name: "Accueil", path: "/" },
+    { name: "Menu", path: "/menu" },
+    { name: "Commander", path: "/commander" },
+    { name: "Contact", path: "/contact" },
+  ];
+
+  return (
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/90 backdrop-blur-sm shadow-sm py-2"
+          : "bg-transparent py-4"
+      }`}
+    >
+      <div className="container mx-auto px-4 flex items-center justify-between">
+        {/* Logo */}
+        <Logo />
+
+        {/* Navigation pour desktop */}
+        <DesktopNavLinks navLinks={navLinks} />
+
+        {/* Boutons actions */}
+        <UserActions user={user} handleLogout={handleLogout} />
+
+        {/* Bouton menu mobile */}
+        <MobileActions isOpen={isOpen} toggleMenu={toggleMenu} />
+      </div>
+
+      {/* Menu mobile */}
+      <MobileMenu 
+        isOpen={isOpen} 
+        navLinks={navLinks} 
+        user={user}
+        handleLogout={handleLogout}
+        onClose={closeMenu}
+      />
+    </header>
+  );
+};
+
+export default Navbar;
