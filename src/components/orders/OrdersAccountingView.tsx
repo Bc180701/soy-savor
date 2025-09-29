@@ -80,65 +80,58 @@ const OrdersAccountingView = ({
     }
   };
 
-  const printOrder = (order: Order) => {
+  const printOrder = async (order: Order) => {
     // Détecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
     if (isIOS) {
-      // Sur iOS, lancer la récupération des données en arrière-plan
-      // et déclencher l'impression après un délai suffisant
       console.log('🍎 [iOS] Début impression commande:', order.id);
       
-      // Lancer la récupération des données immédiatement
-      const fetchCartBackup = async () => {
-        let cartBackupItems = [];
-        if (order.clientEmail) {
-          try {
-            const { data, error } = await supabase
-              .from('cart_backup')
-              .select('cart_items')
-              .eq('session_id', order.clientEmail)
-              .eq('is_used', false)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
+      // Récupérer les données d'abord
+      let cartBackupItems = [];
+      if (order.clientEmail) {
+        try {
+          const { data, error } = await supabase
+            .from('cart_backup')
+            .select('cart_items')
+            .eq('session_id', order.clientEmail)
+            .eq('is_used', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
 
-            if (!error && data && data.cart_items) {
-              cartBackupItems = data.cart_items;
-              console.log('🍎 [iOS] Articles récupérés:', cartBackupItems);
-            }
-          } catch (error) {
-            console.error('🍎 [iOS] Erreur récupération cart_backup:', error);
+          if (!error && data && data.cart_items) {
+            cartBackupItems = data.cart_items;
+            console.log('🍎 [iOS] Articles récupérés:', cartBackupItems);
           }
+        } catch (error) {
+          console.error('🍎 [iOS] Erreur récupération cart_backup:', error);
         }
-        
-        // Maintenant déclencher l'impression avec les données
-        console.log('🍎 [iOS] Déclenchement impression avec données');
-        const printContent = generateOrderPrintContent(order, cartBackupItems);
-        const printWindow = window.open('', '_blank');
-        
-        if (!printWindow) {
-          console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-          return;
-        }
-        
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        printWindow.focus();
-        
-        // Essayer d'ouvrir le menu d'impression après un délai
-        setTimeout(() => {
-          try {
-            printWindow.print();
-            console.log('🍎 [iOS] print() appelé avec succès');
-          } catch (error) {
-            console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
-          }
-        }, 1000);
-      };
+      }
       
-      // Lancer la récupération et l'impression
-      fetchCartBackup();
+      // Maintenant ouvrir la fenêtre avec les données
+      console.log('🍎 [iOS] Ouverture fenêtre avec données');
+      const printContent = generateOrderPrintContent(order, cartBackupItems);
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+        return;
+      }
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      
+      // Essayer d'ouvrir le menu d'impression après un délai
+      setTimeout(() => {
+        try {
+          printWindow.print();
+          console.log('🍎 [iOS] print() appelé avec succès');
+        } catch (error) {
+          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+        }
+      }, 1000);
       
     } else {
       // Comportement normal pour les autres plateformes - récupérer les données
@@ -648,7 +641,13 @@ const OrdersAccountingView = ({
                     variant="outline" 
                     size="sm"
                     className="text-xs text-blue-600 hover:text-blue-800"
-                    onClick={() => printOrder(order)}
+                    onClick={async () => {
+                      try {
+                        await printOrder(order);
+                      } catch (error) {
+                        console.error('Erreur impression:', error);
+                      }
+                    }}
                   >
                     <Printer className="h-3 w-3 mr-1" />
                     Imprimer
@@ -719,7 +718,13 @@ const OrdersAccountingView = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => printOrder(order)}
+                    onClick={async () => {
+                      try {
+                        await printOrder(order);
+                      } catch (error) {
+                        console.error('Erreur impression:', error);
+                      }
+                    }}
                     className="text-blue-600 hover:text-blue-800"
                   >
                     <Printer className="h-4 w-4" />
