@@ -176,7 +176,7 @@ const OrdersCSVExport: React.FC<OrdersCSVExportProps> = ({ className }) => {
         restaurant: currentRestaurant?.name
       });
 
-      // Construire la requête
+      // Construire la requête - NOUVELLE REQUÊTE INDÉPENDANTE
       let query = supabase
         .from('orders')
         .select(`
@@ -203,11 +203,20 @@ const OrdersCSVExport: React.FC<OrdersCSVExportProps> = ({ className }) => {
         query = query.eq('restaurant_id', currentRestaurant.id);
       }
 
+      console.log('🔍 Export CSV - Exécution de la requête avec filtres:', {
+        restaurant_id: currentRestaurant?.id,
+        date_from: startDate.toISOString(),
+        date_to: endDate.toISOString()
+      });
+
       const { data: ordersData, error } = await query;
 
       if (error) {
+        console.error('❌ Erreur requête export CSV:', error);
         throw error;
       }
+
+      console.log(`📊 Export CSV - ${ordersData?.length || 0} commandes trouvées pour la période`);
 
       if (!ordersData || ordersData.length === 0) {
         toast({
@@ -295,6 +304,135 @@ const OrdersCSVExport: React.FC<OrdersCSVExportProps> = ({ className }) => {
     }
   };
 
+  // Fonction pour exporter TOUTES les commandes (sans filtre de date)
+  const handleExportAll = async () => {
+    setIsExporting(true);
+
+    try {
+      console.log('📊 Export CSV - TOUTES les commandes pour restaurant:', currentRestaurant?.name);
+
+      // Construire la requête SANS filtre de date
+      let query = supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            id,
+            quantity,
+            price,
+            special_instructions,
+            product_id,
+            products (
+              id,
+              name,
+              price
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      // Filtrer par restaurant si sélectionné
+      if (currentRestaurant?.id) {
+        query = query.eq('restaurant_id', currentRestaurant.id);
+      }
+
+      console.log('🔍 Export CSV - Exécution de la requête pour TOUTES les commandes:', {
+        restaurant_id: currentRestaurant?.id
+      });
+
+      const { data: ordersData, error } = await query;
+
+      if (error) {
+        console.error('❌ Erreur requête export CSV (toutes):', error);
+        throw error;
+      }
+
+      console.log(`📊 Export CSV - ${ordersData?.length || 0} commandes trouvées (toutes)`);
+
+      if (!ordersData || ordersData.length === 0) {
+        toast({
+          title: "Aucune commande",
+          description: "Aucune commande trouvée pour ce restaurant",
+        });
+        return;
+      }
+
+      // Convertir les données de la base en format Order
+      const orders: Order[] = ordersData.map(order => ({
+        id: order.id,
+        userId: order.user_id,
+        restaurant_id: order.restaurant_id,
+        items: order.order_items?.map((item: any) => ({
+          menuItem: {
+            id: item.product_id || 'unknown',
+            name: item.products?.name || item.special_instructions || 'Article inconnu',
+            price: item.price || 0,
+            category: 'Sushi' as const,
+            description: '',
+            imageUrl: '',
+            isVegetarian: false,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: false,
+            allergens: []
+          },
+          quantity: item.quantity,
+          specialInstructions: item.special_instructions
+        })) || [],
+        subtotal: order.subtotal,
+        tax: order.tax,
+        deliveryFee: order.delivery_fee,
+        tip: order.tip,
+        total: order.total,
+        discount: order.discount,
+        promoCode: order.promo_code,
+        orderType: order.order_type as "delivery" | "pickup" | "dine-in",
+        status: order.status as any,
+        paymentMethod: "credit-card" as const,
+        paymentStatus: order.payment_status as any,
+        deliveryInstructions: order.delivery_instructions,
+        scheduledFor: new Date(order.scheduled_for),
+        createdAt: new Date(order.created_at),
+        customerNotes: order.customer_notes,
+        pickupTime: order.pickup_time,
+        contactPreference: order.contact_preference,
+        allergies: order.allergies,
+        clientName: order.client_name,
+        clientPhone: order.client_phone,
+        clientEmail: order.client_email,
+        deliveryStreet: order.delivery_street,
+        deliveryCity: order.delivery_city,
+        deliveryPostalCode: order.delivery_postal_code
+      }));
+
+      // Générer le CSV
+      const csvContent = convertToCSV(orders);
+      
+      // Créer le nom de fichier
+      const restaurantName = currentRestaurant?.name?.replace(/\s+/g, '_') || 'Tous_restaurants';
+      const filename = `commandes_${restaurantName}_TOUTES.csv`;
+
+      // Télécharger le fichier
+      downloadCSV(csvContent, filename);
+
+      toast({
+        title: "Export réussi",
+        description: `${orders.length} commande(s) exportée(s) avec succès (toutes les commandes)`,
+      });
+
+    } catch (error) {
+      console.error('Erreur lors de l\'export CSV (toutes):', error);
+      toast({
+        title: "Erreur d'export",
+        description: "Une erreur est survenue lors de l'export de toutes les commandes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <Card className={cn("w-full", className)}>
       <CardHeader>
@@ -371,24 +509,45 @@ const OrdersCSVExport: React.FC<OrdersCSVExportProps> = ({ className }) => {
           <p>• Période: {dateFrom && dateTo ? `${format(dateFrom, "dd/MM/yyyy", { locale: fr })} - ${format(dateTo, "dd/MM/yyyy", { locale: fr })}` : 'Non sélectionnée'}</p>
         </div>
 
-        {/* Bouton d'export */}
-        <Button 
-          onClick={handleExport}
-          disabled={isExporting || !dateFrom || !dateTo}
-          className="w-full"
-        >
-          {isExporting ? (
-            <>
-              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Export en cours...
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              Exporter les commandes
-            </>
-          )}
-        </Button>
+        {/* Boutons d'export */}
+        <div className="space-y-2">
+          <Button 
+            onClick={handleExport}
+            disabled={isExporting || !dateFrom || !dateTo}
+            className="w-full"
+          >
+            {isExporting ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Export en cours...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Exporter pour la période sélectionnée
+              </>
+            )}
+          </Button>
+          
+          <Button 
+            onClick={() => handleExportAll()}
+            disabled={isExporting}
+            variant="outline"
+            className="w-full"
+          >
+            {isExporting ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Export en cours...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Exporter TOUTES les commandes
+              </>
+            )}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
