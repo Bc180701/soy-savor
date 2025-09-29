@@ -88,16 +88,11 @@ export const IngredientQuantitySelector: React.FC<IngredientQuantitySelectorProp
 
   // Calculer le prix total des ingrédients supplémentaires
   const calculateExtraCost = () => {
-    let totalCost = 0;
-    selectedIngredients.forEach(item => {
-      if (!item.ingredient.included) {
-        totalCost += item.ingredient.price * item.quantity;
-      } else {
-        // Pour les ingrédients inclus, on ne compte que les quantités au-delà de 1
-        const extraQuantity = Math.max(0, item.quantity - 1);
-        totalCost += item.ingredient.price * extraQuantity;
-      }
-    });
+    const totalQuantity = selectedIngredients.reduce((sum, item) => sum + item.quantity, 0);
+    const extraQuantity = Math.max(0, totalQuantity - minIngredients);
+    const totalCost = extraQuantity * 1.0; // 1€ par ingrédient supplémentaire
+    
+    console.log('🔍 [IngredientQuantitySelector] Total quantité:', totalQuantity, 'Minimum:', minIngredients, 'Supplémentaires:', extraQuantity, 'Coût:', totalCost);
     return totalCost;
   };
 

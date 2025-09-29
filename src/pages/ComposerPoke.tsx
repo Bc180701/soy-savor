@@ -103,38 +103,33 @@ const ComposerPoke = () => {
   // Calculate total price using the new pricing system with quantities
   const calculateTotalPrice = () => {
     let total = basePrice;
+    console.log('💰 Calcul du prix - Prix de base:', basePrice);
     
     // Calculer le coût des ingrédients avec quantités
-    selectedIngredients.forEach(item => {
-      if (!item.ingredient.included) {
-        total += item.ingredient.price * item.quantity;
-      } else {
-        // Pour les ingrédients inclus, on ne compte que les quantités au-delà de 1
-        const extraQuantity = Math.max(0, item.quantity - 1);
-        total += item.ingredient.price * extraQuantity;
-      }
-    });
+    // Pour les ingrédients, on compte 1€ par ingrédient supplémentaire au-delà de 5
+    const totalIngredientQuantity = selectedIngredients.reduce((sum, item) => sum + item.quantity, 0);
+    const extraIngredients = Math.max(0, totalIngredientQuantity - 5);
+    const ingredientCost = extraIngredients * 1.0; // 1€ par ingrédient supplémentaire
+    total += ingredientCost;
+    console.log('🥗 Total ingrédients:', totalIngredientQuantity, 'Supplémentaires:', extraIngredients, 'Coût:', ingredientCost);
     
     // Calculer le coût des protéines avec quantités
-    selectedProteins.forEach(item => {
-      if (!item.ingredient.included) {
-        total += item.ingredient.price * item.quantity;
-      } else {
-        const extraQuantity = Math.max(0, item.quantity - 1);
-        total += item.ingredient.price * extraQuantity;
-      }
-    });
+    // Pour les protéines, on compte 1€ par protéine supplémentaire au-delà de 1
+    const totalProteinQuantity = selectedProteins.reduce((sum, item) => sum + item.quantity, 0);
+    const extraProteins = Math.max(0, totalProteinQuantity - 1);
+    const proteinCost = extraProteins * 1.0; // 1€ par protéine supplémentaire
+    total += proteinCost;
+    console.log('🥩 Total protéines:', totalProteinQuantity, 'Supplémentaires:', extraProteins, 'Coût:', proteinCost);
     
     // Calculer le coût des sauces avec quantités
-    selectedSauces.forEach(item => {
-      if (!item.ingredient.included) {
-        total += item.ingredient.price * item.quantity;
-      } else {
-        const extraQuantity = Math.max(0, item.quantity - 1);
-        total += item.ingredient.price * extraQuantity;
-      }
-    });
+    // Pour les sauces, on compte 1€ par sauce supplémentaire au-delà de 1
+    const totalSauceQuantity = selectedSauces.reduce((sum, item) => sum + item.quantity, 0);
+    const extraSauces = Math.max(0, totalSauceQuantity - 1);
+    const sauceCost = extraSauces * 1.0; // 1€ par sauce supplémentaire
+    total += sauceCost;
+    console.log('🥄 Total sauces:', totalSauceQuantity, 'Supplémentaires:', extraSauces, 'Coût:', sauceCost);
     
+    console.log('💰 Prix total calculé:', total);
     return total;
   };
 
