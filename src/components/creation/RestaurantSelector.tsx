@@ -6,7 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Restaurant } from "@/types/restaurant";
 import { fetchRestaurants } from "@/services/restaurantService";
-import { isRestaurantOpenNow } from "@/services/openingHoursService";
+import { isRestaurantOpenNow, isRestaurantOpenToday } from "@/services/openingHoursService";
 import { useRestaurantOrderingStatus } from "@/hooks/useRestaurantOrderingStatus";
 import { MapPin } from "lucide-react";
 
@@ -32,7 +32,7 @@ export const RestaurantSelector = ({ selectedRestaurant, onSelectRestaurant }: R
         // Vérifier le statut d'ouverture de chaque restaurant
         const statusMap: {[key: string]: boolean} = {};
         for (const restaurant of data) {
-          const isOpen = await isRestaurantOpenNow(restaurant.id);
+          const isOpen = await isRestaurantOpenToday(restaurant.id);
           statusMap[restaurant.id] = isOpen;
         }
         setRestaurantStatus(statusMap);

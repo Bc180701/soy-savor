@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { Restaurant } from "@/types/restaurant";
-import { isRestaurantOpenNow } from "@/services/openingHoursService";
+import { isRestaurantOpenNow, isRestaurantOpenToday } from "@/services/openingHoursService";
 
 interface RestaurantSelectorProps {
   onRestaurantChange?: (restaurant: Restaurant) => void;
@@ -23,7 +23,7 @@ const RestaurantSelector = ({ onRestaurantChange, showLabel = true }: Restaurant
       const statusMap: {[key: string]: boolean} = {};
       
       for (const restaurant of restaurants) {
-        const isOpen = await isRestaurantOpenNow(restaurant.id);
+        const isOpen = await isRestaurantOpenToday(restaurant.id);
         statusMap[restaurant.id] = isOpen;
       }
       

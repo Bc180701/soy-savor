@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { Restaurant } from "@/types/restaurant";
 import { MapPin, Clock } from "lucide-react";
-import { isRestaurantOpenNow } from "@/services/openingHoursService";
+import { isRestaurantOpenNow, isRestaurantOpenToday } from "@/services/openingHoursService";
 
 interface RestaurantSelectionDialogProps {
   open: boolean;
@@ -32,9 +32,9 @@ const RestaurantSelectionDialog = ({
       
       for (const restaurant of restaurants) {
         console.log("🔍 Vérification restaurant:", restaurant.name, "ID:", restaurant.id);
-        const isOpen = await isRestaurantOpenNow(restaurant.id);
+        const isOpen = await isRestaurantOpenToday(restaurant.id);
         statusMap[restaurant.id] = isOpen;
-        console.log("📊 Restaurant", restaurant.name, "ouvert:", isOpen);
+        console.log("📊 Restaurant", restaurant.name, "ouvert aujourd'hui:", isOpen);
       }
       
       setRestaurantStatus(statusMap);

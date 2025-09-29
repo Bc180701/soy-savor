@@ -33,6 +33,91 @@ export interface RestaurantClosure {
   updated_at: string;
 }
 
+// Vérifier si le restaurant sera ouvert à un moment de la journée (pour permettre les commandes)
+export const isRestaurantOpenToday = async (restaurantId: string): Promise<boolean> => {
+  try {
+    console.log("🔍 [DEBUG] Vérification ouverture dans la journée pour restaurant:", restaurantId);
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = dimanche, 1 = lundi, etc.
+    const currentDate = now.toISOString().split('T')[0]; // Format YYYY-MM-DD
+
+    console.log("🔍 [DEBUG] Date actuelle:", {
+      currentDay,
+      currentDate,
+      dayName: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][currentDay]
+    });
+
+    // Vérifier d'abord les fermetures temporaires POUR CE RESTAURANT SPÉCIFIQUE
+    console.log("🔍 [DEBUG] Vérification fermetures temporaires pour:", restaurantId);
+    const { data: closures, error: closureError } = await supabase
+      .from('restaurant_closures')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('closure_date', currentDate);
+
+    if (closureError) {
+      console.error("❌ [ERROR] Erreur lors de la vérification des fermetures:", closureError);
+    } else {
+      console.log("🔍 [DEBUG] Fermetures trouvées:", closures?.length || 0);
+    }
+
+    // Si il y a une fermeture pour toute la journée aujourd'hui
+    if (closures && closures.length > 0) {
+      for (const closure of closures) {
+        console.log("🔍 [DEBUG] Fermeture détectée:", closure);
+        if (closure.is_all_day) {
+          console.log("❌ [RESULT] Restaurant fermé toute la journée");
+          return false;
+        }
+      }
+    }
+
+    // Vérifier les horaires d'ouverture normaux POUR CE RESTAURANT
+    console.log("🔍 [DEBUG] Vérification horaires normaux - jour:", currentDay);
+    const { data: openingHours, error } = await supabase
+      .from('restaurant_opening_hours')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('day_of_week', currentDay)
+      .order('slot_number');
+
+    console.log("🔍 [DEBUG] Réponse horaires d'ouverture:", { openingHours, error });
+
+    if (error) {
+      console.error("❌ [ERROR] Erreur lors de la récupération des horaires:", error);
+      console.log("⚠️ [FALLBACK] Pas d'horaires trouvés, considéré comme ouvert par défaut");
+      return true;
+    }
+
+    if (!openingHours || openingHours.length === 0) {
+      console.log("⚠️ [FALLBACK] Aucune donnée d'horaires trouvée, considéré comme ouvert");
+      return true;
+    }
+
+    console.log("🔍 [DEBUG] Horaires du jour trouvés:", openingHours);
+
+    // Vérifier si au moins un créneau est ouvert aujourd'hui
+    let hasOpenSlot = false;
+    
+    for (const slot of openingHours) {
+      if (slot.is_open) {
+        hasOpenSlot = true;
+        console.log("✅ [RESULT] Restaurant ouvert aujourd'hui - Créneau:", slot.open_time, "-", slot.close_time);
+        break;
+      }
+    }
+
+    if (!hasOpenSlot) {
+      console.log("❌ [RESULT] Aucun créneau ouvert aujourd'hui");
+    }
+
+    return hasOpenSlot;
+  } catch (error) {
+    console.error("❌ [ERROR] Erreur lors de la vérification des horaires:", error);
+    return true; // En cas d'erreur, considérer comme ouvert par défaut
+  }
+};
+
 // Vérifier si le restaurant est ouvert maintenant
 export const isRestaurantOpenNow = async (restaurantId: string): Promise<boolean> => {
   try {
