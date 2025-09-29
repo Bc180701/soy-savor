@@ -5,8 +5,6 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
@@ -16,6 +14,7 @@ import { calculateTotalPokePrice } from "@/utils/poke-calculator";
 import { ArrowLeft, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { RestaurantSelector } from "@/components/creation/RestaurantSelector";
+import { IngredientQuantitySelector } from "@/components/poke/IngredientQuantitySelector";
 
 interface ComposerPokeState {
   baseItem: MenuItem;
@@ -33,9 +32,15 @@ const ComposerPoke = () => {
   
   const [step, setStep] = useState<number>(0); // Commencer à 0 pour la sélection de restaurant
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
-  const [selectedIngredients, setSelectedIngredients] = useState<PokeIngredient[]>([]);
-  const [selectedProteins, setSelectedProteins] = useState<PokeIngredient[]>([]);
-  const [selectedSauces, setSelectedSauces] = useState<PokeIngredient[]>([]);
+  // Nouveau système avec quantités
+  interface IngredientWithQuantity {
+    ingredient: PokeIngredient;
+    quantity: number;
+  }
+
+  const [selectedIngredients, setSelectedIngredients] = useState<IngredientWithQuantity[]>([]);
+  const [selectedProteins, setSelectedProteins] = useState<IngredientWithQuantity[]>([]);
+  const [selectedSauces, setSelectedSauces] = useState<IngredientWithQuantity[]>([]);
 
   // Ingredient options from database
   const [ingredientOptions, setIngredientOptions] = useState<PokeIngredient[]>([]);
@@ -95,27 +100,42 @@ const ComposerPoke = () => {
     fetchIngredients();
   }, [toast]);
 
-  // Handle ingredient selection (unlimited, but cost extra after 6)
-  const handleSelectionToggle = (
-    option: PokeIngredient, 
-    selectedList: PokeIngredient[], 
-    setSelectedList: React.Dispatch<React.SetStateAction<PokeIngredient[]>>,
-    categoryName: string
-  ) => {
-    const isAlreadySelected = selectedList.some(item => item.id === option.id);
-    
-    if (isAlreadySelected) {
-      // Remove if already selected
-      setSelectedList(selectedList.filter(item => item.id !== option.id));
-    } else {
-      // Add the ingredient
-      setSelectedList([...selectedList, option]);
-    }
-  };
-
-  // Calculate total price using the new pricing system
+  // Calculate total price using the new pricing system with quantities
   const calculateTotalPrice = () => {
-    return calculateTotalPokePrice(basePrice, selectedIngredients, selectedProteins, selectedSauces);
+    let total = basePrice;
+    
+    // Calculer le coût des ingrédients avec quantités
+    selectedIngredients.forEach(item => {
+      if (!item.ingredient.included) {
+        total += item.ingredient.price * item.quantity;
+      } else {
+        // Pour les ingrédients inclus, on ne compte que les quantités au-delà de 1
+        const extraQuantity = Math.max(0, item.quantity - 1);
+        total += item.ingredient.price * extraQuantity;
+      }
+    });
+    
+    // Calculer le coût des protéines avec quantités
+    selectedProteins.forEach(item => {
+      if (!item.ingredient.included) {
+        total += item.ingredient.price * item.quantity;
+      } else {
+        const extraQuantity = Math.max(0, item.quantity - 1);
+        total += item.ingredient.price * extraQuantity;
+      }
+    });
+    
+    // Calculer le coût des sauces avec quantités
+    selectedSauces.forEach(item => {
+      if (!item.ingredient.included) {
+        total += item.ingredient.price * item.quantity;
+      } else {
+        const extraQuantity = Math.max(0, item.quantity - 1);
+        total += item.ingredient.price * extraQuantity;
+      }
+    });
+    
+    return total;
   };
 
   // Navigate to next step or complete order
@@ -135,17 +155,19 @@ const ComposerPoke = () => {
     }
 
     if (step < 4) {
-      // Validation for each step - minimum 5 ingredients
-      if (step === 1 && selectedIngredients.length < 5) {
+      // Validation for each step - minimum 5 ingredients (total quantity)
+      const totalIngredientQuantity = selectedIngredients.reduce((sum, item) => sum + item.quantity, 0);
+      if (step === 1 && totalIngredientQuantity < 5) {
         toast({
           title: "Sélection incomplète",
-          description: "Veuillez sélectionner au moins 5 ingrédients",
+          description: "Veuillez sélectionner au moins 5 ingrédients au total",
           variant: "destructive",
         });
         return;
       }
       
-      if (step === 2 && selectedProteins.length < 1) {
+      const totalProteinQuantity = selectedProteins.reduce((sum, item) => sum + item.quantity, 0);
+      if (step === 2 && totalProteinQuantity < 1) {
         toast({
           title: "Sélection incomplète",
           description: "Veuillez sélectionner au moins 1 protéine",
@@ -157,7 +179,8 @@ const ComposerPoke = () => {
       setStep(step + 1);
     } else {
       // Step 3 (sauce) - add to cart and complete
-      if (selectedSauces.length < 1) {
+      const totalSauceQuantity = selectedSauces.reduce((sum, item) => sum + item.quantity, 0);
+      if (totalSauceQuantity < 1) {
         toast({
           title: "Sélection incomplète",
           description: "Veuillez sélectionner au moins 1 sauce",
@@ -170,7 +193,7 @@ const ComposerPoke = () => {
       const customPokeItem: MenuItem = {
         id: `custom-poke-${Date.now()}`,
         name: `Poké Créa`,
-        description: `Ingrédients: ${selectedIngredients.map(g => g.name).join(', ')}, Protéines: ${selectedProteins.map(p => p.name).join(', ')}, Sauces: ${selectedSauces.map(s => s.name).join(', ')}`,
+        description: `Ingrédients: ${selectedIngredients.map(g => `${g.quantity}x ${g.ingredient.name}`).join(', ')}, Protéines: ${selectedProteins.map(p => `${p.quantity}x ${p.ingredient.name}`).join(', ')}, Sauces: ${selectedSauces.map(s => `${s.quantity}x ${s.ingredient.name}`).join(', ')}`,
         price: calculateTotalPrice(),
         category: "poke_custom",
         restaurant_id: selectedRestaurant?.id
@@ -204,98 +227,41 @@ const ComposerPoke = () => {
         return <RestaurantSelector selectedRestaurant={selectedRestaurant} onSelectRestaurant={setSelectedRestaurant} />;
       case 1:
         return (
-          <div>
-            <h3 className="text-xl font-bold mb-4">1 : Ingrédients (5 minimum - +1€ par supplémentaire)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {ingredientOptions.map((option) => (
-                <div key={option.id} className="flex items-center space-x-2 mb-2">
-                  <Checkbox 
-                    id={`ingredient-${option.id}`} 
-                    checked={selectedIngredients.some(item => item.id === option.id)}
-                    onCheckedChange={() => handleSelectionToggle(option, selectedIngredients, setSelectedIngredients, "ingrédients")}
-                  />
-                  <Label htmlFor={`ingredient-${option.id}`}>
-                    {option.name}
-                    {!option.included && option.price > 0 && (
-                      <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
-                    )}
-                  </Label>
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              {selectedIngredients.length < 5 
-                ? `Sélectionnez encore ${5 - selectedIngredients.length} ingrédient(s) minimum`
-                : selectedIngredients.length > 5 
-                ? `+${selectedIngredients.length - 5}€ pour les ingrédients supplémentaires`
-                : "5 ingrédients sélectionnés"
-              }
-            </p>
-          </div>
+          <IngredientQuantitySelector
+            ingredients={ingredientOptions}
+            selectedIngredients={selectedIngredients}
+            onIngredientChange={setSelectedIngredients}
+            minIngredients={5}
+            title="1 : Ingrédients (5 minimum)"
+            description="Sélectionnez vos ingrédients préférés. Vous pouvez doubler certains ingrédients pour atteindre le minimum de 5."
+            showPricing={true}
+          />
         );
       
       case 2:
         return (
-          <div>
-            <h3 className="text-xl font-bold mb-4">2 : Protéines (1 minimum - +1€ par supplémentaire)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {proteinOptions.map((option) => (
-                <div key={option.id} className="flex items-center space-x-2 mb-2">
-                  <Checkbox 
-                    id={`protein-${option.id}`} 
-                    checked={selectedProteins.some(item => item.id === option.id)}
-                    onCheckedChange={() => handleSelectionToggle(option, selectedProteins, setSelectedProteins, "protéines")}
-                  />
-                  <Label htmlFor={`protein-${option.id}`}>
-                    {option.name}
-                    {!option.included && option.price > 0 && (
-                      <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
-                    )}
-                  </Label>
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              {selectedProteins.length < 1 
-                ? `Sélectionnez encore ${1 - selectedProteins.length} protéine minimum`
-                : selectedProteins.length > 1 
-                ? `+${selectedProteins.length - 1}€ pour les protéines supplémentaires`
-                : "1 protéine sélectionnée"
-              }
-            </p>
-          </div>
+          <IngredientQuantitySelector
+            ingredients={proteinOptions}
+            selectedIngredients={selectedProteins}
+            onIngredientChange={setSelectedProteins}
+            minIngredients={1}
+            title="2 : Protéines (1 minimum)"
+            description="Choisissez vos protéines. Vous pouvez en prendre plusieurs ou doubler la même."
+            showPricing={true}
+          />
         );
       
       case 3:
         return (
-          <div>
-            <h3 className="text-xl font-bold mb-4">3 : Sauces (1 minimum - +1€ par supplémentaire)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {sauceOptions.map((option) => (
-                <div key={option.id} className="flex items-center space-x-2 mb-2">
-                  <Checkbox 
-                    id={`sauce-${option.id}`} 
-                    checked={selectedSauces.some(item => item.id === option.id)}
-                    onCheckedChange={() => handleSelectionToggle(option, selectedSauces, setSelectedSauces, "sauces")}
-                  />
-                  <Label htmlFor={`sauce-${option.id}`}>
-                    {option.name}
-                    {!option.included && option.price > 0 && (
-                      <span className="text-gold-600 ml-1">+{option.price.toFixed(2)}€</span>
-                    )}
-                  </Label>
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              {selectedSauces.length < 1 
-                ? `Sélectionnez encore ${1 - selectedSauces.length} sauce minimum`
-                : selectedSauces.length > 1 
-                ? `+${selectedSauces.length - 1}€ pour les sauces supplémentaires`
-                : "1 sauce sélectionnée"
-              }
-            </p>
-          </div>
+          <IngredientQuantitySelector
+            ingredients={sauceOptions}
+            selectedIngredients={selectedSauces}
+            onIngredientChange={setSelectedSauces}
+            minIngredients={1}
+            title="3 : Sauces (1 minimum)"
+            description="Sélectionnez vos sauces. Vous pouvez en prendre plusieurs ou doubler la même."
+            showPricing={true}
+          />
         );
       
       default:
