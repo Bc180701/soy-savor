@@ -135,11 +135,11 @@ const ComposerPoke = () => {
     }
 
     if (step < 4) {
-      // Validation for each step - minimum 6 ingredients
-      if (step === 1 && selectedIngredients.length < 6) {
+      // Validation for each step - minimum 5 ingredients
+      if (step === 1 && selectedIngredients.length < 5) {
         toast({
           title: "Sélection incomplète",
-          description: "Veuillez sélectionner au moins 6 ingrédients",
+          description: "Veuillez sélectionner au moins 5 ingrédients",
           variant: "destructive",
         });
         return;
@@ -224,11 +224,11 @@ const ComposerPoke = () => {
               ))}
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {selectedIngredients.length < 6 
-                ? `Sélectionnez encore ${6 - selectedIngredients.length} ingrédient(s) minimum`
-                : selectedIngredients.length > 6 
-                ? `+${selectedIngredients.length - 6}€ pour les ingrédients supplémentaires`
-                : "6 ingrédients sélectionnés"
+              {selectedIngredients.length < 5 
+                ? `Sélectionnez encore ${5 - selectedIngredients.length} ingrédient(s) minimum`
+                : selectedIngredients.length > 5 
+                ? `+${selectedIngredients.length - 5}€ pour les ingrédients supplémentaires`
+                : "5 ingrédients sélectionnés"
               }
             </p>
           </div>
