@@ -81,13 +81,18 @@ const OrdersAccountingView = ({
   };
 
   const printOrder = async (order: Order) => {
+    console.log('🖨️ [PRINT] Début impression commande:', order.id);
+    console.log('🖨️ [PRINT] Email client:', order.clientEmail);
+    
     // Détecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    console.log('🖨️ [PRINT] iOS détecté:', isIOS);
     
     // Récupérer les articles depuis cart_backup
     let cartBackupItems = [];
     if (order.clientEmail) {
       try {
+        console.log('🖨️ [PRINT] Recherche cart_backup pour:', order.clientEmail);
         const { data, error } = await supabase
           .from('cart_backup')
           .select('cart_items')
@@ -97,37 +102,50 @@ const OrdersAccountingView = ({
           .limit(1)
           .single();
 
+        console.log('🖨️ [PRINT] Résultat cart_backup:', { data, error });
+
         if (!error && data && data.cart_items) {
           cartBackupItems = data.cart_items;
           console.log('🔍 [PRINT] Articles récupérés depuis cart_backup:', cartBackupItems);
+        } else {
+          console.log('⚠️ [PRINT] Aucun cart_backup trouvé ou erreur:', error);
         }
       } catch (error) {
-        console.error('Erreur lors de la récupération du cart_backup:', error);
+        console.error('❌ [PRINT] Erreur lors de la récupération du cart_backup:', error);
       }
+    } else {
+      console.log('⚠️ [PRINT] Pas d\'email client pour récupérer cart_backup');
     }
     
     if (isIOS) {
+      console.log('🍎 [PRINT] Mode iOS activé');
       // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
       const printContent = generateOrderPrintContent(order, cartBackupItems);
+      console.log('🍎 [PRINT] Contenu généré, longueur:', printContent.length);
+      
       const printWindow = window.open('', '_blank');
       
       if (!printWindow) {
-        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+        console.error('❌ [PRINT] Impossible d\'ouvrir la fenêtre d\'impression');
         return;
       }
       
+      console.log('🍎 [PRINT] Fenêtre ouverte, écriture du contenu...');
       printWindow.document.write(printContent);
       printWindow.document.close();
       
       // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
       printWindow.focus();
+      console.log('🍎 [PRINT] Focus appliqué, démarrage du setTimeout...');
       
       // Essayer d'ouvrir le menu d'impression après un délai
       setTimeout(() => {
+        console.log('🍎 [PRINT] Timeout exécuté, tentative d\'impression...');
         try {
           printWindow.print();
+          console.log('🍎 [PRINT] print() appelé avec succès');
         } catch (error) {
-          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+          console.log('⚠️ [PRINT] Impression automatique non supportée sur iOS, utilisez le menu partage:', error);
         }
       }, 1000);
       
