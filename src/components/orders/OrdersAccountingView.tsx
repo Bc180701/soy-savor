@@ -103,6 +103,17 @@ const OrdersAccountingView = ({
   };
 
   const generateOrderPrintContent = (order: Order): string => {
+    // DEBUG: Vérifier la structure des données
+    console.log('🔍 [DEBUG PRINT] Structure de la commande:', {
+      id: order.id,
+      hasItems: !!order.items,
+      itemsLength: order.items?.length || 0,
+      hasItemsSummary: !!order.itemsSummary,
+      itemsSummaryLength: order.itemsSummary?.length || 0,
+      items: order.items,
+      itemsSummary: order.itemsSummary
+    });
+
     const formatTime = (date: Date) => {
       return new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
@@ -270,27 +281,45 @@ const OrdersAccountingView = ({
         
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
-          ${(order.itemsSummary && order.itemsSummary.length > 0 ? order.itemsSummary : order.items).map(item => {
-            // Gérer les deux formats possibles
-            const itemName = item.name || item.menuItem?.name || 'Produit';
-            const itemQuantity = item.quantity || 1;
-            const itemPrice = item.price || (item.menuItem?.price || 0) * itemQuantity;
-            const specialInstructions = item.specialInstructions || '';
+          ${(() => {
+            // Essayer de récupérer les articles depuis différentes sources
+            let itemsToDisplay = [];
             
-            return `
-              <div class="item">
-                <div class="item-line">
-                  <span class="item-name">${itemQuantity}x ${itemName}</span>
-                  <span class="item-price">${itemPrice.toFixed(2)}€</span>
-                </div>
-                ${specialInstructions ? `
-                  <div class="special-instructions">
-                    * ${specialInstructions}
+            if (order.itemsSummary && order.itemsSummary.length > 0) {
+              console.log('🔍 [DEBUG PRINT] Utilisation itemsSummary:', order.itemsSummary);
+              itemsToDisplay = order.itemsSummary;
+            } else if (order.items && order.items.length > 0) {
+              console.log('🔍 [DEBUG PRINT] Utilisation items:', order.items);
+              itemsToDisplay = order.items;
+            } else {
+              console.log('🔍 [DEBUG PRINT] Aucun article trouvé - items:', order.items, 'itemsSummary:', order.itemsSummary);
+              return '<div class="item">Aucun article trouvé</div>';
+            }
+            
+            return itemsToDisplay.map(item => {
+              // Gérer les deux formats possibles
+              const itemName = item.name || item.menuItem?.name || 'Produit inconnu';
+              const itemQuantity = item.quantity || 1;
+              const itemPrice = item.price || (item.menuItem?.price || 0) * itemQuantity;
+              const specialInstructions = item.specialInstructions || '';
+              
+              console.log('🔍 [DEBUG PRINT] Article:', { itemName, itemQuantity, itemPrice, specialInstructions });
+              
+              return `
+                <div class="item">
+                  <div class="item-line">
+                    <span class="item-name">${itemQuantity}x ${itemName}</span>
+                    <span class="item-price">${itemPrice.toFixed(2)}€</span>
                   </div>
-                ` : ''}
-              </div>
-            `;
-          }).join('')}
+                  ${specialInstructions ? `
+                    <div class="special-instructions">
+                      * ${specialInstructions}
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('');
+          })()}
         </div>
         
         <div class="total-section">
