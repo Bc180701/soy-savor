@@ -19,9 +19,24 @@ export const formatCustomProduct = (description?: string, className?: string) =>
     );
   }
 
-  // Check if it's a poke creation description
+  // Check if it's a poke creation description (old format)
   if (description.includes("Base:") && description.includes("Protéine:")) {
     const parts = description.split(" | ");
+    return (
+      <div className={className || "mt-1 text-xs text-gray-600"}>
+        {parts.map((part, index) => (
+          <div key={index} className="flex">
+            <span className="font-medium mr-1">{part.split(":")[0]}:</span>
+            <span>{part.split(":")[1]?.trim()}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Check if it's a poke creation description (new format with quantities)
+  if (description.includes("Ingrédients:") && description.includes("Protéines:")) {
+    const parts = description.split(", ");
     return (
       <div className={className || "mt-1 text-xs text-gray-600"}>
         {parts.map((part, index) => (

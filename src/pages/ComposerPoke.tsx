@@ -185,10 +185,21 @@ const ComposerPoke = () => {
       }
       
       // Create custom poke bowl item
+      const ingredientsText = selectedIngredients.map(g => `${g.quantity}x ${g.ingredient.name}`).join(', ');
+      const proteinsText = selectedProteins.map(p => `${p.quantity}x ${p.ingredient.name}`).join(', ');
+      const saucesText = selectedSauces.map(s => `${s.quantity}x ${s.ingredient.name}`).join(', ');
+      
+      const description = `Ingrédients: ${ingredientsText}, Protéines: ${proteinsText}, Sauces: ${saucesText}`;
+      
+      console.log('🍱 Création du poke bowl personnalisé:');
+      console.log('📝 Description:', description);
+      console.log('💰 Prix:', calculateTotalPrice());
+      console.log('🏪 Restaurant:', selectedRestaurant?.name);
+      
       const customPokeItem: MenuItem = {
         id: `custom-poke-${Date.now()}`,
         name: `Poké Créa`,
-        description: `Ingrédients: ${selectedIngredients.map(g => `${g.quantity}x ${g.ingredient.name}`).join(', ')}, Protéines: ${selectedProteins.map(p => `${p.quantity}x ${p.ingredient.name}`).join(', ')}, Sauces: ${selectedSauces.map(s => `${s.quantity}x ${s.ingredient.name}`).join(', ')}`,
+        description: description,
         price: calculateTotalPrice(),
         category: "poke_custom",
         restaurant_id: selectedRestaurant?.id
