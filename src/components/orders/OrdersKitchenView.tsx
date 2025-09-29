@@ -139,13 +139,35 @@ const OrdersKitchenView = ({
     setDelayDialogOpen(true);
   };
 
-  const printOrder = (order: Order) => {
+  const printOrder = async (order: Order) => {
     // Détecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
+    // Récupérer les articles depuis cart_backup
+    let cartBackupItems = [];
+    if (order.clientEmail) {
+      try {
+        const { data, error } = await supabase
+          .from('cart_backup')
+          .select('cart_items')
+          .eq('session_id', order.clientEmail)
+          .eq('is_used', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!error && data && data.cart_items) {
+          cartBackupItems = data.cart_items;
+          console.log('🔍 [PRINT] Articles récupérés depuis cart_backup:', cartBackupItems);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération du cart_backup:', error);
+      }
+    }
+    
     if (isIOS) {
       // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
-      const printContent = generateOrderPrintContent(order);
+      const printContent = generateOrderPrintContent(order, cartBackupItems);
       const printWindow = window.open('', '_blank');
       
       if (!printWindow) {
@@ -176,7 +198,7 @@ const OrdersKitchenView = ({
         return;
       }
 
-      const printContent = generateOrderPrintContent(order);
+      const printContent = generateOrderPrintContent(order, cartBackupItems);
       
       printWindow.document.write(printContent);
       printWindow.document.close();
@@ -190,7 +212,7 @@ const OrdersKitchenView = ({
     }
   };
 
-  const generateOrderPrintContent = (order: Order): string => {
+  const generateOrderPrintContent = (order: Order, cartBackupItems: any[] = []): string => {
     const formatTime = (date: Date) => {
       return new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
@@ -359,12 +381,15 @@ const OrdersKitchenView = ({
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
           ${(() => {
-            // Utiliser exactement la même logique que OrderDetailsModal
-            // Priorité: order_items (comme dans les détails de commande)
+            // Utiliser cart_backup en priorité (comme OrderDetailsModal)
             let itemsToDisplay = [];
             
-            if (order.itemsSummary && order.itemsSummary.length > 0) {
-              // Format order_items (comme dans OrderDetailsModal)
+            if (cartBackupItems && cartBackupItems.length > 0) {
+              // Format CartBackupItem (depuis cart_backup)
+              itemsToDisplay = cartBackupItems;
+              console.log('🔍 [PRINT] Utilisation cartBackupItems:', itemsToDisplay);
+            } else if (order.itemsSummary && order.itemsSummary.length > 0) {
+              // Format order_items (fallback)
               itemsToDisplay = order.itemsSummary;
             } else if (order.items && order.items.length > 0) {
               // Format items (fallback)
@@ -374,11 +399,21 @@ const OrdersKitchenView = ({
             }
             
             return itemsToDisplay.map((item, index) => {
-              // Même logique que OrderDetailsModal ligne 397-410
-              const itemName = item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`;
-              const itemQuantity = item.quantity || 1;
-              const itemPrice = item.price || 0;
-              const specialInstructions = item.special_instructions || '';
+              let itemName, itemQuantity, itemPrice, specialInstructions;
+              
+              if (cartBackupItems && cartBackupItems.length > 0) {
+                // Format CartBackupItem: { menuItem: { name, price }, quantity }
+                itemName = item.menuItem?.name || `Produit ${item.menuItem?.id?.substring(0, 8) || 'inconnu'}`;
+                itemQuantity = item.quantity || 1;
+                itemPrice = item.menuItem?.price || 0;
+                specialInstructions = item.specialInstructions || '';
+              } else {
+                // Format order_items ou items
+                itemName = item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`;
+                itemQuantity = item.quantity || 1;
+                itemPrice = item.price || 0;
+                specialInstructions = item.special_instructions || '';
+              }
               
               return `
                 <div class="item">
