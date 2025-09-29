@@ -103,17 +103,6 @@ const OrdersAccountingView = ({
   };
 
   const generateOrderPrintContent = (order: Order): string => {
-    // DEBUG: Vérifier la structure des données
-    console.log('🔍 [DEBUG PRINT] Structure de la commande:', {
-      id: order.id,
-      hasItems: !!order.items,
-      itemsLength: order.items?.length || 0,
-      hasItemsSummary: !!order.itemsSummary,
-      itemsSummaryLength: order.itemsSummary?.length || 0,
-      items: order.items,
-      itemsSummary: order.itemsSummary
-    });
-
     const formatTime = (date: Date) => {
       return new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
@@ -282,34 +271,32 @@ const OrdersAccountingView = ({
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
           ${(() => {
-            // Essayer de récupérer les articles depuis différentes sources
+            // Utiliser exactement la même logique que OrderDetailsModal
+            // Priorité: order_items (comme dans les détails de commande)
             let itemsToDisplay = [];
             
             if (order.itemsSummary && order.itemsSummary.length > 0) {
-              console.log('🔍 [DEBUG PRINT] Utilisation itemsSummary:', order.itemsSummary);
+              // Format order_items (comme dans OrderDetailsModal)
               itemsToDisplay = order.itemsSummary;
             } else if (order.items && order.items.length > 0) {
-              console.log('🔍 [DEBUG PRINT] Utilisation items:', order.items);
+              // Format items (fallback)
               itemsToDisplay = order.items;
             } else {
-              console.log('🔍 [DEBUG PRINT] Aucun article trouvé - items:', order.items, 'itemsSummary:', order.itemsSummary);
               return '<div class="item">Aucun article trouvé</div>';
             }
             
-            return itemsToDisplay.map(item => {
-              // Gérer les deux formats possibles
-              const itemName = item.name || item.menuItem?.name || 'Produit inconnu';
+            return itemsToDisplay.map((item, index) => {
+              // Même logique que OrderDetailsModal ligne 397-410
+              const itemName = item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`;
               const itemQuantity = item.quantity || 1;
-              const itemPrice = item.price || (item.menuItem?.price || 0) * itemQuantity;
-              const specialInstructions = item.specialInstructions || '';
-              
-              console.log('🔍 [DEBUG PRINT] Article:', { itemName, itemQuantity, itemPrice, specialInstructions });
+              const itemPrice = item.price || 0;
+              const specialInstructions = item.special_instructions || '';
               
               return `
                 <div class="item">
                   <div class="item-line">
                     <span class="item-name">${itemQuantity}x ${itemName}</span>
-                    <span class="item-price">${itemPrice.toFixed(2)}€</span>
+                    <span class="item-price">${(itemQuantity * itemPrice).toFixed(2)}€</span>
                   </div>
                   ${specialInstructions ? `
                     <div class="special-instructions">
