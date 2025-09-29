@@ -100,6 +100,15 @@ const OrdersAccountingView = ({
       // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
       printWindow.focus();
       
+      // Essayer d'ouvrir le menu d'impression après un délai
+      setTimeout(() => {
+        try {
+          printWindow.print();
+        } catch (error) {
+          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+        }
+      }, 1000);
+      
     } else {
       // Comportement normal pour les autres plateformes
       const printWindow = window.open('', '_blank');
