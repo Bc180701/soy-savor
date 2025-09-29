@@ -191,14 +191,39 @@ const ComposerPoke = () => {
       
       const description = `Ingrédients: ${ingredientsText}, Protéines: ${proteinsText}, Sauces: ${saucesText}`;
       
+      // Générer un ID unique basé sur la composition du poke bowl
+      const generatePokeId = () => {
+        const composition = {
+          ingredients: selectedIngredients.map(i => `${i.quantity}x${i.ingredient.id}`).sort(),
+          proteins: selectedProteins.map(p => `${p.quantity}x${p.ingredient.id}`).sort(),
+          sauces: selectedSauces.map(s => `${s.quantity}x${s.ingredient.id}`).sort(),
+          restaurant: selectedRestaurant?.id
+        };
+        
+        // Créer un hash simple basé sur la composition
+        const compositionString = JSON.stringify(composition);
+        let hash = 0;
+        for (let i = 0; i < compositionString.length; i++) {
+          const char = compositionString.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash; // Convert to 32bit integer
+        }
+        
+        // Retourner un ID positif avec un préfixe
+        return `poke-crea-${Math.abs(hash)}`;
+      };
+      
+      const uniqueId = generatePokeId();
+      
       console.log('🍱 Création du poke bowl personnalisé:');
+      console.log('🆔 ID unique:', uniqueId);
       console.log('📝 Description:', description);
       console.log('💰 Prix:', calculateTotalPrice());
       console.log('🏪 Restaurant:', selectedRestaurant?.name);
       
       const customPokeItem: MenuItem = {
-        id: `custom-poke-${Date.now()}`,
-        name: `Poké Créa`,
+        id: uniqueId,
+        name: `Poké Créa #${Math.abs(uniqueId.split('-')[2]?.slice(0, 6) || '000000')}`,
         description: description,
         price: calculateTotalPrice(),
         category: "poke_custom",
