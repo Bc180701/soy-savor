@@ -70,27 +70,56 @@ const OrdersDeliveryView = ({
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
     if (isIOS) {
-      // Sur iOS, ouvrir IMMÉDIATEMENT sans attendre les données
-      const printContent = generateOrderPrintContent(order, []);
-      const printWindow = window.open('', '_blank');
+      // Sur iOS, lancer la récupération des données en arrière-plan
+      // et déclencher l'impression après un délai suffisant
+      let cartBackupItems = [];
+      let printWindow: Window | null = null;
       
-      if (!printWindow) {
-        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-        return;
+      // Lancer la récupération des données immédiatement
+      if (order.clientEmail) {
+        supabase
+          .from('cart_backup')
+          .select('cart_items')
+          .eq('session_id', order.clientEmail)
+          .eq('is_used', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+          .then(({ data, error }) => {
+            if (!error && data && data.cart_items) {
+              cartBackupItems = data.cart_items;
+              console.log('🍎 [iOS] Articles récupérés:', cartBackupItems);
+            }
+          })
+          .catch(error => {
+            console.error('🍎 [iOS] Erreur récupération cart_backup:', error);
+          });
       }
       
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.focus();
-      
-      // Essayer d'ouvrir le menu d'impression après un délai
+      // Délai pour permettre la récupération des données (2 secondes)
       setTimeout(() => {
-        try {
-          printWindow.print();
-        } catch (error) {
-          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+        console.log('🍎 [iOS] Déclenchement impression avec délai');
+        const printContent = generateOrderPrintContent(order, cartBackupItems);
+        printWindow = window.open('', '_blank');
+        
+        if (!printWindow) {
+          console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+          return;
         }
-      }, 1000);
+        
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Essayer d'ouvrir le menu d'impression après un délai
+        setTimeout(() => {
+          try {
+            printWindow?.print();
+          } catch (error) {
+            console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+          }
+        }, 1000);
+      }, 2000); // 2 secondes pour récupérer les données
       
     } else {
       // Comportement normal pour les autres plateformes - récupérer les données
