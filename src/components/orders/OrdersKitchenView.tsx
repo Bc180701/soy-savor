@@ -359,34 +359,26 @@ const OrdersKitchenView = ({
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
           ${(() => {
-            // DEBUG: Afficher les données de la commande
-            console.log('🔍 [DEBUG PRINT] Commande complète:', order);
-            console.log('🔍 [DEBUG PRINT] order.items:', order.items);
-            console.log('🔍 [DEBUG PRINT] order.itemsSummary:', order.itemsSummary);
-            
-            // Les données sont dans order.items (format CartItem[])
+            // Utiliser exactement la même logique que OrderDetailsModal
+            // Priorité: order_items (comme dans les détails de commande)
             let itemsToDisplay = [];
             
-            if (order.items && order.items.length > 0) {
-              console.log('🔍 [DEBUG PRINT] Utilisation items:', order.items);
+            if (order.itemsSummary && order.itemsSummary.length > 0) {
+              // Format order_items (comme dans OrderDetailsModal)
+              itemsToDisplay = order.itemsSummary;
+            } else if (order.items && order.items.length > 0) {
+              // Format items (fallback)
               itemsToDisplay = order.items;
             } else {
-              console.log('🔍 [DEBUG PRINT] Aucun article trouvé - items:', order.items);
               return '<div class="item">Aucun article trouvé</div>';
             }
             
-            console.log('🔍 [DEBUG PRINT] Articles à afficher:', itemsToDisplay);
-            
             return itemsToDisplay.map((item, index) => {
-              console.log('🔍 [DEBUG PRINT] Article', index, ':', item);
-              
-              // Format CartItem[] (comme dans getAllOrders)
-              const itemName = item.menuItem?.name || `Produit ${item.menuItem?.id?.substring(0, 8) || 'inconnu'}`;
+              // Même logique que OrderDetailsModal ligne 397-410
+              const itemName = item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`;
               const itemQuantity = item.quantity || 1;
-              const itemPrice = item.menuItem?.price || 0;
-              const specialInstructions = item.specialInstructions || '';
-              
-              console.log('🔍 [DEBUG PRINT] Article formaté:', { itemName, itemQuantity, itemPrice, specialInstructions });
+              const itemPrice = item.price || 0;
+              const specialInstructions = item.special_instructions || '';
               
               return `
                 <div class="item">

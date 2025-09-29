@@ -300,21 +300,26 @@ const OrdersAccountingView = ({
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
           ${(() => {
-            // Les données sont dans order.items (format CartItem[])
+            // Utiliser exactement la même logique que OrderDetailsModal
+            // Priorité: order_items (comme dans les détails de commande)
             let itemsToDisplay = [];
             
-            if (order.items && order.items.length > 0) {
+            if (order.itemsSummary && order.itemsSummary.length > 0) {
+              // Format order_items (comme dans OrderDetailsModal)
+              itemsToDisplay = order.itemsSummary;
+            } else if (order.items && order.items.length > 0) {
+              // Format items (fallback)
               itemsToDisplay = order.items;
             } else {
               return '<div class="item">Aucun article trouvé</div>';
             }
             
             return itemsToDisplay.map((item, index) => {
-              // Format CartItem[] (comme dans getAllOrders)
-              const itemName = item.menuItem?.name || `Produit ${item.menuItem?.id?.substring(0, 8) || 'inconnu'}`;
+              // Même logique que OrderDetailsModal ligne 397-410
+              const itemName = item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`;
               const itemQuantity = item.quantity || 1;
-              const itemPrice = item.menuItem?.price || 0;
-              const specialInstructions = item.specialInstructions || '';
+              const itemPrice = item.price || 0;
+              const specialInstructions = item.special_instructions || '';
               
               return `
                 <div class="item">
