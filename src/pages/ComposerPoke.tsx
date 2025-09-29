@@ -205,7 +205,7 @@ const ComposerPoke = () => {
       case 1:
         return (
           <div>
-            <h3 className="text-xl font-bold mb-4">1 : Ingrédients (6 minimum - +1€ par supplémentaire)</h3>
+            <h3 className="text-xl font-bold mb-4">1 : Ingrédients (5 minimum - +1€ par supplémentaire)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {ingredientOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2 mb-2">
