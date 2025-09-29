@@ -1,7 +1,9 @@
 project_id = "tdykegnmomyyucbhslok"
 
+[db]
+major_version = 15
+
 [auth]
-enable_confirmations = false
 
 [functions.verify-time-slot]
 verify_jwt = false
