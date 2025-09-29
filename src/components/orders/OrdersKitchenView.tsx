@@ -329,19 +329,27 @@ const OrdersKitchenView = ({
         
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
-          ${order.items.map(item => `
-            <div class="item">
-              <div class="item-line">
-                <span class="item-name">${item.quantity}x ${item.menuItem.name}</span>
-                <span class="item-price">${(item.menuItem.price * item.quantity).toFixed(2)}€</span>
-              </div>
-              ${item.specialInstructions ? `
-                <div class="special-instructions">
-                  * ${item.specialInstructions}
+          ${(order.itemsSummary && order.itemsSummary.length > 0 ? order.itemsSummary : order.items).map(item => {
+            // Gérer les deux formats possibles
+            const itemName = item.name || item.menuItem?.name || 'Produit';
+            const itemQuantity = item.quantity || 1;
+            const itemPrice = item.price || (item.menuItem?.price || 0) * itemQuantity;
+            const specialInstructions = item.specialInstructions || '';
+            
+            return `
+              <div class="item">
+                <div class="item-line">
+                  <span class="item-name">${itemQuantity}x ${itemName}</span>
+                  <span class="item-price">${itemPrice.toFixed(2)}€</span>
                 </div>
-              ` : ''}
-            </div>
-          `).join('')}
+                ${specialInstructions ? `
+                  <div class="special-instructions">
+                    * ${specialInstructions}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
         </div>
         
         <div class="total-section">
