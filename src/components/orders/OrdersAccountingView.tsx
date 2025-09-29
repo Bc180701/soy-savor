@@ -16,7 +16,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, fetchOrderWithDetails } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 interface OrdersAccountingViewProps {
@@ -81,9 +81,8 @@ const OrdersAccountingView = ({
   };
 
   const printOrder = async (order: Order) => {
-    // Récupérer les détails complets de la commande comme dans OrderDetailsModal
     try {
-      const { fetchOrderWithDetails } = await import('@/integrations/supabase/client');
+      // Récupérer les détails complets de la commande
       const orderDetails = await fetchOrderWithDetails(order.id);
       
       if (!orderDetails) {
@@ -94,53 +93,31 @@ const OrdersAccountingView = ({
       // Détecter iOS
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
+      // Créer le contenu d'impression
+      const printContent = generateOrderPrintContent(orderDetails);
+      
       if (isIOS) {
-        // Sur iOS, ouvrir directement dans une nouvelle fenêtre avec le contenu
-        const printContent = generateOrderPrintContent(orderDetails);
+        // Sur iOS, ouvrir dans une nouvelle fenêtre
         const printWindow = window.open('', '_blank');
-        
-        if (!printWindow) {
-          console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-          return;
-        }
-        
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        
-        // Sur iOS, laisser l'utilisateur utiliser le menu partage du navigateur
-        printWindow.focus();
-        
-        // Optionnel: essayer d'ouvrir le menu d'impression après un délai
-        setTimeout(() => {
-          try {
-            printWindow.print();
-          } catch (error) {
-            console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
-          }
-        }, 1000);
-        
-      } else {
-        // Comportement normal pour les autres plateformes
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) {
-          console.error('Impossible d\'ouvrir la fenêtre d\'impression');
-          return;
-        }
-
-        const printContent = generateOrderPrintContent(orderDetails);
-        
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        
-        // Attendre que le contenu soit chargé avant d'imprimer
-        printWindow.onload = () => {
+        if (printWindow) {
+          printWindow.document.write(printContent);
+          printWindow.document.close();
           printWindow.focus();
-          printWindow.print();
-          printWindow.close();
-        };
+        }
+      } else {
+        // Sur desktop, impression directe
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(printContent);
+          printWindow.document.close();
+          printWindow.onload = () => {
+            printWindow.print();
+            printWindow.close();
+          };
+        }
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération des détails de la commande:', error);
+      console.error('Erreur lors de l\'impression:', error);
     }
   };
 
