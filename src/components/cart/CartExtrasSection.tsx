@@ -11,7 +11,7 @@ interface CartExtrasSectionProps {
 
 export interface CartExtras {
   sauces: { name: string; quantity: number }[];
-  accompagnements: string[];
+  accompagnements: { name: string; quantity: number }[];
   baguettes: boolean;
   couverts: boolean;
   cuilleres: boolean;
@@ -19,7 +19,7 @@ export interface CartExtras {
 
 export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) => {
   const [selectedSauces, setSelectedSauces] = useState<{ name: string; quantity: number }[]>([]);
-  const [selectedAccompagnements, setSelectedAccompagnements] = useState<string[]>([]);
+  const [selectedAccompagnements, setSelectedAccompagnements] = useState<{ name: string; quantity: number }[]>([]);
   const [baguettesSelected, setBaguettesSelected] = useState<boolean>(false);
   const [baguettesQuantity, setBaguettesQuantity] = useState<number>(1);
   const [couvertsSelected, setCouvertsSelected] = useState<boolean>(false);
@@ -64,6 +64,16 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     return selectedSauces.reduce((sum, sauce) => sum + sauce.quantity, 0);
   };
 
+  // Calculer le nombre d'accompagnements gratuits selon le total du panier
+  const getFreeAccompagnementsCount = () => {
+    const total = getTotalPrice();
+    return Math.floor(total / 10);
+  };
+
+  const getTotalSelectedAccompagnements = () => {
+    return selectedAccompagnements.reduce((sum, accomp) => sum + accomp.quantity, 0);
+  };
+
   // Vérifier quels accompagnements sont déjà dans le panier
   const getDisabledSauces = () => {
     const sauceItems = items.filter(item => item.menuItem.category === "Sauce");
@@ -86,9 +96,9 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const disabledAccompagnements: string[] = [];
     
     accompagnementItems.forEach(item => {
-      const accompagnementName = item.menuItem.name.replace("Accompagnements: ", "");
+      const accompagnementName = item.menuItem.name;
       accompagnementsOptions.forEach(accompagnement => {
-        if (accompagnementName.includes(accompagnement)) {
+        if (accompagnementName === accompagnement) {
           disabledAccompagnements.push(accompagnement);
         }
       });
@@ -167,25 +177,59 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       }
     });
 
-    if (selectedAccompagnements.length > 0) {
-      itemsToAdd.push({
-        id: `accompagnements-${Date.now()}`,
-        name: `Accompagnements: ${selectedAccompagnements.join(', ')}`,
-        description: "Accompagnements pour la commande",
-        price: 0,
-        imageUrl: "",
-        category: "Accompagnement" as const,
-        restaurant_id: restaurantId,
-        isVegetarian: true,
-        isSpicy: false,
-        isNew: false,
-        isBestSeller: false,
-        isGlutenFree: true,
-        allergens: [],
-        pieces: null,
-        prepTime: null
-      });
-    }
+    // Calculer les accompagnements à ajouter (même logique que les sauces)
+    const freeAccompagnementsCount = getFreeAccompagnementsCount();
+    let freeAccompagnementsRemaining = freeAccompagnementsCount;
+    
+    selectedAccompagnements.forEach(accompagnement => {
+      if (accompagnement.quantity > 0) {
+        // Calculer combien de cet accompagnement sont gratuits
+        const freeAccompagnementsForThis = Math.min(accompagnement.quantity, freeAccompagnementsRemaining);
+        const paidAccompagnementsForThis = accompagnement.quantity - freeAccompagnementsForThis;
+        
+        freeAccompagnementsRemaining -= freeAccompagnementsForThis;
+        
+        // Ajouter une seule entrée avec le bon prix et description
+        if (accompagnement.quantity > 0) {
+          const isAllFree = freeAccompagnementsForThis === accompagnement.quantity;
+          const isAllPaid = freeAccompagnementsForThis === 0;
+          
+          let name = accompagnement.name;
+          let description = "";
+          let price = 0;
+          
+          if (isAllFree) {
+            description = `Accompagnement gratuite (${accompagnement.quantity}x)`;
+            price = 0;
+          } else if (isAllPaid) {
+            description = `Accompagnement supplémentaire (${accompagnement.quantity}x)`;
+            price = 0.5;
+          } else {
+            description = `${freeAccompagnementsForThis}x gratuite + ${paidAccompagnementsForThis}x supplémentaire`;
+            price = paidAccompagnementsForThis * 0.5 / accompagnement.quantity; // Prix moyen par unité
+          }
+          
+          itemsToAdd.push({
+            id: `accompagnement-${accompagnement.name}-${Date.now()}`,
+            name: name,
+            description: description,
+            price: price,
+            imageUrl: "",
+            category: "Accompagnement" as const,
+            restaurant_id: restaurantId,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          });
+          addItem(itemsToAdd[itemsToAdd.length - 1], accompagnement.quantity);
+        }
+      }
+    });
 
     if (baguettesSelected) {
       itemsToAdd.push({
@@ -341,6 +385,70 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     }
   };
 
+  const addAccompagnementToCart = (accompagnement: string, quantity: number) => {
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+
+    // Calculer les accompagnements gratuits/payants
+    const freeAccompagnementsCount = getFreeAccompagnementsCount();
+    const existingAccompagnementItems = items.filter(item => 
+      item.menuItem.category === "Accompagnement" && 
+      (item.menuItem.name === accompagnement || item.menuItem.name.includes(accompagnement))
+    );
+    
+    // Supprimer les anciennes entrées de cet accompagnement
+    existingAccompagnementItems.forEach(item => {
+      removeItem(item.menuItem.id);
+    });
+
+    if (quantity > 0) {
+      // Calculer combien d'accompagnements sont déjà dans le panier (autres que celui-ci)
+      const otherAccompagnementItems = items.filter(item => 
+        item.menuItem.category === "Accompagnement" && 
+        !item.menuItem.name.includes(accompagnement)
+      );
+      const otherAccompagnementsCount = otherAccompagnementItems.reduce((sum, item) => sum + item.quantity, 0);
+      
+      const freeAccompagnementsRemaining = Math.max(0, freeAccompagnementsCount - otherAccompagnementsCount);
+      const freeAccompagnementsForThis = Math.min(quantity, freeAccompagnementsRemaining);
+      const paidAccompagnementsForThis = quantity - freeAccompagnementsForThis;
+      
+      let description = "";
+      let price = 0;
+      
+      if (freeAccompagnementsForThis > 0 && paidAccompagnementsForThis > 0) {
+        description = `${freeAccompagnementsForThis}x gratuite + ${paidAccompagnementsForThis}x supplémentaire`;
+        price = paidAccompagnementsForThis * 0.5 / quantity;
+      } else if (freeAccompagnementsForThis > 0) {
+        description = `Accompagnement gratuite (${quantity}x)`;
+        price = 0;
+      } else {
+        description = `Accompagnement supplémentaire (${quantity}x)`;
+        price = 0.5;
+      }
+      
+      const accompagnementItem = {
+        id: `accompagnement-${accompagnement}-${Date.now()}`,
+        name: accompagnement,
+        description: description,
+        price: price,
+        imageUrl: "",
+        category: "Accompagnement" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      
+      addItem(accompagnementItem, quantity);
+    }
+  };
+
   const handleSauceToggle = (sauce: string) => {
     const existingSauce = selectedSauces.find(s => s.name === sauce);
     if (existingSauce) {
@@ -373,37 +481,36 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     });
   };
 
-  const addAccompagnementToCart = (accompagnements: string[]) => {
-    const restaurantId = getRestaurantId();
-    if (!restaurantId) return;
-
-    // Supprimer l'ancien item d'accompagnements
-    const existingAccompagnementItems = items.filter(item => item.menuItem.category === "Accompagnement");
-    existingAccompagnementItems.forEach(item => {
-      removeItem(item.menuItem.id);
-    });
-
-    if (accompagnements.length > 0) {
-      const accompagnementItem = {
-        id: `accompagnements-${Date.now()}`,
-        name: `Accompagnements: ${accompagnements.join(', ')}`,
-        description: "Accompagnements pour la commande",
-        price: 0,
-        imageUrl: "",
-        category: "Accompagnement" as const,
-        restaurant_id: restaurantId,
-        isVegetarian: true,
-        isSpicy: false,
-        isNew: false,
-        isBestSeller: false,
-        isGlutenFree: true,
-        allergens: [],
-        pieces: null,
-        prepTime: null
-      };
-      addItem(accompagnementItem, 1);
+  const handleAccompagnementToggle = (accompagnement: string) => {
+    const existingAccompagnement = selectedAccompagnements.find(a => a.name === accompagnement);
+    if (existingAccompagnement) {
+      const newAccompagnements = selectedAccompagnements.filter(a => a.name !== accompagnement);
+      setSelectedAccompagnements(newAccompagnements);
+      addAccompagnementToCart(accompagnement, 0); // Supprimer du panier
+    } else {
+      const newAccompagnements = [...selectedAccompagnements, { name: accompagnement, quantity: 1 }];
+      setSelectedAccompagnements(newAccompagnements);
+      addAccompagnementToCart(accompagnement, 1);
     }
   };
+
+  const updateAccompagnementQuantity = (accompagnement: string, change: number) => {
+    setSelectedAccompagnements(prev => {
+      const newAccompagnements = prev.map(a => 
+        a.name === accompagnement 
+          ? { ...a, quantity: Math.max(0, a.quantity + change) }
+          : a
+      ).filter(a => a.quantity > 0);
+      
+      // Ajouter automatiquement au panier avec la nouvelle quantité
+      const updatedAccompagnement = newAccompagnements.find(a => a.name === accompagnement);
+      const newQuantity = updatedAccompagnement ? updatedAccompagnement.quantity : 0;
+      addAccompagnementToCart(accompagnement, newQuantity);
+      
+      return newAccompagnements;
+    });
+  };
+
 
   const addAccessoireToCart = (name: string, description: string, isSelected: boolean, quantity: number = 1) => {
     const restaurantId = getRestaurantId();
@@ -561,15 +668,27 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
         {/* Accompagnements */}
         <div className="space-y-3">
-          <h4 className="font-semibold text-gray-800">🌶️ Accompagnements</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-gray-800">🌶️ Accompagnements</h4>
+            <div className="text-sm text-gray-600">
+              {getFreeAccompagnementsCount() > 0 && (
+                <span className="text-green-600 font-medium">
+                  {getFreeAccompagnementsCount()} gratuit{getFreeAccompagnementsCount() > 1 ? 's' : ''} (1 tous les 10€)
+                </span>
+              )}
+            </div>
+          </div>
           <div className="grid grid-cols-1 gap-3">
             {accompagnementsOptions.map((accompagnement) => {
               const isDisabled = disabledAccompagnements.includes(accompagnement);
+              const isSelected = selectedAccompagnements.some(a => a.name === accompagnement);
+              const quantity = selectedAccompagnements.find(a => a.name === accompagnement)?.quantity || 0;
+              
               return (
                 <div key={accompagnement} className={`flex items-center space-x-3 p-3 border rounded-lg ${isDisabled ? 'bg-gray-100' : 'bg-white'}`}>
                   <Checkbox
                     id={`accompagnement-${accompagnement}`}
-                    checked={selectedAccompagnements.includes(accompagnement)}
+                    checked={isSelected}
                     onCheckedChange={() => !isDisabled && handleAccompagnementToggle(accompagnement)}
                     disabled={isDisabled}
                   />
@@ -579,6 +698,34 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                   >
                     {accompagnement} {isDisabled && "(déjà ajouté)"}
                   </label>
+                  
+                  {isSelected && (
+                    <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <span className="text-sm text-gray-600">Quantité:</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateAccompagnementQuantity(accompagnement, -1)}
+                          disabled={quantity <= 1}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-medium">{quantity}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateAccompagnementQuantity(accompagnement, 1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
