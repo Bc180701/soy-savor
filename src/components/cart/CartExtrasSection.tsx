@@ -544,16 +544,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     }
   };
 
-  const handleAccompagnementToggle = (accompagnement: string) => {
-    let newAccompagnements;
-    if (selectedAccompagnements.includes(accompagnement)) {
-      newAccompagnements = selectedAccompagnements.filter(a => a !== accompagnement);
-    } else {
-      newAccompagnements = [...selectedAccompagnements, accompagnement];
-    }
-    setSelectedAccompagnements(newAccompagnements);
-    addAccompagnementToCart(newAccompagnements);
-  };
 
   return (
     <Card className="w-full border-2 border-gold-300 bg-gold-50">
