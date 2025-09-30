@@ -67,7 +67,7 @@ const OrdersDeliveryView = ({
 
   const printOrder = (order: Order) => {
     // Server Direct Print - Configuration de l'imprimante
-    const printUrl = `${window.location.origin}/api/print-order/test.txt?v=${Date.now()}`;
+    const printUrl = `${window.location.origin}/api/print-order/debug.txt?v=${Date.now()}`;
     
     console.log('🖨️ Server Direct Print - URL générée:', printUrl);
     
