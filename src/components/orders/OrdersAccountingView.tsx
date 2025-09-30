@@ -84,36 +84,78 @@ const OrdersAccountingView = ({
     // Détecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
-    if (isIOS) {
-      console.log('🍎 [iOS] Début impression commande:', order.id);
-      
-      // Récupérer les données cart_backup d'abord
-      let cartBackupItems = [];
-      if (order.clientEmail) {
-        try {
-          console.log('🍎 [iOS] Récupération cart_backup...');
-          const { data, error } = await supabase
-            .from('cart_backup')
-            .select('cart_items')
-            .eq('session_id', order.clientEmail)
-            .eq('is_used', false)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+    console.log('🖨️ Début impression commande:', order.id, 'iOS:', isIOS);
+    
+    // Récupérer les données cart_backup d'abord
+    let cartBackupItems = [];
+    if (order.clientEmail) {
+      try {
+        console.log('📦 Récupération cart_backup pour session:', order.clientEmail);
+        const { data, error } = await supabase
+          .from('cart_backup')
+          .select('cart_items')
+          .eq('session_id', order.clientEmail)
+          .eq('is_used', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-          if (!error && data && data.cart_items) {
-            cartBackupItems = data.cart_items;
-            console.log('🍎 [iOS] Articles récupérés:', cartBackupItems);
-          } else {
-            console.log('🍎 [iOS] Aucun cart_backup trouvé:', error);
-          }
-        } catch (error) {
-          console.error('🍎 [iOS] Erreur récupération cart_backup:', error);
+        if (!error && data && data.cart_items) {
+          cartBackupItems = data.cart_items;
+          console.log('✅ Articles récupérés:', cartBackupItems.length, 'items');
+        } else {
+          console.log('⚠️ Aucun cart_backup trouvé:', error);
         }
+      } catch (error) {
+        console.error('❌ Erreur récupération cart_backup:', error);
+      }
+    }
+    
+    if (isIOS) {
+      // Sur iOS, créer un iframe caché pour l'impression
+      console.log('🍎 [iOS] Création iframe pour impression');
+      
+      const printContent = generateOrderPrintContent(order, cartBackupItems);
+      
+      // Créer un iframe caché
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      
+      // Écrire le contenu dans l'iframe
+      const iframeDoc = iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(printContent);
+        iframeDoc.close();
+        
+        // Attendre un peu puis déclencher l'impression
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            console.log('🍎 [iOS] Impression déclenchée via iframe');
+            
+            // Nettoyer l'iframe après l'impression
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              console.log('🍎 [iOS] Iframe nettoyé');
+            }, 1000);
+          } catch (error) {
+            console.error('🍎 [iOS] Erreur impression iframe:', error);
+            document.body.removeChild(iframe);
+          }
+        }, 500);
       }
       
-      // Maintenant ouvrir la fenêtre avec les données
-      console.log('🍎 [iOS] Ouverture fenêtre avec données');
+    } else {
+      // Comportement normal pour les autres plateformes
+      console.log('💻 [Desktop] Ouverture fenêtre d\'impression');
       const printContent = generateOrderPrintContent(order, cartBackupItems);
       const printWindow = window.open('', '_blank');
       
@@ -126,19 +168,14 @@ const OrdersAccountingView = ({
       printWindow.document.close();
       printWindow.focus();
       
-      // Essayer d'ouvrir le menu d'impression après un délai
       setTimeout(() => {
         try {
           printWindow.print();
-          console.log('🍎 [iOS] print() appelé avec succès');
+          console.log('💻 [Desktop] print() appelé avec succès');
         } catch (error) {
-          console.log('Impression automatique non supportée sur iOS, utilisez le menu partage');
+          console.log('Erreur impression:', error);
         }
-      }, 1000);
-      
-    } else {
-      // Comportement normal pour les autres plateformes - récupérer les données
-      printOrderWithData(order);
+      }, 500);
     }
   };
 
