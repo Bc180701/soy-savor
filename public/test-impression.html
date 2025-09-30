@@ -82,7 +82,11 @@
                 // Obtenir l'URL du serveur d'impression et adapter le protocole
                 const printServerUrl = 'http://192.168.1.113:8080/print';
                 const currentProtocol = window.location.protocol;
-                const printUrl = currentProtocol === 'https:' 
+                const isLocalIP = printServerUrl.includes('192.168.') || 
+                                 printServerUrl.includes('127.0.0.1') || 
+                                 printServerUrl.includes('localhost');
+                
+                const printUrl = (currentProtocol === 'https:' && !isLocalIP)
                     ? printServerUrl.replace('http:', 'https:') 
                     : printServerUrl;
                 
@@ -118,7 +122,11 @@
                 // Obtenir l'URL du serveur d'impression et adapter le protocole
                 const printServerUrl = 'http://192.168.1.113:8080/print';
                 const currentProtocol = window.location.protocol;
-                const printUrl = currentProtocol === 'https:' 
+                const isLocalIP = printServerUrl.includes('192.168.') || 
+                                 printServerUrl.includes('127.0.0.1') || 
+                                 printServerUrl.includes('localhost');
+                
+                const printUrl = (currentProtocol === 'https:' && !isLocalIP)
                     ? printServerUrl.replace('http:', 'https:') 
                     : printServerUrl;
                 

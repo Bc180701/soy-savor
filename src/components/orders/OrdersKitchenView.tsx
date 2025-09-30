@@ -158,9 +158,13 @@ const OrdersKitchenView = ({
       // Get print server URL from environment or use default
       const printServerUrl = import.meta.env.VITE_PRINT_SERVER_URL || 'http://192.168.1.113:8080/print';
       
-      // Use HTTPS if the current page is served over HTTPS
+      // Only use HTTPS if the print server is not a local IP address
       const currentProtocol = window.location.protocol;
-      const printUrl = currentProtocol === 'https:' 
+      const isLocalIP = printServerUrl.includes('192.168.') || 
+                       printServerUrl.includes('127.0.0.1') || 
+                       printServerUrl.includes('localhost');
+      
+      const printUrl = (currentProtocol === 'https:' && !isLocalIP)
         ? printServerUrl.replace('http:', 'https:') 
         : printServerUrl;
       

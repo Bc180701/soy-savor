@@ -99,9 +99,13 @@ const OrdersAccountingView = ({
       // Obtenir l'URL du serveur d'impression depuis les variables d'environnement ou utiliser la valeur par défaut
       const printServerUrl = import.meta.env.VITE_PRINT_SERVER_URL || 'http://192.168.1.113:8080/print';
       
-      // Utiliser HTTPS si la page actuelle est servie en HTTPS
+      // Utiliser HTTPS seulement si le serveur d'impression n'est pas une adresse IP locale
       const currentProtocol = window.location.protocol;
-      const printUrl = currentProtocol === 'https:' 
+      const isLocalIP = printServerUrl.includes('192.168.') || 
+                       printServerUrl.includes('127.0.0.1') || 
+                       printServerUrl.includes('localhost');
+      
+      const printUrl = (currentProtocol === 'https:' && !isLocalIP)
         ? printServerUrl.replace('http:', 'https:') 
         : printServerUrl;
       
