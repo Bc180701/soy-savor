@@ -372,20 +372,26 @@ const OrdersDeliveryView = ({
             
             return itemsToDisplay.map((item, index) => {
               let itemName, itemQuantity, itemPrice, specialInstructions;
+              let itemDescription = '';
               
               if (cartBackupItems && cartBackupItems.length > 0) {
-                // Format CartBackupItem: { menuItem: { name, price }, quantity }
+                // Format CartBackupItem: { menuItem: { name, price, description }, quantity }
                 itemName = item.menuItem?.name || `Produit ${item.menuItem?.id?.substring(0, 8) || 'inconnu'}`;
                 itemQuantity = item.quantity || 1;
                 itemPrice = item.menuItem?.price || 0;
+                itemDescription = item.menuItem?.description || '';
                 specialInstructions = item.specialInstructions || '';
               } else {
                 // Format order_items ou items
                 itemName = item.name || `Produit ${item.id?.substring(0, 8) || 'inconnu'}`;
                 itemQuantity = item.quantity || 1;
                 itemPrice = item.price || 0;
+                itemDescription = item.description || '';
                 specialInstructions = item.special_instructions || '';
               }
+              
+              // Détecter si c'est une création personnalisée (Poké Créa, Sushi Créa)
+              const isCustomCreation = itemName.includes('Poké Créa') || itemName.includes('Sushi Créa');
               
               return `
                 <div class="item">
@@ -393,6 +399,11 @@ const OrdersDeliveryView = ({
                     <span class="item-name">${itemQuantity}x ${itemName}</span>
                     <span class="item-price">${(itemQuantity * itemPrice).toFixed(2)}€</span>
                   </div>
+                  ${isCustomCreation && itemDescription ? `
+                    <div class="special-instructions">
+                      ${itemDescription.replace(/\n/g, '<br>')}
+                    </div>
+                  ` : ''}
                   ${specialInstructions ? `
                     <div class="special-instructions">
                       * ${specialInstructions}
