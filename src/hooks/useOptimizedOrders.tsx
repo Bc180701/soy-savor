@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getAllOrders } from "@/services/orderService";
 import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Cache local avec timestamp pour éviter les recharges répétitives - ISOLÉ PAR RESTAURANT
 interface OrdersCache {
@@ -143,11 +144,42 @@ export function useOptimizedOrders(restaurantId: string | null) {
           console.warn(`⚠️ ${validOrders.length - verifiedOrders.length} commande(s) mal attribuée(s) filtrée(s)`);
         }
         
-        setOrders(verifiedOrders);
-        setCachedOrders(verifiedOrders, restId);
+        // 🆕 CHARGER LES CART_BACKUP pour toutes les commandes
+        console.log('📦 Chargement des cart_backup pour toutes les commandes...');
+        const ordersWithCartBackup = await Promise.all(
+          verifiedOrders.map(async (order) => {
+            if (!order.clientEmail) {
+              return order;
+            }
+            
+            try {
+              const { data, error } = await supabase
+                .from('cart_backup')
+                .select('cart_items')
+                .eq('session_id', order.clientEmail)
+                .eq('is_used', false)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+              if (!error && data && data.cart_items) {
+                console.log(`✅ cart_backup chargé pour commande ${order.id.slice(-8)}`);
+                return { ...order, cartBackupItems: data.cart_items };
+              }
+            } catch (error) {
+              console.log(`⚠️ Aucun cart_backup pour commande ${order.id.slice(-8)}`);
+            }
+            
+            return order;
+          })
+        );
+        
+        setOrders(ordersWithCartBackup);
+        setCachedOrders(ordersWithCartBackup, restId);
         setError(null);
         
-        console.log(`✅ ${verifiedOrders.length} commandes validées pour restaurant:`, restId || 'tous');
+        const cartBackupCount = ordersWithCartBackup.filter(o => o.cartBackupItems).length;
+        console.log(`✅ ${verifiedOrders.length} commandes validées (${cartBackupCount} avec cart_backup) pour restaurant:`, restId || 'tous');
         
         // Métriques de performance
         if (loadTime > 3000) {

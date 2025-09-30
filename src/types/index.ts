@@ -124,6 +124,7 @@ export interface Order {
   restaurant_id?: string; // Ajout du restaurant_id pour l'attribution des commandes
   items: CartItem[];
   itemsSummary?: any[]; // Produits du JSON items_summary
+  cartBackupItems?: any[]; // Articles chargés depuis cart_backup pour l'impression
   subtotal: number;
   tax: number;
   deliveryFee: number;

@@ -65,36 +65,15 @@ const OrdersDeliveryView = ({
     window.open(url, '_blank');
   };
 
-  const printOrder = async (order: Order) => {
+  const printOrder = (order: Order) => {
     // Détecter iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     
     console.log('🖨️ Début impression commande:', order.id, 'iOS:', isIOS);
     
-    // Récupérer les données cart_backup d'abord
-    let cartBackupItems = [];
-    if (order.clientEmail) {
-      try {
-        console.log('📦 Récupération cart_backup pour session:', order.clientEmail);
-        const { data, error } = await supabase
-          .from('cart_backup')
-          .select('cart_items')
-          .eq('session_id', order.clientEmail)
-          .eq('is_used', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (!error && data && data.cart_items) {
-          cartBackupItems = data.cart_items;
-          console.log('✅ Articles récupérés:', cartBackupItems.length, 'items');
-        } else {
-          console.log('⚠️ Aucun cart_backup trouvé:', error);
-        }
-      } catch (error) {
-        console.error('❌ Erreur récupération cart_backup:', error);
-      }
-    }
+    // Utiliser les données cart_backup déjà chargées
+    const cartBackupItems = order.cartBackupItems || [];
+    console.log('📦 Utilisation cart_backup préchargé:', cartBackupItems.length, 'items');
     
     if (isIOS) {
       // Sur iOS, créer un iframe caché pour l'impression
@@ -599,13 +578,7 @@ const OrdersDeliveryView = ({
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={async () => {
-                    try {
-                      await printOrder(order);
-                    } catch (error) {
-                      console.error('Erreur impression:', error);
-                    }
-                  }}
+                  onClick={() => printOrder(order)}
                   className="text-blue-600 hover:text-blue-800"
                 >
                   <Printer className="h-4 w-4 mr-1" />
