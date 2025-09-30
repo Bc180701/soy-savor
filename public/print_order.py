@@ -28,11 +28,11 @@ def print_order(order_data):
         sock.send(content)
         sock.close()
         
-        print(f"✅ Commande #{order.get('id', 'N/A')} imprimée avec succès !")
+        print(f"Commande #{order.get('id', 'N/A')} imprimee avec succes !")
         return True
         
     except Exception as e:
-        print(f"❌ Erreur impression: {e}")
+        print(f"Erreur impression: {e}")
         return False
 
 def generate_print_content(order):
@@ -96,10 +96,10 @@ if __name__ == "__main__":
         ]
     }
     
-    print("🖨️ Test d'impression de commande...")
+    print("Test d'impression de commande...")
     success = print_order(test_order)
     
     if success:
-        print("🎉 Test réussi !")
+        print("Test reussi !")
     else:
-        print("❌ Test échoué !")
+        print("Test echoue !")

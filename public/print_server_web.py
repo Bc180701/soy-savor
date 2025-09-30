@@ -15,15 +15,15 @@ class PrintWebHandler(http.server.BaseHTTPRequestHandler):
                 post_data = self.rfile.read(content_length)
                 order_data = json.loads(post_data.decode('utf-8'))
                 
-                print(f"📨 Commande reçue: #{order_data.get('id', 'N/A')}")
+                print(f"Commande recue: #{order_data.get('id', 'N/A')}")
                 
                 # Impression en arrière-plan
                 def print_async():
                     success = print_order(order_data)
                     if success:
-                        print(f"✅ Commande #{order_data.get('id', 'N/A')} imprimée !")
+                        print(f"Commande #{order_data.get('id', 'N/A')} imprimee !")
                     else:
-                        print(f"❌ Échec impression #{order_data.get('id', 'N/A')}")
+                        print(f"Echec impression #{order_data.get('id', 'N/A')}")
                 
                 # Lancer l'impression en arrière-plan
                 thread = threading.Thread(target=print_async)
@@ -39,7 +39,7 @@ class PrintWebHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(response).encode('utf-8'))
                 
             except Exception as e:
-                print(f"❌ Erreur: {e}")
+                print(f"Erreur: {e}")
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     PORT = 8080
     
     with socketserver.TCPServer(("", PORT), PrintWebHandler) as httpd:
-        print(f"🖨️ Serveur d'impression démarré sur le port {PORT}")
+        print(f"Serveur d'impression demarre sur le port {PORT}")
         print(f"URL: http://localhost:{PORT}/print")
         print("En attente des commandes...")
         httpd.serve_forever()
