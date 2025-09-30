@@ -89,8 +89,8 @@ const OrdersAccountingView = ({
     // Afficher un message à l'utilisateur
     alert(`Commande envoyée à l'imprimante !\n\nL'imprimante va récupérer automatiquement la commande depuis :\n${printUrl}\n\nVérifiez que l'imprimante est configurée pour Server Direct Print.`);
     
-    // Optionnel : ouvrir l'URL dans un nouvel onglet pour test
-    // window.open(printUrl, '_blank');
+    // Ouvrir l'URL dans un nouvel onglet pour test
+    window.open(printUrl, '_blank');
   };
 
 
