@@ -79,8 +79,17 @@
                     delivery_address: "123 Rue Test, 13160 Châteaurenard"
                 };
                 
+                // Obtenir l'URL du serveur d'impression et adapter le protocole
+                const printServerUrl = 'http://192.168.1.113:8080/print';
+                const currentProtocol = window.location.protocol;
+                const printUrl = currentProtocol === 'https:' 
+                    ? printServerUrl.replace('http:', 'https:') 
+                    : printServerUrl;
+                
+                console.log('🖨️ Utilisation de l\'URL:', printUrl);
+                
                 // Envoyer à l'imprimante
-                const response = await fetch('http://192.168.1.113:8080/print', {
+                const response = await fetch(printUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -106,7 +115,14 @@
             resultDiv.innerHTML = '🔄 Test du serveur en cours...';
             
             try {
-                const response = await fetch('http://192.168.1.113:8080/print', {
+                // Obtenir l'URL du serveur d'impression et adapter le protocole
+                const printServerUrl = 'http://192.168.1.113:8080/print';
+                const currentProtocol = window.location.protocol;
+                const printUrl = currentProtocol === 'https:' 
+                    ? printServerUrl.replace('http:', 'https:') 
+                    : printServerUrl;
+                
+                const response = await fetch(printUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

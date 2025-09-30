@@ -155,8 +155,19 @@ const OrdersKitchenView = ({
         delivery_address: order.delivery_address
       };
       
+      // Get print server URL from environment or use default
+      const printServerUrl = import.meta.env.VITE_PRINT_SERVER_URL || 'http://192.168.1.113:8080/print';
+      
+      // Use HTTPS if the current page is served over HTTPS
+      const currentProtocol = window.location.protocol;
+      const printUrl = currentProtocol === 'https:' 
+        ? printServerUrl.replace('http:', 'https:') 
+        : printServerUrl;
+      
+      console.log('🖨️ Using print server URL:', printUrl);
+      
       // Envoyer à l'imprimante via Wi-Fi Direct
-      const response = await fetch('http://192.168.1.113:8080/print', {
+      const response = await fetch(printUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

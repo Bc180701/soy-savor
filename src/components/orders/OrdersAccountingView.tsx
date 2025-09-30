@@ -96,8 +96,19 @@ const OrdersAccountingView = ({
         delivery_address: order.delivery_address
       };
       
+      // Obtenir l'URL du serveur d'impression depuis les variables d'environnement ou utiliser la valeur par défaut
+      const printServerUrl = import.meta.env.VITE_PRINT_SERVER_URL || 'http://192.168.1.113:8080/print';
+      
+      // Utiliser HTTPS si la page actuelle est servie en HTTPS
+      const currentProtocol = window.location.protocol;
+      const printUrl = currentProtocol === 'https:' 
+        ? printServerUrl.replace('http:', 'https:') 
+        : printServerUrl;
+      
+      console.log('🖨️ Utilisation de l\'URL du serveur d\'impression:', printUrl);
+      
       // Envoyer à l'imprimante via Wi-Fi Direct
-      const response = await fetch('http://192.168.1.113:8080/print', {
+      const response = await fetch(printUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
