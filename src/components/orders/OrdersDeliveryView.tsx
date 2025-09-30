@@ -65,17 +65,30 @@ const OrdersDeliveryView = ({
     window.open(url, '_blank');
   };
 
-  const printOrder = (order: Order) => {
-    // Server Direct Print - Configuration de l'imprimante
-    const printUrl = `${window.location.origin}/api/print-order/debug.txt?v=${Date.now()}`;
-    
-    console.log('🖨️ Server Direct Print - URL générée:', printUrl);
-    
-    // Afficher un message à l'utilisateur
-    alert(`Commande envoyée à l'imprimante !\n\nL'imprimante va récupérer automatiquement la commande depuis :\n${printUrl}\n\nVérifiez que l'imprimante est configurée pour Server Direct Print.`);
-    
-    // Ouvrir l'URL dans un nouvel onglet pour test
-    window.open(printUrl, '_blank');
+  const printOrder = async (order: Order) => {
+    try {
+      console.log('🖨️ Impression directe - Commande:', order.id);
+      
+      // Générer le contenu d'impression (comme tout à l'heure)
+      const printContent = generateOrderPrintContent(order, order.cartBackupItems || []);
+      
+      // Créer un fichier temporaire et le télécharger
+      const blob = new Blob([printContent], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `commande-${order.id}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      alert(`✅ Fichier d'impression téléchargé !\n\nCommande #${order.id}\n\nOuvrez le fichier et imprimez-le sur l'imprimante thermique.`);
+      
+    } catch (error) {
+      console.error('Erreur impression:', error);
+      alert(`❌ Erreur lors de la génération du fichier d'impression.`);
+    }
   };
 
 

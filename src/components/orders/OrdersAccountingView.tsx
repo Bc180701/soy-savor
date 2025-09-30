@@ -80,17 +80,43 @@ const OrdersAccountingView = ({
     }
   };
 
-  const printOrder = (order: Order) => {
-    // Server Direct Print - Configuration de l'imprimante
-    const printUrl = `${window.location.origin}/api/print-order/debug.txt?v=${Date.now()}`;
-    
-    console.log('🖨️ Server Direct Print - URL générée:', printUrl);
-    
-    // Afficher un message à l'utilisateur
-    alert(`Commande envoyée à l'imprimante !\n\nL'imprimante va récupérer automatiquement la commande depuis :\n${printUrl}\n\nVérifiez que l'imprimante est configurée pour Server Direct Print.`);
-    
-    // Ouvrir l'URL dans un nouvel onglet pour test
-    window.open(printUrl, '_blank');
+  const printOrder = async (order: Order) => {
+    try {
+      console.log('🖨️ Impression Wi-Fi Direct - Commande:', order.id);
+      
+      // Préparer les données de la commande
+      const orderData = {
+        id: order.id,
+        delivery_type: order.delivery_type,
+        cartBackupItems: order.cartBackupItems || [],
+        items: order.items || [],
+        total: order.total,
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        delivery_address: order.delivery_address
+      };
+      
+      // Envoyer à l'imprimante via Wi-Fi Direct
+      const response = await fetch('http://192.168.1.113:8080/print', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        alert(`✅ Commande #${order.id} envoyée à l'imprimante !\n\nL'impression va se lancer automatiquement.`);
+      } else {
+        alert(`❌ Erreur d'impression: ${result.message}`);
+      }
+      
+    } catch (error) {
+      console.error('Erreur impression:', error);
+      alert(`❌ Erreur de connexion à l'imprimante.\n\nVérifiez que le serveur d'impression est démarré.`);
+    }
   };
 
 

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Impression Wi-Fi Direct</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🖨️ Test Impression Wi-Fi Direct</h1>
+    
+    <button onclick="testPrint()">Tester l'impression</button>
+    <button onclick="startServer()">Démarrer le serveur</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function testPrint() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '🔄 Test en cours...';
+            
+            try {
+                // Données de test
+                const orderData = {
+                    id: "TEST-001",
+                    delivery_type: "LIVRAISON",
+                    cartBackupItems: [
+                        { name: "Poké Créa", quantity: 2, price: 12.50 },
+                        { name: "Sushi Créa", quantity: 1, price: 15.00 }
+                    ],
+                    total: 40.00,
+                    customer_name: "Test Client",
+                    customer_phone: "0123456789",
+                    delivery_address: "123 Rue Test, 13160 Châteaurenard"
+                };
+                
+                // Envoyer à l'imprimante
+                const response = await fetch('http://localhost:8080/print', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    resultDiv.innerHTML = '<div class="success">✅ Impression envoyée avec succès ! Vérifiez l\'imprimante.</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ Erreur: ' + result.message + '</div>';
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ Erreur de connexion: ' + error.message + '</div>';
+            }
+        }
+        
+        function startServer() {
+            alert('Pour démarrer le serveur, exécutez dans le terminal :\n\npython print_server_web.py\n\nPuis revenez ici et cliquez sur "Tester l\'impression"');
+        }
+    </script>
+</body>
+</html>
