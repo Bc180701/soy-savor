@@ -301,9 +301,10 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
 
       while (currentTime <= endDate) {
         const timeValue = format(currentTime, "HH:mm");
-        // NOUVELLE LOGIQUE: Ne plus considérer les créneaux comme "passés" 
-        // si on est dans la logique de commande libre toute la journée
-        const isPassedTime = timeUntilClosing < thirtyMinutes ? isAfter(finalMinTime, currentTime) : false;
+        // Vérifier si le créneau est dans le passé
+        // Un créneau est considéré comme passé s'il est antérieur à l'heure actuelle + délai minimum
+        const currentTimeWithDelay = addMinutes(now, 30); // Délai minimum de 30 minutes
+        const isPassedTime = isAfter(currentTimeWithDelay, currentTime);
         
         // Vérifier la capacité du créneau selon le type de commande
         const currentOrders = orderCounts[timeValue] || 0;
