@@ -39,14 +39,14 @@ const AdminManager = () => {
   // Enable order notifications for admins
   const { hasNewOrders, audioEnabled, enableAudio, clearNotifications } = useOrderNotifications(true, currentRestaurant?.id);
 
-  // Auto-refresh for orders section every 3 minutes
+  // Auto-refresh for orders section every 5 minutes
   useEffect(() => {
     if (!autoRefresh || activeSection !== "orders") return;
 
     const interval = setInterval(() => {
       setLastRefresh(new Date());
       window.location.reload();
-    }, 180000);
+    }, 300000);
 
     return () => clearInterval(interval);
   }, [autoRefresh, activeSection]);
