@@ -65,32 +65,124 @@ const OrdersDeliveryView = ({
     window.open(url, '_blank');
   };
 
-  const printOrder = async (order: Order) => {
-    try {
-      console.log('🖨️ Impression directe - Commande:', order.id);
+  const printOrder = (order: Order) => {
+    // Détecter iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    console.log('🖨️ Début impression commande:', order.id, 'iOS:', isIOS);
+    
+    // Utiliser les données cart_backup déjà chargées
+    const cartBackupItems = order.cartBackupItems || [];
+    console.log('📦 Utilisation cart_backup préchargé:', cartBackupItems.length, 'items');
+    
+    if (isIOS) {
+      // Sur iOS, créer un iframe caché pour l'impression
+      console.log('🍎 [iOS] Création iframe pour impression');
       
-      // Générer le contenu d'impression (comme tout à l'heure)
-      const printContent = generateOrderPrintContent(order, order.cartBackupItems || []);
+      const printContent = generateOrderPrintContent(order, cartBackupItems);
       
-      // Créer un fichier temporaire et le télécharger
-      const blob = new Blob([printContent], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `commande-${order.id}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      // Créer un iframe caché
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
       
-      alert(`✅ Fichier d'impression téléchargé !\n\nCommande #${order.id}\n\nOuvrez le fichier et imprimez-le sur l'imprimante thermique.`);
+      // Écrire le contenu dans l'iframe
+      const iframeDoc = iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(printContent);
+        iframeDoc.close();
+        
+        // Attendre un peu puis déclencher l'impression
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            console.log('🍎 [iOS] Impression déclenchée via iframe');
+            
+            // Nettoyer l'iframe après l'impression
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+              console.log('🍎 [iOS] Iframe nettoyé');
+            }, 1000);
+          } catch (error) {
+            console.error('🍎 [iOS] Erreur impression iframe:', error);
+            document.body.removeChild(iframe);
+          }
+        }, 500);
+      }
       
-    } catch (error) {
-      console.error('Erreur impression:', error);
-      alert(`❌ Erreur lors de la génération du fichier d'impression.`);
+    } else {
+      // Comportement normal pour les autres plateformes
+      console.log('💻 [Desktop] Ouverture fenêtre d\'impression');
+      const printContent = generateOrderPrintContent(order, cartBackupItems);
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+        return;
+      }
+      
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      
+      setTimeout(() => {
+        try {
+          printWindow.print();
+          console.log('💻 [Desktop] print() appelé avec succès');
+        } catch (error) {
+          console.log('Erreur impression:', error);
+        }
+      }, 500);
     }
   };
 
+  const printOrderWithData = async (order: Order) => {
+    // Récupérer les articles depuis cart_backup pour les autres plateformes
+    let cartBackupItems = [];
+    if (order.clientEmail) {
+      try {
+        const { data, error } = await supabase
+          .from('cart_backup')
+          .select('cart_items')
+          .eq('session_id', order.clientEmail)
+          .eq('is_used', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (!error && data && data.cart_items) {
+          cartBackupItems = data.cart_items;
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération du cart_backup:', error);
+      }
+    }
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('Impossible d\'ouvrir la fenêtre d\'impression');
+      return;
+    }
+
+    const printContent = generateOrderPrintContent(order, cartBackupItems);
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Attendre que le contenu soit chargé avant d'imprimer
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    };
+  };
 
   const generateOrderPrintContent = (order: Order, cartBackupItems: any[] = []): string => {
     const formatTime = (date: Date) => {
