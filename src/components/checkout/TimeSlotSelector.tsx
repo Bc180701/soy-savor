@@ -306,6 +306,17 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
         const currentTimeWithDelay = addMinutes(now, 30); // Délai minimum de 30 minutes
         const isPassedTime = isAfter(currentTimeWithDelay, currentTime);
         
+        // Debug: Afficher les informations de débogage
+        if (timeValue === "12:45" || timeValue === "12:30") {
+          console.log(`🕐 DEBUG CRÉNEAU ${timeValue}:`, {
+            heureActuelle: format(now, "HH:mm"),
+            heureAvecDélai: format(currentTimeWithDelay, "HH:mm"),
+            heureCréneau: format(currentTime, "HH:mm"),
+            isPassedTime: isPassedTime,
+            isAfterResult: isAfter(currentTimeWithDelay, currentTime)
+          });
+        }
+        
         // Vérifier la capacité du créneau selon le type de commande
         const currentOrders = orderCounts[timeValue] || 0;
         const currentDeliveries = deliveryCounts[timeValue] || 0;
