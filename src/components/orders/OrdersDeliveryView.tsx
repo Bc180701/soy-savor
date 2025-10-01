@@ -31,7 +31,8 @@ const OrdersDeliveryView = ({
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat('fr-FR', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Europe/Paris'
     }).format(date);
   };
 
@@ -188,7 +189,8 @@ const OrdersDeliveryView = ({
     const formatTime = (date: Date) => {
       return new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: 'Europe/Paris'
       }).format(date);
     };
 

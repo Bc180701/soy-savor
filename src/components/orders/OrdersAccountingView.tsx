@@ -203,7 +203,8 @@ const OrdersAccountingView = ({
     const formatTime = (date: Date) => {
       return new Intl.DateTimeFormat('fr-FR', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: 'Europe/Paris'
       }).format(date);
     };
 
@@ -492,7 +493,8 @@ const OrdersAccountingView = ({
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Europe/Paris'
     }).format(date);
   };
 
@@ -501,7 +503,8 @@ const OrdersAccountingView = ({
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Europe/Paris'
     }).format(date);
   };
 
