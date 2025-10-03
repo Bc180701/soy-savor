@@ -2,6 +2,8 @@
 // Serve the latest ePOS-Print XML for Saint-Martin to the Epson printer.
 // Supports both POST (ConnectionType=GetRequest) and GET requests
 
+// Clear any output before XML
+ob_clean();
 header('Content-Type: text/xml; charset=UTF-8');
 
 define("REQUEST_XML_PATH", __DIR__ . "/../request/sample_stmartin.xml");
