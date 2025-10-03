@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/use-cart";
 import { Loader2, Plus, Pencil, Heart, Eye } from "lucide-react";
+import { useWrapSelection } from "@/hooks/useWrapSelection";
+import { WrapSelectionModal } from "@/components/menu/WrapSelectionModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MenuItem, SushiCategory } from "@/types";
 import { AnimatePresence } from "framer-motion";
@@ -34,6 +36,13 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
   const [clickedButton, setClickedButton] = useState<string | null>(null);
   const [selectedProductDetails, setSelectedProductDetails] = useState<Product | null>(null);
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
+  const { 
+    isWrapModalOpen, 
+    pendingWrapBoxItem, 
+    handleAddToCartWithWrapSelection, 
+    handleWrapSelected, 
+    handleWrapSelectionCancel 
+  } = useWrapSelection();
 
   // Convert Product to MenuItem for cart compatibility
   const menuItem: MenuItem = {
@@ -53,6 +62,14 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
 
   const handleAddToCart = (item: MenuItem) => {
     setClickedButton(item.id);
+    
+    // Vérifier si c'est une Wrap Box et utiliser la sélection de wrap
+    if (item.name.toLowerCase().includes('wrap box') || item.name.toLowerCase().includes('wrapbox')) {
+      console.log("🟩 C'est une Wrap Box, ouvrir la modale de sélection");
+      handleAddToCartWithWrapSelection(item, 1);
+      return;
+    }
+    
     cart.addItem(item, 1);
     
     toast({
@@ -361,6 +378,16 @@ const ProductCard = ({ product, badgeVariant }: { product: Product, badgeVariant
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* Modale de sélection de wrap pour Wrap Box */}
+      {pendingWrapBoxItem && (
+        <WrapSelectionModal
+          isOpen={isWrapModalOpen}
+          onClose={handleWrapSelectionCancel}
+          onSelectWrap={handleWrapSelected}
+          wrapBoxItem={pendingWrapBoxItem}
+        />
+      )}
     </>
   );
 };

@@ -15,6 +15,8 @@ import { AccompagnementSelector } from "@/components/AccompagnementSelector";
 import { useToast } from "@/hooks/use-toast";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useDessertBoissonOffer } from "@/hooks/useDessertBoissonOffer";
+import { useWrapSelection } from "@/hooks/useWrapSelection";
+import { WrapSelectionModal } from "./WrapSelectionModal";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -53,6 +55,13 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
   // Utiliser le contexte global pour l'offre dessert/boisson
   const { dessertBoissonOfferActive } = useDessertBoissonOffer();
+  const { 
+    isWrapModalOpen, 
+    pendingWrapBoxItem, 
+    handleAddToCartWithWrapSelection, 
+    handleWrapSelected, 
+    handleWrapSelectionCancel 
+  } = useWrapSelection();
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);
@@ -147,7 +156,14 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
       return;
     } 
     
-    console.log("🟩 Pas une box, appel de onAddToCart");
+    // Vérifier si c'est une Wrap Box et utiliser la sélection de wrap
+    if (item.name.toLowerCase().includes('wrap box') || item.name.toLowerCase().includes('wrapbox')) {
+      console.log("🟩 C'est une Wrap Box, ouvrir la modale de sélection");
+      handleAddToCartWithWrapSelection(item, 1);
+      return;
+    }
+    
+    console.log("🟩 Pas une box ni wrap box, appel de onAddToCart");
     // Sinon, ajouter directement au panier
     onAddToCart(item);
     toast({
@@ -637,6 +653,16 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
         onAccompagnementSelected={handleAccompagnementSelected}
         restaurantId={pendingBoxItem?.item.restaurant_id}
       />
+      
+      {/* Modale de sélection de wrap pour Wrap Box */}
+      {pendingWrapBoxItem && (
+        <WrapSelectionModal
+          isOpen={isWrapModalOpen}
+          onClose={handleWrapSelectionCancel}
+          onSelectWrap={handleWrapSelected}
+          wrapBoxItem={pendingWrapBoxItem}
+        />
+      )}
     </>
   );
 };
