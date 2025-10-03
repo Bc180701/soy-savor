@@ -5,6 +5,7 @@
 // Clear any output before XML
 ob_clean();
 header('Content-Type: text/xml; charset=UTF-8');
+header('Cache-Control: no-cache');
 
 define("REQUEST_XML_PATH", __DIR__ . "/../request/sample_chato.xml");
 define("RESPONSE_XML_PATH", __DIR__ . "/../response/sample_chato.xml");
@@ -29,7 +30,7 @@ if ($http_request == 'GetRequest') {
         // move file to response folder
         @rename(REQUEST_XML_PATH, RESPONSE_XML_PATH);
     } else {
-        echo '<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"><text>NO JOB</text></epos-print>';
+        echo '<?xml version="1.0" encoding="utf-8"?><epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"><text>NO JOB</text></epos-print>';
     }
 } else {
     // Fallback for GET requests (browser testing)
@@ -38,7 +39,7 @@ if ($http_request == 'GetRequest') {
     if (file_exists(REQUEST_XML_PATH)) {
         readfile(REQUEST_XML_PATH);
     } else {
-        echo '<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"><text>NO JOB</text></epos-print>';
+        echo '<?xml version="1.0" encoding="utf-8"?><epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"><text>NO JOB</text></epos-print>';
     }
 }
 
