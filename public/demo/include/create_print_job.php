@@ -10,7 +10,7 @@ header('Content-Type: application/json; charset=utf-8');
 $EXPECTED_TOKEN = getenv('EPSON_PRINT_TOKEN') ?: 'CHANGE_ME_SECRET';
 
 // If true, create one file per order: order_<id>.xml. If false, always write sample.xml
-$USE_PER_ORDER_FILE = true;
+$USE_PER_ORDER_FILE = false; // default to sample.xml so printer grabs it immediately
 
 // ------------------------------------------------
 
@@ -43,6 +43,7 @@ try {
     }
 
     $orderId = isset($body['orderId']) ? sanitize_filename((string)$body['orderId']) : 'order';
+    $usePerOrderFile = isset($body['usePerOrderFile']) ? (bool)$body['usePerOrderFile'] : $USE_PER_ORDER_FILE;
     $customer = isset($body['customer']) ? (string)$body['customer'] : '';
     $items = isset($body['items']) && is_array($body['items']) ? $body['items'] : [];
     $notes = isset($body['notes']) ? (string)$body['notes'] : '';
@@ -80,7 +81,7 @@ try {
     $xml[] = '<feed line="3"/><cut type="feed"/>';
     $xml[] = '</epos-print>';
 
-    $relativeTarget = $USE_PER_ORDER_FILE
+    $relativeTarget = $usePerOrderFile
         ? ('../request/order_' . $orderId . '.xml')
         : ('../request/sample.xml');
 
