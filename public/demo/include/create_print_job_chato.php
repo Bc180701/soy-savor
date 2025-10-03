@@ -35,6 +35,7 @@ try {
     $total = isset($body['total']) ? (float)$body['total'] : 0.0;
 
     $xml = [];
+    $xml[] = '<?xml version="1.0" encoding="utf-8"?>';
     $xml[] = '<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print">';
     $xml[] = '<text lang="fr" align="center" width="2" height="2">Sushi Eats - Chato</text>';
     $xml[] = '<text>Commande: ' . htmlspecialchars($orderId) . '</text>';
