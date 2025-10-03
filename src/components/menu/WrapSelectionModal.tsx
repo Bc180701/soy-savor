@@ -39,12 +39,14 @@ export const WrapSelectionModal = ({
         .from('categories')
         .select('id')
         .ilike('name', '%Sushi Wrap%')
-        .single();
+        .limit(1);
 
-      if (categoryError || !categoryData) {
+      if (categoryError || !categoryData || categoryData.length === 0) {
         console.error('Erreur lors de la récupération de la catégorie Sushi Wrap:', categoryError);
         return;
       }
+
+      const categoryId = categoryData[0].id;
 
       // Récupérer tous les wraps de cette catégorie
       const { data, error } = await supabase
@@ -55,7 +57,7 @@ export const WrapSelectionModal = ({
             name
           )
         `)
-        .eq('category_id', categoryData.id)
+        .eq('category_id', categoryId)
         .eq('is_active', true)
         .order('name');
 
