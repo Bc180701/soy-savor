@@ -1,0 +1,5 @@
+# Defines the secret token used by Epson Server Direct Print endpoints
+# Replace VOTRE_TRES_LONG_SECRET with a strong, private value on OVH if needed
+SetEnv EPSON_PRINT_TOKEN VOTRE_TRES_LONG_SECRET
+
+
