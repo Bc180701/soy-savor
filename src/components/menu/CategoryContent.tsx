@@ -148,6 +148,14 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     console.log("🟩 CategoryContent.handleAddToCart called with:", item.name);
     setClickedButton(item.id);
     
+    // PRIORITÉ 1: Vérifier si c'est une Wrap Box et utiliser la sélection de wrap
+    if (item.name.toLowerCase().includes('wrap box') || item.name.toLowerCase().includes('wrapbox')) {
+      console.log("🟩 C'est une Wrap Box, ouvrir la modale de sélection");
+      handleAddToCartWithWrapSelection(item, 1);
+      return;
+    }
+    
+    // PRIORITÉ 2: Vérifier si c'est une box normale
     if (isBoxItem(item)) {
       console.log("🟩 C'est une box, SEULEMENT le hook - PAS onAddToCart !");
       // Si c'est une box, utiliser SEULEMENT la logique du hook pour ouvrir le popup
@@ -155,13 +163,6 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
       // IMPORTANT: Ne PAS appeler onAddToCart pour les box !
       return;
     } 
-    
-    // Vérifier si c'est une Wrap Box et utiliser la sélection de wrap
-    if (item.name.toLowerCase().includes('wrap box') || item.name.toLowerCase().includes('wrapbox')) {
-      console.log("🟩 C'est une Wrap Box, ouvrir la modale de sélection");
-      handleAddToCartWithWrapSelection(item, 1);
-      return;
-    }
     
     console.log("🟩 Pas une box ni wrap box, appel de onAddToCart");
     // Sinon, ajouter directement au panier

@@ -41,6 +41,32 @@ const verifyTimeSlot = async (
   }
 };
 
+// Fonction de réservation atomique des créneaux (évite les race conditions)
+const reserveTimeSlot = async (
+  restaurantId: string,
+  orderType: string,
+  scheduledFor: string
+): Promise<TimeSlotVerificationResult> => {
+  try {
+    console.log("🔒 Réservation atomique du créneau:", { restaurantId, orderType, scheduledFor });
+    
+    const { data, error } = await supabase.functions.invoke('reserve-time-slot', {
+      body: { restaurantId, orderType, scheduledFor }
+    });
+
+    if (error) {
+      console.error("❌ Erreur lors de la réservation du créneau:", error);
+      return { available: false, message: "Erreur de réservation du créneau" };
+    }
+
+    console.log("✅ Résultat réservation atomique:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Erreur réseau lors de la réservation:", error);
+    return { available: false, message: "Erreur de connexion" };
+  }
+};
+
 export const createOrder = async (
   orderInput: {
     items: CartItem[];
@@ -77,24 +103,24 @@ export const createOrder = async (
 
     console.log(`🏪 Création de commande pour le restaurant: ${targetRestaurantId}`);
 
-    // 🚨 VÉRIFICATION CRITIQUE DU CRÉNEAU CÔTÉ SERVEUR POUR LES LIVRAISONS ET RETRAITS
+    // 🚨 RÉSERVATION ATOMIQUE DU CRÉNEAU POUR ÉVITER LES RACE CONDITIONS
     if (orderInput.orderType === 'delivery' || orderInput.orderType === 'pickup') {
-      console.log(`🔒 Vérification finale du créneau de ${orderInput.orderType}...`);
-      const verification = await verifyTimeSlot(
+      console.log(`🔒 Réservation atomique du créneau de ${orderInput.orderType}...`);
+      const reservation = await reserveTimeSlot(
         targetRestaurantId,
         orderInput.orderType,
         orderInput.scheduledFor.toISOString()
       );
 
-      if (!verification.available) {
+      if (!reservation.available) {
         console.log("🚫 CRÉNEAU BLOQUÉ - Commande refusée");
         const serviceType = orderInput.orderType === 'delivery' ? 'livraison' : 'retrait';
         return { 
           success: false, 
-          error: `Créneau de ${serviceType} non disponible: ${verification.message}` 
+          error: `Créneau de ${serviceType} non disponible: ${reservation.message}` 
         };
       }
-      console.log("✅ Créneau vérifié et disponible, création de la commande...");
+      console.log("✅ Créneau réservé atomiquement, création de la commande...");
     }
 
     // Création de la commande dans la base de données
