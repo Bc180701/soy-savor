@@ -2,7 +2,10 @@
 // Endpoint for restaurant Saint-Martin-de-Crau: writes to ../request/sample_stmartin.xml
 header('Content-Type: application/json; charset=utf-8');
 
-$EXPECTED_TOKEN = getenv('EPSON_PRINT_TOKEN') ?: 'CHANGE_ME_SECRET';
+@include __DIR__ . '/config.php';
+$EXPECTED_TOKEN = isset($OVERRIDE_TOKEN) && $OVERRIDE_TOKEN !== ''
+    ? $OVERRIDE_TOKEN
+    : (getenv('EPSON_PRINT_TOKEN') ?: 'CHANGE_ME_SECRET');
 $TARGET_FILE_RELATIVE = '../request/sample_stmartin.xml';
 
 function json_input_stm() {

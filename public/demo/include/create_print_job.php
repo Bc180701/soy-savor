@@ -6,8 +6,11 @@
 header('Content-Type: application/json; charset=utf-8');
 
 // ---------------- Configuration ----------------
-// IMPORTANT: Replace this with a strong secret and keep it in OVH env or a file.
-$EXPECTED_TOKEN = getenv('EPSON_PRINT_TOKEN') ?: 'CHANGE_ME_SECRET';
+// Load optional config override
+@include __DIR__ . '/config.php';
+$EXPECTED_TOKEN = isset($OVERRIDE_TOKEN) && $OVERRIDE_TOKEN !== ''
+    ? $OVERRIDE_TOKEN
+    : (getenv('EPSON_PRINT_TOKEN') ?: 'CHANGE_ME_SECRET');
 
 // If true, create one file per order: order_<id>.xml. If false, always write sample.xml
 $USE_PER_ORDER_FILE = false; // default to sample.xml so printer grabs it immediately
