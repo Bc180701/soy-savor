@@ -33,7 +33,20 @@ export const WrapSelectionModal = ({
   const fetchAvailableWraps = async () => {
     setLoading(true);
     try {
-      // Récupérer tous les wraps de la catégorie maki_wrap
+      // Récupérer tous les wraps de la catégorie Sushi Wrap
+      // D'abord, trouver l'ID de la catégorie "Sushi Wrap"
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('categories')
+        .select('id')
+        .ilike('name', '%Sushi Wrap%')
+        .single();
+
+      if (categoryError || !categoryData) {
+        console.error('Erreur lors de la récupération de la catégorie Sushi Wrap:', categoryError);
+        return;
+      }
+
+      // Récupérer tous les wraps de cette catégorie
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -42,7 +55,7 @@ export const WrapSelectionModal = ({
             name
           )
         `)
-        .eq('category_id', 'maki_wrap')
+        .eq('category_id', categoryData.id)
         .eq('is_active', true)
         .order('name');
 
@@ -58,7 +71,7 @@ export const WrapSelectionModal = ({
         description: wrap.description || '',
         price: wrap.price,
         imageUrl: wrap.image_url,
-        category: 'maki_wrap' as any,
+        category: wrap.categories?.name || 'Sushi Wrap',
         restaurant_id: wrapBoxItem.restaurant_id,
         allergens: wrap.allergens || [],
         isVegetarian: wrap.is_vegetarian || false,
