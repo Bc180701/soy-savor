@@ -4,6 +4,7 @@
 
 $TARGET = __DIR__ . '/../request/sample_stmartin.xml';
 $DELETE_AFTER = isset($_GET['delete']) ? ($_GET['delete'] === '1') : false;
+$ACCESS_LOG = __DIR__ . '/../response/access_stmartin.log';
 
 header('Content-Type: application/xml; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -11,6 +12,7 @@ header('Pragma: no-cache');
 header('Expires: 0');
 
 if (!file_exists($TARGET)) {
+    @file_put_contents($ACCESS_LOG, date('c') . " MISS ip=" . ($_SERVER['REMOTE_ADDR'] ?? '-') . " ua=" . ($_SERVER['HTTP_USER_AGENT'] ?? '-') . "\n", FILE_APPEND);
     echo '<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"><text>NO JOB</text></epos-print>';
     exit;
 }
@@ -22,6 +24,7 @@ if ($size !== false) {
 }
 readfile($TARGET);
 flush();
+@file_put_contents($ACCESS_LOG, date('c') . " HIT ip=" . ($_SERVER['REMOTE_ADDR'] ?? '-') . " size=" . ($size !== false ? $size : '-') . " delete=" . ($DELETE_AFTER ? '1' : '0') . " ua=" . ($_SERVER['HTTP_USER_AGENT'] ?? '-') . "\n", FILE_APPEND);
 if ($DELETE_AFTER) { @unlink($TARGET); }
 
 ?>
