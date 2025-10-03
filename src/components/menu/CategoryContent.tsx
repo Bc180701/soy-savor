@@ -59,9 +59,19 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     isWrapModalOpen, 
     pendingWrapBoxItem, 
     handleAddToCartWithWrapSelection, 
-    handleWrapSelected, 
+    handleWrapSelected: originalHandleWrapSelected, 
     handleWrapSelectionCancel 
   } = useWrapSelection();
+
+  // Fonction personnalisée pour gérer la sélection de wrap et déclencher les accompagnements
+  const handleWrapSelected = (selectedWrap: MenuItem) => {
+    const customWrapBoxItem = originalHandleWrapSelected(selectedWrap);
+    if (customWrapBoxItem) {
+      // Déclencher la modale des accompagnements gratuits
+      console.log("🟨 Déclenchement de la modale des accompagnements gratuits...");
+      handleBoxAddToCart(customWrapBoxItem, 1);
+    }
+  };
 
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);

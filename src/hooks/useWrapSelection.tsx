@@ -1,16 +1,12 @@
 import { useState } from "react";
 import { MenuItem } from "@/types";
 import { useCart } from "./use-cart";
-import { useBoxAccompagnement } from "./useBoxAccompagnement";
 import { toast } from "./use-toast";
 
 export const useWrapSelection = () => {
   const [isWrapModalOpen, setIsWrapModalOpen] = useState(false);
   const [pendingWrapBoxItem, setPendingWrapBoxItem] = useState<MenuItem | null>(null);
   const cart = useCart();
-  
-  // Utiliser le hook des accompagnements pour déclencher la modale après sélection du wrap
-  const { handleAddToCart: handleBoxAddToCart } = useBoxAccompagnement();
 
   // Détecter si un item est une "Wrap Box"
   const isWrapBoxItem = (item: MenuItem): boolean => {
@@ -47,9 +43,8 @@ export const useWrapSelection = () => {
       setIsWrapModalOpen(false);
       setPendingWrapBoxItem(null);
       
-      // 🎯 DÉCLENCHER LA MODALE DES ACCOMPAGNEMENTS GRATUITS
-      console.log("🟨 Déclenchement de la modale des accompagnements gratuits...");
-      handleBoxAddToCart(customWrapBoxItem, 1);
+      // Retourner l'item pour que le composant parent puisse gérer l'accompagnement
+      return customWrapBoxItem;
     }
   };
 
