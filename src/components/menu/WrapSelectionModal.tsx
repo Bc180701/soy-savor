@@ -34,11 +34,11 @@ export const WrapSelectionModal = ({
     setLoading(true);
     try {
       // Récupérer tous les wraps de la catégorie Sushi Wrap
-      // D'abord, trouver l'ID de la catégorie "Sushi Wrap"
+      // Chercher les catégories qui contiennent "wrap" dans le nom OU l'ID
       const { data: categoryData, error: categoryError } = await supabase
         .from('categories')
-        .select('id')
-        .ilike('name', '%Sushi Wrap%')
+        .select('id, name')
+        .or('name.ilike.%Sushi Wrap%,name.ilike.%Wrap%,id.ilike.%maki_wrap%')
         .limit(1);
 
       if (categoryError || !categoryData || categoryData.length === 0) {
@@ -47,6 +47,7 @@ export const WrapSelectionModal = ({
       }
 
       const categoryId = categoryData[0].id;
+      console.log('🎯 Catégorie wrap trouvée:', categoryData[0]);
 
       // Récupérer tous les wraps de cette catégorie
       const { data, error } = await supabase
@@ -58,7 +59,6 @@ export const WrapSelectionModal = ({
           )
         `)
         .eq('category_id', categoryId)
-        .eq('is_active', true)
         .order('name');
 
       if (error) {
