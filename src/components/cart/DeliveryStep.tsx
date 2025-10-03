@@ -332,7 +332,11 @@ export const DeliveryStep = ({
                     ).join(', ')
                   : 'Aucune'
               }</p>
-              <p><strong>Accompagnements :</strong> {cartExtras.accompagnements.length > 0 ? cartExtras.accompagnements.join(', ') : 'Aucun'}</p>
+              <p><strong>Accompagnements :</strong> {
+                cartExtras.accompagnements.length > 0 
+                  ? cartExtras.accompagnements.map(accomp => accomp.name).join(', ')
+                  : 'Aucun'
+              }</p>
               <p><strong>Baguettes :</strong> {cartExtras.baguettes ? 'Demandées' : 'Non demandées'}</p>
               <p><strong>Couverts :</strong> {cartExtras.couverts ? 'Demandés' : 'Non demandés'}</p>
               <p><strong>Cuillères :</strong> {cartExtras.cuilleres ? 'Demandées' : 'Non demandées'}</p>
