@@ -5,7 +5,10 @@
 $TARGET = __DIR__ . '/../request/sample_chato.xml';
 $DELETE_AFTER = isset($_GET['delete']) ? ($_GET['delete'] === '1') : false; // printer can also delete itself
 
-header('Content-Type: text/xml; charset=utf-8');
+header('Content-Type: application/xml; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 if (!file_exists($TARGET)) {
     // Return a minimal valid ePOS-Print to avoid printer error
@@ -13,7 +16,13 @@ if (!file_exists($TARGET)) {
     exit;
 }
 
+clearstatcache(true, $TARGET);
+$size = @filesize($TARGET);
+if ($size !== false) {
+    header('Content-Length: ' . $size);
+}
 readfile($TARGET);
+flush();
 
 if ($DELETE_AFTER) {
     @unlink($TARGET);
