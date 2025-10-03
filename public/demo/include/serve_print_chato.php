@@ -2,11 +2,8 @@
 // Serve the latest ePOS-Print XML for Chato to the Epson printer.
 // Supports both POST (ConnectionType=GetRequest) and GET requests
 
-// Start output buffering and clean any previous output
-ob_start();
+// Clear any output before XML
 ob_clean();
-
-// Set headers
 header('Content-Type: text/xml; charset=UTF-8');
 header('Cache-Control: no-cache');
 
@@ -46,6 +43,4 @@ if ($http_request == 'GetRequest') {
     }
 }
 
-// End output buffering
-ob_end_flush();
 ?>

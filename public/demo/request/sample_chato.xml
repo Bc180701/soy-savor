@@ -1,0 +1,5 @@
+   <?xml version="1.0" encoding="utf-8"?>
+   <epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print">
+   <text>TEST SIMPLE</text>
+   <cut type="feed"/>
+   </epos-print>
