@@ -644,16 +644,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
         {/* Accompagnements */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-gray-800">🌶️ Accompagnements</h4>
-            <div className="text-sm text-gray-600">
-              {getFreeAccompagnementsCount() > 0 && (
-                <span className="text-green-600 font-medium">
-                  {getFreeAccompagnementsCount()} gratuit{getFreeAccompagnementsCount() > 1 ? 's' : ''} (1 tous les 10€)
-                </span>
-              )}
-            </div>
-          </div>
+          <h4 className="font-semibold text-gray-800">🌶️ Accompagnements</h4>
           <div className="grid grid-cols-1 gap-3">
             {accompagnementsOptions.map((accompagnement) => {
               const isDisabled = disabledAccompagnements.includes(accompagnement);
