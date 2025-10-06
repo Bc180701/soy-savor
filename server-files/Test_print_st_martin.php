@@ -115,7 +115,7 @@
         
         // Items
         $xml .= '<!--  Articles  -->' . "\n";
-        $xml .= '<text em="true">ARTICLES:</text>' . "\n";
+        $xml .= '<text align="left" em="true">ARTICLES:</text>' . "\n";
         $xml .= '<feed line="1"/>' . "\n";
         
         foreach ($order['items'] as $item) {
