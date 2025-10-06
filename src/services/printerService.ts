@@ -5,12 +5,16 @@
 
 import { Order } from "@/types";
 
-// URL de votre serveur OVH
-// ⚠️ IMPORTANT: Remplacez par votre vrai domaine OVH après upload des fichiers PHP
+// URLs des serveurs OVH par restaurant
 const OVH_SERVER_URL = "https://sushieats.fr/add-order.php";
+
+// IDs des restaurants
+const RESTAURANT_CHATEAURENARD = "11111111-1111-1111-1111-111111111111";
+const RESTAURANT_ST_MARTIN = "22222222-2222-2222-2222-222222222222";
 
 interface PrintOrderData {
   id: string;
+  restaurant_id: string;
   clientName: string;
   clientPhone: string;
   clientEmail?: string;
@@ -89,9 +93,10 @@ export async function sendOrderToPrinter(order: Order): Promise<{
       });
     }
 
-    // Préparer les données de la commande
+    // Préparer les données de la commande avec l'ID du restaurant
     const printData: PrintOrderData = {
       id: order.id,
+      restaurant_id: order.restaurant_id || RESTAURANT_CHATEAURENARD,
       clientName: order.clientName || 'Client',
       clientPhone: order.clientPhone || '',
       clientEmail: order.clientEmail,

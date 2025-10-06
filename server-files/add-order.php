@@ -50,8 +50,20 @@ if (!isset($data['id']) || !isset($data['items'])) {
     exit;
 }
 
-// Créer un dossier pour la file d'attente si nécessaire
-$queueDir = 'print-queue';
+// IDs des restaurants
+define("RESTAURANT_CHATEAURENARD", "11111111-1111-1111-1111-111111111111");
+define("RESTAURANT_ST_MARTIN", "22222222-2222-2222-2222-222222222222");
+
+// Déterminer le restaurant et le dossier de queue correspondant
+$restaurantId = $data['restaurant_id'] ?? RESTAURANT_CHATEAURENARD;
+
+if ($restaurantId === RESTAURANT_ST_MARTIN) {
+    $queueDir = 'print-queue-st-martin';
+} else {
+    $queueDir = 'print-queue-chateaurenard';
+}
+
+// Créer le dossier pour la file d'attente si nécessaire
 if (!is_dir($queueDir)) {
     mkdir($queueDir, 0755, true);
 }
