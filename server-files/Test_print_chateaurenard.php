@@ -12,8 +12,8 @@
         mkdir(PRINT_QUEUE_DIR, 0755, true);
     }
 
-    // Get connection type
-    $http_request = $_POST["ConnectionType"] ?? '';
+    // Get connection type - support GET for testing
+    $http_request = $_POST["ConnectionType"] ?? $_GET["ConnectionType"] ?? 'GetRequest';
 
     if ($http_request == 'GetRequest') {
         # Send print data
