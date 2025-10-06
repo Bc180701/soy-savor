@@ -22,7 +22,7 @@
         $shop_id = $_POST["ID"] ?? 'unknown';
 
         // Check for pending orders in queue
-        $files = glob(PRINT_QUEUE_DIR . "/order_*.json");
+        $files = glob(PRINT_QUEUE_DIR . "/*.json");
         
         if (empty($files)) {
             // No orders to print - return empty XML
