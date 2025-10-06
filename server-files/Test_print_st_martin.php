@@ -99,8 +99,9 @@
         $xml .= '<text width="1" height="1" em="true">COMMANDE #' . escapeXml($shortId) . '</text>' . "\n";
         $xml .= '<feed line="1"/>' . "\n";
         
-        // Format date
+        // Format date - Add 2 hours for France timezone (GMT+2)
         $orderDate = new DateTime($order['scheduledFor']);
+        $orderDate->modify('+2 hours');
         $xml .= '<text>' . $orderDate->format('d/m/Y H:i') . '</text>' . "\n";
         $xml .= '<feed line="1"/>' . "\n";
         
@@ -181,13 +182,9 @@
             $xml .= '<feed line="1"/>' . "\n";
         }
         
-        // Customer notes
+        // Customer notes (compact)
         if (!empty($order['customerNotes'])) {
-            $xml .= '<text>--------------------------------</text>' . "\n";
-            $xml .= '<feed line="1"/>' . "\n";
-            $xml .= '<text>NOTES CLIENT:</text>' . "\n";
-            $xml .= '<feed line="1"/>' . "\n";
-            $xml .= '<text>' . escapeXml($order['customerNotes']) . '</text>' . "\n";
+            $xml .= '<text>NOTE: ' . escapeXml($order['customerNotes']) . '</text>' . "\n";
             $xml .= '<feed line="1"/>' . "\n";
         }
         
@@ -201,16 +198,9 @@
             $xml .= '<feed line="1"/>' . "\n";
         }
         
-        // Delivery address
+        // Delivery address (compact)
         if ($order['orderType'] === 'delivery' && !empty($order['deliveryStreet'])) {
-            $xml .= '<!--  Adresse de livraison  -->' . "\n";
-            $xml .= '<text>--------------------------------</text>' . "\n";
-            $xml .= '<feed line="1"/>' . "\n";
-            $xml .= '<text>ADRESSE:</text>' . "\n";
-            $xml .= '<feed line="1"/>' . "\n";
-            $xml .= '<text>' . escapeXml($order['deliveryStreet']) . '</text>' . "\n";
-            $xml .= '<feed line="1"/>' . "\n";
-            $xml .= '<text>' . escapeXml($order['deliveryPostalCode'] . ' ' . $order['deliveryCity']) . '</text>' . "\n";
+            $xml .= '<text>' . escapeXml($order['deliveryStreet']) . ' - ' . escapeXml($order['deliveryPostalCode'] . ' ' . $order['deliveryCity']) . '</text>' . "\n";
             $xml .= '<feed line="1"/>' . "\n";
         }
         
