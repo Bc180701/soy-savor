@@ -123,7 +123,7 @@
             $itemQuantity = $item['quantity'];
             $itemPrice = number_format($item['price'], 2, ',', ' ');
             
-            $xml .= '<text>' . $itemQuantity . 'x ' . $itemName . '</text>' . "\n";
+            $xml .= '<text align="right">' . $itemQuantity . 'x ' . $itemName . '</text>' . "\n";
             $xml .= '<feed line="1"/>' . "\n";
             
             // Description if available
