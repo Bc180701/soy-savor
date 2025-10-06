@@ -223,7 +223,7 @@ const ComposerPoke = () => {
       
       const customPokeItem: MenuItem = {
         id: uniqueId,
-        name: `Poké Créa #${Math.abs(uniqueId.split('-')[2]?.slice(0, 6) || '000000')}`,
+        name: `Poké Créa #${uniqueId.split('-')[2]?.slice(0, 6) || '000000'}`,
         description: description,
         price: calculateTotalPrice(),
         category: "poke_custom",
@@ -391,14 +391,14 @@ const ComposerPoke = () => {
                   <div className="flex justify-between items-start">
                     <span className="font-semibold">Ingrédients:</span>
                     <span className="text-right">
-                      {selectedIngredients.map(i => i.name).join(', ')}
+                      {selectedIngredients.map(i => i.ingredient.name).join(', ')}
                     </span>
                   </div>
                   {selectedProteins.length > 0 && (
                     <div className="flex justify-between items-start">
                       <span className="font-semibold">Protéines:</span>
                       <span className="text-right">
-                        {selectedProteins.map(p => p.name).join(', ')}
+                        {selectedProteins.map(p => p.ingredient.name).join(', ')}
                       </span>
                     </div>
                   )}
@@ -406,7 +406,7 @@ const ComposerPoke = () => {
                     <div className="flex justify-between items-start">
                       <span className="font-semibold">Sauces:</span>
                       <span className="text-right">
-                        {selectedSauces.map(s => s.name).join(', ')}
+                        {selectedSauces.map(s => s.ingredient.name).join(', ')}
                       </span>
                     </div>
                   )}

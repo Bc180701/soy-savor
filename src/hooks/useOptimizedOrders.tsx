@@ -164,7 +164,8 @@ export function useOptimizedOrders(restaurantId: string | null) {
 
               if (!error && data && data.cart_items) {
                 console.log(`✅ cart_backup chargé pour commande ${order.id.slice(-8)}`);
-                return { ...order, cartBackupItems: data.cart_items };
+                const cartItems = Array.isArray(data.cart_items) ? data.cart_items : [];
+                return { ...order, cartBackupItems: cartItems };
               }
             } catch (error) {
               console.log(`⚠️ Aucun cart_backup pour commande ${order.id.slice(-8)}`);
