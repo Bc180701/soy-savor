@@ -114,7 +114,7 @@
         
         // Items
         $xml .= '<!--  Articles  -->' . "\n";
-        $xml .= '<text em="true">ARTICLES:</text>' . "\n";
+        $xml .= '<text align="left" em="true">ARTICLES:</text>' . "\n";
         $xml .= '<feed line="1"/>' . "\n";
         
         foreach ($order['items'] as $item) {
@@ -219,8 +219,6 @@
         $xml .= '<text>--------------------------------</text>' . "\n";
         $xml .= '<feed line="1"/>' . "\n";
         $xml .= '<text align="center">' . date('d/m/Y H:i:s') . '</text>' . "\n";
-        $xml .= '<feed line="1"/>' . "\n";
-        $xml .= '<text align="center">Merci de votre commande!</text>' . "\n";
         $xml .= '<feed line="3"/>' . "\n";
         
         // Paper cut
