@@ -7,7 +7,7 @@ import { Order } from "@/types";
 
 // URL de votre serveur OVH
 // ⚠️ IMPORTANT: Remplacez par votre vrai domaine OVH après upload des fichiers PHP
-const OVH_SERVER_URL = "https://votre-domaine.fr/add-order.php";
+const OVH_SERVER_URL = "https://sushieats.fr/add-order.php";
 
 interface PrintOrderData {
   id: string;
