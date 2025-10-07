@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DeliveryMethod from "../checkout/DeliveryMethod";
@@ -69,6 +70,7 @@ export const DeliveryStep = ({
   const [emailError, setEmailError] = useState<string>("");
   const [showFreeDeliveryDialog, setShowFreeDeliveryDialog] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Pop-up pour livraison gratuite si total entre 25€ et 35€
   useEffect(() => {
@@ -343,7 +345,9 @@ export const DeliveryStep = ({
                   <Button 
                     onClick={() => {
                       setShowFreeDeliveryDialog(false);
-                      handlePreviousStep();
+                      navigate('/commander', { 
+                        state: { preselectedRestaurantId: cartRestaurant?.id } 
+                      });
                     }}
                     className="flex-1"
                   >

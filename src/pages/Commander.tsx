@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { MenuItem, MenuCategory } from "@/types";
@@ -30,6 +31,7 @@ import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
 
 const CommanderContent = () => {
   const { toast } = useToast();
+  const location = useLocation();
   const { addItem: addToCart, checkRestaurantCompatibility, clearCart, selectedRestaurantId, checkDessertForBoissonOffer } = useCartWithRestaurant();
   const { setOrderingLocked } = useCart();
   const { isOrderingLocked, isLoading: isOrderingStatusLoading } = useOrderingLockStatus();
@@ -69,6 +71,17 @@ const CommanderContent = () => {
   const [isCategoryChanging, setIsCategoryChanging] = useState(false);
   const [visibleSections, setVisibleSections] = useState<{[key: string]: boolean}>({});
   const categoryRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+  const [preselectedRestaurantId, setPreselectedRestaurantId] = useState<string | null>(null);
+
+  // Récupérer le restaurant pré-sélectionné depuis l'état de navigation
+  useEffect(() => {
+    const state = location.state as { preselectedRestaurantId?: string };
+    if (state?.preselectedRestaurantId) {
+      setPreselectedRestaurantId(state.preselectedRestaurantId);
+      // Nettoyer l'état pour éviter de le réutiliser
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   useEffect(() => {
     // Vérifier si l'utilisateur est connecté
@@ -328,6 +341,7 @@ const CommanderContent = () => {
           open={showRestaurantDialog}
           onOpenChange={setShowRestaurantDialog}
           onRestaurantSelected={handleRestaurantSelected}
+          preselectedRestaurantId={preselectedRestaurantId}
         />
 
         <motion.div

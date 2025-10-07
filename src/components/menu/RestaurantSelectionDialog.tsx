@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
@@ -11,12 +11,14 @@ interface RestaurantSelectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRestaurantSelected: (restaurant: Restaurant) => void;
+  preselectedRestaurantId?: string | null;
 }
 
 const RestaurantSelectionDialog = ({ 
   open, 
   onOpenChange, 
-  onRestaurantSelected 
+  onRestaurantSelected,
+  preselectedRestaurantId 
 }: RestaurantSelectionDialogProps) => {
   const { restaurants, isLoading } = useRestaurantContext();
   const [restaurantStatus, setRestaurantStatus] = useState<{[key: string]: boolean}>({});
@@ -47,13 +49,24 @@ const RestaurantSelectionDialog = ({
     }
   }, [open, restaurants]);
 
-  const handleRestaurantSelect = (restaurant: Restaurant) => {
+  const handleRestaurantSelect = useCallback((restaurant: Restaurant) => {
     const isOpen = restaurantStatus[restaurant.id];
     if (!isOpen) return; // Empêcher la sélection si fermé
     
     onRestaurantSelected(restaurant);
     onOpenChange(false);
-  };
+  }, [restaurantStatus, onRestaurantSelected, onOpenChange]);
+
+  // Auto-sélection du restaurant si preselectedRestaurantId est fourni
+  useEffect(() => {
+    if (preselectedRestaurantId && restaurants.length > 0 && open && !statusLoading) {
+      const restaurant = restaurants.find(r => r.id === preselectedRestaurantId);
+      if (restaurant) {
+        console.log("🎯 Auto-sélection du restaurant:", restaurant.name);
+        handleRestaurantSelect(restaurant);
+      }
+    }
+  }, [preselectedRestaurantId, restaurants, open, statusLoading, handleRestaurantSelect]);
 
   if (isLoading || statusLoading) {
     return (
