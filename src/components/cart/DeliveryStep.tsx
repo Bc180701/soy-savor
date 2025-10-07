@@ -15,7 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Restaurant } from "@/types/restaurant";
 import { type CartExtras } from "./CartExtrasSection";
 import { User, Mail, Phone, MapPin, Clock, MessageSquare, AlertCircle, CheckCircle2 } from "lucide-react";
-import { FreeDeliveryPrompt } from "./FreeDeliveryPrompt";
 
 interface DeliveryStepProps {
   deliveryInfo: {
@@ -40,7 +39,6 @@ interface DeliveryStepProps {
   isLoggedIn: boolean;
   cartRestaurant?: Restaurant | null;
   cartExtras?: CartExtras | null;
-  subtotal: number;
 }
 
 export const DeliveryStep = ({
@@ -52,8 +50,7 @@ export const DeliveryStep = ({
   handleNextStep,
   isLoggedIn,
   cartRestaurant,
-  cartExtras,
-  subtotal
+  cartExtras
 }: DeliveryStepProps) => {
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const [useStoredInfo, setUseStoredInfo] = useState(false);
@@ -305,12 +302,6 @@ export const DeliveryStep = ({
 
   return (
       <div className="space-y-6">
-        <FreeDeliveryPrompt 
-          subtotal={subtotal} 
-          orderType={deliveryInfo.orderType}
-          restaurantId={cartRestaurant?.id}
-        />
-        
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold">Informations de livraison</h2>
           {isLoggedIn && userProfile && (

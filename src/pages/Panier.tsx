@@ -449,7 +449,6 @@ const PanierContent = () => {
               isLoggedIn={isLoggedIn}
               cartRestaurant={cartRestaurant}
               cartExtras={cartExtras}
-              subtotal={subtotal}
             />
           );
       case CheckoutStep.Payment:

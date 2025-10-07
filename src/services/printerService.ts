@@ -128,21 +128,8 @@ export async function sendOrderToPrinter(order: Order): Promise<{
       body: JSON.stringify(printData),
     });
 
-    console.log('📡 Statut réponse:', response.status);
-    console.log('📡 Headers réponse:', Object.fromEntries(response.headers.entries()));
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Réponse erreur serveur:', errorText);
       throw new Error(`Erreur serveur: ${response.status} ${response.statusText}`);
-    }
-
-    // Vérifier le Content-Type de la réponse
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const textResponse = await response.text();
-      console.error('❌ Réponse non-JSON du serveur:', textResponse.substring(0, 500));
-      throw new Error(`Le serveur a retourné du ${contentType || 'contenu inconnu'} au lieu de JSON. Vérifiez les logs du serveur PHP.`);
     }
 
     const result = await response.json();

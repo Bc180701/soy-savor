@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { MenuItem, MenuCategory } from "@/types";
@@ -30,12 +29,11 @@ import commanderHeroImage from "@/assets/commander-hero.jpg";
 import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
 
 const CommanderContent = () => {
-  const location = useLocation();
   const { toast } = useToast();
   const { addItem: addToCart, checkRestaurantCompatibility, clearCart, selectedRestaurantId, checkDessertForBoissonOffer } = useCartWithRestaurant();
   const { setOrderingLocked } = useCart();
   const { isOrderingLocked, isLoading: isOrderingStatusLoading } = useOrderingLockStatus();
-  const { currentRestaurant, setCurrentRestaurant, restaurants } = useRestaurantContext();
+  const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
   
   // Hook pour gérer l'offre box avec accompagnement
   const {
@@ -80,28 +78,12 @@ const CommanderContent = () => {
     };
     
     checkAuth();
+
+    // Toujours afficher le dialog de sélection de restaurant au début
+    // Ne pas dépendre de currentRestaurant pour décider
+    setShowRestaurantDialog(true);
     setIsLoading(false);
   }, []);
-
-  // Effet séparé pour gérer la présélection du restaurant
-  useEffect(() => {
-    const preselectedRestaurantId = location.state?.preselectedRestaurantId;
-    
-    // Ne s'exécute que si on a un restaurant présélectionné ET que les restaurants sont chargés
-    if (preselectedRestaurantId && restaurants.length > 0 && !currentRestaurant) {
-      const restaurant = restaurants.find(r => r.id === preselectedRestaurantId);
-      if (restaurant) {
-        console.log("🏪 Restaurant présélectionné détecté:", restaurant.name);
-        setCurrentRestaurant(restaurant);
-        setShowRestaurantDialog(false);
-      } else {
-        setShowRestaurantDialog(true);
-      }
-    } else if (!preselectedRestaurantId && !currentRestaurant) {
-      // Afficher le dialogue seulement si pas de restaurant déjà sélectionné
-      setShowRestaurantDialog(true);
-    }
-  }, [location.state?.preselectedRestaurantId, restaurants.length]);
 
   useEffect(() => {
     // Vérifier si le restaurant sélectionné est ouvert maintenant
