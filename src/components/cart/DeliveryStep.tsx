@@ -14,7 +14,14 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Restaurant } from "@/types/restaurant";
 import { type CartExtras } from "./CartExtrasSection";
-import { User, Mail, Phone, MapPin, Clock, MessageSquare, AlertCircle, CheckCircle2 } from "lucide-react";
+import { User, Mail, Phone, MapPin, Clock, MessageSquare, AlertCircle, CheckCircle2, TruckIcon } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface DeliveryStepProps {
   deliveryInfo: {
@@ -39,6 +46,7 @@ interface DeliveryStepProps {
   isLoggedIn: boolean;
   cartRestaurant?: Restaurant | null;
   cartExtras?: CartExtras | null;
+  orderTotal: number;
 }
 
 export const DeliveryStep = ({
@@ -50,7 +58,8 @@ export const DeliveryStep = ({
   handleNextStep,
   isLoggedIn,
   cartRestaurant,
-  cartExtras
+  cartExtras,
+  orderTotal
 }: DeliveryStepProps) => {
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const [useStoredInfo, setUseStoredInfo] = useState(false);
@@ -58,7 +67,19 @@ export const DeliveryStep = ({
   const [userAddress, setUserAddress] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [emailError, setEmailError] = useState<string>("");
+  const [showFreeDeliveryDialog, setShowFreeDeliveryDialog] = useState(false);
   const { toast } = useToast();
+
+  // Pop-up pour livraison gratuite si total entre 25€ et 35€
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (orderTotal >= 25 && orderTotal < 35 && deliveryInfo.orderType === "delivery") {
+        setShowFreeDeliveryDialog(true);
+      }
+    }, 3000); // 3 secondes de délai
+
+    return () => clearTimeout(timer);
+  }, [orderTotal, deliveryInfo.orderType]);
 
   // Charger le profil utilisateur si connecté
   useEffect(() => {
@@ -301,6 +322,47 @@ export const DeliveryStep = ({
   };
 
   return (
+      <>
+      {/* Pop-up livraison gratuite */}
+      <Dialog open={showFreeDeliveryDialog} onOpenChange={setShowFreeDeliveryDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <TruckIcon className="w-6 h-6 text-gold-600" />
+              Profitez de la livraison gratuite !
+            </DialogTitle>
+            <DialogDescription className="text-base pt-4">
+              <div className="space-y-3">
+                <p className="font-medium text-foreground">
+                  Vous êtes à seulement <span className="text-gold-600 font-bold">{(35 - orderTotal).toFixed(2)}€</span> de la livraison gratuite !
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Ajoutez encore quelques articles à votre panier pour atteindre 35€ et bénéficier de la livraison offerte.
+                </p>
+                <div className="flex gap-2 pt-2">
+                  <Button 
+                    onClick={() => {
+                      setShowFreeDeliveryDialog(false);
+                      handlePreviousStep();
+                    }}
+                    className="flex-1"
+                  >
+                    Ajouter des articles
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowFreeDeliveryDialog(false)}
+                    className="flex-1"
+                  >
+                    Continuer sans
+                  </Button>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold">Informations de livraison</h2>
@@ -609,5 +671,6 @@ export const DeliveryStep = ({
         </Button>
       </div>
     </div>
+    </>
   );
 };
