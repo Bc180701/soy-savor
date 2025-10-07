@@ -80,28 +80,28 @@ const CommanderContent = () => {
     };
     
     checkAuth();
+    setIsLoading(false);
+  }, []);
 
-    // Vérifier si un restaurant est présélectionné via le state de navigation
+  // Effet séparé pour gérer la présélection du restaurant
+  useEffect(() => {
     const preselectedRestaurantId = location.state?.preselectedRestaurantId;
     
-    if (preselectedRestaurantId && restaurants.length > 0) {
-      // Trouver et sélectionner automatiquement le restaurant
+    // Ne s'exécute que si on a un restaurant présélectionné ET que les restaurants sont chargés
+    if (preselectedRestaurantId && restaurants.length > 0 && !currentRestaurant) {
       const restaurant = restaurants.find(r => r.id === preselectedRestaurantId);
       if (restaurant) {
         console.log("🏪 Restaurant présélectionné détecté:", restaurant.name);
         setCurrentRestaurant(restaurant);
         setShowRestaurantDialog(false);
       } else {
-        // Si le restaurant n'est pas trouvé, afficher le dialogue normalement
         setShowRestaurantDialog(true);
       }
-    } else {
-      // Toujours afficher le dialog de sélection de restaurant si pas de présélection
+    } else if (!preselectedRestaurantId && !currentRestaurant) {
+      // Afficher le dialogue seulement si pas de restaurant déjà sélectionné
       setShowRestaurantDialog(true);
     }
-    
-    setIsLoading(false);
-  }, [location.state, restaurants, setCurrentRestaurant]);
+  }, [location.state?.preselectedRestaurantId, restaurants.length]);
 
   useEffect(() => {
     // Vérifier si le restaurant sélectionné est ouvert maintenant
