@@ -405,40 +405,50 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       items: [] // Nous allons les récupérer séparément
     }));
 
-    // Récupérer les articles de commande pour chaque commande
+    // Calculer la date limite (2 jours en arrière)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
+    // Récupérer les articles de commande UNIQUEMENT pour les commandes récentes (< 2 jours)
     for (const order of formattedOrders) {
-      const { data: items, error: itemsError } = await supabase
-        .from('order_items')
-        .select(`
-          id,
-          product_id,
-          quantity,
-          price,
-          special_instructions,
-          products(name)
-        `)
-        .eq('order_id', order.id);
+      // Ne charger les items que pour les commandes de moins de 2 jours
+      if (order.createdAt >= twoDaysAgo) {
+        const { data: items, error: itemsError } = await supabase
+          .from('order_items')
+          .select(`
+            id,
+            product_id,
+            quantity,
+            price,
+            special_instructions,
+            products(name)
+          `)
+          .eq('order_id', order.id);
 
-      if (itemsError) {
-        console.error(`Erreur lors de la récupération des articles pour la commande ${order.id}:`, itemsError);
-        continue;
-      }
+        if (itemsError) {
+          console.error(`Erreur lors de la récupération des articles pour la commande ${order.id}:`, itemsError);
+          continue;
+        }
 
-      // Mettre en forme les articles de commande
-      if (items && items.length > 0) {
-        console.log(`${items.length} articles trouvés pour la commande ${order.id}`);
-        order.items = items.map(item => ({
-          menuItem: {
-            id: item.product_id,
-            name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
-            price: item.price,
-            category: "plateaux" // Catégorie par défaut
-          },
-          quantity: item.quantity,
-          specialInstructions: item.special_instructions
-        }));
+        // Mettre en forme les articles de commande
+        if (items && items.length > 0) {
+          console.log(`${items.length} articles trouvés pour la commande ${order.id}`);
+          order.items = items.map(item => ({
+            menuItem: {
+              id: item.product_id,
+              name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
+              price: item.price,
+              category: "plateaux" // Catégorie par défaut
+            },
+            quantity: item.quantity,
+            specialInstructions: item.special_instructions
+          }));
+        } else {
+          console.log(`Aucun article trouvé pour la commande ${order.id}`);
+        }
       } else {
-        console.log(`Aucun article trouvé pour la commande ${order.id}`);
+        // Commande de plus de 2 jours : ne pas charger les items (économise les requêtes)
+        order.items = [];
       }
     }
 
