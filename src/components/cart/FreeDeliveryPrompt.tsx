@@ -17,14 +17,20 @@ export const FreeDeliveryPrompt = ({ subtotal, orderType }: FreeDeliveryPromptPr
   const MIN_THRESHOLD = 25;
 
   useEffect(() => {
-    // Afficher le pop-up seulement pour les livraisons et si le montant est entre 25€ et 35€
-    if (orderType === "delivery" && subtotal >= MIN_THRESHOLD && subtotal < FREE_DELIVERY_THRESHOLD) {
-      // Vérifier si l'utilisateur n'a pas déjà fermé le pop-up dans cette session
-      const hasSeenPrompt = sessionStorage.getItem("freeDeliveryPromptSeen");
-      if (!hasSeenPrompt) {
-        setIsOpen(true);
+    // Attendre 3 secondes avant d'afficher le pop-up pour laisser le temps à l'utilisateur de choisir "à emporter"
+    const timer = setTimeout(() => {
+      // Afficher le pop-up seulement pour les livraisons et si le montant est entre 25€ et 35€
+      if (orderType === "delivery" && subtotal >= MIN_THRESHOLD && subtotal < FREE_DELIVERY_THRESHOLD) {
+        // Vérifier si l'utilisateur n'a pas déjà fermé le pop-up dans cette session
+        const hasSeenPrompt = sessionStorage.getItem("freeDeliveryPromptSeen");
+        if (!hasSeenPrompt) {
+          setIsOpen(true);
+        }
       }
-    }
+    }, 3000);
+
+    // Nettoyer le timer si le composant est démonté ou si les dépendances changent
+    return () => clearTimeout(timer);
   }, [subtotal, orderType]);
 
   const handleClose = () => {
