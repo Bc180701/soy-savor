@@ -8,9 +8,10 @@ import { useNavigate } from "react-router-dom";
 interface FreeDeliveryPromptProps {
   subtotal: number;
   orderType: "delivery" | "pickup";
+  restaurantId?: string;
 }
 
-export const FreeDeliveryPrompt = ({ subtotal, orderType }: FreeDeliveryPromptProps) => {
+export const FreeDeliveryPrompt = ({ subtotal, orderType, restaurantId }: FreeDeliveryPromptProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const FREE_DELIVERY_THRESHOLD = 35;
@@ -41,7 +42,8 @@ export const FreeDeliveryPrompt = ({ subtotal, orderType }: FreeDeliveryPromptPr
 
   const handleAddMoreItems = () => {
     handleClose();
-    navigate("/carte");
+    // Naviguer vers /commander avec le restaurant_id dans le state
+    navigate("/commander", { state: { preselectedRestaurantId: restaurantId } });
   };
 
   const remainingAmount = FREE_DELIVERY_THRESHOLD - subtotal;

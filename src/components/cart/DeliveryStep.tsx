@@ -305,7 +305,11 @@ export const DeliveryStep = ({
 
   return (
       <div className="space-y-6">
-        <FreeDeliveryPrompt subtotal={subtotal} orderType={deliveryInfo.orderType} />
+        <FreeDeliveryPrompt 
+          subtotal={subtotal} 
+          orderType={deliveryInfo.orderType}
+          restaurantId={cartRestaurant?.id}
+        />
         
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold">Informations de livraison</h2>
