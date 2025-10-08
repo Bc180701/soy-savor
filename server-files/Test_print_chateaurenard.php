@@ -128,18 +128,16 @@
             
             // Description if available
             if (!empty($item['description'])) {
-                $xml .= '<text>   ' . escapeXml($item['description']) . '</text>' . "\n";
+                $xml .= '<text align="left">   ' . escapeXml($item['description']) . '</text>' . "\n";
                 $xml .= '<feed line="1"/>' . "\n";
             }
             
             // Special instructions if available
             if (!empty($item['specialInstructions'])) {
-                $xml .= '<text>   NOTE: ' . escapeXml($item['specialInstructions']) . '</text>' . "\n";
+                $xml .= '<text align="left">   NOTE: ' . escapeXml($item['specialInstructions']) . '</text>' . "\n";
                 $xml .= '<feed line="1"/>' . "\n";
             }
             
-            $xml .= '<text align="left">' . $itemPrice . ' EUR</text>' . "\n";
-            $xml .= '<feed line="1"/>' . "\n";
             $xml .= '<feed line="1"/>' . "\n"; // Extra space between products
         }
         
