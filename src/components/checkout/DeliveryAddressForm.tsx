@@ -391,15 +391,15 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
                 type="button"
                 onClick={validateAndConfirmPostalCode}
                 disabled={isValidatingPostalCode || !formData.postalCode.trim() || !formData.name || !formData.email || !formData.phone || !formData.street || !formData.city}
-                variant="outline"
+                className="bg-gold-500 hover:bg-gold-600 text-white border-0"
                 size="sm"
               >
                 {isValidatingPostalCode ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : isPostalCodeValid === true ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <CheckCircle2 className="h-4 w-4" />
                 ) : isPostalCodeValid === false ? (
-                  <XCircle className="h-4 w-4 text-red-600" />
+                  <XCircle className="h-4 w-4" />
                 ) : (
                   "Vérifier"
                 )}

@@ -272,10 +272,17 @@ export const DeliveryStep = ({
     // Vérifier si c'est une livraison et si le code postal est invalide
     if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid !== true) {
       toast({
-        title: "Code postal non valide",
-        description: "Veuillez corriger le code postal avant de continuer. Il doit être dans notre zone de livraison (pastille verte).",
+        title: "Adresse non vérifiée",
+        description: "Veuillez cliquer sur le bouton 'Vérifier' pour valider votre code postal avant de continuer.",
         variant: "destructive",
       });
+      
+      // Scroll vers le champ de code postal
+      const postalCodeInput = document.getElementById("postalCode");
+      if (postalCodeInput) {
+        postalCodeInput.scrollIntoView({ behavior: "smooth", block: "center" });
+        postalCodeInput.focus();
+      }
       return;
     }
 
