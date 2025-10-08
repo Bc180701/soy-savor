@@ -128,13 +128,13 @@
             
             // Description if available
             if (!empty($item['description'])) {
-                $xml .= '<text align="left">   ' . escapeXml($item['description']) . '</text>' . "\n";
+                $xml .= '<text>   ' . escapeXml($item['description']) . '</text>' . "\n";
                 $xml .= '<feed line="1"/>' . "\n";
             }
             
             // Special instructions if available
             if (!empty($item['specialInstructions'])) {
-                $xml .= '<text align="left">   NOTE: ' . escapeXml($item['specialInstructions']) . '</text>' . "\n";
+                $xml .= '<text>   NOTE: ' . escapeXml($item['specialInstructions']) . '</text>' . "\n";
                 $xml .= '<feed line="1"/>' . "\n";
             }
             
