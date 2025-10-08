@@ -664,22 +664,31 @@ export const DeliveryStep = ({
       </Card>
       
       {/* Navigation Buttons */}
-      <div className="flex justify-between pt-6">
-        <Button 
-          onClick={handlePreviousStep}
-          variant="outline"
-          className="px-6 py-3"
-        >
-          Retour au panier
-        </Button>
-        <Button 
-          onClick={handleContinueToPayment}
-          className="bg-gold-500 hover:bg-gold-600 text-black px-6 py-3 font-medium"
-          disabled={isContinueButtonDisabled()}
-        >
-          <CheckCircle2 className="w-4 h-4 mr-2" />
-          Continuer au paiement
-        </Button>
+      <div className="space-y-3 pt-6">
+        <div className="flex justify-between">
+          <Button 
+            onClick={handlePreviousStep}
+            variant="outline"
+            className="px-6 py-3"
+          >
+            Retour au panier
+          </Button>
+          <Button 
+            onClick={handleContinueToPayment}
+            className="bg-gold-500 hover:bg-gold-600 text-black px-6 py-3 font-medium"
+            disabled={isContinueButtonDisabled()}
+          >
+            <CheckCircle2 className="w-4 h-4 mr-2" />
+            Continuer au paiement
+          </Button>
+        </div>
+        {isContinueButtonDisabled() && deliveryInfo.orderType === "delivery" && (
+          <div className="text-center">
+            <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
+              ⚠️ Au moins un des champs obligatoires n'est pas valide ou complet. Pensez à vérifier votre code postal.
+            </p>
+          </div>
+        )}
       </div>
     </div>
     </>
