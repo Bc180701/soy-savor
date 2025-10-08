@@ -129,7 +129,7 @@
             
             // Description if available
             if (!empty($item['description'])) {
-                $xml .= '<text width="2" height="2">' . escapeXml($item['description']) . '</text>' . "\n";
+                $xml .= '<text width="2" height="1">' . escapeXml($item['description']) . '</text>' . "\n";
                 $xml .= '<text width="1" height="1"/>' . "\n"; // Reset to normal
                 $xml .= '<feed line="1"/>' . "\n";
             }
