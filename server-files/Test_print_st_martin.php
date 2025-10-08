@@ -124,6 +124,7 @@
             $itemPrice = number_format($item['price'], 2, ',', ' ');
             
             $xml .= '<text align="left" width="2" height="2">' . $itemQuantity . 'x ' . $itemName . '</text>' . "\n";
+            $xml .= '<text width="1" height="1"/>' . "\n"; // Reset font size to normal
             $xml .= '<feed line="1"/>' . "\n";
             
             // Description if available
