@@ -127,11 +127,16 @@
             $xml .= '<text width="1" height="1"/>' . "\n"; // Reset font size to normal
             $xml .= '<feed line="1"/>' . "\n";
             
-            // Description if available
+            // Description only for sushi créa and poké créa
             if (!empty($item['description'])) {
-                $xml .= '<text width="2" height="1">' . escapeXml($item['description']) . '</text>' . "\n";
-                $xml .= '<text width="1" height="1"/>' . "\n"; // Reset to normal
-                $xml .= '<feed line="1"/>' . "\n";
+                $isSushiCrea = stripos($item['name'], 'sushi créa') !== false || stripos($item['name'], 'sushi crea') !== false;
+                $isPokeCrea = stripos($item['name'], 'poké créa') !== false || stripos($item['name'], 'poke crea') !== false;
+                
+                if ($isSushiCrea || $isPokeCrea) {
+                    $xml .= '<text width="2" height="2">' . escapeXml($item['description']) . '</text>' . "\n";
+                    $xml .= '<text width="1" height="1"/>' . "\n"; // Reset to normal
+                    $xml .= '<feed line="1"/>' . "\n";
+                }
             }
             
             // Special instructions if available
