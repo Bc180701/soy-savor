@@ -41,7 +41,7 @@ export const WineFormatSelector = ({
             htmlFor={`verre-${verreProduct.id}`}
             className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-gold-500 [&:has([data-state=checked])]:border-gold-500 cursor-pointer transition-all"
           >
-            <span className="text-sm font-medium">🍷 Verre</span>
+            <span className="text-sm font-medium">Verre</span>
             <span className="text-lg font-bold mt-1">{verreProduct.price.toFixed(2)}€</span>
           </Label>
         </div>
@@ -56,7 +56,7 @@ export const WineFormatSelector = ({
             htmlFor={`bouteille-${bouteilleProduct.id}`}
             className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-gold-500 [&:has([data-state=checked])]:border-gold-500 cursor-pointer transition-all"
           >
-            <span className="text-sm font-medium">🍾 Bouteille</span>
+            <span className="text-sm font-medium">Bouteille</span>
             <span className="text-lg font-bold mt-1">{bouteilleProduct.price.toFixed(2)}€</span>
           </Label>
         </div>
