@@ -17,6 +17,7 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useDessertBoissonOffer } from "@/hooks/useDessertBoissonOffer";
 import { useWrapSelection } from "@/hooks/useWrapSelection";
 import { WrapSelectionModal } from "./WrapSelectionModal";
+import { WineFormatSelector } from "./WineFormatSelector";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -73,8 +74,53 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     }
   };
 
+  // Vins blancs spécifiques qui doivent avoir un sélecteur de format
+  const WINE_VARIANTS = [
+    "Vin Blanc Uby N°4",
+    "Vin Blanc La Vallongue LES CALANS",
+    "Vin Blanc Domaine des Blaquières l'Ugni de Nelly"
+  ];
+
+  // Fonction pour détecter si un produit est un vin avec format
+  const getWineBaseName = (name: string): string | null => {
+    for (const wineName of WINE_VARIANTS) {
+      if (name.includes(wineName)) {
+        return wineName;
+      }
+    }
+    return null;
+  };
+
+  // Grouper les vins par format
+  const groupWinesByFormat = (items: MenuItem[]) => {
+    const wineGroups = new Map<string, { verre?: MenuItem; bouteille?: MenuItem }>();
+    const otherItems: MenuItem[] = [];
+
+    items.forEach(item => {
+      const baseName = getWineBaseName(item.name);
+      if (baseName) {
+        if (!wineGroups.has(baseName)) {
+          wineGroups.set(baseName, {});
+        }
+        const group = wineGroups.get(baseName)!;
+        if (item.name.includes('(Verre)')) {
+          group.verre = item;
+        } else if (item.name.includes('(Bouteille)')) {
+          group.bouteille = item;
+        }
+      } else {
+        otherItems.push(item);
+      }
+    });
+
+    return { wineGroups, otherItems };
+  };
+
   // Filtrer les éléments pour ne montrer que ceux qui sont actifs (is_new = true)
   const activeItems = category.items.filter(item => item.isNew !== false);
+  
+  // Grouper les vins par format
+  const { wineGroups, otherItems } = groupWinesByFormat(activeItems);
 
   // Mapping des noms commerciaux pour les badges de catégories
   const categoryDisplayNames: Record<string, string> = {
@@ -225,8 +271,100 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
         <div className={isMobile ? "grid grid-cols-2 gap-3" : "space-y-4"}>
           <AnimatePresence>
-            {activeItems.length > 0 ? (
-              activeItems.map((item, index) => (
+            {/* Afficher d'abord les vins groupés */}
+            {Array.from(wineGroups.entries()).map(([baseName, { verre, bouteille }], index) => {
+              if (!verre || !bouteille) return null;
+              
+              return (
+                <motion.div
+                  key={`wine-${baseName}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                >
+                  <Card className="overflow-hidden transition-shadow border-0 rounded-xl h-full bg-white hover:shadow-lg">
+                    <CardContent className="p-0 h-full">
+                      {isMobile ? (
+                        // Mobile layout
+                        <div className="flex flex-col h-full">
+                          <div className="w-full h-40 flex-shrink-0 relative overflow-hidden rounded-t-xl">
+                            {verre.imageUrl && verre.imageUrl !== "/placeholder.svg" ? (
+                              <img
+                                src={generateProductImageUrl(verre.name, verre.imageUrl)}
+                                alt={generateProductImageAlt(baseName)}
+                                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => handleImageClick(generateProductImageUrl(verre.name, verre.imageUrl), baseName)}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <span className="text-gray-400 text-xs">Pas d'image</span>
+                              </div>
+                            )}
+                            <div className="absolute top-2 left-2">
+                              <div className="w-6 h-6 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+                                <Heart className="w-3 h-3 text-gray-400" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-3 flex flex-col flex-1">
+                            <h3 className="text-sm font-semibold text-gray-900 leading-tight mb-3">
+                              {baseName}
+                            </h3>
+                            <div className="mt-auto">
+                              <WineFormatSelector
+                                baseName={baseName}
+                                verreProduct={verre}
+                                bouteilleProduct={bouteille}
+                                onAddToCart={onAddToCart}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // Desktop layout
+                        <div className="flex items-center">
+                          <div className="w-40 h-40 flex-shrink-0 relative overflow-hidden rounded-l-xl">
+                            {verre.imageUrl && verre.imageUrl !== "/placeholder.svg" ? (
+                              <img
+                                src={generateProductImageUrl(verre.name, verre.imageUrl)}
+                                alt={generateProductImageAlt(baseName)}
+                                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => handleImageClick(generateProductImageUrl(verre.name, verre.imageUrl), baseName)}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <span className="text-gray-400 text-xs">Pas d'image</span>
+                              </div>
+                            )}
+                            <div className="absolute top-3 left-3">
+                              <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+                                <Heart className="w-4 h-4 text-gray-400" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex-1 p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                              {baseName}
+                            </h3>
+                            <WineFormatSelector
+                              baseName={baseName}
+                              verreProduct={verre}
+                              bouteilleProduct={bouteille}
+                              onAddToCart={onAddToCart}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+            
+            {/* Afficher ensuite les autres produits */}
+            {otherItems.length > 0 ? (
+              otherItems.map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
