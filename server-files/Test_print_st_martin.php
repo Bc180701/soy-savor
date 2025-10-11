@@ -102,7 +102,8 @@
         // Format date - Add 2 hours for France timezone (GMT+2)
         $orderDate = new DateTime($order['scheduledFor']);
         $orderDate->modify('+2 hours');
-        $xml .= '<text>' . $orderDate->format('d/m/Y H:i') . '</text>' . "\n";
+        $xml .= '<text width="2" height="2">' . $orderDate->format('d/m/Y H:i') . '</text>' . "\n";
+        $xml .= '<text width="1" height="1"/>' . "\n"; // Reset font size to normal
         $xml .= '<feed line="1"/>' . "\n";
         
         // Client info
