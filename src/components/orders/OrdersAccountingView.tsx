@@ -3,6 +3,7 @@ import { Order } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Printer } from "lucide-react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -32,6 +33,19 @@ const OrdersAccountingView = ({
 }: OrdersAccountingViewProps) => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const [printedOrders, setPrintedOrders] = useState<Set<string>>(new Set());
+
+  // Charger les commandes imprimées depuis localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('printedOrders');
+    if (stored) {
+      try {
+        setPrintedOrders(new Set(JSON.parse(stored)));
+      } catch (e) {
+        console.error('Erreur chargement printedOrders:', e);
+      }
+    }
+  }, []);
 
   const handleRecoverOrderItems = async (orderId: string) => {
     try {
@@ -94,6 +108,12 @@ const OrdersAccountingView = ({
     const result = await sendOrderToPrinter(order);
     
     if (result.success) {
+      // Marquer la commande comme imprimée
+      const newPrintedOrders = new Set(printedOrders);
+      newPrintedOrders.add(order.id);
+      setPrintedOrders(newPrintedOrders);
+      localStorage.setItem('printedOrders', JSON.stringify([...newPrintedOrders]));
+      
       toast({
         title: "✅ Envoyé à l'imprimante",
         description: result.message,
@@ -584,7 +604,9 @@ const OrdersAccountingView = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="text-xs text-blue-600 hover:text-blue-800"
+                    className={printedOrders.has(order.id) 
+                      ? "text-xs text-gray-400 hover:text-gray-500 opacity-50" 
+                      : "text-xs text-blue-600 hover:text-blue-800"}
                     onClick={() => printOrder(order)}
                   >
                     <Printer className="h-3 w-3 mr-1" />
@@ -657,7 +679,9 @@ const OrdersAccountingView = ({
                     variant="outline" 
                     size="sm"
                     onClick={() => printOrder(order)}
-                    className="text-blue-600 hover:text-blue-800"
+                    className={printedOrders.has(order.id) 
+                      ? "text-gray-400 hover:text-gray-500 opacity-50" 
+                      : "text-blue-600 hover:text-blue-800"}
                   >
                     <Printer className="h-4 w-4" />
                   </Button>

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, Eye, AlertCircle, Printer } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { formatCustomProduct } from "@/utils/formatCustomProduct";
@@ -27,7 +27,20 @@ const OrdersKitchenView = ({
   const [delayMinutes, setDelayMinutes] = useState(15);
   const [delayReason, setDelayReason] = useState("");
   const [isNotifying, setIsNotifying] = useState(false);
+  const [printedOrders, setPrintedOrders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  // Charger les commandes imprimées depuis localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('printedOrders');
+    if (stored) {
+      try {
+        setPrintedOrders(new Set(JSON.parse(stored)));
+      } catch (e) {
+        console.error('Erreur chargement printedOrders:', e);
+      }
+    }
+  }, []);
   
   // Filtrer uniquement les commandes pertinentes pour la cuisine
   // (commandes confirmées ou en préparation)
@@ -154,6 +167,12 @@ const OrdersKitchenView = ({
     const result = await sendOrderToPrinter(order);
     
     if (result.success) {
+      // Marquer la commande comme imprimée
+      const newPrintedOrders = new Set(printedOrders);
+      newPrintedOrders.add(order.id);
+      setPrintedOrders(newPrintedOrders);
+      localStorage.setItem('printedOrders', JSON.stringify([...newPrintedOrders]));
+      
       toast({
         title: "✅ Envoyé à l'imprimante",
         description: result.message,
@@ -561,7 +580,9 @@ const OrdersKitchenView = ({
                   variant="outline" 
                   size="sm"
                   onClick={() => printOrder(order)}
-                  className="text-blue-600 hover:text-blue-800"
+                  className={printedOrders.has(order.id) 
+                    ? "text-gray-400 hover:text-gray-500 opacity-50" 
+                    : "text-blue-600 hover:text-blue-800"}
                 >
                   <Printer className="h-4 w-4 mr-1" />
                   Imprimer
