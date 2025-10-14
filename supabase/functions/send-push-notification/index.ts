@@ -73,18 +73,23 @@ serve(async (req) => {
 
     console.log(`[Push] ${subscriptions.length} subscriptions trouvées`);
 
-    // DOUBLE VÉRIFICATION SÉCURITÉ : Confirmer que chaque user_id est admin
+    // DOUBLE VÉRIFICATION SÉCURITÉ : Confirmer que chaque user_id est admin ou super admin
     const validSubscriptions = [];
     for (const sub of subscriptions) {
-      const { data: hasAdminRole } = await supabaseAdmin.rpc('has_role', {
+      const { data: isAdmin } = await supabaseAdmin.rpc('has_role', {
         user_id: sub.user_id,
         role: 'administrateur'
       });
 
-      if (hasAdminRole) {
+      const { data: isSuperAdmin } = await supabaseAdmin.rpc('has_role', {
+        user_id: sub.user_id,
+        role: 'super_administrateur'
+      });
+
+      if (isAdmin || isSuperAdmin) {
         validSubscriptions.push(sub);
       } else {
-        console.warn(`[Push] User ${sub.user_id} n'est pas admin, subscription ignorée`);
+        console.warn(`[Push] User ${sub.user_id} n'est ni admin ni super admin, subscription ignorée`);
       }
     }
 
