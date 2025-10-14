@@ -61,9 +61,9 @@ export const usePushNotifications = (restaurantId: string | null) => {
         throw new Error("Permission refusée");
       }
 
-      // 2. Attendre que le Service Worker soit prêt (déjà enregistré dans main.tsx)
+      // 2. Attendre que le Service Worker soit pret (deja enregistre dans main.tsx)
       const registration = await navigator.serviceWorker.ready;
-      console.log('🔔 Service Worker prêt pour l'abonnement push');
+      console.log('[Push] Service Worker ready for subscription');
 
       // 3. Créer la subscription VAPID
       const subscription = await registration.pushManager.subscribe({
@@ -92,7 +92,7 @@ export const usePushNotifications = (restaurantId: string | null) => {
       if (dbError) throw dbError;
 
       setIsSubscribed(true);
-      console.log('✅ Abonnement aux notifications réussi');
+      console.log('[Push] Subscription successful');
 
     } catch (err: any) {
       console.error('Erreur abonnement:', err);
@@ -128,7 +128,7 @@ export const usePushNotifications = (restaurantId: string | null) => {
       }
 
       setIsSubscribed(false);
-      console.log('✅ Désabonnement réussi');
+      console.log('[Push] Unsubscription successful');
 
     } catch (err: any) {
       console.error('Erreur désabonnement:', err);
