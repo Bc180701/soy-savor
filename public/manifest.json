@@ -23,5 +23,8 @@
     }
   ],
   "categories": ["food", "business"],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "permissions": [
+    "notifications"
+  ]
 }
