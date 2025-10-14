@@ -162,6 +162,14 @@ const handler = async (req: Request): Promise<Response> => {
               <div class="info-box">
                 <p><strong>Votre commande est confirmée !</strong></p>
                 <p>Vous recevrez un SMS lorsque votre commande sera prête.</p>
+                ${order.stripe_receipt_url ? `
+                  <p style="margin-top: 16px;">
+                    <a href="${order.stripe_receipt_url}" 
+                       style="display: inline-block; background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                      📄 Télécharger votre reçu Stripe
+                    </a>
+                  </p>
+                ` : ''}
               </div>
 
               ${order.restaurants ? `

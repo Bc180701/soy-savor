@@ -140,6 +140,22 @@ serve(async (req) => {
       metadata_keys: Object.keys(session.metadata || {})
     });
 
+    // Récupérer l'URL du reçu Stripe
+    let stripeReceiptUrl = null;
+    if (session.payment_intent) {
+      try {
+        const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
+        const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string);
+        
+        if (paymentIntent.charges?.data?.[0]?.receipt_url) {
+          stripeReceiptUrl = paymentIntent.charges.data[0].receipt_url;
+          console.log('📄 URL du reçu Stripe récupérée:', stripeReceiptUrl);
+        }
+      } catch (receiptError) {
+        console.error('⚠️ Erreur récupération URL reçu Stripe:', receiptError);
+      }
+    }
+
     if (session.payment_status !== 'paid') {
       throw new Error(`Paiement non confirmé. Statut: ${session.payment_status}`);
     }
@@ -166,6 +182,7 @@ serve(async (req) => {
     // Créer la commande avec les données des métadonnées
     const orderData = {
       stripe_session_id: sessionId,
+      stripe_receipt_url: stripeReceiptUrl,
       restaurant_id: restaurantId,
       user_id: userId,
       subtotal: parseFloat(metadata.subtotal || '0'),
