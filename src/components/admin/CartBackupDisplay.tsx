@@ -64,21 +64,22 @@ export const CartBackupDisplay = ({ order, onItemsRecovered }: CartBackupDisplay
         .gte('created_at', minDate.toISOString())
         .lte('created_at', orderDate.toISOString())
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
       
       if (error) {
         console.error('Erreur lors de la récupération du cart_backup:', error);
         return;
       }
 
-      if (data && data.cart_items && Array.isArray(data.cart_items)) {
+      const backup = data?.[0];
+
+      if (backup && backup.cart_items && Array.isArray(backup.cart_items)) {
         setCartBackup({
-          id: data.id,
-          cart_items: data.cart_items as unknown as CartBackupItem[],
-          created_at: data.created_at,
-          session_id: data.session_id,
-          is_used: data.is_used
+          id: backup.id,
+          cart_items: backup.cart_items as unknown as CartBackupItem[],
+          created_at: backup.created_at,
+          session_id: backup.session_id,
+          is_used: backup.is_used
         });
       }
     } catch (error) {
