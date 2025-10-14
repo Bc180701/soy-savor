@@ -55,19 +55,18 @@ serve(async (req) => {
         .limit(1)
         .maybeSingle();
 
-        if (!backupError && backupData && backupData.length > 0) {
+        if (!backupError && backupData) {
           console.log("✅ Sauvegarde trouvée, récupération des items...");
-          const backup = backupData[0];
-          const cartItems = backup.cart_items;
+          const cartItems = backupData.cart_items;
 
           if (Array.isArray(cartItems) && cartItems.length > 0) {
             // Créer les order_items depuis la sauvegarde
             const orderItemsToInsert = cartItems.map(item => ({
               order_id: orderId,
-              product_id: item.id || null,
+              product_id: item.menuItem?.id || null,
               quantity: item.quantity || 1,
-              price: item.price || 0,
-              special_instructions: item.special_instructions || null
+              price: item.menuItem?.price || 0,
+              special_instructions: item.menuItem?.description || null
             }));
 
             const { error: insertError } = await supabase
@@ -81,7 +80,7 @@ serve(async (req) => {
               await supabase
                 .from('cart_backup')
                 .update({ is_used: true })
-                .eq('id', backup.id);
+                .eq('id', backupData.id);
 
               return new Response(
                 JSON.stringify({ 
