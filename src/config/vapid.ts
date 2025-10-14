@@ -1,2 +1,3 @@
 // Clé publique VAPID (non sensible, peut être dans le code frontend)
-export const VAPID_PUBLIC_KEY = "BNxJvZ8VqC3hF9K2mL7nP4qR6sT8uV0wX2yA4bC6dE8fG0hI2jK4lM6nO8pQ0rS2tU4vW6xY8zA0bC2dE4fG6hI8j";
+export const VAPID_PUBLIC_KEY =
+  "BE7v4etYzwTKON-H5LJ5Vg0FdsnZ1rIBfe2dw-QcLfZ8Lmt4v6KadPyRABex3qIsbsfR6qPF66xP-lYwHQw2nOs";
