@@ -3,23 +3,28 @@ import { Smartphone, Download } from "lucide-react";
 import { isPWAInstalled, isIOSSafari, getPWAInstallPrompt, isIOSVersion16Plus } from "@/utils/pwaDetection";
 
 export const PWAInstallGuide = () => {
+  const isInstalled = isPWAInstalled();
+  const isIOS = isIOSSafari();
+  const isIOSCompatible = isIOSVersion16Plus();
+  
   // Ne pas afficher si déjà installé
-  if (isPWAInstalled()) {
+  if (isInstalled) {
     return null;
   }
 
-  // Affichage spécifique pour iOS
-  if (isIOSSafari()) {
-    const isCompatible = isIOSVersion16Plus();
-    
+  // Affichage spécifique pour iOS non installé
+  if (isIOS) {
     return (
-      <Alert className="mb-4">
-        <Smartphone className="h-4 w-4" />
-        <AlertTitle>📱 Installation requise (iOS)</AlertTitle>
-        <AlertDescription className="whitespace-pre-line text-sm">
+      <Alert className="mb-4 border-orange-500 bg-orange-50">
+        <Smartphone className="h-4 w-4 text-orange-600" />
+        <AlertTitle className="text-orange-900">📱 Installation OBLIGATOIRE pour iOS</AlertTitle>
+        <AlertDescription className="whitespace-pre-line text-sm text-orange-800">
           {getPWAInstallPrompt()}
-          {!isCompatible && (
-            <div className="mt-2 text-amber-600">
+          <div className="mt-2 font-semibold">
+            🔔 Les notifications push ne fonctionneront qu'après installation !
+          </div>
+          {!isIOSCompatible && (
+            <div className="mt-2 text-red-600 font-semibold">
               ⚠️ iOS 16.4+ requis pour les notifications push
             </div>
           )}

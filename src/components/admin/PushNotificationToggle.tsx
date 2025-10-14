@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Bell, BellOff, Smartphone } from "lucide-react";
+import { Bell, BellOff, Smartphone, Apple } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
+import { isPWAInstalled, isIOSSafari } from "@/utils/pwaDetection";
 
 interface PushNotificationToggleProps {
   restaurantId: string | null;
@@ -49,10 +50,37 @@ export const PushNotificationToggle = ({ restaurantId }: PushNotificationToggleP
     );
   }
 
+  const isIOS = isIOSSafari();
+  const isPWA = isPWAInstalled();
+  const showIOSWarning = isIOS && !isPWA;
+
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="space-y-3">
+          {showIOSWarning && (
+            <Alert>
+              <Apple className="h-4 w-4" />
+              <AlertDescription>
+                <strong>⚠️ iPhone/iPad détecté</strong>
+                <br />
+                Les notifications push nécessitent d'installer cette application sur l'écran d'accueil :
+                <br />
+                1. Appuyez sur le bouton <strong>Partager</strong> (carré avec flèche) en bas
+                <br />
+                2. Sélectionnez <strong>"Sur l'écran d'accueil"</strong>
+                <br />
+                3. Ouvrez l'app depuis son icône
+                <br />
+                4. Puis activez les notifications ici
+                <br />
+                <span className="text-xs text-muted-foreground">
+                  (iOS 16.4+ requis)
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {isSubscribed ? (

@@ -118,29 +118,11 @@ serve(async (req) => {
       tag: `order-${order.id}`
     });
 
-    // Filtrer les subscriptions APNS (Apple) qui ne sont pas compatibles avec web-push VAPID
-    const webPushSubscriptions = validSubscriptions.filter(sub => {
-      const endpoint = sub.subscription_data?.endpoint || '';
-      const isApns = endpoint.includes('push.apple.com');
-      if (isApns) {
-        console.log(`[Push] ⚠️ Subscription APNS ignorée pour ${sub.user_id} (nécessite certificat Apple)`);
-      }
-      return !isApns;
-    });
+    console.log(`[Push] Envoi de ${validSubscriptions.length} notification(s) (tous endpoints y compris APNS iOS 16.4+)`);
 
-    if (webPushSubscriptions.length === 0) {
-      console.log('[Push] Aucune subscription web push compatible (uniquement APNS détecté)');
-      return new Response(
-        JSON.stringify({ message: 'Aucune subscription web push compatible. Les notifications APNS nécessitent une configuration séparée.' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`[Push] ${webPushSubscriptions.length} subscriptions web push compatibles`);
-
-    // Envoyer les notifications
+    // Envoyer les notifications (y compris APNS via VAPID pour iOS 16.4+)
     const results = await Promise.allSettled(
-      webPushSubscriptions.map(async (sub) => {
+      validSubscriptions.map(async (sub) => {
         try {
           await webpush.sendNotification(
             sub.subscription_data,
@@ -173,13 +155,12 @@ serve(async (req) => {
 
     const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
 
-    console.log(`[Push] ✅ ${successCount}/${webPushSubscriptions.length} notifications envoyées avec succès`);
+    console.log(`[Push] ✅ ${successCount}/${validSubscriptions.length} notifications envoyées avec succès`);
 
     return new Response(
       JSON.stringify({ 
         message: `${successCount} notifications envoyées`,
-        total: webPushSubscriptions.length,
-        apnsIgnored: validSubscriptions.length - webPushSubscriptions.length,
+        total: validSubscriptions.length,
         results 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
