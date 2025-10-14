@@ -118,21 +118,23 @@ serve(async (req) => {
       );
     }
 
-    // Préparer le payload de notification
+    // Préparer un payload optimisé et léger pour Safari iOS (< 2 Ko)
     const notificationPayload = JSON.stringify({
-      title: '🔔 Nouvelle commande !',
-      body: `Commande #${order.id.slice(0, 8)} - ${restaurant?.name || 'Restaurant'} - ${order.total.toFixed(2)}€`,
-      icon: '/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png',
-      badge: '/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png',
+      title: '🔔 Nouvelle commande',
+      body: `#${order.id.slice(0, 8)} - ${order.total.toFixed(2)}€`,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
       data: {
-        orderId: order.id,
-        restaurantId: order.restaurant_id,
+        id: order.id,
         url: '/admin'
       },
       requireInteraction: true,
       vibrate: [200, 100, 200],
-      tag: `order-${order.id}`
+      tag: `ord-${order.id.slice(0, 8)}`
     });
+
+    const payloadSize = new Blob([notificationPayload]).size;
+    console.log(`[Push] Taille du payload: ${payloadSize} octets (${(payloadSize / 1024).toFixed(2)} Ko)`);
 
     console.log(`[Push] Envoi de ${validSubscriptions.length} notification(s) (tous endpoints y compris APNS iOS 16.4+)`);
 
