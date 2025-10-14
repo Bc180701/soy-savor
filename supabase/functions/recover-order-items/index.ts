@@ -46,13 +46,14 @@ serve(async (req) => {
     if (order.client_email) {
       console.log("🔍 Recherche de sauvegarde préventive pour:", order.client_email);
       try {
-        const { data: backupData, error: backupError } = await supabase
-          .from('cart_backup')
-          .select('*')
-          .eq('session_id', order.client_email)
-          .eq('is_used', false)
-          .order('created_at', { ascending: false })
-          .limit(1);
+      const { data: backupData, error: backupError } = await supabase
+        .from('cart_backup')
+        .select('*')
+        .eq('session_id', order.client_email)
+        .eq('is_used', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
         if (!backupError && backupData && backupData.length > 0) {
           console.log("✅ Sauvegarde trouvée, récupération des items...");
