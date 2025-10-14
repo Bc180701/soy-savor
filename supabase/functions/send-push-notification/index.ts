@@ -13,11 +13,27 @@ serve(async (req) => {
   }
 
   try {
+    // Récupérer et valider les variables VAPID
+    const vapidEmail = Deno.env.get('VAPID_CONTACT_EMAIL');
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY');
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY');
+
+    if (!vapidEmail || !vapidPublicKey || !vapidPrivateKey) {
+      throw new Error('Variables VAPID manquantes (VAPID_CONTACT_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)');
+    }
+
+    // Le subject doit être une URL mailto: ou https:
+    const subject = vapidEmail.startsWith('mailto:') || vapidEmail.startsWith('https:') 
+      ? vapidEmail 
+      : `mailto:${vapidEmail}`;
+
+    console.log('[Push] Configuration VAPID avec subject:', subject);
+
     // Configuration VAPID
     webpush.setVapidDetails(
-      Deno.env.get('VAPID_CONTACT_EMAIL') || '',
-      Deno.env.get('VAPID_PUBLIC_KEY') || '',
-      Deno.env.get('VAPID_PRIVATE_KEY') || ''
+      subject,
+      vapidPublicKey,
+      vapidPrivateKey
     );
 
     // Récupérer les données de la commande
