@@ -65,9 +65,30 @@ const TestOrderNotification: React.FC<TestOrderNotificationProps> = ({
 
       console.log('✅ Commande de test créée:', data);
 
+      // Déclencher la notification push
+      if (data && data[0]) {
+        console.log('🔔 Déclenchement notification push...');
+        try {
+          const pushResponse = await supabase.functions.invoke('send-push-notification', {
+            body: { 
+              orderId: data[0].id,
+              restaurantId: currentRestaurant.id 
+            }
+          });
+          
+          if (pushResponse.error) {
+            console.error('❌ Erreur notification push:', pushResponse.error);
+          } else {
+            console.log('✅ Notification push envoyée:', pushResponse.data);
+          }
+        } catch (pushError) {
+          console.error('❌ Erreur lors de l\'envoi de la notification push:', pushError);
+        }
+      }
+
       toast({
         title: "✅ Commande de test créée",
-        description: "La notification devrait apparaître dans les autres onglets admin ouverts",
+        description: "Notification push envoyée aux admins abonnés",
         duration: 3000,
       });
 
