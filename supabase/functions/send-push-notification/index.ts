@@ -129,11 +129,16 @@ serve(async (req) => {
           console.log(`[Push] ✅ Notification envoyée à ${sub.user_id}`);
           return { success: true, userId: sub.user_id };
         } catch (error: any) {
-          console.error(`[Push] ❌ Erreur envoi à ${sub.user_id}:`, error.message);
+          console.error(`[Push] ❌ Erreur envoi à ${sub.user_id}:`, {
+            message: error.message,
+            statusCode: error.statusCode,
+            body: error.body,
+            headers: error.headers
+          });
           
           // Si subscription expirée/invalide, la supprimer
-          if (error.statusCode === 410 || error.statusCode === 404) {
-            console.log(`[Push] Suppression subscription expirée pour ${sub.user_id}`);
+          if (error.statusCode === 410 || error.statusCode === 404 || error.statusCode === 400) {
+            console.log(`[Push] Suppression subscription invalide/expirée pour ${sub.user_id} (code: ${error.statusCode})`);
             await supabaseAdmin
               .from('push_subscriptions')
               .delete()
@@ -141,7 +146,7 @@ serve(async (req) => {
               .eq('restaurant_id', restaurantId);
           }
           
-          return { success: false, userId: sub.user_id, error: error.message };
+          return { success: false, userId: sub.user_id, error: error.message, statusCode: error.statusCode };
         }
       })
     );
