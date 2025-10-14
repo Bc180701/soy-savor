@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Mail, Shield, UserPlus } from "lucide-react";
@@ -13,6 +14,7 @@ import AdminUsersList from "./AdminUsersList";
 const AdminInviteManager = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"administrateur" | "super_administrateur">("administrateur");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
@@ -72,7 +74,7 @@ const AdminInviteManager = () => {
       
       // Créer l'utilisateur admin via la fonction edge
       const { data: createResult, error: createError } = await supabase.functions.invoke('create-admin-user', {
-        body: { email, password }
+        body: { email, password, role }
       });
 
       if (createError) {
@@ -110,6 +112,7 @@ const AdminInviteManager = () => {
       // Réinitialiser le formulaire
       setEmail("");
       setPassword("");
+      setRole("administrateur");
 
     } catch (error: any) {
       console.error("💥 Erreur complète:", error);
@@ -158,6 +161,24 @@ const AdminInviteManager = () => {
                 required
               />
             </div>
+
+            {isSuperAdmin && (
+              <div className="space-y-2">
+                <Label htmlFor="admin-role">Type d'administrateur</Label>
+                <Select value={role} onValueChange={(value: "administrateur" | "super_administrateur") => setRole(value)}>
+                  <SelectTrigger id="admin-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="administrateur">Administrateur</SelectItem>
+                    <SelectItem value="super_administrateur">Super Administrateur</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Les super administrateurs peuvent créer d'autres administrateurs
+                </p>
+              </div>
+            )}
             
             <div className="space-y-2">
               <Label htmlFor="admin-password">Mot de passe temporaire</Label>

@@ -14,16 +14,22 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password } = await req.json()
+    const { email, password, role = 'administrateur' } = await req.json()
 
     console.log('=== CRÉATION ADMIN DEBUG ===')
     console.log('Email:', email)
     console.log('Password reçu:', !!password)
+    console.log('Rôle demandé:', role)
 
     // Validation
     if (!email || !password) {
       console.error('Email ou mot de passe manquant')
       throw new Error('Email et mot de passe requis')
+    }
+
+    if (!['administrateur', 'super_administrateur'].includes(role)) {
+      console.error('Rôle invalide:', role)
+      throw new Error('Rôle invalide. Utilisez "administrateur" ou "super_administrateur"')
     }
 
     if (password.length < 6) {
@@ -92,12 +98,12 @@ serve(async (req) => {
       }
 
       // L'utilisateur existe mais n'a pas le rôle admin, on l'ajoute
-      console.log('Ajout du rôle administrateur à l\'utilisateur existant')
+      console.log(`Ajout du rôle ${role} à l'utilisateur existant`)
       const { error: roleError } = await supabaseAdmin
         .from('user_roles')
         .insert({
           user_id: existingUser.id,
-          role: 'administrateur'
+          role: role
         })
 
       if (roleError) {
@@ -110,7 +116,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'Rôle administrateur ajouté à l\'utilisateur existant',
+          message: `Rôle ${role} ajouté à l'utilisateur existant`,
           user: {
             id: existingUser.id,
             email: existingUser.email
@@ -145,12 +151,12 @@ serve(async (req) => {
 
     console.log('Utilisateur créé avec succès:', userData.user.id)
 
-    // Ajouter le rôle administrateur
+    // Ajouter le rôle administrateur ou super_administrateur
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
       .insert({
         user_id: userData.user.id,
-        role: 'administrateur'
+        role: role
       })
 
     if (roleError) {
@@ -158,7 +164,7 @@ serve(async (req) => {
       throw new Error(`Erreur lors de l'ajout du rôle: ${roleError.message}`)
     }
 
-    console.log('Rôle administrateur ajouté avec succès')
+    console.log(`Rôle ${role} ajouté avec succès`)
 
     // Créer le profil utilisateur (optionnel)
     const { error: profileError } = await supabaseAdmin
@@ -181,7 +187,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Administrateur créé avec succès',
+        message: `${role === 'super_administrateur' ? 'Super administrateur' : 'Administrateur'} créé avec succès`,
         user: {
           id: userData.user.id,
           email: userData.user.email
