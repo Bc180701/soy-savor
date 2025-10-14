@@ -25,6 +25,10 @@ import DeliveryPhoneManager from "./DeliveryPhoneManager";
 import { BluetoothManager } from "./BluetoothManager";
 import { ImageOptimizer } from "./ImageOptimizer";
 import OrdersCSVExport from "./OrdersCSVExport";
+import { RestaurantSessionSelector } from "./RestaurantSessionSelector";
+import { useAdminRestaurantSession } from "@/hooks/useAdminRestaurantSession";
+import { PushNotificationToggle } from "./PushNotificationToggle";
+import { PWAInstallGuide } from "./PWAInstallGuide";
 
 const AdminManager = () => {
   const [urlParams] = useState(() => new URLSearchParams(window.location.search));
@@ -32,6 +36,7 @@ const AdminManager = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const { currentRestaurant } = useRestaurantContext();
+  const { sessionRestaurant, selectRestaurant } = useAdminRestaurantSession();
   
   // Get active section from URL params or default to dashboard
   const activeSection = urlParams.get("section") || "dashboard";
@@ -78,6 +83,8 @@ const AdminManager = () => {
       case "dashboard":
         return (
           <div className="space-y-6">
+            <PWAInstallGuide />
+            <PushNotificationToggle restaurantId={sessionRestaurant} />
             <DashboardStats />
             <OrdersCSVExport />
           </div>
@@ -169,11 +176,10 @@ const AdminManager = () => {
                   </span>
                 )}
               </h1>
-              {currentRestaurant && (
-                <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                  {currentRestaurant.name}
-                </span>
-              )}
+              <RestaurantSessionSelector 
+                sessionRestaurant={sessionRestaurant}
+                onSelectRestaurant={selectRestaurant}
+              />
             </div>
             
             {activeSection === "orders" && (

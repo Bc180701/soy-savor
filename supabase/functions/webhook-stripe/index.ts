@@ -503,6 +503,25 @@ serve(async (req) => {
         console.error('❌ Erreur lors de l\'envoi du SMS restaurant:', smsError);
       }
 
+      // Envoyer les notifications push aux admins
+      console.log('🔔 Envoi notifications push pour commande:', order.id);
+      try {
+        const pushResponse = await supabase.functions.invoke('send-push-notification', {
+          body: { 
+            orderId: order.id,
+            restaurantId: orderData.restaurant_id 
+          }
+        });
+        
+        if (pushResponse.error) {
+          console.error('❌ Erreur envoi notifications push:', pushResponse.error);
+        } else {
+          console.log('✅ Notifications push envoyées avec succès:', pushResponse.data);
+        }
+      } catch (pushError) {
+        console.error('❌ Erreur lors de l\'envoi des notifications push:', pushError);
+      }
+
       return new Response(JSON.stringify({ 
         received: true, 
         orderId: order.id,

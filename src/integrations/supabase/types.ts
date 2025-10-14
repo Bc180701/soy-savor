@@ -278,6 +278,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lexicon: {
+        Row: {
+          category: string
+          created_at: string
+          definition: string
+          id: string
+          updated_at: string
+          word: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          definition: string
+          id?: string
+          updated_at?: string
+          word: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          definition?: string
+          id?: string
+          updated_at?: string
+          word?: string
+        }
+        Relationships: []
+      }
       order_analytics: {
         Row: {
           created_at: string | null
@@ -896,6 +923,54 @@ export type Database = {
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string | null
+          id: string
+          restaurant_id: string
+          subscription_data: Json
+          subscription_endpoint: string | null
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          restaurant_id: string
+          subscription_data: Json
+          subscription_endpoint?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          restaurant_id?: string
+          subscription_data?: Json
+          subscription_endpoint?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "auth_users_view"
             referencedColumns: ["id"]
           },
         ]
