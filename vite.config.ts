@@ -26,9 +26,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
-      strategies: 'injectManifest',
-      srcDir: 'public',
-      filename: 'sw.js',
+      registerType: 'autoUpdate',
       injectRegister: false, // On enregistre manuellement dans main.tsx
       manifest: {
         name: 'Sushieats - Gestion Commandes',
@@ -51,6 +49,10 @@ export default defineConfig(({ mode }) => ({
             purpose: 'any maskable'
           }
         ]
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     }),
   ].filter(Boolean),
