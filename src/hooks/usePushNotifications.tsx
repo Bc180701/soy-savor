@@ -19,6 +19,43 @@ export const usePushNotifications = (restaurantId: string | null) => {
     }
   }, [restaurantId]);
 
+  // Écouter les messages du SW (resubscribe)
+  useEffect(() => {
+    if (!isSupported) return;
+
+    const onMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'PUSH_SUBSCRIPTION_CHANGED') {
+        try {
+          const newSubscription = event.data.subscription as PushSubscription;
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user || !restaurantId) return;
+
+          const subscriptionData = newSubscription.toJSON();
+          // Upsert pour remplacer l'ancienne subscription
+          const { error: upsertError } = await supabase
+            .from('push_subscriptions')
+            .upsert({
+              user_id: user.id,
+              restaurant_id: restaurantId,
+              subscription_data: subscriptionData as any,
+              user_agent: navigator.userAgent
+            }, { onConflict: 'user_id,restaurant_id,subscription_endpoint' as any });
+
+          if (upsertError) {
+            console.error('Erreur upsert subscription (resubscribe):', upsertError);
+          } else {
+            setIsSubscribed(true);
+          }
+        } catch (e) {
+          console.error('Erreur traitement PUSH_SUBSCRIPTION_CHANGED:', e);
+        }
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', onMessage as any);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage as any);
+  }, [isSupported, restaurantId]);
+
   // Vérifier si déjà abonné
   const checkSubscriptionStatus = async () => {
     if (!restaurantId) return;

@@ -108,3 +108,45 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+// Gestion du renouvellement d'abonnement (clé VAPID peut changer, iOS peut invalider)
+self.addEventListener('pushsubscriptionchange', (event) => {
+  // Clé publique VAPID côté client (non sensible)
+  const VAPID_PUBLIC_KEY = "BEYWWy-vm-sDP0agWRhcvAUuVrqmfMGfYoZp5OwutWGstOn_F6qlsC1IKt5mh2ZWsY7UbGGpWJYJbN3xnOSDQP0";
+
+  const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
+  event.waitUntil(
+    self.registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey
+    }).then((newSubscription) => {
+      // Informer les clients pour qu'ils mettent à jour la BDD via Supabase
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        clientList.forEach((client) => {
+          client.postMessage({
+            type: 'PUSH_SUBSCRIPTION_CHANGED',
+            subscription: newSubscription
+          });
+        });
+      });
+    }).catch((err) => {
+      console.error('[Service Worker] Erreur resubscribe lors de pushsubscriptionchange:', err);
+    })
+  );
+});
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = self.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
