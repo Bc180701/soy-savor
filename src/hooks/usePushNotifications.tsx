@@ -61,9 +61,9 @@ export const usePushNotifications = (restaurantId: string | null) => {
         throw new Error("Permission refusée");
       }
 
-      // 2. Enregistrer le Service Worker
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
+      // 2. Attendre que le Service Worker soit prêt (déjà enregistré dans main.tsx)
+      const registration = await navigator.serviceWorker.ready;
+      console.log('🔔 Service Worker prêt pour l'abonnement push');
 
       // 3. Créer la subscription VAPID
       const subscription = await registration.pushManager.subscribe({

@@ -26,29 +26,29 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
-      registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'public',
+      filename: 'sw.js',
+      injectRegister: false, // On enregistre manuellement dans main.tsx
       manifest: {
         name: 'Sushieats - Gestion Commandes',
         short_name: 'Sushieats Admin',
         start_url: '/admin',
         display: 'standalone',
         background_color: '#ffffff',
-        theme_color: '#D4AF37'
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
-        runtimeCaching: [
+        theme_color: '#D4AF37',
+        icons: [
           {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              }
-            }
+            src: '/lovable-uploads/08b9952e-cd9a-4377-9a76-11adb9daba70.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable'
+          },
+          {
+            src: '/lovable-uploads/13d05a8a-41b7-4bef-adce-6112f0546d2d.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }
