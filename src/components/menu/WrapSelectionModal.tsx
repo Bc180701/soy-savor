@@ -56,7 +56,8 @@ export const WrapSelectionModal = ({
           )
         `)
         .eq('category_id', categoryData.id)
-        .eq('is_active', true)
+        .eq('restaurant_id', wrapBoxItem.restaurant_id)
+        .eq('is_hidden', false)
         .order('name');
 
       if (error) {
