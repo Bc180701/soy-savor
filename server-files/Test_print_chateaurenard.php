@@ -134,7 +134,7 @@
                 $isPokeCrea = stripos($item['name'], 'poké créa') !== false || stripos($item['name'], 'poke crea') !== false;
                 
                 if ($isSushiCrea || $isPokeCrea) {
-                    $xml .= '<text width="2" height="2">' . escapeXml($item['description']) . '</text>' . "\n";
+                    $xml .= '<text font="b" width="2" height="2">' . escapeXml($item['description']) . '</text>' . "\n";
                     $xml .= '<text width="1" height="1"/>' . "\n"; // Reset to normal
                     $xml .= '<feed line="1"/>' . "\n";
                 }
