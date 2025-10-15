@@ -159,7 +159,9 @@ export function useOptimizedOrders(restaurantId: string | null) {
               const latestCartMap: Record<string, any[]> = {};
               cartBackups?.forEach(cb => {
                 if (!latestCartMap[cb.session_id]) {
-                  latestCartMap[cb.session_id] = cb.cart_items || [];
+                  latestCartMap[cb.session_id] = Array.isArray(cb.cart_items) 
+                    ? cb.cart_items 
+                    : [];
                 }
               });
 

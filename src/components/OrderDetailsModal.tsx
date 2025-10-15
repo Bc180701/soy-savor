@@ -46,14 +46,16 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         .from('cart_backup')
         .select('cart_items')
         .eq('session_id', clientEmail)
-        .single();
+        .eq('is_used', false)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (error || !data) {
+      if (error || !data || data.length === 0) {
         console.log('No cart backup found for email:', clientEmail);
         return [];
       }
 
-      return data.cart_items || [];
+      return data[0].cart_items || [];
     } catch (error) {
       console.error('Error fetching cart backup:', error);
       return [];
