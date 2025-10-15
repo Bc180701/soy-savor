@@ -38,11 +38,17 @@ export const WrapSelectionModal = ({
       const { data: categoryData, error: categoryError } = await supabase
         .from('categories')
         .select('id')
+        .eq('restaurant_id', wrapBoxItem.restaurant_id)
         .ilike('name', '%Sushi Wrap%')
-        .single();
+        .maybeSingle();
 
-      if (categoryError || !categoryData) {
+      if (categoryError) {
         console.error('Erreur lors de la récupération de la catégorie Sushi Wrap:', categoryError);
+        return;
+      }
+
+      if (!categoryData) {
+        console.log('Aucune catégorie Sushi Wrap trouvée pour ce restaurant');
         return;
       }
 
