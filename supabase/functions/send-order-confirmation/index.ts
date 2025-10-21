@@ -183,8 +183,9 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
 
             <div class="footer">
-              <p>Merci de votre confiance !</p>
-              <p>L'équipe ${order.restaurants?.name || 'Sushi Eats'}</p>
+              <img src="https://sushieats.fr/lovable-uploads/80663134-a018-4c55-8a81-5ee048c700e3.png" alt="Sushi Eats Logo" style="width: 120px; height: auto; margin-bottom: 16px;">
+              <p>Cordialement,</p>
+              <p>L'équipe Sushi Eats</p>
             </div>
           </div>
         </body>
