@@ -91,21 +91,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     return disabledSauces;
   };
 
-  const getDisabledAccompagnements = () => {
-    const accompagnementItems = items.filter(item => item.menuItem.category === "Accompagnement");
-    const disabledAccompagnements: string[] = [];
-    
-    accompagnementItems.forEach(item => {
-      const accompagnementName = item.menuItem.name;
-      accompagnementsOptions.forEach(accompagnement => {
-        if (accompagnementName === accompagnement) {
-          disabledAccompagnements.push(accompagnement);
-        }
-      });
-    });
-    
-    return disabledAccompagnements;
-  };
+  // Supprimer la fonction getDisabledAccompagnements - on permet toujours d'ajouter des accompagnements
 
   // Ne plus désactiver les baguettes - permettre l'ajustement de quantité
   const isBaguettesInCart = items.some(item => item.menuItem.name === "Baguettes");
@@ -113,7 +99,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const isCuilleresDisabled = items.some(item => item.menuItem.name === "Cuillères");
 
   const disabledSauces = getDisabledSauces();
-  const disabledAccompagnements = getDisabledAccompagnements();
 
   const handleAddAccompagnements = () => {
     const restaurantId = getRestaurantId();
@@ -488,14 +473,28 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       setSelectedAccompagnements(newAccompagnements);
       addAccompagnementToCart(accompagnement, 0); // Supprimer du panier
     } else {
-      // Ajouter avec quantité fixe de 1 - la cuisine ajustera selon ses besoins
       const newAccompagnements = [...selectedAccompagnements, { name: accompagnement, quantity: 1 }];
       setSelectedAccompagnements(newAccompagnements);
-      addAccompagnementToCart(accompagnement, 1);
+      addAccompagnementToCart(accompagnement, 1); // Ajouter au panier
     }
   };
 
-  // Fonction supprimée - les accompagnements (wasabi/gingembre) ont maintenant des quantités fixes
+  const updateAccompagnementQuantity = (accompagnement: string, change: number) => {
+    setSelectedAccompagnements(prev => {
+      const newAccompagnements = prev.map(a => 
+        a.name === accompagnement 
+          ? { ...a, quantity: Math.max(0, a.quantity + change) }
+          : a
+      ).filter(a => a.quantity > 0);
+      
+      // Ajouter automatiquement au panier avec la nouvelle quantité
+      const updatedAccompagnement = newAccompagnements.find(a => a.name === accompagnement);
+      const newQuantity = updatedAccompagnement ? updatedAccompagnement.quantity : 0;
+      addAccompagnementToCart(accompagnement, newQuantity);
+      
+      return newAccompagnements;
+    });
+  };
 
 
   const addAccessoireToCart = (name: string, description: string, isSelected: boolean, quantity: number = 1) => {
@@ -644,30 +643,91 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
         {/* Accompagnements */}
         <div className="space-y-3">
-          <h4 className="font-semibold text-gray-800">🌶️ Accompagnements</h4>
+          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+            🌶️ Accompagnements
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+              {getFreeAccompagnementsCount()} gratuit{getFreeAccompagnementsCount() > 1 ? 's' : ''}
+            </span>
+          </h4>
           <div className="grid grid-cols-1 gap-3">
             {accompagnementsOptions.map((accompagnement) => {
-              const isDisabled = disabledAccompagnements.includes(accompagnement);
-              const isSelected = selectedAccompagnements.some(a => a.name === accompagnement);
+              const selectedAccompagnement = selectedAccompagnements.find(a => a.name === accompagnement);
+              const isSelected = !!selectedAccompagnement;
+              const quantity = selectedAccompagnement?.quantity || 0;
+              
+              // Calculer les coûts de manière globale et simple
+              const freeAccompagnementsCount = getFreeAccompagnementsCount();
+              const totalSelected = getTotalSelectedAccompagnements();
+              
+              // Calculer combien d'accompagnements gratuits il reste avant cet accompagnement
+              let freeAccompagnementsUsedBefore = 0;
+              selectedAccompagnements.forEach(a => {
+                if (a.name !== accompagnement) {
+                  freeAccompagnementsUsedBefore += a.quantity;
+                }
+              });
+              
+              const freeAccompagnementsRemaining = Math.max(0, freeAccompagnementsCount - freeAccompagnementsUsedBefore);
+              const freeAccompagnementsForThis = Math.min(quantity, freeAccompagnementsRemaining);
+              const paidAccompagnementsForThis = Math.max(0, quantity - freeAccompagnementsForThis);
+              const totalCost = paidAccompagnementsForThis * 0.5;
               
               return (
-                <div key={accompagnement} className={`flex items-center space-x-3 p-3 border rounded-lg ${isDisabled ? 'bg-gray-100' : 'bg-white'}`}>
-                  <Checkbox
-                    id={`accompagnement-${accompagnement}`}
-                    checked={isSelected}
-                    onCheckedChange={() => !isDisabled && handleAccompagnementToggle(accompagnement)}
-                    disabled={isDisabled}
-                  />
-                  <label 
-                    htmlFor={`accompagnement-${accompagnement}`} 
-                    className={`text-sm font-medium flex-1 ${isDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}
-                  >
-                    {accompagnement} {isDisabled && "(déjà ajouté)"}
-                  </label>
+                <div key={accompagnement} className="space-y-2 p-3 border rounded-lg bg-white">
+                  <div className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`accompagnement-${accompagnement}`}
+                      checked={isSelected}
+                      onCheckedChange={() => handleAccompagnementToggle(accompagnement)}
+                    />
+                    <label 
+                      htmlFor={`accompagnement-${accompagnement}`} 
+                      className="text-sm font-medium flex-1 cursor-pointer"
+                    >
+                      {accompagnement}
+                    </label>
+                    {isSelected && (
+                      <div className="text-xs">
+                        {freeAccompagnementsForThis > 0 && (
+                          <span className="text-green-600 font-medium">
+                            {freeAccompagnementsForThis}x gratuit
+                          </span>
+                        )}
+                        {freeAccompagnementsForThis > 0 && paidAccompagnementsForThis > 0 && <span className="text-gray-400"> + </span>}
+                        {paidAccompagnementsForThis > 0 && (
+                          <span className="text-orange-600 font-medium">
+                            {paidAccompagnementsForThis}x +{totalCost.toFixed(2)}€
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   
                   {isSelected && (
-                    <div className="text-xs text-gray-500">
-                      La cuisine ajustera les quantités selon vos préférences
+                    <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <span className="text-sm text-gray-600">Quantité:</span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateAccompagnementQuantity(accompagnement, -1)}
+                          disabled={quantity <= 1}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-medium">{quantity}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateAccompagnementQuantity(accompagnement, 1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
