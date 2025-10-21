@@ -199,13 +199,13 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           let price = 0;
           
           if (isAllFree) {
-            description = `Accompagnement gratuite (${accompagnement.quantity}x)`;
+            description = `Accompagnement gratuit (${accompagnement.quantity}x)`;
             price = 0;
           } else if (isAllPaid) {
             description = `Accompagnement supplémentaire (${accompagnement.quantity}x)`;
             price = 0.5;
           } else {
-            description = `${freeAccompagnementsForThis}x gratuite + ${paidAccompagnementsForThis}x supplémentaire`;
+            description = `${freeAccompagnementsForThis}x gratuit + ${paidAccompagnementsForThis}x supplémentaire`;
             price = paidAccompagnementsForThis * 0.5 / accompagnement.quantity; // Prix moyen par unité
           }
           
@@ -417,10 +417,10 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       let price = 0;
       
       if (freeAccompagnementsForThis > 0 && paidAccompagnementsForThis > 0) {
-        description = `${freeAccompagnementsForThis}x gratuite + ${paidAccompagnementsForThis}x supplémentaire`;
+        description = `${freeAccompagnementsForThis}x gratuit + ${paidAccompagnementsForThis}x supplémentaire`;
         price = paidAccompagnementsForThis * 0.5 / quantity;
       } else if (freeAccompagnementsForThis > 0) {
-        description = `Accompagnement gratuite (${quantity}x)`;
+        description = `Accompagnement gratuit (${quantity}x)`;
         price = 0;
       } else {
         description = `Accompagnement supplémentaire (${quantity}x)`;
