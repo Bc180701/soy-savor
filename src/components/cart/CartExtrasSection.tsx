@@ -12,9 +12,7 @@ interface CartExtrasSectionProps {
 export interface CartExtras {
   sauces: { name: string; quantity: number }[];
   accompagnements: { name: string; quantity: number }[];
-  baguettes: boolean;
-  couverts: boolean;
-  cuilleres: boolean;
+  setCouvertsQuantity: number;
 }
 
 export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) => {
@@ -22,10 +20,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<{ name: string; quantity: number }[]>([]);
   const [beaucoupWasabi, setBeaucoupWasabi] = useState<boolean>(false);
   const [beaucoupGingembre, setBeaucoupGingembre] = useState<boolean>(false);
-  const [baguettesSelected, setBaguettesSelected] = useState<boolean>(false);
-  const [baguettesQuantity, setBaguettesQuantity] = useState<number>(1);
-  const [couvertsSelected, setCouvertsSelected] = useState<boolean>(false);
-  const [cuilleresSelected, setCuilleresSelected] = useState<boolean>(false);
+  const [setCouvertsQuantity, setSetCouvertsQuantity] = useState<number>(0);
   const { addItem, removeItem, selectedRestaurantId, items, getTotalPrice } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
@@ -38,12 +33,10 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       onExtrasChange({
         sauces: selectedSauces,
         accompagnements: selectedAccompagnements,
-        baguettes: baguettesSelected,
-        couverts: couvertsSelected,
-        cuilleres: cuilleresSelected
+        setCouvertsQuantity
       });
     }
-  }, [selectedSauces, selectedAccompagnements, baguettesSelected, couvertsSelected, cuilleresSelected, items, onExtrasChange]);
+  }, [selectedSauces, selectedAccompagnements, setCouvertsQuantity, items, onExtrasChange]);
 
   const saucesOptions = [
     "Soja sucrée",
@@ -95,10 +88,14 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
   // Supprimer la fonction getDisabledAccompagnements - on permet toujours d'ajouter des accompagnements
 
-  // Ne plus désactiver les baguettes - permettre l'ajustement de quantité
-  const isBaguettesInCart = items.some(item => item.menuItem.name === "Baguettes");
-  const isCouvertsDisabled = items.some(item => item.menuItem.name === "Couverts");
-  const isCuilleresDisabled = items.some(item => item.menuItem.name === "Cuillères");
+  // Calculer les sets de couverts gratuits (1 set par 10€)
+  const getFreeCouvertsSets = () => Math.floor(getTotalPrice() / 10);
+
+  // Vérifier si les sets de couverts sont déjà dans le panier
+  const setCouvertsInCart = items.find(item => 
+    item.menuItem.name.toLowerCase().includes('set de couverts') ||
+    item.menuItem.name.toLowerCase().includes('set couverts')
+  );
 
   const disabledSauces = getDisabledSauces();
 
@@ -218,65 +215,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       }
     });
 
-    if (baguettesSelected) {
-      itemsToAdd.push({
-        id: `baguettes-${Date.now()}`,
-        name: `Baguettes`,
-        description: `Baguettes japonaises (${baguettesQuantity}x)`,
-        price: 0,
-        imageUrl: "",
-        category: "Accessoire" as const,
-        restaurant_id: restaurantId,
-        isVegetarian: true,
-        isSpicy: false,
-        isNew: false,
-        isBestSeller: false,
-        isGlutenFree: true,
-        allergens: [],
-        pieces: null,
-        prepTime: null
-      });
-    }
-
-    if (couvertsSelected) {
-      itemsToAdd.push({
-        id: `couverts-${Date.now()}`,
-        name: `Couverts`,
-        description: "Couverts demandés",
-        price: 0,
-        imageUrl: "",
-        category: "Accessoire" as const,
-        restaurant_id: restaurantId,
-        isVegetarian: true,
-        isSpicy: false,
-        isNew: false,
-        isBestSeller: false,
-        isGlutenFree: true,
-        allergens: [],
-        pieces: null,
-        prepTime: null
-      });
-    }
-
-    if (cuilleresSelected) {
-      itemsToAdd.push({
-        id: `cuilleres-${Date.now()}`,
-        name: `Cuillères`,
-        description: "Cuillères demandées",
-        price: 0,
-        imageUrl: "",
-        category: "Accessoire" as const,
-        restaurant_id: restaurantId,
-        isVegetarian: true,
-        isSpicy: false,
-        isNew: false,
-        isBestSeller: false,
-        isGlutenFree: true,
-        allergens: [],
-        pieces: null,
-        prepTime: null
-      });
-    }
 
     // Les sauces sont déjà ajoutées individuellement ci-dessus
     // Ajouter les autres items normalement
@@ -284,28 +222,10 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       const accompItem = itemsToAdd.find(item => item.category === "Accompagnement");
       if (accompItem) addItem(accompItem, 1);
     }
-    
-    if (baguettesSelected) {
-      const baguettesItem = itemsToAdd.find(item => item.name === "Baguettes");
-      if (baguettesItem) addItem(baguettesItem, baguettesQuantity);
-    }
-    
-    if (couvertsSelected) {
-      const couvertsItem = itemsToAdd.find(item => item.name === "Couverts");
-      if (couvertsItem) addItem(couvertsItem, 1);
-    }
-    
-    if (cuilleresSelected) {
-      const cuilleresItem = itemsToAdd.find(item => item.name === "Cuillères");
-      if (cuilleresItem) addItem(cuilleresItem, 1);
-    }
 
     setSelectedSauces([]);
     setSelectedAccompagnements([]);
-    setBaguettesSelected(false);
-    setBaguettesQuantity(1);
-    setCouvertsSelected(false);
-    setCuilleresSelected(false);
+    setSetCouvertsQuantity(0);
   };
 
   const addSauceToCart = (sauce: string, quantity: number) => {
@@ -545,22 +465,24 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
 
 
-  const addAccessoireToCart = (name: string, description: string, isSelected: boolean, quantity: number = 1) => {
+  const addSetCouvertsToCart = (quantity: number) => {
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
-    // Supprimer l'ancien item de cet accessoire
-    const existingAccessoireItems = items.filter(item => item.menuItem.name === name);
-    existingAccessoireItems.forEach(item => {
-      removeItem(item.menuItem.id);
-    });
-
-    if (isSelected && quantity > 0) {
-      const accessoireItem = {
-        id: `${name.toLowerCase()}-${Date.now()}`,
-        name: name,
-        description: description,
-        price: 0,
+    const freeCount = getFreeCouvertsSets();
+    const paidCount = Math.max(0, quantity - freeCount);
+    
+    // Supprimer l'ancien item s'il existe
+    if (setCouvertsInCart) {
+      removeItem(setCouvertsInCart.menuItem.id);
+    }
+    
+    if (quantity > 0) {
+      const setCouvertsItem = {
+        id: `set-couverts-${Date.now()}`,
+        name: `Set de couverts${paidCount > 0 ? ` - ${freeCount} gratuit(s) + ${paidCount} payant(s)` : ` - ${freeCount} gratuit(s)`}`,
+        description: "Baguettes, fourchette, cuillères",
+        price: paidCount * 0.50,
         imageUrl: "",
         category: "Accessoire" as const,
         restaurant_id: restaurantId,
@@ -573,8 +495,15 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         pieces: null,
         prepTime: null
       };
-      addItem(accessoireItem, quantity);
+      
+      addItem(setCouvertsItem, 1);
     }
+  };
+
+  const updateSetCouvertsQuantity = (change: number) => {
+    const newQuantity = Math.max(0, Math.min(10, setCouvertsQuantity + change));
+    setSetCouvertsQuantity(newQuantity);
+    addSetCouvertsToCart(newQuantity);
   };
 
 
@@ -747,103 +676,67 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           </div>
         </div>
 
-        {/* Baguettes */}
+        {/* Set de couverts */}
         <div className="space-y-3">
-          <h4 className="font-semibold text-gray-800">🥢 Baguettes</h4>
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-2 p-3 border rounded-lg bg-white">
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="baguettes"
-                  checked={baguettesSelected}
-                  onCheckedChange={(checked) => {
-                    setBaguettesSelected(checked as boolean);
-                    if (checked) {
-                      addAccessoireToCart("Baguettes", `Baguettes japonaises (${baguettesQuantity}x)`, true, baguettesQuantity);
-                    } else {
-                      setBaguettesQuantity(1);
-                      addAccessoireToCart("Baguettes", "", false, 0);
-                    }
-                  }}
-                />
-                <label htmlFor="baguettes" className="text-sm font-medium flex-1 cursor-pointer">
-                  Baguettes japonaises {isBaguettesInCart && `(${baguettesQuantity}x dans le panier)`}
+          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+            🍽️ Set de couverts
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+              {getFreeCouvertsSets()} gratuit{getFreeCouvertsSets() > 1 ? 's' : ''}
+            </span>
+          </h4>
+          <div className="space-y-2 p-3 border rounded-lg bg-white">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <label className="text-sm font-medium leading-none">
+                  Set complet (baguettes, fourchette, cuillères)
                 </label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  1 set gratuit par 10€ • +0,50€ par set supplémentaire
+                </p>
               </div>
-              {baguettesSelected && (
-                <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                  <span className="text-sm text-gray-600">Quantité :</span>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newQuantity = Math.max(1, baguettesQuantity - 1);
-                        setBaguettesQuantity(newQuantity);
-                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true, newQuantity);
-                      }}
-                      disabled={baguettesQuantity <= 1}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-8 text-center font-medium">{baguettesQuantity}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newQuantity = baguettesQuantity + 1;
-                        setBaguettesQuantity(newQuantity);
-                        addAccessoireToCart("Baguettes", `Baguettes japonaises (${newQuantity}x)`, true, newQuantity);
-                      }}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => updateSetCouvertsQuantity(-1)}
+                disabled={setCouvertsQuantity === 0}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[2rem] text-center font-medium">
+                {setCouvertsQuantity}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => updateSetCouvertsQuantity(1)}
+                disabled={setCouvertsQuantity >= 10}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              {setCouvertsQuantity > 0 && (
+                <div className="text-xs ml-2">
+                  {getFreeCouvertsSets() >= setCouvertsQuantity ? (
+                    <span className="text-green-600 font-medium">
+                      Gratuit
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-green-600 font-medium">
+                        {getFreeCouvertsSets()}x gratuit
+                      </span>
+                      <span className="text-gray-400"> + </span>
+                      <span className="text-orange-600 font-medium">
+                        {setCouvertsQuantity - getFreeCouvertsSets()}x +{((setCouvertsQuantity - getFreeCouvertsSets()) * 0.50).toFixed(2)}€
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Couverts */}
-        <div className="space-y-3">
-          <h4 className="font-semibold text-gray-800">🍽️ Couverts</h4>
-          <div className={`flex items-center space-x-3 p-3 border rounded-lg ${isCouvertsDisabled ? 'bg-gray-100' : 'bg-white'}`}>
-            <Checkbox
-              id="couverts"
-              checked={couvertsSelected}
-              onCheckedChange={(checked) => {
-                if (!isCouvertsDisabled) {
-                  setCouvertsSelected(checked as boolean);
-                  addAccessoireToCart("Couverts", "Couverts demandés", checked as boolean);
-                }
-              }}
-              disabled={isCouvertsDisabled}
-            />
-            <label htmlFor="couverts" className={`text-sm font-medium flex-1 ${isCouvertsDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
-              Couteau et fourchette {isCouvertsDisabled && "(déjà ajouté)"}
-            </label>
-          </div>
-        </div>
-
-        {/* Cuillères */}
-        <div className="space-y-3">
-          <h4 className="font-semibold text-gray-800">🥄 Cuillères</h4>
-          <div className={`flex items-center space-x-3 p-3 border rounded-lg ${isCuilleresDisabled ? 'bg-gray-100' : 'bg-white'}`}>
-            <Checkbox
-              id="cuilleres"
-              checked={cuilleresSelected}
-              onCheckedChange={(checked) => {
-                if (!isCuilleresDisabled) {
-                  setCuilleresSelected(checked as boolean);
-                  addAccessoireToCart("Cuillères", "Cuillères demandées", checked as boolean);
-                }
-              }}
-              disabled={isCuilleresDisabled}
-            />
-            <label htmlFor="cuilleres" className={`text-sm font-medium flex-1 ${isCuilleresDisabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}`}>
-              Cuillères {isCuilleresDisabled && "(déjà ajouté)"}
-            </label>
           </div>
         </div>
       </CardContent>
