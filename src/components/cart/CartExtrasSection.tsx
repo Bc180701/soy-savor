@@ -20,6 +20,8 @@ export interface CartExtras {
 export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) => {
   const [selectedSauces, setSelectedSauces] = useState<{ name: string; quantity: number }[]>([]);
   const [selectedAccompagnements, setSelectedAccompagnements] = useState<{ name: string; quantity: number }[]>([]);
+  const [beaucoupWasabi, setBeaucoupWasabi] = useState<boolean>(false);
+  const [beaucoupGingembre, setBeaucoupGingembre] = useState<boolean>(false);
   const [baguettesSelected, setBaguettesSelected] = useState<boolean>(false);
   const [baguettesQuantity, setBaguettesQuantity] = useState<number>(1);
   const [couvertsSelected, setCouvertsSelected] = useState<boolean>(false);
@@ -466,35 +468,81 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     });
   };
 
-  const handleAccompagnementToggle = (accompagnement: string) => {
-    const existingAccompagnement = selectedAccompagnements.find(a => a.name === accompagnement);
-    if (existingAccompagnement) {
-      const newAccompagnements = selectedAccompagnements.filter(a => a.name !== accompagnement);
-      setSelectedAccompagnements(newAccompagnements);
-      addAccompagnementToCart(accompagnement, 0); // Supprimer du panier
-    } else {
-      const newAccompagnements = [...selectedAccompagnements, { name: accompagnement, quantity: 1 }];
-      setSelectedAccompagnements(newAccompagnements);
-      addAccompagnementToCart(accompagnement, 1); // Ajouter au panier
+  const handleAccompagnementToggle = (accompagnement: string, checked: boolean) => {
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+
+    // Supprimer les anciennes entrées de cet accompagnement
+    const existingAccompagnementItems = items.filter(item => 
+      item.menuItem.category === "Accompagnement" && 
+      (item.menuItem.name === accompagnement || item.menuItem.name.includes(accompagnement))
+    );
+    existingAccompagnementItems.forEach(item => {
+      removeItem(item.menuItem.id);
+    });
+
+    if (checked) {
+      const accompagnementItem = {
+        id: `accompagnement-${accompagnement}-${Date.now()}`,
+        name: accompagnement,
+        description: "Accompagnement (dosage standard)",
+        price: 0,
+        imageUrl: "",
+        category: "Accompagnement" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      addItem(accompagnementItem, 1);
     }
   };
 
-  const updateAccompagnementQuantity = (accompagnement: string, change: number) => {
-    setSelectedAccompagnements(prev => {
-      const newAccompagnements = prev.map(a => 
-        a.name === accompagnement 
-          ? { ...a, quantity: Math.max(0, a.quantity + change) }
-          : a
-      ).filter(a => a.quantity > 0);
-      
-      // Ajouter automatiquement au panier avec la nouvelle quantité
-      const updatedAccompagnement = newAccompagnements.find(a => a.name === accompagnement);
-      const newQuantity = updatedAccompagnement ? updatedAccompagnement.quantity : 0;
-      addAccompagnementToCart(accompagnement, newQuantity);
-      
-      return newAccompagnements;
+  const handleBeaucoupToggle = (accompagnement: string, checked: boolean) => {
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+
+    if (accompagnement === "Wasabi") {
+      setBeaucoupWasabi(checked);
+    } else if (accompagnement === "Gingembre") {
+      setBeaucoupGingembre(checked);
+    }
+
+    // Supprimer les anciennes entrées "beaucoup de"
+    const existingBeaucoupItems = items.filter(item => 
+      item.menuItem.name === `Beaucoup de ${accompagnement.toLowerCase()}`
+    );
+    existingBeaucoupItems.forEach(item => {
+      removeItem(item.menuItem.id);
     });
+
+    if (checked) {
+      const beaucoupItem = {
+        id: `beaucoup-${accompagnement}-${Date.now()}`,
+        name: `Beaucoup de ${accompagnement.toLowerCase()}`,
+        description: "Supplément grande quantité",
+        price: 0.5,
+        imageUrl: "",
+        category: "Accompagnement" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      addItem(beaucoupItem, 1);
+    }
   };
+
 
 
   const addAccessoireToCart = (name: string, description: string, isSelected: boolean, quantity: number = 1) => {
@@ -645,32 +693,20 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🌶️ Accompagnements
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getFreeAccompagnementsCount()} gratuit{getFreeAccompagnementsCount() > 1 ? 's' : ''}
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+              Gratuit (dosage standard)
             </span>
           </h4>
+          <p className="text-xs text-gray-500">La cuisine adapte proportionnellement à votre commande</p>
           <div className="grid grid-cols-1 gap-3">
             {accompagnementsOptions.map((accompagnement) => {
-              const selectedAccompagnement = selectedAccompagnements.find(a => a.name === accompagnement);
-              const isSelected = !!selectedAccompagnement;
-              const quantity = selectedAccompagnement?.quantity || 0;
-              
-              // Calculer les coûts de manière globale et simple
-              const freeAccompagnementsCount = getFreeAccompagnementsCount();
-              const totalSelected = getTotalSelectedAccompagnements();
-              
-              // Calculer combien d'accompagnements gratuits il reste avant cet accompagnement
-              let freeAccompagnementsUsedBefore = 0;
-              selectedAccompagnements.forEach(a => {
-                if (a.name !== accompagnement) {
-                  freeAccompagnementsUsedBefore += a.quantity;
-                }
-              });
-              
-              const freeAccompagnementsRemaining = Math.max(0, freeAccompagnementsCount - freeAccompagnementsUsedBefore);
-              const freeAccompagnementsForThis = Math.min(quantity, freeAccompagnementsRemaining);
-              const paidAccompagnementsForThis = Math.max(0, quantity - freeAccompagnementsForThis);
-              const totalCost = paidAccompagnementsForThis * 0.5;
+              const isWasabi = accompagnement === "Wasabi";
+              const isGingembre = accompagnement === "Gingembre";
+              const isSelected = items.some(item => 
+                item.menuItem.name === accompagnement && 
+                item.menuItem.category === "Accompagnement"
+              );
+              const beaucoupSelected = isWasabi ? beaucoupWasabi : isGingembre ? beaucoupGingembre : false;
               
               return (
                 <div key={accompagnement} className="space-y-2 p-3 border rounded-lg bg-white">
@@ -678,7 +714,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                     <Checkbox
                       id={`accompagnement-${accompagnement}`}
                       checked={isSelected}
-                      onCheckedChange={() => handleAccompagnementToggle(accompagnement)}
+                      onCheckedChange={(checked) => handleAccompagnementToggle(accompagnement, checked as boolean)}
                     />
                     <label 
                       htmlFor={`accompagnement-${accompagnement}`} 
@@ -686,48 +722,23 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                     >
                       {accompagnement}
                     </label>
-                    {isSelected && (
-                      <div className="text-xs">
-                        {freeAccompagnementsForThis > 0 && (
-                          <span className="text-green-600 font-medium">
-                            {freeAccompagnementsForThis}x gratuit
-                          </span>
-                        )}
-                        {freeAccompagnementsForThis > 0 && paidAccompagnementsForThis > 0 && <span className="text-gray-400"> + </span>}
-                        {paidAccompagnementsForThis > 0 && (
-                          <span className="text-orange-600 font-medium">
-                            {paidAccompagnementsForThis}x +{totalCost.toFixed(2)}€
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <span className="text-xs text-green-600 font-medium">Gratuit</span>
                   </div>
                   
                   {isSelected && (
-                    <div className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                      <span className="text-sm text-gray-600">Quantité:</span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateAccompagnementQuantity(accompagnement, -1)}
-                          disabled={quantity <= 1}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="w-8 text-center text-sm font-medium">{quantity}</span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateAccompagnementQuantity(accompagnement, 1)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
+                    <div className="flex items-center space-x-3 bg-orange-50 p-2 rounded border border-orange-200">
+                      <Checkbox
+                        id={`beaucoup-${accompagnement}`}
+                        checked={beaucoupSelected}
+                        onCheckedChange={(checked) => handleBeaucoupToggle(accompagnement, checked as boolean)}
+                      />
+                      <label 
+                        htmlFor={`beaucoup-${accompagnement}`} 
+                        className="text-sm flex-1 cursor-pointer"
+                      >
+                        Beaucoup de {accompagnement.toLowerCase()}
+                      </label>
+                      <span className="text-xs text-orange-600 font-medium">+0,50€</span>
                     </div>
                   )}
                 </div>
