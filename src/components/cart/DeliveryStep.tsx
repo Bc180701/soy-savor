@@ -410,9 +410,14 @@ export const DeliveryStep = ({
                   ? cartExtras.accompagnements.map(accomp => accomp.name).join(', ')
                   : 'Aucun'
               }</p>
-              <p><strong>Set de couverts :</strong> {
-                cartExtras.setCouvertsQuantity > 0 
-                  ? `${cartExtras.setCouvertsQuantity} set(s)` 
+              <p><strong>Baguettes :</strong> {
+                cartExtras.baguettesQuantity > 0 
+                  ? `${cartExtras.baguettesQuantity} paire(s)` 
+                  : 'Non demandées'
+              }</p>
+              <p><strong>Set cuillère + fourchette :</strong> {
+                cartExtras.setCuilleresFourchettesQuantity > 0 
+                  ? `${cartExtras.setCuilleresFourchettesQuantity} set(s)` 
                   : 'Non demandés'
               }</p>
             </div>
