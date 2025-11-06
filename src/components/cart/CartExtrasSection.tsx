@@ -13,7 +13,8 @@ export interface CartExtras {
   sauces: { name: string; quantity: number }[];
   accompagnements: { name: string; quantity: number }[];
   baguettesQuantity: number;
-  setCuilleresFourchettesQuantity: number;
+  fourchettesQuantity: number;
+  cuilleresQuantity: number;
 }
 
 export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) => {
@@ -22,7 +23,8 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const [beaucoupWasabi, setBeaucoupWasabi] = useState<boolean>(false);
   const [beaucoupGingembre, setBeaucoupGingembre] = useState<boolean>(false);
   const [baguettesQuantity, setBaguettesQuantity] = useState<number>(0);
-  const [setCuilleresFourchettesQuantity, setSetCuilleresFourchettesQuantity] = useState<number>(0);
+  const [fourchettesQuantity, setFourchettesQuantity] = useState<number>(0);
+  const [cuilleresQuantity, setCuilleresQuantity] = useState<number>(0);
   const { addItem, removeItem, selectedRestaurantId, items, getTotalPrice } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
@@ -36,10 +38,11 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         sauces: selectedSauces,
         accompagnements: selectedAccompagnements,
         baguettesQuantity,
-        setCuilleresFourchettesQuantity
+        fourchettesQuantity,
+        cuilleresQuantity
       });
     }
-  }, [selectedSauces, selectedAccompagnements, baguettesQuantity, setCuilleresFourchettesQuantity, items, onExtrasChange]);
+  }, [selectedSauces, selectedAccompagnements, baguettesQuantity, fourchettesQuantity, cuilleresQuantity, items, onExtrasChange]);
 
   const saucesOptions = [
     "Soja sucrée",
@@ -91,20 +94,24 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
   // Supprimer la fonction getDisabledAccompagnements - on permet toujours d'ajouter des accompagnements
 
-  // Calculer les baguettes et sets gratuits (1 par 10€)
+  // Calculer les couverts gratuits (1 par 10€ pour chaque type)
   const getFreeBaguettes = () => Math.floor(getTotalPrice() / 10);
-  const getFreeCuilleresFourchettes = () => Math.floor(getTotalPrice() / 10);
+  const getFreeFourchettes = () => Math.floor(getTotalPrice() / 10);
+  const getFreeCuilleres = () => Math.floor(getTotalPrice() / 10);
 
-  // Vérifier si les baguettes sont déjà dans le panier
+  // Vérifier si les couverts sont déjà dans le panier
   const baguettesInCart = items.find(item => 
     item.menuItem.name.toLowerCase().includes('baguettes') ||
     item.menuItem.name.toLowerCase().includes('baguette')
   );
 
-  // Vérifier si les sets cuillère+fourchette sont déjà dans le panier
-  const setCuilleresFourchettesInCart = items.find(item => 
-    item.menuItem.name.toLowerCase().includes('set cuillère') ||
-    item.menuItem.name.toLowerCase().includes('cuillère fourchette')
+  const fourchettesInCart = items.find(item => 
+    item.menuItem.name.toLowerCase().includes('fourchette')
+  );
+
+  const cuilleresInCart = items.find(item => 
+    item.menuItem.name.toLowerCase().includes('cuillère') ||
+    item.menuItem.name.toLowerCase().includes('cuillere')
   );
 
   const disabledSauces = getDisabledSauces();
@@ -236,7 +243,8 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     setSelectedSauces([]);
     setSelectedAccompagnements([]);
     setBaguettesQuantity(0);
-    setSetCuilleresFourchettesQuantity(0);
+    setFourchettesQuantity(0);
+    setCuilleresQuantity(0);
   };
 
   const addSauceToCart = (sauce: string, quantity: number) => {
@@ -483,7 +491,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const freeCount = getFreeBaguettes();
     const paidCount = Math.max(0, quantity - freeCount);
     
-    // Supprimer l'ancien item s'il existe
     if (baguettesInCart) {
       removeItem(baguettesInCart.menuItem.id);
     }
@@ -511,23 +518,22 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     }
   };
 
-  const addSetCuilleresFourchettesToCart = (quantity: number) => {
+  const addFourchettesToCart = (quantity: number) => {
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
-    const freeCount = getFreeCuilleresFourchettes();
+    const freeCount = getFreeFourchettes();
     const paidCount = Math.max(0, quantity - freeCount);
     
-    // Supprimer l'ancien item s'il existe
-    if (setCuilleresFourchettesInCart) {
-      removeItem(setCuilleresFourchettesInCart.menuItem.id);
+    if (fourchettesInCart) {
+      removeItem(fourchettesInCart.menuItem.id);
     }
     
     if (quantity > 0) {
-      const setCuilleresFourchettesItem = {
-        id: `set-cuilleres-fourchettes-${Date.now()}`,
-        name: `Set cuillère + fourchette${paidCount > 0 ? ` - ${freeCount} gratuit(s) + ${paidCount} payant(s)` : ` - ${freeCount} gratuit(s)`}`,
-        description: "Cuillère et fourchette",
+      const fourchettesItem = {
+        id: `fourchettes-${Date.now()}`,
+        name: `Fourchettes${paidCount > 0 ? ` - ${freeCount} gratuite(s) + ${paidCount} payante(s)` : ` - ${freeCount} gratuite(s)`}`,
+        description: "Fourchettes",
         price: paidCount * 0.50,
         imageUrl: "",
         category: "Accessoire" as const,
@@ -542,7 +548,41 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         prepTime: null
       };
       
-      addItem(setCuilleresFourchettesItem, 1);
+      addItem(fourchettesItem, 1);
+    }
+  };
+
+  const addCuilleresToCart = (quantity: number) => {
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+
+    const freeCount = getFreeCuilleres();
+    const paidCount = Math.max(0, quantity - freeCount);
+    
+    if (cuilleresInCart) {
+      removeItem(cuilleresInCart.menuItem.id);
+    }
+    
+    if (quantity > 0) {
+      const cuilleresItem = {
+        id: `cuilleres-${Date.now()}`,
+        name: `Cuillères${paidCount > 0 ? ` - ${freeCount} gratuite(s) + ${paidCount} payante(s)` : ` - ${freeCount} gratuite(s)`}`,
+        description: "Cuillères",
+        price: paidCount * 0.50,
+        imageUrl: "",
+        category: "Accessoire" as const,
+        restaurant_id: restaurantId,
+        isVegetarian: true,
+        isSpicy: false,
+        isNew: false,
+        isBestSeller: false,
+        isGlutenFree: true,
+        allergens: [],
+        pieces: null,
+        prepTime: null
+      };
+      
+      addItem(cuilleresItem, 1);
     }
   };
 
@@ -552,10 +592,16 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     addBaguettesToCart(newQuantity);
   };
 
-  const updateSetCuilleresFourchettesQuantity = (change: number) => {
-    const newQuantity = Math.max(0, Math.min(10, setCuilleresFourchettesQuantity + change));
-    setSetCuilleresFourchettesQuantity(newQuantity);
-    addSetCuilleresFourchettesToCart(newQuantity);
+  const updateFourchettesQuantity = (change: number) => {
+    const newQuantity = Math.max(0, Math.min(10, fourchettesQuantity + change));
+    setFourchettesQuantity(newQuantity);
+    addFourchettesToCart(newQuantity);
+  };
+
+  const updateCuilleresQuantity = (change: number) => {
+    const newQuantity = Math.max(0, Math.min(10, cuilleresQuantity + change));
+    setCuilleresQuantity(newQuantity);
+    addCuilleresToCart(newQuantity);
   };
 
 
@@ -792,22 +838,22 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           </div>
         </div>
 
-        {/* Set cuillère + fourchette */}
+        {/* Fourchettes */}
         <div className="space-y-3">
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-            🍴 Set cuillère + fourchette
+            🍴 Fourchettes
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getFreeCuilleresFourchettes()} gratuit{getFreeCuilleresFourchettes() > 1 ? 's' : ''}
+              {getFreeFourchettes()} gratuite{getFreeFourchettes() > 1 ? 's' : ''}
             </span>
           </h4>
           <div className="space-y-2 p-3 border rounded-lg bg-white">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <label className="text-sm font-medium leading-none">
-                  Set cuillère + fourchette
+                  Fourchettes
                 </label>
                 <p className="text-xs text-muted-foreground mt-1">
-                  1 set gratuit par 10€ • +0,50€ par set supplémentaire
+                  1 gratuite par 10€ • +0,50€ par fourchette supplémentaire
                 </p>
               </div>
             </div>
@@ -816,37 +862,101 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => updateSetCuilleresFourchettesQuantity(-1)}
-                disabled={setCuilleresFourchettesQuantity === 0}
+                onClick={() => updateFourchettesQuantity(-1)}
+                disabled={fourchettesQuantity === 0}
               >
                 <Minus className="h-4 w-4" />
               </Button>
               <span className="min-w-[2rem] text-center font-medium">
-                {setCuilleresFourchettesQuantity}
+                {fourchettesQuantity}
               </span>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => updateSetCuilleresFourchettesQuantity(1)}
-                disabled={setCuilleresFourchettesQuantity >= 10}
+                onClick={() => updateFourchettesQuantity(1)}
+                disabled={fourchettesQuantity >= 10}
               >
                 <Plus className="h-4 w-4" />
               </Button>
-              {setCuilleresFourchettesQuantity > 0 && (
+              {fourchettesQuantity > 0 && (
                 <div className="text-xs ml-2">
-                  {getFreeCuilleresFourchettes() >= setCuilleresFourchettesQuantity ? (
+                  {getFreeFourchettes() >= fourchettesQuantity ? (
                     <span className="text-green-600 font-medium">
                       Gratuit
                     </span>
                   ) : (
                     <>
                       <span className="text-green-600 font-medium">
-                        {getFreeCuilleresFourchettes()}x gratuit{getFreeCuilleresFourchettes() > 1 ? 's' : ''}
+                        {getFreeFourchettes()}x gratuite{getFreeFourchettes() > 1 ? 's' : ''}
                       </span>
                       <span className="text-gray-400"> + </span>
                       <span className="text-orange-600 font-medium">
-                        {setCuilleresFourchettesQuantity - getFreeCuilleresFourchettes()}x +{((setCuilleresFourchettesQuantity - getFreeCuilleresFourchettes()) * 0.50).toFixed(2)}€
+                        {fourchettesQuantity - getFreeFourchettes()}x +{((fourchettesQuantity - getFreeFourchettes()) * 0.50).toFixed(2)}€
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Cuillères */}
+        <div className="space-y-3">
+          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+            🥄 Cuillères
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+              {getFreeCuilleres()} gratuite{getFreeCuilleres() > 1 ? 's' : ''}
+            </span>
+          </h4>
+          <div className="space-y-2 p-3 border rounded-lg bg-white">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <label className="text-sm font-medium leading-none">
+                  Cuillères
+                </label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  1 gratuite par 10€ • +0,50€ par cuillère supplémentaire
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => updateCuilleresQuantity(-1)}
+                disabled={cuilleresQuantity === 0}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[2rem] text-center font-medium">
+                {cuilleresQuantity}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => updateCuilleresQuantity(1)}
+                disabled={cuilleresQuantity >= 10}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              {cuilleresQuantity > 0 && (
+                <div className="text-xs ml-2">
+                  {getFreeCuilleres() >= cuilleresQuantity ? (
+                    <span className="text-green-600 font-medium">
+                      Gratuit
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-green-600 font-medium">
+                        {getFreeCuilleres()}x gratuite{getFreeCuilleres() > 1 ? 's' : ''}
+                      </span>
+                      <span className="text-gray-400"> + </span>
+                      <span className="text-orange-600 font-medium">
+                        {cuilleresQuantity - getFreeCuilleres()}x +{((cuilleresQuantity - getFreeCuilleres()) * 0.50).toFixed(2)}€
                       </span>
                     </>
                   )}

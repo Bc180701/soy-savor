@@ -415,10 +415,15 @@ export const DeliveryStep = ({
                   ? `${cartExtras.baguettesQuantity} paire(s)` 
                   : 'Non demandées'
               }</p>
-              <p><strong>Set cuillère + fourchette :</strong> {
-                cartExtras.setCuilleresFourchettesQuantity > 0 
-                  ? `${cartExtras.setCuilleresFourchettesQuantity} set(s)` 
-                  : 'Non demandés'
+              <p><strong>Fourchettes :</strong> {
+                cartExtras.fourchettesQuantity > 0 
+                  ? `${cartExtras.fourchettesQuantity}` 
+                  : 'Non demandées'
+              }</p>
+              <p><strong>Cuillères :</strong> {
+                cartExtras.cuilleresQuantity > 0 
+                  ? `${cartExtras.cuilleresQuantity}` 
+                  : 'Non demandées'
               }</p>
             </div>
           </div>
