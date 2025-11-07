@@ -82,11 +82,14 @@ serve(async (req) => {
     console.log(`📊 Commandes ${orderType} existantes pour ${scheduledFor}:`, orderCount);
 
     // 🚨 VÉRIFICATION CRITIQUE: Créneaux bloqués par l'admin
-    // Utiliser les méthodes UTC pour éviter les problèmes de timezone
-    const hours = String(scheduledDate.getUTCHours()).padStart(2, '0');
-    const minutes = String(scheduledDate.getUTCMinutes()).padStart(2, '0');
+    // Utiliser l'heure locale pour correspondre avec TimeSlotSelector
+    const hours = String(scheduledDate.getHours()).padStart(2, '0');
+    const minutes = String(scheduledDate.getMinutes()).padStart(2, '0');
     const timeOnly = `${hours}:${minutes}`;
-    const dateOnly = scheduledDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
+    const year = scheduledDate.getFullYear();
+    const month = String(scheduledDate.getMonth() + 1).padStart(2, '0');
+    const day = String(scheduledDate.getDate()).padStart(2, '0');
+    const dateOnly = `${year}-${month}-${day}`; // Format YYYY-MM-DD en heure locale
     
     console.log('🔍 Vérification créneau bloqué:', {
       restaurantId,
