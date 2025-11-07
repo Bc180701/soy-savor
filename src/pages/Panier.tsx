@@ -295,16 +295,24 @@ const PanierContent = () => {
         try {
           console.log("🔒 Vérification finale du créneau avant paiement...");
           
-          // Préparer la date scheduled_for
+          // Préparer la date scheduled_for EN HEURE LOCALE
           const scheduledForDate = new Date();
           const [hours, minutes] = deliveryInfo.pickupTime.split(':') || ["12", "00"];
           scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+          
+          // Créer un ISO string en heure locale (cohérent avec la création du checkout)
+          const year = scheduledForDate.getFullYear();
+          const month = String(scheduledForDate.getMonth() + 1).padStart(2, '0');
+          const day = String(scheduledForDate.getDate()).padStart(2, '0');
+          const hoursStr = String(scheduledForDate.getHours()).padStart(2, '0');
+          const minutesStr = String(scheduledForDate.getMinutes()).padStart(2, '0');
+          const verificationTimeString = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00`;
           
           const { data: verification, error } = await supabase.functions.invoke('verify-time-slot', {
             body: {
               restaurantId: cartRestaurant.id,
               orderType: deliveryInfo.orderType,
-              scheduledFor: scheduledForDate.toISOString()
+              scheduledFor: verificationTimeString
             }
           });
 
