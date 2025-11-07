@@ -87,17 +87,10 @@ serve(async (req) => {
     console.log(`📊 Commandes ${orderType} existantes pour ${scheduledFor}:`, orderCount);
 
     // 🚨 VÉRIFICATION CRITIQUE: Créneaux bloqués par l'admin
-    // scheduledDate contient déjà l'heure française convertie en UTC
-    // On reconvertit en heure française pour comparer avec les créneaux bloqués
-    // Offset France: UTC+1 en hiver, UTC+2 en été
-    const januaryOffset = new Date(scheduledDate.getFullYear(), 0, 1).getTimezoneOffset();
-    const julyOffset = new Date(scheduledDate.getFullYear(), 6, 1).getTimezoneOffset();
-    const isDST = Math.max(januaryOffset, julyOffset) !== scheduledDate.getTimezoneOffset();
-    const offsetHours = isDST ? 2 : 1; // UTC+2 en été, UTC+1 en hiver
-    
-    const localDate = new Date(scheduledDate.getTime() + (offsetHours * 60 * 60 * 1000));
-    const hours = String(localDate.getUTCHours()).padStart(2, '0');
-    const minutes = String(localDate.getUTCMinutes()).padStart(2, '0');
+    // scheduledDate est en UTC, on doit le convertir en heure locale française pour comparer
+    const localDate = new Date(scheduledDate.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const hours = String(localDate.getHours()).padStart(2, '0');
+    const minutes = String(localDate.getMinutes()).padStart(2, '0');
     const timeOnly = `${hours}:${minutes}`;
     const year = localDate.getUTCFullYear();
     const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');

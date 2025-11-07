@@ -296,15 +296,15 @@ const PanierContent = () => {
         try {
           console.log("🔒 Vérification finale du créneau avant paiement...");
           
-          // Créer la date en heure française (Europe/Paris)
-          const today = new Date();
+          // Créer un Date object avec l'heure sélectionnée
+          const scheduledForDate = new Date();
           const [hours, minutes] = deliveryInfo.pickupTime.split(':') || ["12", "00"];
-          const scheduledForFrench = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours, 10), parseInt(minutes, 10), 0);
+          scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
           
-          // Formater en ISO avec timezone française (ex: "2025-11-07T21:00:00+01:00")
-          const scheduledForISO = formatInTimeZone(scheduledForFrench, 'Europe/Paris', "yyyy-MM-dd'T'HH:mm:ssXXX");
+          // Convertir en UTC avec toISOString() - le navigateur gère la timezone automatiquement
+          const scheduledForISO = scheduledForDate.toISOString();
           
-          console.log("📅 Heure française envoyée:", scheduledForISO);
+          console.log("📅 Heure locale:", deliveryInfo.pickupTime, "-> UTC:", scheduledForISO);
           
           const { data: verification, error } = await supabase.functions.invoke('verify-time-slot', {
             body: {
@@ -362,15 +362,15 @@ const PanierContent = () => {
         }
       }
 
-      // Créer la date en heure française (Europe/Paris)
-      const today = new Date();
+      // Créer un Date object avec l'heure sélectionnée
+      const scheduledForDate = new Date();
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
-      const scheduledForFrench = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours, 10), parseInt(minutes, 10), 0);
+      scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       
-      // Formater en ISO avec timezone française (ex: "2025-11-07T21:00:00+01:00")
-      const localISOString = formatInTimeZone(scheduledForFrench, 'Europe/Paris', "yyyy-MM-dd'T'HH:mm:ssXXX");
+      // Convertir en UTC avec toISOString() - le navigateur gère la timezone automatiquement
+      const localISOString = scheduledForDate.toISOString();
       
-      console.log("📅 Heure française pour checkout:", localISOString);
+      console.log("📅 Heure locale pour checkout:", deliveryInfo.pickupTime, "-> UTC:", localISOString);
       
       // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
       const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;
