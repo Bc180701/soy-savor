@@ -356,10 +356,18 @@ const PanierContent = () => {
         }
       }
 
-      // Préparation des données pour la fonction edge
+      // Préparation des données pour la fonction edge - conserver l'heure locale
       const scheduledForDate = new Date();
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
       scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      
+      // Créer un ISO string en heure locale (pas UTC) pour éviter les décalages
+      const year = scheduledForDate.getFullYear();
+      const month = String(scheduledForDate.getMonth() + 1).padStart(2, '0');
+      const day = String(scheduledForDate.getDate()).padStart(2, '0');
+      const hoursStr = String(scheduledForDate.getHours()).padStart(2, '0');
+      const minutesStr = String(scheduledForDate.getMinutes()).padStart(2, '0');
+      const localISOString = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00.000Z`;
       
       // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
       const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;
@@ -383,7 +391,7 @@ const PanierContent = () => {
           deliveryCity: deliveryInfo.city,
           deliveryPostalCode: deliveryInfo.postalCode,
           customerNotes: deliveryInfo.notes || '',
-          scheduledFor: scheduledForDate.toISOString(),
+          scheduledFor: localISOString,
           restaurantId: cartRestaurant?.id, // Ajout du restaurant ID
           cartExtras: cartExtras, // Ajout des extras du panier
           successUrl: `${window.location.origin}/commande-confirmee`,
