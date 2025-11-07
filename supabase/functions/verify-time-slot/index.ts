@@ -46,10 +46,14 @@ serve(async (req) => {
       );
     }
 
-    // Compter les commandes existantes pour ce créneau (reçu en ISO UTC)
+    // Compter les commandes existantes pour ce créneau
+    // scheduledFor est reçu avec timezone française (ex: "2025-11-07T21:00:00+01:00")
     const scheduledDate = new Date(scheduledFor);
     const startTime = scheduledDate.toISOString();
     const endTime = new Date(scheduledDate.getTime() + 60000).toISOString(); // +1 minute
+    
+    console.log('🕐 Heure reçue:', scheduledFor);
+    console.log('🕐 Heure UTC pour DB:', startTime);
     
     console.log('🔍 Requête SQL pour:', {
       restaurantId,
@@ -83,8 +87,15 @@ serve(async (req) => {
     console.log(`📊 Commandes ${orderType} existantes pour ${scheduledFor}:`, orderCount);
 
     // 🚨 VÉRIFICATION CRITIQUE: Créneaux bloqués par l'admin
-    // Convertir l'heure UTC reçue en heure locale française (UTC+1/+2)
-    const localDate = new Date(scheduledDate.getTime() + (60 * 60 * 1000)); // +1h pour UTC+1
+    // scheduledDate contient déjà l'heure française convertie en UTC
+    // On reconvertit en heure française pour comparer avec les créneaux bloqués
+    // Offset France: UTC+1 en hiver, UTC+2 en été
+    const januaryOffset = new Date(scheduledDate.getFullYear(), 0, 1).getTimezoneOffset();
+    const julyOffset = new Date(scheduledDate.getFullYear(), 6, 1).getTimezoneOffset();
+    const isDST = Math.max(januaryOffset, julyOffset) !== scheduledDate.getTimezoneOffset();
+    const offsetHours = isDST ? 2 : 1; // UTC+2 en été, UTC+1 en hiver
+    
+    const localDate = new Date(scheduledDate.getTime() + (offsetHours * 60 * 60 * 1000));
     const hours = String(localDate.getUTCHours()).padStart(2, '0');
     const minutes = String(localDate.getUTCMinutes()).padStart(2, '0');
     const timeOnly = `${hours}:${minutes}`;
