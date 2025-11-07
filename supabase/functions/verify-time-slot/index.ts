@@ -82,7 +82,10 @@ serve(async (req) => {
     console.log(`📊 Commandes ${orderType} existantes pour ${scheduledFor}:`, orderCount);
 
     // 🚨 VÉRIFICATION CRITIQUE: Créneaux bloqués par l'admin
-    const timeOnly = scheduledDate.toTimeString().slice(0, 5); // Format HH:MM
+    // Utiliser les méthodes UTC pour éviter les problèmes de timezone
+    const hours = String(scheduledDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(scheduledDate.getUTCMinutes()).padStart(2, '0');
+    const timeOnly = `${hours}:${minutes}`;
     const dateOnly = scheduledDate.toISOString().split('T')[0]; // Format YYYY-MM-DD
     
     console.log('🔍 Vérification créneau bloqué:', {
