@@ -361,13 +361,13 @@ const PanierContent = () => {
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
       scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       
-      // Créer un ISO string en heure locale (pas UTC) pour éviter les décalages
+      // Créer un ISO string en heure locale (SANS le Z pour éviter conversion UTC)
       const year = scheduledForDate.getFullYear();
       const month = String(scheduledForDate.getMonth() + 1).padStart(2, '0');
       const day = String(scheduledForDate.getDate()).padStart(2, '0');
       const hoursStr = String(scheduledForDate.getHours()).padStart(2, '0');
       const minutesStr = String(scheduledForDate.getMinutes()).padStart(2, '0');
-      const localISOString = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00.000Z`;
+      const localISOString = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00`;
       
       // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
       const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;
