@@ -295,24 +295,16 @@ const PanierContent = () => {
         try {
           console.log("🔒 Vérification finale du créneau avant paiement...");
           
-          // Préparer la date scheduled_for EN HEURE LOCALE
+          // Préparer la date scheduled_for avec conversion UTC
           const scheduledForDate = new Date();
           const [hours, minutes] = deliveryInfo.pickupTime.split(':') || ["12", "00"];
           scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-          
-          // Créer un ISO string en heure locale (cohérent avec la création du checkout)
-          const year = scheduledForDate.getFullYear();
-          const month = String(scheduledForDate.getMonth() + 1).padStart(2, '0');
-          const day = String(scheduledForDate.getDate()).padStart(2, '0');
-          const hoursStr = String(scheduledForDate.getHours()).padStart(2, '0');
-          const minutesStr = String(scheduledForDate.getMinutes()).padStart(2, '0');
-          const verificationTimeString = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00`;
           
           const { data: verification, error } = await supabase.functions.invoke('verify-time-slot', {
             body: {
               restaurantId: cartRestaurant.id,
               orderType: deliveryInfo.orderType,
-              scheduledFor: verificationTimeString
+              scheduledFor: scheduledForDate.toISOString()
             }
           });
 
@@ -364,18 +356,13 @@ const PanierContent = () => {
         }
       }
 
-      // Préparation des données pour la fonction edge - conserver l'heure locale
+      // Préparation de la date/heure - UTILISER toISOString() pour conversion UTC correcte
       const scheduledForDate = new Date();
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
       scheduledForDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
       
-      // Créer un ISO string en heure locale (SANS le Z pour éviter conversion UTC)
-      const year = scheduledForDate.getFullYear();
-      const month = String(scheduledForDate.getMonth() + 1).padStart(2, '0');
-      const day = String(scheduledForDate.getDate()).padStart(2, '0');
-      const hoursStr = String(scheduledForDate.getHours()).padStart(2, '0');
-      const minutesStr = String(scheduledForDate.getMinutes()).padStart(2, '0');
-      const localISOString = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00`;
+      // Utiliser toISOString() qui convertit correctement l'heure locale en UTC
+      const localISOString = scheduledForDate.toISOString();
       
       // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
       const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;

@@ -46,7 +46,7 @@ serve(async (req) => {
       );
     }
 
-    // Compter les commandes existantes pour ce créneau et ce restaurant du type demandé
+    // Compter les commandes existantes pour ce créneau (reçu en ISO UTC)
     const scheduledDate = new Date(scheduledFor);
     const startTime = scheduledDate.toISOString();
     const endTime = new Date(scheduledDate.getTime() + 60000).toISOString(); // +1 minute
@@ -83,14 +83,15 @@ serve(async (req) => {
     console.log(`📊 Commandes ${orderType} existantes pour ${scheduledFor}:`, orderCount);
 
     // 🚨 VÉRIFICATION CRITIQUE: Créneaux bloqués par l'admin
-    // Utiliser les méthodes UTC car la chaîne reçue est interprétée comme UTC par le serveur
-    const hours = String(scheduledDate.getUTCHours()).padStart(2, '0');
-    const minutes = String(scheduledDate.getUTCMinutes()).padStart(2, '0');
+    // Convertir l'heure UTC reçue en heure locale française (UTC+1/+2)
+    const localDate = new Date(scheduledDate.getTime() + (60 * 60 * 1000)); // +1h pour UTC+1
+    const hours = String(localDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(localDate.getUTCMinutes()).padStart(2, '0');
     const timeOnly = `${hours}:${minutes}`;
-    const year = scheduledDate.getUTCFullYear();
-    const month = String(scheduledDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(scheduledDate.getUTCDate()).padStart(2, '0');
-    const dateOnly = `${year}-${month}-${day}`; // Format YYYY-MM-DD en UTC
+    const year = localDate.getUTCFullYear();
+    const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getUTCDate()).padStart(2, '0');
+    const dateOnly = `${year}-${month}-${day}`; // Format YYYY-MM-DD en heure locale
     
     console.log('🔍 Vérification créneau bloqué:', {
       restaurantId,
