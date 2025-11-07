@@ -61,10 +61,11 @@ serve(async (req) => {
 
     const { data: existingOrders, error } = await supabase
       .from('orders')
-      .select('id, scheduled_for, restaurant_id, payment_status, order_type, client_name')
+      .select('id, scheduled_for, restaurant_id, payment_status, order_type, client_name, status')
       .eq('restaurant_id', restaurantId)
       .eq('order_type', orderType) // Filtrer par le type de commande actuel
       .in('payment_status', ['paid', 'pending']) // Inclure les commandes en attente de paiement
+      .not('status', 'in', '(delivered,cancelled)') // Exclure les commandes livrées ou annulées
       .gte('scheduled_for', startTime)
       .lt('scheduled_for', endTime);
 
