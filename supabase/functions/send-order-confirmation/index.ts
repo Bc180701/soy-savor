@@ -60,17 +60,17 @@ const handler = async (req: Request): Promise<Response> => {
     const addressText = order.order_type === 'delivery' && order.delivery_street ? 
       `${order.delivery_street}, ${order.delivery_city} ${order.delivery_postal_code}` : '';
 
-    // Formater la date de livraison/retrait
-    const scheduledDate = new Date(order.scheduled_for);
-    const dateText = scheduledDate.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/Paris'
-    });
+    // Formater la date de livraison/retrait SANS conversion de timezone
+    const scheduledFor = order.scheduled_for; // Format: "2025-11-08T11:45:00"
+    const [datePart, timePart] = scheduledFor.split('T');
+    const [year, month, day] = datePart.split('-');
+    const [hours, minutes] = (timePart || '00:00').split(':');
+    
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const weekdays = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    
+    const dateText = `${weekdays[date.getDay()]} ${day} ${months[parseInt(month) - 1]} ${year} à ${hours}:${minutes}`;
 
     // Créer le HTML de l'email
     const emailHTML = `
