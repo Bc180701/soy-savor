@@ -14,9 +14,20 @@ export const formatEuro = (value: number): string => {
 };
 
 /**
- * Formate une date selon le format français
+ * Formate une date selon le format français SANS conversion de timezone
  */
-export const formatDate = (date: Date): string => {
+export const formatDate = (date: Date | string): string => {
+  // Si c'est une string ISO, extraire directement la date/heure
+  if (typeof date === 'string') {
+    const [datePart, timePart] = date.split('T');
+    const [year, month, day] = datePart.split('-');
+    const [hours, minutes] = (timePart || '00:00').split(':');
+    
+    const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
+                        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    
+    return `${day} ${monthNames[parseInt(month) - 1]} ${year} ${hours}:${minutes}`;
+  }
   return format(date, 'dd MMMM yyyy HH:mm', { locale: fr });
 };
 
