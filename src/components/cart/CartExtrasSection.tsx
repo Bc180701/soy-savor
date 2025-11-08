@@ -498,9 +498,9 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     if (quantity > 0) {
       const baguettesItem = {
         id: `baguettes-${Date.now()}`,
-        name: `Baguettes${paidCount > 0 ? ` - ${freeCount} gratuite(s) + ${paidCount} payante(s)` : ` - ${freeCount} gratuite(s)`}`,
-        description: "Baguettes",
-        price: paidCount * 0.50,
+        name: paidCount > 0 ? `Baguettes (${freeCount} gratuite(s) + ${paidCount} payante(s))` : `Baguettes`,
+        description: paidCount > 0 ? `${quantity} baguettes dont ${freeCount} offertes` : `${quantity} baguette(s) offerte(s)`,
+        price: paidCount * 0.50 / quantity, // Prix unitaire moyen
         imageUrl: "",
         category: "Accessoire" as const,
         restaurant_id: restaurantId,
@@ -514,7 +514,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         prepTime: null
       };
       
-      addItem(baguettesItem, 1);
+      addItem(baguettesItem, quantity);
     }
   };
 
@@ -532,9 +532,9 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     if (quantity > 0) {
       const fourchettesItem = {
         id: `fourchettes-${Date.now()}`,
-        name: `Fourchettes${paidCount > 0 ? ` - ${freeCount} gratuite(s) + ${paidCount} payante(s)` : ` - ${freeCount} gratuite(s)`}`,
-        description: "Fourchettes",
-        price: paidCount * 0.50,
+        name: paidCount > 0 ? `Fourchettes (${freeCount} gratuite(s) + ${paidCount} payante(s))` : `Fourchettes`,
+        description: paidCount > 0 ? `${quantity} fourchettes dont ${freeCount} offertes` : `${quantity} fourchette(s) offerte(s)`,
+        price: paidCount * 0.50 / quantity, // Prix unitaire moyen
         imageUrl: "",
         category: "Accessoire" as const,
         restaurant_id: restaurantId,
@@ -548,7 +548,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         prepTime: null
       };
       
-      addItem(fourchettesItem, 1);
+      addItem(fourchettesItem, quantity);
     }
   };
 
@@ -566,9 +566,9 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     if (quantity > 0) {
       const cuilleresItem = {
         id: `cuilleres-${Date.now()}`,
-        name: `Cuillères${paidCount > 0 ? ` - ${freeCount} gratuite(s) + ${paidCount} payante(s)` : ` - ${freeCount} gratuite(s)`}`,
-        description: "Cuillères",
-        price: paidCount * 0.50,
+        name: paidCount > 0 ? `Cuillères (${freeCount} gratuite(s) + ${paidCount} payante(s))` : `Cuillères`,
+        description: paidCount > 0 ? `${quantity} cuillères dont ${freeCount} offertes` : `${quantity} cuillère(s) offerte(s)`,
+        price: paidCount * 0.50 / quantity, // Prix unitaire moyen
         imageUrl: "",
         category: "Accessoire" as const,
         restaurant_id: restaurantId,
@@ -582,7 +582,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         prepTime: null
       };
       
-      addItem(cuilleresItem, 1);
+      addItem(cuilleresItem, quantity);
     }
   };
 
