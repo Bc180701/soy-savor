@@ -1477,29 +1477,44 @@ export type Database = {
       }
     }
     Functions: {
-      check_table_exists: { Args: { table_name: string }; Returns: boolean }
-      cleanup_old_cart_backups: { Args: never; Returns: undefined }
-      count_table_rows: { Args: { table_name: string }; Returns: number }
+      check_table_exists: {
+        Args: { table_name: string }
+        Returns: boolean
+      }
+      cleanup_old_cart_backups: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      count_table_rows: {
+        Args: { table_name: string }
+        Returns: number
+      }
       create_admin_user: {
         Args: { admin_email: string; admin_password: string }
         Returns: Json
       }
-      decode_items_summary: { Args: { encoded_summary: Json }; Returns: Json }
-      generate_product_code: { Args: never; Returns: string }
-      get_homepage_data: { Args: never; Returns: Json }
-      get_or_create_product_code:
-        | {
-            Args: { p_item_name: string; p_item_type?: string }
-            Returns: string
-          }
-        | {
-            Args: {
+      decode_items_summary: {
+        Args: { encoded_summary: Json }
+        Returns: Json
+      }
+      generate_product_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_homepage_data: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_or_create_product_code: {
+        Args:
+          | {
               p_item_description?: string
               p_item_name: string
               p_item_type?: string
             }
-            Returns: string
-          }
+          | { p_item_name: string; p_item_type?: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           role: Database["public"]["Enums"]["user_role"]
@@ -1507,8 +1522,14 @@ export type Database = {
         }
         Returns: boolean
       }
-      insert_homepage_data: { Args: never; Returns: undefined }
-      is_super_admin: { Args: { user_id: string }; Returns: boolean }
+      insert_homepage_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      is_super_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       update_all_products_status: {
         Args: { flag_name: string; flag_value: boolean }
         Returns: undefined
