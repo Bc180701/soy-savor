@@ -88,16 +88,19 @@ serve(async (req) => {
         apiVersion: '2023-10-16',
       });
       
-      // Récupérer l'URL de la facture PDF si disponible
-      let invoicePdfUrl = null;
-      if (session.invoice) {
+      // Récupérer l'URL du reçu Stripe depuis le payment_intent
+      let receiptUrl = null;
+      if (session.payment_intent) {
         try {
-          console.log('📄 Récupération de la facture Stripe:', session.invoice);
-          const invoice = await stripe.invoices.retrieve(session.invoice as string);
-          invoicePdfUrl = invoice.invoice_pdf;
-          console.log('✅ URL facture PDF récupérée:', invoicePdfUrl);
-        } catch (invoiceError) {
-          console.error('❌ Erreur récupération facture:', invoiceError);
+          console.log('📄 Récupération du reçu Stripe pour payment_intent:', session.payment_intent);
+          const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string);
+          if (paymentIntent.latest_charge) {
+            const charge = await stripe.charges.retrieve(paymentIntent.latest_charge as string);
+            receiptUrl = charge.receipt_url;
+            console.log('✅ URL reçu Stripe récupérée:', receiptUrl);
+          }
+        } catch (receiptError) {
+          console.error('❌ Erreur récupération reçu:', receiptError);
         }
       }
       
@@ -364,7 +367,7 @@ serve(async (req) => {
         delivery_postal_code: metadata?.delivery_postal_code || null,
         customer_notes: metadata?.customer_notes || null,
         items_summary: itemsSummary,
-        stripe_receipt_url: invoicePdfUrl,
+        stripe_receipt_url: receiptUrl,
       };
 
       console.log('📝 Création commande depuis webhook:', {
