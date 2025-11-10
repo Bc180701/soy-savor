@@ -83,26 +83,7 @@ serve(async (req) => {
       const session = event.data.object;
       console.log('💳 Session complétée:', session.id);
       
-      // Initialiser Stripe pour récupérer les line_items complets et la facture
-      const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-        apiVersion: '2023-10-16',
-      });
-      
-      // Récupérer l'URL du reçu Stripe depuis le payment_intent
-      let receiptUrl = null;
-      if (session.payment_intent) {
-        try {
-          console.log('📄 Récupération du reçu Stripe pour payment_intent:', session.payment_intent);
-          const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string);
-          if (paymentIntent.latest_charge) {
-            const charge = await stripe.charges.retrieve(paymentIntent.latest_charge as string);
-            receiptUrl = charge.receipt_url;
-            console.log('✅ URL reçu Stripe récupérée:', receiptUrl);
-          }
-        } catch (receiptError) {
-          console.error('❌ Erreur récupération reçu:', receiptError);
-        }
-      }
+      // On initialisera Stripe plus tard avec la bonne clé restaurant
       
       // Vérifier si la commande existe déjà
       const { data: existingOrder, error: existingError } = await supabase
@@ -245,6 +226,45 @@ serve(async (req) => {
       if (!restaurantId) {
         console.error('❌ Restaurant ID manquant dans les métadonnées');
         return new Response('Restaurant ID manquant', { status: 400 });
+      }
+
+      // Récupérer la clé Stripe spécifique au restaurant
+      let stripe;
+      let receiptUrl = null;
+      
+      try {
+        console.log(`🔑 Récupération clé Stripe pour restaurant ${restaurantId}...`);
+        const { data: keyData, error: keyError } = await supabase.functions.invoke('get-stripe-key', {
+          body: { restaurantId }
+        });
+
+        if (keyError || !keyData?.stripeKey) {
+          console.error('❌ Impossible de récupérer la clé Stripe:', keyError);
+          throw new Error('Clé Stripe introuvable');
+        }
+
+        console.log('✅ Clé Stripe récupérée');
+        stripe = new Stripe(keyData.stripeKey, {
+          apiVersion: '2023-10-16',
+        });
+
+        // Récupérer l'URL du reçu Stripe depuis le payment_intent
+        if (session.payment_intent) {
+          try {
+            console.log('📄 Récupération du reçu Stripe pour payment_intent:', session.payment_intent);
+            const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string);
+            if (paymentIntent.latest_charge) {
+              const charge = await stripe.charges.retrieve(paymentIntent.latest_charge as string);
+              receiptUrl = charge.receipt_url;
+              console.log('✅ URL reçu Stripe récupérée:', receiptUrl);
+            }
+          } catch (receiptError) {
+            console.error('❌ Erreur récupération reçu:', receiptError);
+          }
+        }
+      } catch (stripeKeyError) {
+        console.error('❌ Erreur lors de la récupération de la clé Stripe:', stripeKeyError);
+        // Continuer sans le reçu plutôt que de bloquer la commande
       }
 
       // Vérifier si l'utilisateur existe
