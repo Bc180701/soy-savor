@@ -83,10 +83,23 @@ serve(async (req) => {
       const session = event.data.object;
       console.log('💳 Session complétée:', session.id);
       
-      // Initialiser Stripe pour récupérer les line_items complets
+      // Initialiser Stripe pour récupérer les line_items complets et la facture
       const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
         apiVersion: '2023-10-16',
       });
+      
+      // Récupérer l'URL de la facture PDF si disponible
+      let invoicePdfUrl = null;
+      if (session.invoice) {
+        try {
+          console.log('📄 Récupération de la facture Stripe:', session.invoice);
+          const invoice = await stripe.invoices.retrieve(session.invoice as string);
+          invoicePdfUrl = invoice.invoice_pdf;
+          console.log('✅ URL facture PDF récupérée:', invoicePdfUrl);
+        } catch (invoiceError) {
+          console.error('❌ Erreur récupération facture:', invoiceError);
+        }
+      }
       
       // Vérifier si la commande existe déjà
       const { data: existingOrder, error: existingError } = await supabase
@@ -351,6 +364,7 @@ serve(async (req) => {
         delivery_postal_code: metadata?.delivery_postal_code || null,
         customer_notes: metadata?.customer_notes || null,
         items_summary: itemsSummary,
+        stripe_receipt_url: invoicePdfUrl,
       };
 
       console.log('📝 Création commande depuis webhook:', {
