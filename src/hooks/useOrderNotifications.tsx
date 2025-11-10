@@ -16,12 +16,23 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
 
   // Create notification sound using Web Audio API
   const playNotificationSound = (forcePlay = false) => {
+    // Vérifier si on est sur la page admin/commandes
+    const isOnOrdersPage = window.location.pathname.includes('/admin') && 
+                           new URLSearchParams(window.location.search).get('section') === 'orders';
+    
     console.log('🔊 Tentative de lecture du son...', { 
       audioContextExists: !!audioContextRef.current,
       audioEnabled,
       forcePlay,
+      isOnOrdersPage,
       audioState: audioContextRef.current?.state 
     });
+    
+    // Ne pas jouer le son si on est sur la page des commandes (sauf si force)
+    if (isOnOrdersPage && !forcePlay) {
+      console.log('🔇 Son désactivé car on est sur la page des commandes');
+      return;
+    }
     
     if (!audioContextRef.current || (!audioEnabled && !forcePlay)) {
       console.log('❌ Son non joué:', { audioContext: !!audioContextRef.current, audioEnabled, forcePlay });
