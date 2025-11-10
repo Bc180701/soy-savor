@@ -141,6 +141,21 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
     
     pollingInterval = setInterval(async () => {
       try {
+        // Vérifier si on est sur la page des commandes
+        const isOnOrdersPage = window.location.pathname.includes('/admin') && 
+                               new URLSearchParams(window.location.search).get('section') === 'orders';
+        
+        // Si on est sur la page commandes, arrêter les notifications et mettre à jour lastCheckTime
+        if (isOnOrdersPage) {
+          if (hasNewOrders) {
+            console.log('👁️ Page commandes vue - arrêt des notifications');
+            stopTitleBlink();
+          }
+          // Mettre à jour lastCheckTime pour ne plus détecter les anciennes commandes
+          lastCheckTime = new Date().getTime();
+          return;
+        }
+        
         const { data: orders, error } = await supabase
           .from('orders')
           .select('id, created_at, restaurant_id')
@@ -158,7 +173,7 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
             filteredOrders.forEach((order: any) => {
               console.log('🔔 Nouvelle commande détectée via polling:', order);
               
-              // Play notification sound
+              // Play notification sound (ne jouera pas si on est sur la page commandes)
               playNotificationSound();
 
               // Show toast notification with restaurant info
@@ -189,7 +204,7 @@ export const useOrderNotifications = (isAdmin: boolean, restaurantId?: string) =
       }
       stopTitleBlink();
     };
-  }, [isAdmin, restaurantId, toast]);
+  }, [isAdmin, restaurantId, toast, hasNewOrders]);
 
   // Stop blinking when user focuses on the tab
   useEffect(() => {
