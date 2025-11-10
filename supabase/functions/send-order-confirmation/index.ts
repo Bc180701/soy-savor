@@ -47,11 +47,22 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Décoder les articles de la commande
-    const { data: decodedItems } = await supabase
-      .rpc('decode_items_summary', { encoded_summary: order.items_summary });
-
-    const items = decodedItems || order.items_summary || [];
+    // Vérifier si items_summary est déjà au bon format ou doit être décodé
+    let items = [];
+    if (order.items_summary && order.items_summary.length > 0) {
+      const firstItem = order.items_summary[0];
+      // Si l'item a déjà 'name' et 'price', c'est le nouveau format
+      if (firstItem.name && firstItem.hasOwnProperty('price')) {
+        console.log('✅ Utilisation du format direct items_summary');
+        items = order.items_summary;
+      } else {
+        // Ancien format encodé, utiliser la fonction de décodage
+        console.log('🔄 Décodage ancien format items_summary');
+        const { data: decodedItems } = await supabase
+          .rpc('decode_items_summary', { encoded_summary: order.items_summary });
+        items = decodedItems || [];
+      }
+    }
 
     // Préparer les informations de livraison/retrait
     const orderTypeText = order.order_type === 'delivery' ? 'Livraison' : 
