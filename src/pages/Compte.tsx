@@ -192,7 +192,9 @@ const Compte = () => {
                               </Badge>
                             </div>
                             <span className="text-sm text-gray-500">
-                              {new Date(order.createdAt).toLocaleString('fr-FR')}
+                              {order.pickupTime 
+                                ? order.pickupTime 
+                                : new Date(order.scheduledFor).toLocaleString('fr-FR')}
                             </span>
                           </div>
                           <p className="text-gray-600">
