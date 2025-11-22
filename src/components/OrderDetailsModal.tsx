@@ -74,11 +74,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         setCustomerDetails(completeOrderDetails.customer);
         setAddressDetails(completeOrderDetails.delivery_address);
         
-        // Si aucun produit trouvé, récupérer les items du cart_backup
-        const hasItems = (completeOrderDetails.items_summary && completeOrderDetails.items_summary.length > 0) ||
-                        (completeOrderDetails.order_items && completeOrderDetails.order_items.length > 0);
-        
-        if (!hasItems && completeOrderDetails.client_email) {
+        // Toujours récupérer cart_backup pour avoir les données complètes
+        if (completeOrderDetails.client_email) {
           const backupItems = await fetchCartBackupItems(completeOrderDetails.client_email);
           setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
         } else {
@@ -370,7 +367,33 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
+                      cartBackupItems.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.menuItem?.name || 'Produit inconnu'}
+                            </div>
+                            {item.menuItem?.description && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {item.menuItem.description}
+                              </div>
+                            )}
+                            {item.specialInstructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.specialInstructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
                       orderDetails.items_summary.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
                           <div className="flex-1">
@@ -413,33 +436,11 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                           </div>
                         </div>
                       ))
-                     ) : cartBackupItems.length > 0 ? (
-                       cartBackupItems.map((item: any, index: number) => (
-                         <div key={index} className="p-4 flex justify-between bg-blue-50">
-                           <div className="flex-1">
-                             <div className="font-medium text-lg">
-                               {item.menuItem?.name || 'Produit inconnu'}
-                               <span className="ml-2 text-xs text-blue-600 font-normal">(depuis sauvegarde)</span>
-                             </div>
-                             {item.menuItem?.description && (
-                               <div className="text-sm text-muted-foreground mt-1">
-                                 {item.menuItem.description}
-                               </div>
-                             )}
-                           </div>
-                           <div className="text-right min-w-[100px]">
-                             <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
-                             <div className="font-semibold text-lg">
-                               {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
-                             </div>
-                           </div>
-                         </div>
-                       ))
-                     ) : (
-                       <div className="p-3 text-center text-muted-foreground">
-                         Aucun produit trouvé
-                       </div>
-                     )}
+                    ) : (
+                      <div className="p-3 text-center text-muted-foreground">
+                        Aucun produit trouvé
+                      </div>
+                    )}
                     
                     {/* Afficher le produit offert comme un élément distinct dans la liste des produits commandés */}
                     {freeProduct && (
@@ -649,7 +650,33 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
+                      cartBackupItems.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.menuItem?.name || 'Produit inconnu'}
+                            </div>
+                            {item.menuItem?.description && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {item.menuItem.description}
+                              </div>
+                            )}
+                            {item.specialInstructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.specialInstructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
                       <DecodedItemsList items={orderDetails.items_summary} />
                     ) : orderDetails.order_items && orderDetails.order_items.length > 0 ? (
                      orderDetails.order_items.map((item: any, index: number) => (
@@ -672,28 +699,6 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                          </div>
                        </div>
                      ))
-                    ) : cartBackupItems.length > 0 ? (
-                      cartBackupItems.map((item: any, index: number) => (
-                        <div key={index} className="p-4 flex justify-between bg-blue-50">
-                          <div className="flex-1">
-                            <div className="font-medium text-lg">
-                              {item.menuItem?.name || 'Produit inconnu'}
-                              <span className="ml-2 text-xs text-blue-600 font-normal">(depuis sauvegarde)</span>
-                            </div>
-                            {item.menuItem?.description && (
-                              <div className="text-sm text-muted-foreground mt-1">
-                                {item.menuItem.description}
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right min-w-[100px]">
-                            <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
-                            <div className="font-semibold text-lg">
-                              {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
-                            </div>
-                          </div>
-                        </div>
-                      ))
                     ) : (
                       <div className="p-3 text-center text-muted-foreground">
                         Aucun produit trouvé
