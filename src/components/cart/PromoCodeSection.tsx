@@ -24,6 +24,7 @@ interface PromoCodeSectionProps {
 export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEmail }: PromoCodeSectionProps) => {
   const [promoCode, setPromoCode] = useState<string>("");
   const [promoCodeLoading, setPromoCodeLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const { toast } = useToast();
 
   const handleApplyPromoCode = async () => {
@@ -32,6 +33,8 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
     console.log("🔍 Application code promo avec email:", userEmail);
     
     setPromoCodeLoading(true);
+    setErrorMessage(""); // Clear previous errors
+    
     try {
       const result = await validatePromoCode(promoCode.trim(), userEmail);
       
@@ -49,6 +52,7 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
           isPercentage: result.isPercentage || false
         });
         
+        setErrorMessage(""); // Clear any errors
         toast({
           title: "✅ Code promo appliqué",
           description: result.message || "Votre code promo a été appliqué avec succès.",
@@ -59,20 +63,24 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
         setPromoCode("");
       } else {
         // Code invalide ou déjà utilisé
+        const errorMsg = result.message || "Ce code promo est invalide ou a expiré.";
+        setErrorMessage(errorMsg);
         setPromoCode(""); // Clear le champ même en cas d'erreur
         toast({
           title: "❌ Code promo refusé",
-          description: result.message || "Ce code promo est invalide ou a expiré.",
+          description: errorMsg,
           variant: "destructive",
           duration: 6000,
         });
       }
     } catch (error) {
       console.error("Error applying promo code:", error);
+      const errorMsg = "Une erreur est survenue lors de l'application du code promo.";
+      setErrorMessage(errorMsg);
       setPromoCode("");
       toast({
         title: "❌ Erreur",
-        description: "Une erreur est survenue lors de l'application du code promo.",
+        description: errorMsg,
         variant: "destructive",
         duration: 6000,
       });
@@ -83,6 +91,7 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
 
   const removePromoCode = () => {
     setAppliedPromoCode(null);
+    setErrorMessage(""); // Clear any errors when removing
     toast({
       title: "Code promo retiré",
       description: "Le code promo a été retiré de votre panier.",
@@ -118,27 +127,37 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
             </Button>
           </div>
         ) : (
-          <div className="flex space-x-2">
-            <div className="flex-grow relative">
-              <Input
-                placeholder="Entrez votre code promo"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                className="pr-10"
-              />
-              <TicketPercent className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <div className="space-y-2">
+            <div className="flex space-x-2">
+              <div className="flex-grow relative">
+                <Input
+                  placeholder="Entrez votre code promo"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value);
+                    setErrorMessage(""); // Clear error when typing
+                  }}
+                  className="pr-10"
+                />
+                <TicketPercent className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              </div>
+              <Button 
+                onClick={handleApplyPromoCode} 
+                disabled={promoCodeLoading || !promoCode.trim()} 
+                className="bg-gold-500 hover:bg-gold-600 text-black"
+              >
+                {promoCodeLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Appliquer"
+                )}
+              </Button>
             </div>
-            <Button 
-              onClick={handleApplyPromoCode} 
-              disabled={promoCodeLoading || !promoCode.trim()} 
-              className="bg-gold-500 hover:bg-gold-600 text-black"
-            >
-              {promoCodeLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Appliquer"
-              )}
-            </Button>
+            {errorMessage && (
+              <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-2">
+                {errorMessage}
+              </div>
+            )}
           </div>
         )}
         {!userEmail && !appliedPromoCode && (
