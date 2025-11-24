@@ -111,6 +111,8 @@ export const validatePromoCode = async (code: string, email?: string): Promise<{
   try {
     const upperCode = code.toUpperCase();
     
+    console.log("🔍 validatePromoCode appelé avec:", { code: upperCode, email, hasEmail: !!email });
+    
     // D'abord vérifier dans promotion_codes (système simple)
     const { data: promotionCode, error: promoCodeError } = await supabase
       .from('promotion_codes')
