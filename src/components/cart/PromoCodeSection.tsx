@@ -29,6 +29,8 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
   const handleApplyPromoCode = async () => {
     if (!promoCode.trim()) return;
     
+    console.log("🔍 Application code promo avec email:", userEmail);
+    
     setPromoCodeLoading(true);
     try {
       const result = await validatePromoCode(promoCode.trim(), userEmail);
