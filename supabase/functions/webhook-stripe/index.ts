@@ -411,6 +411,24 @@ serve(async (req) => {
 
       console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId, 'avec', itemsSummary.length, 'articles');
 
+      // Enregistrer l'utilisation du code promo si présent
+      if (orderData.promo_code && orderData.client_email) {
+        console.log('💳 Enregistrement utilisation code promo:', orderData.promo_code, 'pour', orderData.client_email);
+        
+        const { error: promoUsageError } = await supabase
+          .from('promo_code_usage')
+          .insert({
+            promo_code: orderData.promo_code,
+            user_email: orderData.client_email
+          });
+        
+        if (promoUsageError) {
+          console.error('❌ Erreur enregistrement code promo:', promoUsageError);
+        } else {
+          console.log('✅ Utilisation du code promo enregistrée');
+        }
+      }
+
       // Créer les order_items si on a des articles - NOUVEAU: Conserver TOUS les articles
       if (itemsSummary.length > 0) {
         console.log('📦 Création des order_items pour', itemsSummary.length, 'articles...');
