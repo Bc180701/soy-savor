@@ -109,35 +109,86 @@ export const validatePromoCode = async (code: string, email?: string): Promise<{
   message?: string;
 }> => {
   try {
-    // Fetch promotion from database with this code
-    const { data, error } = await supabase
+    const upperCode = code.toUpperCase();
+    
+    // D'abord vérifier dans promotion_codes (système simple)
+    const { data: promotionCode, error: promoCodeError } = await supabase
+      .from('promotion_codes')
+      .select('*')
+      .eq('code', upperCode)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (promotionCode) {
+      console.log("💳 Code promo trouvé dans promotion_codes:", promotionCode);
+      
+      // TOUJOURS vérifier l'usage dans promo_code_usage si email fourni
+      if (email) {
+        const { data: usage, error: usageError } = await supabase
+          .from('promo_code_usage')
+          .select('*')
+          .eq('promo_code', upperCode)
+          .eq('user_email', email)
+          .maybeSingle();
+
+        console.log("🔍 Vérification usage pour email", email, ":", { usage, usageError });
+
+        if (usage) {
+          return { 
+            valid: false, 
+            message: "Vous avez déjà utilisé ce code promo" 
+          };
+        }
+      }
+
+      // Vérifier la limite d'usage globale
+      if (promotionCode.usage_limit && promotionCode.used_count >= promotionCode.usage_limit) {
+        return { 
+          valid: false, 
+          message: "Ce code promo a atteint sa limite d'utilisation" 
+        };
+      }
+
+      return {
+        valid: true,
+        discount: promotionCode.discount_percentage,
+        isPercentage: true,
+        message: "Code promo appliqué avec succès"
+      };
+    }
+
+    // Sinon vérifier dans promotions (système avancé avec dates)
+    const { data: promotion, error: promotionError } = await supabase
       .from('promotions')
       .select('*')
-      .eq('code', code.toUpperCase())
-      .single();
-    
-    if (error || !data) {
-      console.error("Error validating promo code:", error);
+      .eq('code', upperCode)
+      .maybeSingle();
+
+    if (promotionError || !promotion) {
+      console.error("Error validating promo code:", promotionError);
       return { valid: false, message: "Code promo invalide" };
     }
     
-    // Check if the promotion is currently active
+    console.log("💳 Code promo trouvé dans promotions:", promotion);
+    
+    // Vérifier les dates
     const now = new Date();
-    const startDate = new Date(data.start_date);
-    const endDate = new Date(data.end_date);
+    const startDate = new Date(promotion.start_date);
+    const endDate = new Date(promotion.end_date);
     
     if (now < startDate || now > endDate) {
       return { valid: false, message: "Ce code promo a expiré ou n'est pas encore actif" };
     }
 
-    // Check if the promo code has a one-time use restriction and if email is provided
-    if (data.is_one_time_use === true && email) {
-      // Check if this user has already used this promo code
+    // Vérifier l'usage unique si applicable
+    if (promotion.is_one_time_use === true && email) {
       const { data: usageData, error: usageError } = await supabase
         .from('promo_code_usage')
         .select('id')
-        .eq('promo_code', code.toUpperCase())
+        .eq('promo_code', upperCode)
         .eq('user_email', email);
+      
+      console.log("🔍 Vérification usage pour email", email, ":", { usageData, usageError });
       
       if (usageData && usageData.length > 0) {
         return { 
@@ -149,8 +200,8 @@ export const validatePromoCode = async (code: string, email?: string): Promise<{
     
     return { 
       valid: true, 
-      discount: data.discount, 
-      isPercentage: data.is_percentage,
+      discount: promotion.discount, 
+      isPercentage: promotion.is_percentage,
       message: "Code promo appliqué avec succès"
     };
   } catch (error) {
