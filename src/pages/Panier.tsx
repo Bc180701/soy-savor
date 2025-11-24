@@ -440,10 +440,7 @@ const PanierContent = () => {
               subtotal={subtotal}
               tax={tax}
               discount={discount}
-              appliedPromoCode={appliedPromoCode}
-              setAppliedPromoCode={setAppliedPromoCode}
               handleNextStep={handleNextStep}
-              userEmail={userEmail}
               cartExtras={cartExtras}
               setCartExtras={setCartExtras}
             />
@@ -472,6 +469,7 @@ const PanierContent = () => {
             deliveryFee={deliveryFee}
             discount={discount}
             appliedPromoCode={appliedPromoCode}
+            setAppliedPromoCode={setAppliedPromoCode}
             deliveryInfo={deliveryInfo}
             loading={loading}
             handlePreviousStep={handlePreviousStep}

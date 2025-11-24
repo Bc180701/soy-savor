@@ -5,6 +5,7 @@ import { CartItem } from "@/types";
 import { OrderSummaryDetails } from "../checkout/OrderSummaryDetails";
 import { PaymentMethod } from "../checkout/PaymentMethod";
 import { TipSelector } from "./TipSelector";
+import { PromoCodeSection } from "./PromoCodeSection";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -19,6 +20,11 @@ interface PaymentStepProps {
     discount: number;
     isPercentage: boolean;
   } | null;
+  setAppliedPromoCode: React.Dispatch<React.SetStateAction<{
+    code: string;
+    discount: number;
+    isPercentage: boolean;
+  } | null>>;
   deliveryInfo: {
     orderType: "delivery" | "pickup";
     name: string;
@@ -45,6 +51,7 @@ export const PaymentStep = ({
   deliveryFee,
   discount,
   appliedPromoCode,
+  setAppliedPromoCode,
   deliveryInfo,
   loading,
   handlePreviousStep,
@@ -82,6 +89,12 @@ export const PaymentStep = ({
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">Récapitulatif de commande</h2>
+      
+      <PromoCodeSection 
+        appliedPromoCode={appliedPromoCode} 
+        setAppliedPromoCode={setAppliedPromoCode}
+        userEmail={deliveryInfo.email}
+      />
       
       <OrderSummaryDetails
         items={items}
