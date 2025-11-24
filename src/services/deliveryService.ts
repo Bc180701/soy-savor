@@ -136,11 +136,14 @@ export const validatePromoCode = async (code: string, email?: string): Promise<{
         console.log("🔍 Vérification usage pour email", email, ":", { usage, usageError });
 
         if (usage) {
+          console.log("❌ BLOCAGE: Code déjà utilisé par cet email!");
           return { 
             valid: false, 
-            message: "Vous avez déjà utilisé ce code promo" 
+            message: "Vous avez déjà utilisé ce code promo avec cette adresse email" 
           };
         }
+        
+        console.log("✅ Aucun usage trouvé, code valide pour cet email");
       }
 
       // Vérifier la limite d'usage globale
