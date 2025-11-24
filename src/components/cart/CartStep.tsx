@@ -3,7 +3,6 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { formatEuro } from "@/utils/formatters";
-import { PromoCodeSection } from "./PromoCodeSection";
 import { CartItemList } from "./CartItemList";
 import { CartExtrasSection, type CartExtras } from "./CartExtrasSection";
 import { useEffect, useState } from "react";
@@ -18,18 +17,7 @@ interface CartStepProps {
   subtotal: number;
   tax: number;
   discount: number;
-  appliedPromoCode: {
-    code: string;
-    discount: number;
-    isPercentage: boolean;
-  } | null;
-  setAppliedPromoCode: React.Dispatch<React.SetStateAction<{
-    code: string;
-    discount: number;
-    isPercentage: boolean;
-  } | null>>;
   handleNextStep: () => void;
-  userEmail?: string;
   cartExtras: CartExtras | null;
   setCartExtras: (extras: CartExtras) => void;
 }
@@ -39,10 +27,7 @@ export const CartStep = ({
   subtotal,
   tax,
   discount,
-  appliedPromoCode,
-  setAppliedPromoCode,
   handleNextStep,
-  userEmail,
   cartExtras,
   setCartExtras
 }: CartStepProps) => {
@@ -179,12 +164,6 @@ export const CartStep = ({
           <CartExtrasSection onExtrasChange={setCartExtras} />
           
           <div className="border-t pt-4">
-            <PromoCodeSection 
-              appliedPromoCode={appliedPromoCode} 
-              setAppliedPromoCode={setAppliedPromoCode}
-              userEmail={userEmail} 
-            />
-            
             <div className="space-y-2 text-right">
               <div className="flex justify-between">
                 <span>Sous-total</span>
