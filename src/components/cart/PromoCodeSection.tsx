@@ -35,6 +35,8 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
     try {
       const result = await validatePromoCode(promoCode.trim(), userEmail);
       
+      console.log("📋 Résultat validation:", result);
+      
       if (result.valid && result.discount !== undefined) {
         // If validation is successful, record the usage if we have a user email
         if (userEmail) {
@@ -48,26 +50,31 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
         });
         
         toast({
-          title: "Code promo appliqué",
+          title: "✅ Code promo appliqué",
           description: result.message || "Votre code promo a été appliqué avec succès.",
-          variant: "default",
+          duration: 5000,
         });
         
         // Reset the input field after successful application
         setPromoCode("");
       } else {
+        // Code invalide ou déjà utilisé
+        setPromoCode(""); // Clear le champ même en cas d'erreur
         toast({
-          title: "Code promo invalide",
+          title: "❌ Code promo refusé",
           description: result.message || "Ce code promo est invalide ou a expiré.",
           variant: "destructive",
+          duration: 6000,
         });
       }
     } catch (error) {
       console.error("Error applying promo code:", error);
+      setPromoCode("");
       toast({
-        title: "Erreur",
+        title: "❌ Erreur",
         description: "Une erreur est survenue lors de l'application du code promo.",
         variant: "destructive",
+        duration: 6000,
       });
     } finally {
       setPromoCodeLoading(false);
