@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { format, addMinutes, isAfter, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { isRestaurantOpenNow, getWeekOpeningHours } from "@/services/openingHoursService";
@@ -46,20 +46,43 @@ const TimeSlotSelector = ({
     slot_number: number;
   }[] | null>(null);
 
-  // Determine if we're in special event mode (preorder for a future date)
+  // Track if initial fetch is done to prevent duplicate calls
+  const hasInitialized = useRef(false);
+  const lastFetchKey = useRef<string>('');
+
+  // Memoize derived values to prevent re-renders
   const isEventMode = !!targetDate;
-  const eventDate = targetDate ? parseISO(targetDate) : null;
+  const eventDate = useMemo(() => targetDate ? parseISO(targetDate) : null, [targetDate]);
   
-  // Check if we have custom event time slots
+  // Serialize event time slots for dependency tracking
+  const eventTimeSlotsKey = useMemo(() => 
+    eventTimeSlots ? JSON.stringify(eventTimeSlots.map(s => s.time).sort()) : '',
+    [eventTimeSlots]
+  );
   const hasCustomEventSlots = eventTimeSlots && eventTimeSlots.length > 0;
 
+  // Generate a unique key for the current fetch parameters
+  const fetchKey = useMemo(() => 
+    `${cartRestaurant?.id}-${targetDate}-${orderType}-${eventTimeSlotsKey}`,
+    [cartRestaurant?.id, targetDate, orderType, eventTimeSlotsKey]
+  );
+
   useEffect(() => {
+    // Skip if parameters haven't changed
+    if (lastFetchKey.current === fetchKey && hasInitialized.current) {
+      console.log("🔄 [TimeSlotSelector] Skip - paramètres inchangés");
+      return;
+    }
+
     const checkOpeningStatus = async () => {
       if (!cartRestaurant) {
         console.log("🔍 [TimeSlotSelector] Aucun restaurant du panier fourni");
         setIsLoading(false);
         return;
       }
+
+      lastFetchKey.current = fetchKey;
+      hasInitialized.current = true;
 
       console.log("🔍 [TimeSlotSelector] Vérification statut pour:", cartRestaurant.name, cartRestaurant.id);
       if (isEventMode) {
@@ -159,22 +182,32 @@ const TimeSlotSelector = ({
     };
     
     checkOpeningStatus();
-  }, [cartRestaurant, targetDate, isEventMode, eventDate, hasCustomEventSlots, eventTimeSlots]);
+  }, [fetchKey, cartRestaurant, targetDate, isEventMode, eventDate, hasCustomEventSlots, eventTimeSlots]);
+
+  // Track if slots have been generated for current config
+  const slotsGeneratedKey = useRef<string>('');
+  const generateSlotsKey = `${orderType}-${isLoading}-${JSON.stringify(todayOpeningHours)}-${cartRestaurant?.id}`;
 
   useEffect(() => {
     if (!isLoading && todayOpeningHours && cartRestaurant) {
+      // Skip if already generated for same config
+      if (slotsGeneratedKey.current === generateSlotsKey) {
+        return;
+      }
+      slotsGeneratedKey.current = generateSlotsKey;
       console.log("🔍 [TimeSlotSelector] Génération créneaux avec:", todayOpeningHours);
       generateTimeSlots();
     }
-  }, [orderType, isLoading, todayOpeningHours, cartRestaurant]);
+  }, [generateSlotsKey, isLoading, todayOpeningHours, cartRestaurant]);
 
-  // 🔄 ACTUALISATION AUTOMATIQUE toutes les 30 secondes pour éviter les doublons
+  // 🔄 ACTUALISATION AUTOMATIQUE toutes les 60 secondes (augmenté de 30s)
   useEffect(() => {
     if (!isLoading && todayOpeningHours && cartRestaurant) {
       const interval = setInterval(() => {
         console.log("🔄 Actualisation automatique des créneaux...");
+        slotsGeneratedKey.current = ''; // Reset to allow regeneration
         generateTimeSlots();
-      }, 30000); // 30 secondes
+      }, 60000); // 60 secondes au lieu de 30
 
       return () => clearInterval(interval);
     }
