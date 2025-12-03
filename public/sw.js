@@ -33,9 +33,24 @@ self.addEventListener('activate', (event) => {
 
 // Fetch strategy: Network first, fallback to cache
 self.addEventListener('fetch', (event) => {
+  // Ne pas intercepter les requêtes API/Supabase
+  if (event.request.url.includes('supabase.co') || 
+      event.request.url.includes('/rest/v1/') ||
+      event.request.url.includes('/functions/v1/')) {
+    return; // Laisser le navigateur gérer ces requêtes normalement
+  }
+  
   event.respondWith(
     fetch(event.request)
-      .catch(() => caches.match(event.request))
+      .catch(() => {
+        return caches.match(event.request).then(response => {
+          // Retourner la réponse du cache ou une erreur réseau propre
+          return response || new Response('Network error', { 
+            status: 503, 
+            statusText: 'Service Unavailable' 
+          });
+        });
+      })
   );
 });
 
