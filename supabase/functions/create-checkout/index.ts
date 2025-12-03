@@ -217,13 +217,20 @@ serve(async (req) => {
         // Les prix sont déjà TTC, pas de majoration
         const unitAmount = Math.round(item.menuItem.price * 100);
         
+        // Build product_data - only include description if it has content
+        const productData: { name: string; description?: string } = {
+          name: item.menuItem.name,
+        };
+        
+        // Only add description if it's not empty (Stripe rejects empty strings)
+        if (item.menuItem.description && item.menuItem.description.trim() !== '') {
+          productData.description = item.menuItem.description;
+        }
+        
         const lineItem = {
           price_data: {
             currency: 'eur',
-            product_data: {
-              name: item.menuItem.name,
-              description: item.menuItem.description || '',
-            },
+            product_data: productData,
             // Prix en centimes TTC (déjà inclus dans item.menuItem.price)
             unit_amount: unitAmount,
           },
