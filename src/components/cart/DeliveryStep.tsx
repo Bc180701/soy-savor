@@ -15,7 +15,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Restaurant } from "@/types/restaurant";
 import { type CartExtras } from "./CartExtrasSection";
-import { User, Mail, Phone, MapPin, Clock, MessageSquare, AlertCircle, CheckCircle2, TruckIcon } from "lucide-react";
+import { User, Mail, Phone, MapPin, Clock, MessageSquare, AlertCircle, CheckCircle2, TruckIcon, Gift, CalendarDays } from "lucide-react";
+import { useCartEventProducts } from "@/hooks/useCartEventProducts";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
   Dialog,
   DialogContent,
@@ -71,6 +74,21 @@ export const DeliveryStep = ({
   const [showFreeDeliveryDialog, setShowFreeDeliveryDialog] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  // Detect event products in cart (Christmas, etc.)
+  const eventInfo = useCartEventProducts(cartRestaurant?.id);
+  
+  // Auto-switch to pickup if delivery is disabled for this event
+  useEffect(() => {
+    if (eventInfo.hasEventProducts && !eventInfo.deliveryEnabled && deliveryInfo.orderType === "delivery") {
+      console.log("🎄 Livraison désactivée pour cet événement, passage au retrait");
+      setDeliveryInfo(prev => ({ ...prev, orderType: "pickup" }));
+      toast({
+        title: "Mode retrait uniquement",
+        description: `Pour ${eventInfo.eventName}, seul le retrait en magasin est disponible.`,
+      });
+    }
+  }, [eventInfo.hasEventProducts, eventInfo.deliveryEnabled, deliveryInfo.orderType]);
 
   // Pop-up pour livraison gratuite si total entre 25€ et 35€
   useEffect(() => {
@@ -429,6 +447,31 @@ export const DeliveryStep = ({
           </div>
         )}
       
+      {/* Event Banner - Show when cart contains event products */}
+      {eventInfo.hasEventProducts && eventInfo.eventDate && (
+        <Card className="border-red-300 bg-gradient-to-r from-red-50 to-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Gift className="w-6 h-6 text-red-600" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-red-800">
+                  🎄 Commande spéciale {eventInfo.eventName}
+                </p>
+                <p className="text-xs text-red-600 flex items-center gap-1 mt-1">
+                  <CalendarDays className="w-3 h-3" />
+                  Retrait prévu le {format(parseISO(eventInfo.eventDate), "EEEE d MMMM yyyy", { locale: fr })}
+                </p>
+                {!eventInfo.deliveryEnabled && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    ⚠️ Retrait en magasin uniquement pour cet événement
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Restaurant Card */}
       {cartRestaurant ? (
         <Card className="border-green-200 bg-green-50">
@@ -620,7 +663,13 @@ export const DeliveryStep = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-gold-600" />
-            Horaire de {deliveryInfo.orderType === "delivery" ? "livraison" : "retrait"}
+            {eventInfo.hasEventProducts && eventInfo.eventDate ? (
+              <>
+                Horaire de retrait pour le {format(parseISO(eventInfo.eventDate), "d MMMM", { locale: fr })}
+              </>
+            ) : (
+              <>Horaire de {deliveryInfo.orderType === "delivery" ? "livraison" : "retrait"}</>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -629,6 +678,9 @@ export const DeliveryStep = ({
             onSelect={handleTimeSelection}
             selectedTime={deliveryInfo.pickupTime}
             cartRestaurant={cartRestaurant}
+            targetDate={eventInfo.hasEventProducts ? eventInfo.eventDate ?? undefined : undefined}
+            eventName={eventInfo.hasEventProducts ? eventInfo.eventName ?? undefined : undefined}
+            eventTimeSlots={eventInfo.hasEventProducts ? eventInfo.eventTimeSlots : undefined}
           />
         </CardContent>
       </Card>

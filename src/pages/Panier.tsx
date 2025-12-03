@@ -12,7 +12,8 @@ import { CheckoutSteps, CheckoutStep } from "@/components/cart/CheckoutSteps";
 import { type CartExtras } from "@/components/cart/CartExtrasSection";
 import { RestaurantProvider } from "@/hooks/useRestaurantContext";
 import { useCartRestaurant } from "@/hooks/useCartRestaurant";
-import { format } from "date-fns";
+import { useCartEventProducts } from "@/hooks/useCartEventProducts";
+import { format, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { fr } from "date-fns/locale";
 
@@ -42,6 +43,9 @@ const PanierContent = () => {
   const { toast } = useToast();
   const { cartRestaurant, isLoading: cartRestaurantLoading, refetchRestaurant, hasItems } = useCartRestaurant();
   const TAX_RATE = 0.1; // 10% TVA
+  
+  // Detect event products (Christmas, etc.) in the cart
+  const eventInfo = useCartEventProducts(cartRestaurant?.id);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
   
@@ -296,13 +300,19 @@ const PanierContent = () => {
         try {
           console.log("🔒 Vérification finale du créneau avant paiement...");
           
-          // Créer la date SANS conversion de timezone
-          const today = new Date();
+          // Créer la date - utiliser la date d'événement si applicable
           const [hours, minutes] = deliveryInfo.pickupTime.split(':') || ["12", "00"];
-          const year = today.getFullYear();
-          const month = String(today.getMonth() + 1).padStart(2, '0');
-          const day = String(today.getDate()).padStart(2, '0');
-          const scheduledForISO = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+          let scheduledForISO: string;
+          
+          if (eventInfo.hasEventProducts && eventInfo.eventDate) {
+            scheduledForISO = `${eventInfo.eventDate}T${hours}:${minutes}:00`;
+          } else {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            scheduledForISO = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+          }
           
           console.log("📅 Heure sélectionnée stockée telle quelle:", scheduledForISO);
           
@@ -362,13 +372,22 @@ const PanierContent = () => {
         }
       }
 
-      // Créer la date SANS conversion de timezone
-      const today = new Date();
+      // Créer la date - Utiliser la date de l'événement si produit événement dans le panier
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const localISOString = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+      let localISOString: string;
+      
+      if (eventInfo.hasEventProducts && eventInfo.eventDate) {
+        // Utiliser la date de l'événement (ex: 2025-12-24)
+        localISOString = `${eventInfo.eventDate}T${hours}:${minutes}:00`;
+        console.log("🎄 Commande événement - Date:", eventInfo.eventDate, "Heure:", deliveryInfo.pickupTime);
+      } else {
+        // Utiliser la date d'aujourd'hui
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        localISOString = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+      }
       
       console.log("📅 Heure sélectionnée pour checkout (sans conversion):", localISOString);
       

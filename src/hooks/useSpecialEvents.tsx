@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface EventTimeSlot {
+  time: string; // e.g., "12:00"
+  maxOrders?: number;
+}
+
 export interface SpecialEvent {
   id: string;
   name: string;
@@ -12,6 +17,9 @@ export interface SpecialEvent {
   allowed_categories: string[] | null;
   is_active: boolean;
   restaurant_id: string;
+  delivery_enabled: boolean;
+  pickup_enabled: boolean;
+  time_slots: EventTimeSlot[];
 }
 
 export interface EventProduct {
@@ -49,12 +57,20 @@ export const useSpecialEvents = (restaurantId?: string) => {
           return;
         }
 
-        console.log('🎄 Active special events:', events);
-        setActiveEvents(events || []);
+        // Transform the data to match our interface
+        const transformedEvents: SpecialEvent[] = (events || []).map(e => ({
+          ...e,
+          delivery_enabled: e.delivery_enabled ?? true,
+          pickup_enabled: e.pickup_enabled ?? true,
+          time_slots: Array.isArray(e.time_slots) ? (e.time_slots as unknown as EventTimeSlot[]) : []
+        }));
+
+        console.log('🎄 Active special events:', transformedEvents);
+        setActiveEvents(transformedEvents);
 
         // Fetch products for these events
-        if (events && events.length > 0) {
-          const eventIds = events.map(e => e.id);
+        if (transformedEvents.length > 0) {
+          const eventIds = transformedEvents.map(e => e.id);
           const { data: products, error: productsError } = await supabase
             .from('event_products')
             .select('*')
