@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Gift, Calendar, Package, Truck, Store, Clock, ImageIcon, Upload } from 'lucide-react';
+import { Plus, Trash2, Gift, Calendar, Package, Truck, Store, Clock, ImageIcon, Upload, Globe } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRestaurantContext } from '@/hooks/useRestaurantContext';
@@ -34,7 +34,7 @@ interface SpecialEvent {
   restrict_menu_on_event: boolean;
   allowed_categories: string[] | null;
   is_active: boolean;
-  restaurant_id: string;
+  restaurant_id: string | null;
   delivery_enabled: boolean;
   pickup_enabled: boolean;
   time_slots: TimeSlot[];
@@ -53,6 +53,12 @@ interface Product {
   id: string;
   name: string;
   category_id: string;
+  restaurant_id: string;
+}
+
+interface Restaurant {
+  id: string;
+  name: string;
 }
 
 const DEFAULT_ALLOWED_CATEGORIES = ['desserts', 'boissons'];
@@ -64,6 +70,8 @@ export const SpecialEventsManager = () => {
   const [events, setEvents] = useState<SpecialEvent[]>([]);
   const [eventProducts, setEventProducts] = useState<Record<string, EventProduct[]>>({});
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   
@@ -82,6 +90,7 @@ export const SpecialEventsManager = () => {
     image_url: '',
     banner_title: '',
     banner_description: '',
+    is_global: true, // Par défaut global
   });
   
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
@@ -89,25 +98,37 @@ export const SpecialEventsManager = () => {
   const [newTimeSlot, setNewTimeSlot] = useState({ time: '', max_orders: 10 });
 
   useEffect(() => {
-    if (selectedRestaurantId) {
-      fetchData();
-    } else {
-      setIsLoading(false);
-    }
+    fetchData();
   }, [selectedRestaurantId]);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch events
-      const { data: eventsData, error: eventsError } = await supabase
+      // Fetch restaurants
+      const { data: restaurantsData } = await supabase
+        .from('restaurants')
+        .select('id, name')
+        .eq('is_active', true);
+      setRestaurants(restaurantsData || []);
+
+      // Fetch events - both global (restaurant_id IS NULL) and restaurant-specific
+      let eventsQuery = supabase
         .from('special_events')
         .select('*')
-        .eq('restaurant_id', selectedRestaurantId)
         .order('event_date', { ascending: false });
 
+      // Si un restaurant est sélectionné, on récupère les événements globaux + ceux du restaurant
+      if (selectedRestaurantId) {
+        eventsQuery = eventsQuery.or(`restaurant_id.is.null,restaurant_id.eq.${selectedRestaurantId}`);
+      } else {
+        // Si aucun restaurant sélectionné, on récupère uniquement les événements globaux
+        eventsQuery = eventsQuery.is('restaurant_id', null);
+      }
+
+      const { data: eventsData, error: eventsError } = await eventsQuery;
+
       if (eventsError) throw eventsError;
-      // Transform time_slots from Json to TimeSlot[]
+      
       const transformedEvents = (eventsData || []).map(e => ({
         ...e,
         time_slots: (Array.isArray(e.time_slots) ? e.time_slots : []) as unknown as TimeSlot[],
@@ -132,16 +153,23 @@ export const SpecialEventsManager = () => {
         }
       }
 
-      // Fetch all products for linking
-      const { data: allProducts, error: productsError } = await supabase
-        .from('products')
-        .select('id, name, category_id')
-        .eq('restaurant_id', selectedRestaurantId)
-        .order('name');
-
-      if (!productsError) {
-        setProducts(allProducts || []);
+      // Fetch products from current restaurant for non-global events
+      if (selectedRestaurantId) {
+        const { data: restaurantProducts } = await supabase
+          .from('products')
+          .select('id, name, category_id, restaurant_id')
+          .eq('restaurant_id', selectedRestaurantId)
+          .order('name');
+        setProducts(restaurantProducts || []);
       }
+
+      // Fetch ALL products for global events
+      const { data: allProds } = await supabase
+        .from('products')
+        .select('id, name, category_id, restaurant_id')
+        .order('name');
+      setAllProducts(allProds || []);
+
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -165,12 +193,12 @@ export const SpecialEventsManager = () => {
     }
 
     try {
-      const { time_slots, ...insertData } = formData;
+      const { time_slots, is_global, ...insertData } = formData;
       const { data, error } = await supabase
         .from('special_events')
         .insert({
           ...insertData,
-          restaurant_id: selectedRestaurantId,
+          restaurant_id: is_global ? null : selectedRestaurantId,
           time_slots: time_slots as unknown as any,
         })
         .select()
@@ -198,6 +226,7 @@ export const SpecialEventsManager = () => {
         image_url: '',
         banner_title: '',
         banner_description: '',
+        is_global: true,
       });
 
       toast({
@@ -313,7 +342,14 @@ export const SpecialEventsManager = () => {
   };
 
   const getProductName = (productId: string) => {
-    return products.find(p => p.id === productId)?.name || 'Produit inconnu';
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return 'Produit inconnu';
+    const restaurant = restaurants.find(r => r.id === product.restaurant_id);
+    return restaurant ? `${product.name} (${restaurant.name})` : product.name;
+  };
+
+  const getRestaurantName = (restaurantId: string) => {
+    return restaurants.find(r => r.id === restaurantId)?.name || 'Restaurant inconnu';
   };
 
   const handleImageUpload = async (file: File, eventId?: string) => {
@@ -336,7 +372,6 @@ export const SpecialEventsManager = () => {
         .getPublicUrl(filePath);
 
       if (eventId) {
-        // Update existing event
         const { error } = await supabase
           .from('special_events')
           .update({ image_url: publicUrl })
@@ -349,7 +384,6 @@ export const SpecialEventsManager = () => {
         ));
         toast({ title: 'Image mise à jour' });
       } else {
-        // Update form for new event
         setFormData(prev => ({ ...prev, image_url: publicUrl }));
         toast({ title: 'Image uploadée' });
       }
@@ -365,18 +399,20 @@ export const SpecialEventsManager = () => {
     }
   };
 
+  // Get available products for an event (all products for global, restaurant-specific otherwise)
+  const getAvailableProducts = (event: SpecialEvent) => {
+    if (event.restaurant_id === null) {
+      // Événement global: tous les produits de tous les restaurants
+      return allProducts;
+    }
+    // Événement spécifique: produits du restaurant
+    return products;
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!selectedRestaurantId) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        Veuillez sélectionner un restaurant dans le menu déroulant en haut à gauche.
       </div>
     );
   }
@@ -400,6 +436,21 @@ export const SpecialEventsManager = () => {
             <CardTitle className="text-lg">Créer un événement</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Toggle global */}
+            <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <Globe className="h-5 w-5 text-blue-500" />
+              <div className="flex-1">
+                <Label className="font-medium">Événement global</Label>
+                <p className="text-xs text-muted-foreground">
+                  Un événement global s'applique à tous les restaurants et évite les doublons
+                </p>
+              </div>
+              <Switch
+                checked={formData.is_global}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_global: checked }))}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nom de l'événement *</Label>
@@ -635,6 +686,17 @@ export const SpecialEventsManager = () => {
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center gap-3">
                   <CardTitle className="text-xl">{event.name}</CardTitle>
+                  {event.restaurant_id === null ? (
+                    <Badge className="bg-blue-500 gap-1">
+                      <Globe className="h-3 w-3" />
+                      Global
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="gap-1">
+                      <Store className="h-3 w-3" />
+                      {getRestaurantName(event.restaurant_id)}
+                    </Badge>
+                  )}
                   {event.is_active ? (
                     <Badge className="bg-green-500">Actif</Badge>
                   ) : (
@@ -806,6 +868,9 @@ export const SpecialEventsManager = () => {
                   <div className="flex items-center gap-2 mb-3">
                     <Package className="h-4 w-4" />
                     <h4 className="font-medium">Produits liés à l'événement</h4>
+                    {event.restaurant_id === null && (
+                      <span className="text-xs text-muted-foreground">(tous restaurants)</span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -827,17 +892,23 @@ export const SpecialEventsManager = () => {
 
                   <div className="flex gap-2">
                     <Select onValueChange={(productId) => handleLinkProduct(event.id, productId)}>
-                      <SelectTrigger className="w-[300px]">
+                      <SelectTrigger className="w-[350px]">
                         <SelectValue placeholder="Ajouter un produit..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {products
+                        {getAvailableProducts(event)
                           .filter(p => !(eventProducts[event.id] || []).some(ep => ep.product_id === p.id))
-                          .map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name}
-                            </SelectItem>
-                          ))}
+                          .map((product) => {
+                            const restaurant = restaurants.find(r => r.id === product.restaurant_id);
+                            return (
+                              <SelectItem key={product.id} value={product.id}>
+                                {event.restaurant_id === null && restaurant 
+                                  ? `${product.name} (${restaurant.name})`
+                                  : product.name
+                                }
+                              </SelectItem>
+                            );
+                          })}
                       </SelectContent>
                     </Select>
                   </div>

@@ -16,7 +16,7 @@ export interface SpecialEvent {
   restrict_menu_on_event: boolean;
   allowed_categories: string[] | null;
   is_active: boolean;
-  restaurant_id: string;
+  restaurant_id: string | null;
   delivery_enabled: boolean;
   pickup_enabled: boolean;
   time_slots: EventTimeSlot[];
@@ -38,22 +38,26 @@ export const useSpecialEvents = (restaurantId?: string) => {
 
   useEffect(() => {
     const fetchActiveEvents = async () => {
-      if (!restaurantId) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
         const today = new Date().toISOString().split('T')[0];
         
-        // Fetch active events where we're in the preorder period OR it's the event day
-        const { data: events, error: eventsError } = await supabase
+        // Fetch active events: global events (restaurant_id IS NULL) + restaurant-specific if restaurantId provided
+        let eventsQuery = supabase
           .from('special_events')
           .select('*')
-          .eq('restaurant_id', restaurantId)
           .eq('is_active', true)
           .lte('preorder_start', today)
           .gte('event_date', today);
+
+        if (restaurantId) {
+          // Get global events OR events for this specific restaurant
+          eventsQuery = eventsQuery.or(`restaurant_id.is.null,restaurant_id.eq.${restaurantId}`);
+        } else {
+          // Only global events if no restaurant specified
+          eventsQuery = eventsQuery.is('restaurant_id', null);
+        }
+
+        const { data: events, error: eventsError } = await eventsQuery;
 
         if (eventsError) {
           console.error('Error fetching special events:', eventsError);
