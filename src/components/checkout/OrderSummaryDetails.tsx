@@ -1,6 +1,8 @@
 import { CartItem } from "@/types";
 import { formatEuro } from "@/utils/formatters";
 import { TicketPercent } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface OrderSummaryDetailsProps {
   items: CartItem[];
@@ -30,6 +32,7 @@ interface OrderSummaryDetailsProps {
     id: string;
     name: string;
   }[];
+  eventDate?: string; // Date de l'événement si commande événement (ex: "2025-12-24")
 }
 
 export const OrderSummaryDetails = ({ 
@@ -41,9 +44,19 @@ export const OrderSummaryDetails = ({
   tip = 0, // Add default value
   appliedPromoCode,
   deliveryInfo,
-  allergyOptions
+  allergyOptions,
+  eventDate
 }: OrderSummaryDetailsProps) => {
   const orderTotal = subtotal + deliveryFee + (tip || 0) - discount; // TVA incluse dans les prix
+
+  // Formater la date d'affichage (aujourd'hui ou date de l'événement)
+  const getDateLabel = () => {
+    if (eventDate) {
+      const date = parseISO(eventDate);
+      return format(date, "EEEE d MMMM yyyy", { locale: fr });
+    }
+    return "aujourd'hui";
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -78,7 +91,7 @@ export const OrderSummaryDetails = ({
         )}
         <p>
           <span className="font-medium">Horaire :</span>{" "}
-          {deliveryInfo.pickupTime} aujourd'hui
+          {deliveryInfo.pickupTime} - {getDateLabel()}
         </p>
       </div>
       
