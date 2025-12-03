@@ -20,6 +20,7 @@ export interface SpecialEvent {
   delivery_enabled: boolean;
   pickup_enabled: boolean;
   time_slots: EventTimeSlot[];
+  image_url: string | null;
 }
 
 export interface EventProduct {

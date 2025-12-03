@@ -1342,6 +1342,7 @@ export type Database = {
           delivery_enabled: boolean | null
           event_date: string
           id: string
+          image_url: string | null
           is_active: boolean | null
           name: string
           pickup_enabled: boolean | null
@@ -1359,6 +1360,7 @@ export type Database = {
           delivery_enabled?: boolean | null
           event_date: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name: string
           pickup_enabled?: boolean | null
@@ -1376,6 +1378,7 @@ export type Database = {
           delivery_enabled?: boolean | null
           event_date?: string
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name?: string
           pickup_enabled?: boolean | null

@@ -6,10 +6,10 @@ import { PromotionCard } from "@/components/PromotionCard";
 import { CustomCreationSection } from "@/components/CustomCreationSection";
 import FeaturedProductsSection from "@/components/FeaturedProductsSection";
 import GoogleReviewsSection from "@/components/GoogleReviewsSection";
+import EventBanner from "@/components/EventBanner";
 import { useHomepageData, HomepageData } from "@/hooks/useHomepageData";
 import { usePromotions } from "@/hooks/usePromotions";
 import { supabase } from "@/integrations/supabase/client";
-
 // Default data to use as fallback
 const DEFAULT_HOMEPAGE_DATA: HomepageData = {
   hero_section: {
@@ -156,6 +156,9 @@ const Index = () => {
   
   return (
     <>
+      {/* Event Banner - shown during preorder/event period */}
+      <EventBanner />
+      
       {/* Hero Section */}
       <HeroSection 
         background_image={homepageData?.hero_section?.background_image || DEFAULT_HOMEPAGE_DATA.hero_section.background_image}
