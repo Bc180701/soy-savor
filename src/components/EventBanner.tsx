@@ -46,7 +46,7 @@ const EventBanner = () => {
   }
 
   return (
-    <section className="relative w-full overflow-hidden">
+    <section className="relative w-full overflow-hidden pt-16 md:pt-20">
       <Link to="/commander" className="block">
         <div className="relative w-full aspect-[3/1] md:aspect-[4/1] lg:aspect-[5/1]">
           <img
