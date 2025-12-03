@@ -495,6 +495,7 @@ const PanierContent = () => {
             handleStripeCheckout={handleStripeCheckout}
             tip={tip}
             setTip={setTip}
+            eventDate={eventInfo.hasEventProducts ? eventInfo.eventDate : undefined}
           />
         );
       default:

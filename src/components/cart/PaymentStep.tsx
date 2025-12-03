@@ -42,6 +42,7 @@ interface PaymentStepProps {
   handleStripeCheckout: () => Promise<void>;
   tip: number;
   setTip: (amount: number) => void;
+  eventDate?: string; // Date de l'événement si commande événement (ex: "2025-12-24")
 }
 
 export const PaymentStep = ({
@@ -57,7 +58,8 @@ export const PaymentStep = ({
   handlePreviousStep,
   handleStripeCheckout,
   tip,
-  setTip
+  setTip,
+  eventDate
 }: PaymentStepProps) => {
   const { toast } = useToast();
   const allergyOptions = [
@@ -106,6 +108,7 @@ export const PaymentStep = ({
         appliedPromoCode={appliedPromoCode}
         deliveryInfo={deliveryInfo}
         allergyOptions={allergyOptions}
+        eventDate={eventDate}
       />
       
       <div className="my-6">
