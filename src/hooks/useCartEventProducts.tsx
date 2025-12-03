@@ -14,8 +14,14 @@ interface CartEventInfo {
   eventProductIds: string[];
 }
 
-// Categories that are always allowed with event products
-const ALLOWED_CATEGORIES_WITH_EVENT = ['desserts', 'boissons'];
+// Helper function to check if a category is allowed with event products
+// Uses partial matching to handle suffixed categories like "desserts_stmartin"
+const isAllowedCategoryWithEvent = (categoryId: string): boolean => {
+  const allowedKeywords = ['desserts', 'boissons'];
+  return allowedKeywords.some(keyword => 
+    categoryId.toLowerCase().includes(keyword)
+  );
+};
 
 export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
   const { items } = useCart();
@@ -57,7 +63,7 @@ export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
         console.log('🎄 Event product found in cart:', productName, 'Event:', event.name);
         hasEventProducts = true;
         foundEvent = event;
-      } else if (!ALLOWED_CATEGORIES_WITH_EVENT.includes(productCategory || '')) {
+      } else if (!isAllowedCategoryWithEvent(productCategory || '')) {
         // This is a non-event product (not dessert/boisson)
         console.log('📦 Non-event product found in cart:', productName, 'Category:', productCategory);
         hasNonEventProducts = true;
@@ -100,7 +106,7 @@ export const filterCategoriesForEventExclusivity = (
 
     if (hasEventProducts) {
       // When event products are in cart: only show desserts, boissons, and the event products themselves
-      if (ALLOWED_CATEGORIES_WITH_EVENT.includes(category.id)) {
+      if (isAllowedCategoryWithEvent(category.id)) {
         // Keep all desserts and boissons
         return { ...category, items: filteredItems };
       }
