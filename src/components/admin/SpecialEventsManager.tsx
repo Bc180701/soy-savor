@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Gift, Calendar, Package, Truck, Store, Clock } from 'lucide-react';
+import { Plus, Trash2, Gift, Calendar, Package, Truck, Store, Clock, ImageIcon, Upload } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRestaurantContext } from '@/hooks/useRestaurantContext';
@@ -38,6 +38,7 @@ interface SpecialEvent {
   delivery_enabled: boolean;
   pickup_enabled: boolean;
   time_slots: TimeSlot[];
+  image_url: string | null;
 }
 
 interface EventProduct {
@@ -76,7 +77,10 @@ export const SpecialEventsManager = () => {
     delivery_enabled: true,
     pickup_enabled: true,
     time_slots: [] as TimeSlot[],
+    image_url: '',
   });
+  
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   
   const [newTimeSlot, setNewTimeSlot] = useState({ time: '', max_orders: 10 });
 
@@ -187,6 +191,7 @@ export const SpecialEventsManager = () => {
         delivery_enabled: true,
         pickup_enabled: true,
         time_slots: [],
+        image_url: '',
       });
 
       toast({
@@ -305,6 +310,55 @@ export const SpecialEventsManager = () => {
     return products.find(p => p.id === productId)?.name || 'Produit inconnu';
   };
 
+  const handleImageUpload = async (file: File, eventId?: string) => {
+    const targetId = eventId || 'new';
+    setUploadingImage(targetId);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `event-${Date.now()}.${fileExt}`;
+      const filePath = `events/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      if (eventId) {
+        // Update existing event
+        const { error } = await supabase
+          .from('special_events')
+          .update({ image_url: publicUrl })
+          .eq('id', eventId);
+
+        if (error) throw error;
+
+        setEvents(prev => prev.map(e => 
+          e.id === eventId ? { ...e, image_url: publicUrl } : e
+        ));
+        toast({ title: 'Image mise à jour' });
+      } else {
+        // Update form for new event
+        setFormData(prev => ({ ...prev, image_url: publicUrl }));
+        toast({ title: 'Image uploadée' });
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'uploader l\'image',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingImage(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-8">
@@ -415,6 +469,51 @@ export const SpecialEventsManager = () => {
                   <Label>Retrait en magasin activé</Label>
                 </div>
               </div>
+            </div>
+
+            {/* Bannière d'image */}
+            <div className="space-y-3 border rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                <Label className="font-medium">Bannière de l'événement (page d'accueil)</Label>
+              </div>
+              
+              {formData.image_url ? (
+                <div className="space-y-2">
+                  <img 
+                    src={formData.image_url} 
+                    alt="Bannière" 
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                  >
+                    Supprimer l'image
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
+                    disabled={uploadingImage === 'new'}
+                    className="w-full"
+                  />
+                  {uploadingImage === 'new' && (
+                    <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                  )}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Cette image sera affichée en bannière sur la page d'accueil pendant la période de l'événement
+              </p>
             </div>
 
             {/* Gestion des créneaux horaires */}
@@ -568,6 +667,77 @@ export const SpecialEventsManager = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Bannière image */}
+                <div className="border rounded-lg p-3 bg-muted/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Bannière page d'accueil</span>
+                  </div>
+                  {event.image_url ? (
+                    <div className="space-y-2">
+                      <img 
+                        src={event.image_url} 
+                        alt="Bannière" 
+                        className="w-full max-w-md h-24 object-cover rounded"
+                      />
+                      <div className="flex gap-2">
+                        <label className="cursor-pointer">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleImageUpload(file, event.id);
+                            }}
+                            disabled={uploadingImage === event.id}
+                          />
+                          <Button type="button" variant="outline" size="sm" asChild>
+                            <span>
+                              {uploadingImage === event.id ? (
+                                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                              ) : (
+                                <>
+                                  <Upload className="h-3 w-3 mr-1" />
+                                  Changer
+                                </>
+                              )}
+                            </span>
+                          </Button>
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(file, event.id);
+                          }}
+                          disabled={uploadingImage === event.id}
+                        />
+                        <Button type="button" variant="outline" size="sm" asChild>
+                          <span>
+                            {uploadingImage === event.id ? (
+                              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                            ) : (
+                              <>
+                                <Upload className="h-3 w-3 mr-1" />
+                                Ajouter une bannière
+                              </>
+                            )}
+                          </span>
+                        </Button>
+                      </label>
+                      <span className="text-xs text-muted-foreground">Aucune bannière définie</span>
+                    </div>
+                  )}
+                </div>
 
                 <div className="border-t pt-4">
                   <div className="flex items-center gap-2 mb-3">
