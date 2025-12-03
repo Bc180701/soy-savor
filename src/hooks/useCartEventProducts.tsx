@@ -4,6 +4,7 @@ import { useSpecialEvents, SpecialEvent, EventTimeSlot } from '@/hooks/useSpecia
 
 interface CartEventInfo {
   hasEventProducts: boolean;
+  hasNonEventProducts: boolean;
   event: SpecialEvent | null;
   eventDate: string | null;
   eventName: string | null;
@@ -13,6 +14,9 @@ interface CartEventInfo {
   eventProductIds: string[];
 }
 
+// Categories that are always allowed with event products
+const ALLOWED_CATEGORIES_WITH_EVENT = ['desserts', 'boissons'];
+
 export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
   const { items } = useCart();
   const { activeEvents, eventProducts, isEventProduct, getEventProductIds } = useSpecialEvents(restaurantId);
@@ -21,6 +25,7 @@ export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
     // Default values
     const defaultInfo: CartEventInfo = {
       hasEventProducts: false,
+      hasNonEventProducts: false,
       event: null,
       eventDate: null,
       eventName: null,
@@ -30,37 +35,83 @@ export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
       eventProductIds: [],
     };
 
-    if (!items.length || !activeEvents.length) {
+    if (!items.length) {
       return defaultInfo;
     }
 
-    // Check each cart item to see if it's linked to an event
+    let foundEvent: SpecialEvent | null = null;
+    let hasEventProducts = false;
+    let hasNonEventProducts = false;
+
+    // Check each cart item
     for (const item of items) {
-      // CartItem structure has menuItem.id for the product ID
       const productId = item.menuItem?.id;
+      const productCategory = item.menuItem?.category;
       const productName = item.menuItem?.name || 'Produit';
       
       if (!productId) continue;
       
       const event = isEventProduct(productId);
+      
       if (event) {
         console.log('🎄 Event product found in cart:', productName, 'Event:', event.name);
-        
-        return {
-          hasEventProducts: true,
-          event,
-          eventDate: event.event_date,
-          eventName: event.name,
-          deliveryEnabled: event.delivery_enabled,
-          pickupEnabled: event.pickup_enabled,
-          eventTimeSlots: event.time_slots || [],
-          eventProductIds: getEventProductIds(event.id),
-        };
+        hasEventProducts = true;
+        foundEvent = event;
+      } else if (!ALLOWED_CATEGORIES_WITH_EVENT.includes(productCategory || '')) {
+        // This is a non-event product (not dessert/boisson)
+        console.log('📦 Non-event product found in cart:', productName, 'Category:', productCategory);
+        hasNonEventProducts = true;
       }
     }
 
-    return defaultInfo;
+    if (foundEvent) {
+      return {
+        hasEventProducts: true,
+        hasNonEventProducts,
+        event: foundEvent,
+        eventDate: foundEvent.event_date,
+        eventName: foundEvent.name,
+        deliveryEnabled: foundEvent.delivery_enabled,
+        pickupEnabled: foundEvent.pickup_enabled,
+        eventTimeSlots: foundEvent.time_slots || [],
+        eventProductIds: getEventProductIds(foundEvent.id),
+      };
+    }
+
+    return {
+      ...defaultInfo,
+      hasNonEventProducts,
+    };
   }, [items, activeEvents, eventProducts, isEventProduct, getEventProductIds]);
 
   return cartEventInfo;
+};
+
+// Helper function to filter categories based on cart event state
+export const filterCategoriesForEventExclusivity = (
+  categories: any[],
+  cartEventInfo: CartEventInfo,
+  eventProductIds: string[]
+): any[] => {
+  const { hasEventProducts, hasNonEventProducts } = cartEventInfo;
+
+  return categories.map(category => {
+    let filteredItems = [...category.items];
+
+    if (hasEventProducts) {
+      // When event products are in cart: only show desserts, boissons, and the event products themselves
+      if (ALLOWED_CATEGORIES_WITH_EVENT.includes(category.id)) {
+        // Keep all desserts and boissons
+        return { ...category, items: filteredItems };
+      }
+      // For other categories, only keep event products
+      filteredItems = filteredItems.filter(item => eventProductIds.includes(item.id));
+    } else if (hasNonEventProducts) {
+      // When non-event products are in cart: hide event products
+      filteredItems = filteredItems.filter(item => !eventProductIds.includes(item.id));
+    }
+    // If cart is empty or only has desserts/boissons: show everything
+
+    return { ...category, items: filteredItems };
+  }).filter(category => category.items.length > 0); // Remove empty categories
 };

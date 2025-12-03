@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,8 @@ import SEOHead from "@/components/SEOHead";
 import commanderHeroImage from "@/assets/commander-hero.jpg";
 
 import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
+import { useCartEventProducts, filterCategoriesForEventExclusivity } from "@/hooks/useCartEventProducts";
+import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 
 const CommanderContent = () => {
   const { toast } = useToast();
@@ -36,6 +38,15 @@ const CommanderContent = () => {
   const { setOrderingLocked } = useCart();
   const { isOrderingLocked, isLoading: isOrderingStatusLoading } = useOrderingLockStatus();
   const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
+  
+  // Hook pour gérer les produits d'événements spéciaux et l'exclusivité
+  const cartEventInfo = useCartEventProducts(currentRestaurant?.id);
+  const { getEventProductIds, activeEvents } = useSpecialEvents(currentRestaurant?.id);
+  
+  // Récupérer tous les IDs de produits d'événements actifs
+  const allEventProductIds = useMemo(() => {
+    return activeEvents.flatMap(event => getEventProductIds(event.id));
+  }, [activeEvents, getEventProductIds]);
   
   // Hook pour gérer l'offre box avec accompagnement
   const {
@@ -306,7 +317,13 @@ const CommanderContent = () => {
   }
 
   // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
-  const nonEmptyCategories = categories.filter(cat => cat.items.length > 0);
+  // et appliquer la logique d'exclusivité des produits événements
+  const filteredCategories = useMemo(() => {
+    const withProducts = categories.filter(cat => cat.items.length > 0);
+    return filterCategoriesForEventExclusivity(withProducts, cartEventInfo, allEventProductIds);
+  }, [categories, cartEventInfo, allEventProductIds]);
+  
+  const nonEmptyCategories = filteredCategories;
 
   // Debug logs supprimés pour éviter le spam console
 
