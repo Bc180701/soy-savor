@@ -39,6 +39,8 @@ interface SpecialEvent {
   pickup_enabled: boolean;
   time_slots: TimeSlot[];
   image_url: string | null;
+  banner_title: string | null;
+  banner_description: string | null;
 }
 
 interface EventProduct {
@@ -78,6 +80,8 @@ export const SpecialEventsManager = () => {
     pickup_enabled: true,
     time_slots: [] as TimeSlot[],
     image_url: '',
+    banner_title: '',
+    banner_description: '',
   });
   
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
@@ -192,6 +196,8 @@ export const SpecialEventsManager = () => {
         pickup_enabled: true,
         time_slots: [],
         image_url: '',
+        banner_title: '',
+        banner_description: '',
       });
 
       toast({
@@ -514,6 +520,25 @@ export const SpecialEventsManager = () => {
               <p className="text-xs text-muted-foreground">
                 Cette image sera affichée en bannière sur la page d'accueil pendant la période de l'événement
               </p>
+              
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Titre de la bannière</Label>
+                  <Input
+                    placeholder="ex: Noël 2025"
+                    value={formData.banner_title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, banner_title: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Description</Label>
+                  <Input
+                    placeholder="ex: Précommandez maintenant !"
+                    value={formData.banner_description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, banner_description: e.target.value }))}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Gestion des créneaux horaires */}
@@ -737,6 +762,44 @@ export const SpecialEventsManager = () => {
                       <span className="text-xs text-muted-foreground">Aucune bannière définie</span>
                     </div>
                   )}
+                  
+                  {/* Texte de la bannière */}
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Titre</Label>
+                      <Input
+                        placeholder={event.name}
+                        value={event.banner_title || ''}
+                        onChange={async (e) => {
+                          const newTitle = e.target.value;
+                          await supabase
+                            .from('special_events')
+                            .update({ banner_title: newTitle || null })
+                            .eq('id', event.id);
+                          setEvents(prev => prev.map(ev => 
+                            ev.id === event.id ? { ...ev, banner_title: newTitle || null } : ev
+                          ));
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Description</Label>
+                      <Input
+                        placeholder="Précommandez maintenant !"
+                        value={event.banner_description || ''}
+                        onChange={async (e) => {
+                          const newDesc = e.target.value;
+                          await supabase
+                            .from('special_events')
+                            .update({ banner_description: newDesc || null })
+                            .eq('id', event.id);
+                          setEvents(prev => prev.map(ev => 
+                            ev.id === event.id ? { ...ev, banner_description: newDesc || null } : ev
+                          ));
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="border-t pt-4">

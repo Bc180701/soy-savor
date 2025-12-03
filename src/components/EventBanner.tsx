@@ -12,6 +12,8 @@ interface ActiveEvent {
   event_date: string;
   preorder_start: string;
   preorder_end: string;
+  banner_title: string | null;
+  banner_description: string | null;
 }
 
 const EventBanner = () => {
@@ -25,7 +27,7 @@ const EventBanner = () => {
       // AND the event has an image
       const { data, error } = await supabase
         .from('special_events')
-        .select('id, name, slug, image_url, event_date, preorder_start, preorder_end')
+        .select('id, name, slug, image_url, event_date, preorder_start, preorder_end, banner_title, banner_description')
         .eq('is_active', true)
         .lte('preorder_start', today)
         .gte('event_date', today)
@@ -63,12 +65,12 @@ const EventBanner = () => {
             <div className="flex items-center justify-center gap-2">
               <Gift className="h-6 w-6 md:h-8 md:w-8 text-gold-500" />
               <h2 className="text-xl md:text-3xl lg:text-4xl font-bold text-foreground">
-                {activeEvent.name}
+                {activeEvent.banner_title || activeEvent.name}
               </h2>
               <Gift className="h-6 w-6 md:h-8 md:w-8 text-gold-500" />
             </div>
             <p className="text-sm md:text-base text-muted-foreground">
-              Précommandez maintenant !
+              {activeEvent.banner_description || "Précommandez maintenant !"}
             </p>
             <Button 
               variant="default" 

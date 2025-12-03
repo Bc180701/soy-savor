@@ -1338,6 +1338,8 @@ export type Database = {
       special_events: {
         Row: {
           allowed_categories: string[] | null
+          banner_description: string | null
+          banner_title: string | null
           created_at: string | null
           delivery_enabled: boolean | null
           event_date: string
@@ -1356,6 +1358,8 @@ export type Database = {
         }
         Insert: {
           allowed_categories?: string[] | null
+          banner_description?: string | null
+          banner_title?: string | null
           created_at?: string | null
           delivery_enabled?: boolean | null
           event_date: string
@@ -1374,6 +1378,8 @@ export type Database = {
         }
         Update: {
           allowed_categories?: string[] | null
+          banner_description?: string | null
+          banner_title?: string | null
           created_at?: string | null
           delivery_enabled?: boolean | null
           event_date?: string
