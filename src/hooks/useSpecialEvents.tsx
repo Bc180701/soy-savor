@@ -21,6 +21,8 @@ export interface SpecialEvent {
   pickup_enabled: boolean;
   time_slots: EventTimeSlot[];
   image_url: string | null;
+  banner_title: string | null;
+  banner_description: string | null;
 }
 
 export interface EventProduct {
