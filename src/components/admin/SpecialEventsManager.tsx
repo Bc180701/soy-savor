@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Gift, Calendar, Package } from 'lucide-react';
+import { Plus, Trash2, Gift, Calendar, Package, Truck, Store, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRestaurantContext } from '@/hooks/useRestaurantContext';
@@ -18,6 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+interface TimeSlot {
+  time: string;
+  max_orders: number;
+}
 
 interface SpecialEvent {
   id: string;
@@ -30,6 +35,9 @@ interface SpecialEvent {
   allowed_categories: string[] | null;
   is_active: boolean;
   restaurant_id: string;
+  delivery_enabled: boolean;
+  pickup_enabled: boolean;
+  time_slots: TimeSlot[];
 }
 
 interface EventProduct {
@@ -65,7 +73,12 @@ export const SpecialEventsManager = () => {
     preorder_end: '',
     restrict_menu_on_event: true,
     allowed_categories: DEFAULT_ALLOWED_CATEGORIES,
+    delivery_enabled: true,
+    pickup_enabled: true,
+    time_slots: [] as TimeSlot[],
   });
+  
+  const [newTimeSlot, setNewTimeSlot] = useState({ time: '', max_orders: 10 });
 
   useEffect(() => {
     if (selectedRestaurantId) {
@@ -86,7 +99,12 @@ export const SpecialEventsManager = () => {
         .order('event_date', { ascending: false });
 
       if (eventsError) throw eventsError;
-      setEvents(eventsData || []);
+      // Transform time_slots from Json to TimeSlot[]
+      const transformedEvents = (eventsData || []).map(e => ({
+        ...e,
+        time_slots: (Array.isArray(e.time_slots) ? e.time_slots : []) as unknown as TimeSlot[],
+      }));
+      setEvents(transformedEvents);
 
       // Fetch event products for each event
       if (eventsData && eventsData.length > 0) {
@@ -139,18 +157,24 @@ export const SpecialEventsManager = () => {
     }
 
     try {
+      const { time_slots, ...insertData } = formData;
       const { data, error } = await supabase
         .from('special_events')
         .insert({
-          ...formData,
+          ...insertData,
           restaurant_id: selectedRestaurantId,
+          time_slots: time_slots as unknown as any,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setEvents(prev => [data, ...prev]);
+      const transformedData = {
+        ...data,
+        time_slots: (Array.isArray(data.time_slots) ? data.time_slots : []) as unknown as TimeSlot[],
+      };
+      setEvents(prev => [transformedData, ...prev]);
       setShowForm(false);
       setFormData({
         name: '',
@@ -160,6 +184,9 @@ export const SpecialEventsManager = () => {
         preorder_end: '',
         restrict_menu_on_event: true,
         allowed_categories: DEFAULT_ALLOWED_CATEGORIES,
+        delivery_enabled: true,
+        pickup_enabled: true,
+        time_slots: [],
       });
 
       toast({
@@ -367,6 +394,100 @@ export const SpecialEventsManager = () => {
               <Label>Restreindre le menu le jour de l'événement (n'afficher que les produits liés + catégories autorisées)</Label>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={formData.delivery_enabled}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, delivery_enabled: checked }))}
+                />
+                <div className="flex items-center gap-1">
+                  <Truck className="h-4 w-4 text-muted-foreground" />
+                  <Label>Livraison activée</Label>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={formData.pickup_enabled}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, pickup_enabled: checked }))}
+                />
+                <div className="flex items-center gap-1">
+                  <Store className="h-4 w-4 text-muted-foreground" />
+                  <Label>Retrait en magasin activé</Label>
+                </div>
+              </div>
+            </div>
+
+            {/* Gestion des créneaux horaires */}
+            <div className="space-y-3 border rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <Label className="font-medium">Créneaux horaires spéciaux</Label>
+              </div>
+              
+              <div className="flex gap-2 items-end">
+                <div className="space-y-1">
+                  <Label className="text-xs">Heure</Label>
+                  <Input
+                    type="time"
+                    value={newTimeSlot.time}
+                    onChange={(e) => setNewTimeSlot(prev => ({ ...prev, time: e.target.value }))}
+                    className="w-32"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Max commandes</Label>
+                  <Input
+                    type="number"
+                    value={newTimeSlot.max_orders}
+                    onChange={(e) => setNewTimeSlot(prev => ({ ...prev, max_orders: parseInt(e.target.value) || 0 }))}
+                    className="w-24"
+                    min={1}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (newTimeSlot.time) {
+                      setFormData(prev => ({
+                        ...prev,
+                        time_slots: [...prev.time_slots, { ...newTimeSlot }].sort((a, b) => a.time.localeCompare(b.time))
+                      }));
+                      setNewTimeSlot({ time: '', max_orders: 10 });
+                    }
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {formData.time_slots.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.time_slots.map((slot, idx) => (
+                    <Badge 
+                      key={idx} 
+                      variant="secondary"
+                      className="gap-1 cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        time_slots: prev.time_slots.filter((_, i) => i !== idx)
+                      }))}
+                    >
+                      {slot.time} (max {slot.max_orders})
+                      <span className="text-xs">×</span>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {formData.time_slots.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Aucun créneau spécial défini. Les créneaux habituels du restaurant seront utilisés.
+                </p>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Button onClick={handleCreateEvent}>Créer l'événement</Button>
               <Button variant="outline" onClick={() => setShowForm(false)}>Annuler</Button>
@@ -411,7 +532,7 @@ export const SpecialEventsManager = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex gap-6 text-sm">
+                <div className="flex flex-wrap gap-6 text-sm">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>Événement: {format(parseISO(event.event_date), 'dd MMMM yyyy', { locale: fr })}</span>
@@ -421,7 +542,32 @@ export const SpecialEventsManager = () => {
                     {format(parseISO(event.preorder_start), 'dd/MM', { locale: fr })} -{' '}
                     {format(parseISO(event.preorder_end), 'dd/MM', { locale: fr })}
                   </div>
+                  <div className="flex items-center gap-4">
+                    <div className={`flex items-center gap-1 ${event.delivery_enabled ? 'text-green-600' : 'text-muted-foreground line-through'}`}>
+                      <Truck className="h-4 w-4" />
+                      <span>Livraison</span>
+                    </div>
+                    <div className={`flex items-center gap-1 ${event.pickup_enabled ? 'text-green-600' : 'text-muted-foreground line-through'}`}>
+                      <Store className="h-4 w-4" />
+                      <span>Retrait</span>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Créneaux horaires */}
+                {event.time_slots && event.time_slots.length > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Créneaux:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {event.time_slots.map((slot, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {slot.time} (max {slot.max_orders})
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="border-t pt-4">
                   <div className="flex items-center gap-2 mb-3">

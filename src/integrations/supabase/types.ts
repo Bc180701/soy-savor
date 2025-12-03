@@ -1339,43 +1339,52 @@ export type Database = {
         Row: {
           allowed_categories: string[] | null
           created_at: string | null
+          delivery_enabled: boolean | null
           event_date: string
           id: string
           is_active: boolean | null
           name: string
+          pickup_enabled: boolean | null
           preorder_end: string
           preorder_start: string
           restaurant_id: string | null
           restrict_menu_on_event: boolean | null
           slug: string
+          time_slots: Json | null
           updated_at: string | null
         }
         Insert: {
           allowed_categories?: string[] | null
           created_at?: string | null
+          delivery_enabled?: boolean | null
           event_date: string
           id?: string
           is_active?: boolean | null
           name: string
+          pickup_enabled?: boolean | null
           preorder_end: string
           preorder_start: string
           restaurant_id?: string | null
           restrict_menu_on_event?: boolean | null
           slug: string
+          time_slots?: Json | null
           updated_at?: string | null
         }
         Update: {
           allowed_categories?: string[] | null
           created_at?: string | null
+          delivery_enabled?: boolean | null
           event_date?: string
           id?: string
           is_active?: boolean | null
           name?: string
+          pickup_enabled?: boolean | null
           preorder_end?: string
           preorder_start?: string
           restaurant_id?: string | null
           restrict_menu_on_event?: boolean | null
           slug?: string
+          time_slots?: Json | null
           updated_at?: string | null
         }
         Relationships: [
