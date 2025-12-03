@@ -13,6 +13,7 @@ import DeliveryZonesManager from "./DeliveryZonesManager";
 import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
 import AdminInviteManager from "./AdminInviteManager";
+import SpecialEventsManager from "./SpecialEventsManager";
 
 import StripeKeysManager from "./StripeKeysManager";
 import PrintersManager from "./PrintersManager";
@@ -99,6 +100,8 @@ const AdminManager = () => {
         return <BlockedTimeSlotsManager selectedRestaurant={currentRestaurant} />;
       case "promotions":
         return <PromotionsManager />;
+      case "special-events":
+        return <SpecialEventsManager />;
       case "homepage":
         return <HomepageEditor />;
       case "admins":

@@ -16,7 +16,8 @@ import {
   X as XIcon,
   CreditCard,
   Printer,
-  Bluetooth
+  Bluetooth,
+  Gift
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const navigationItems = [
   { id: "users", label: "Utilisateurs", icon: Users },
   { id: "blocked-slots", label: "Créneaux bloqués", icon: Clock },
   { id: "promotions", label: "Promotions", icon: Tag },
+  { id: "special-events", label: "Événements Spéciaux", icon: Gift },
   { id: "homepage", label: "Page d'accueil", icon: Home },
   { id: "admins", label: "Administrateurs", icon: UserCheck },
   { id: "stripe-keys", label: "Clés Stripe", icon: CreditCard },

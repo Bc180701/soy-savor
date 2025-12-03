@@ -230,6 +230,42 @@ export type Database = {
         }
         Relationships: []
       }
+      event_products: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          id: string
+          product_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          product_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          product_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_products_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "special_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       featured_products_settings: {
         Row: {
           created_at: string
@@ -1295,6 +1331,59 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      special_events: {
+        Row: {
+          allowed_categories: string[] | null
+          created_at: string | null
+          event_date: string
+          id: string
+          is_active: boolean | null
+          name: string
+          preorder_end: string
+          preorder_start: string
+          restaurant_id: string | null
+          restrict_menu_on_event: boolean | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_categories?: string[] | null
+          created_at?: string | null
+          event_date: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          preorder_end: string
+          preorder_start: string
+          restaurant_id?: string | null
+          restrict_menu_on_event?: boolean | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_categories?: string[] | null
+          created_at?: string | null
+          event_date?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          preorder_end?: string
+          preorder_start?: string
+          restaurant_id?: string | null
+          restrict_menu_on_event?: boolean | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "special_events_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
         ]
