@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Restaurant } from "@/types/restaurant";
 import { Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import type { EventTimeSlot } from "@/hooks/useSpecialEvents";
 
 interface TimeOption {
   label: string;
@@ -22,6 +23,7 @@ interface TimeSlotSelectorProps {
   // Props for Christmas/Special Event mode
   targetDate?: string; // Format: "2025-12-24" - for preorder mode
   eventName?: string; // e.g., "Noël"
+  eventTimeSlots?: EventTimeSlot[]; // Custom time slots for the event
 }
 
 const TimeSlotSelector = ({ 
@@ -30,7 +32,8 @@ const TimeSlotSelector = ({
   selectedTime, 
   cartRestaurant,
   targetDate,
-  eventName
+  eventName,
+  eventTimeSlots
 }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<TimeOption[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(selectedTime || null);
@@ -46,6 +49,9 @@ const TimeSlotSelector = ({
   // Determine if we're in special event mode (preorder for a future date)
   const isEventMode = !!targetDate;
   const eventDate = targetDate ? parseISO(targetDate) : null;
+  
+  // Check if we have custom event time slots
+  const hasCustomEventSlots = eventTimeSlots && eventTimeSlots.length > 0;
 
   useEffect(() => {
     const checkOpeningStatus = async () => {
@@ -58,12 +64,33 @@ const TimeSlotSelector = ({
       console.log("🔍 [TimeSlotSelector] Vérification statut pour:", cartRestaurant.name, cartRestaurant.id);
       if (isEventMode) {
         console.log("🎄 [TimeSlotSelector] Mode événement activé pour:", targetDate);
+        if (hasCustomEventSlots) {
+          console.log("🎄 [TimeSlotSelector] Créneaux personnalisés détectés:", eventTimeSlots?.length);
+        }
       }
       setIsLoading(true);
       
       try {
-        // For event mode, we don't check if restaurant is open NOW
-        // We check if it's open on the target date
+        // If we have custom event slots, we don't need to check opening hours
+        if (hasCustomEventSlots) {
+          console.log("🎄 [TimeSlotSelector] Utilisation des créneaux événement personnalisés");
+          setIsOpen(true);
+          // Create fake opening hours from event slots
+          const eventSlotTimes = eventTimeSlots!.map(s => s.time).sort();
+          const firstSlot = eventSlotTimes[0];
+          const lastSlot = eventSlotTimes[eventSlotTimes.length - 1];
+          
+          setTodayOpeningHours([{
+            is_open: true,
+            open_time: firstSlot,
+            close_time: lastSlot,
+            slot_number: 1
+          }]);
+          setIsLoading(false);
+          return;
+        }
+
+        // For event mode without custom slots, we don't check if restaurant is open NOW
         if (!isEventMode) {
           const open = await isRestaurantOpenNow(cartRestaurant.id);
           console.log("🔍 [TimeSlotSelector] Restaurant ouvert:", open);
@@ -132,7 +159,7 @@ const TimeSlotSelector = ({
     };
     
     checkOpeningStatus();
-  }, [cartRestaurant, targetDate, isEventMode, eventDate]);
+  }, [cartRestaurant, targetDate, isEventMode, eventDate, hasCustomEventSlots, eventTimeSlots]);
 
   useEffect(() => {
     if (!isLoading && todayOpeningHours && cartRestaurant) {
@@ -241,6 +268,56 @@ const TimeSlotSelector = ({
   };
 
   const generateTimeSlots = async () => {
+    // If we have custom event time slots, use them directly
+    if (hasCustomEventSlots && eventTimeSlots) {
+      console.log("🎄 [TimeSlotSelector] Génération créneaux depuis événement personnalisé");
+      
+      const { orderCounts, deliveryCounts, pickupCounts, blockedSlots } = await getSlotDataBatch();
+      
+      const slots: TimeOption[] = eventTimeSlots.map(eventSlot => {
+        const timeValue = eventSlot.time;
+        const currentDeliveries = deliveryCounts[timeValue] || 0;
+        const currentPickups = pickupCounts[timeValue] || 0;
+        const maxOrders = eventSlot.maxOrders || (orderType === 'delivery' ? 1 : 2);
+        
+        let isSlotFull = false;
+        if (orderType === "delivery") {
+          isSlotFull = currentDeliveries >= maxOrders;
+        } else {
+          isSlotFull = currentPickups >= maxOrders;
+        }
+        
+        const isSlotBlocked = blockedSlots.has(timeValue);
+        
+        // Parse time for formatting
+        const [hours, mins] = timeValue.split(':');
+        const label = `${hours}h${mins}`;
+        
+        return {
+          label,
+          value: timeValue,
+          disabled: isSlotFull || isSlotBlocked,
+        };
+      });
+      
+      // Sort slots by time
+      slots.sort((a, b) => a.value.localeCompare(b.value));
+      
+      console.log("✅ [TimeSlotSelector] Créneaux événement générés:", slots.length);
+      setTimeSlots(slots);
+      
+      // Auto-select first available slot
+      if (!selectedTime) {
+        const firstAvailable = slots.find((slot) => !slot.disabled);
+        if (firstAvailable) {
+          setSelectedSlot(firstAvailable.value);
+          onSelect(firstAvailable.value);
+          console.log("✅ [TimeSlotSelector] Premier créneau événement sélectionné:", firstAvailable.value);
+        }
+      }
+      return;
+    }
+    
     if (!todayOpeningHours || todayOpeningHours.length === 0) {
       console.log("⚠️ [TimeSlotSelector] Pas d'horaires disponibles");
       return;
