@@ -36,9 +36,12 @@ export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
 
     // Check each cart item to see if it's linked to an event
     for (const item of items) {
-      // Cast item to access properties - CartItem has id as the product ID
-      const productId = (item as any).id || (item as any).productId;
-      const productName = (item as any).name || 'Produit';
+      // CartItem structure has menuItem.id for the product ID
+      const productId = item.menuItem?.id;
+      const productName = item.menuItem?.name || 'Produit';
+      
+      if (!productId) continue;
+      
       const event = isEventProduct(productId);
       if (event) {
         console.log('🎄 Event product found in cart:', productName, 'Event:', event.name);
