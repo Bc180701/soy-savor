@@ -1,10 +1,12 @@
 
 import { useState, useEffect } from "react";
-import { format, addMinutes, isAfter } from "date-fns";
+import { format, addMinutes, isAfter, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { isRestaurantOpenNow, getWeekOpeningHours } from "@/services/openingHoursService";
 import { supabase } from "@/integrations/supabase/client";
 import type { Restaurant } from "@/types/restaurant";
+import { Gift } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface TimeOption {
   label: string;
@@ -17,9 +19,19 @@ interface TimeSlotSelectorProps {
   onSelect: (time: string) => void;
   selectedTime?: string;
   cartRestaurant?: Restaurant | null;
+  // Props for Christmas/Special Event mode
+  targetDate?: string; // Format: "2025-12-24" - for preorder mode
+  eventName?: string; // e.g., "Noël"
 }
 
-const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }: TimeSlotSelectorProps) => {
+const TimeSlotSelector = ({ 
+  orderType, 
+  onSelect, 
+  selectedTime, 
+  cartRestaurant,
+  targetDate,
+  eventName
+}: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<TimeOption[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(selectedTime || null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +43,10 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
     slot_number: number;
   }[] | null>(null);
 
+  // Determine if we're in special event mode (preorder for a future date)
+  const isEventMode = !!targetDate;
+  const eventDate = targetDate ? parseISO(targetDate) : null;
+
   useEffect(() => {
     const checkOpeningStatus = async () => {
       if (!cartRestaurant) {
@@ -40,30 +56,41 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
       }
 
       console.log("🔍 [TimeSlotSelector] Vérification statut pour:", cartRestaurant.name, cartRestaurant.id);
+      if (isEventMode) {
+        console.log("🎄 [TimeSlotSelector] Mode événement activé pour:", targetDate);
+      }
       setIsLoading(true);
       
       try {
-        // Vérifier si le restaurant est ouvert aujourd'hui
-        const open = await isRestaurantOpenNow(cartRestaurant.id);
-        console.log("🔍 [TimeSlotSelector] Restaurant ouvert:", open);
-        setIsOpen(open);
+        // For event mode, we don't check if restaurant is open NOW
+        // We check if it's open on the target date
+        if (!isEventMode) {
+          const open = await isRestaurantOpenNow(cartRestaurant.id);
+          console.log("🔍 [TimeSlotSelector] Restaurant ouvert:", open);
+          setIsOpen(open);
+        } else {
+          // In event mode, assume restaurant will be open on event day
+          setIsOpen(true);
+        }
         
         // Récupérer tous les horaires d'ouverture
         const weekHours = await getWeekOpeningHours(cartRestaurant.id);
         console.log("🔍 [TimeSlotSelector] Horaires semaine:", weekHours);
         
         if (weekHours.length > 0) {
-          const today = new Date();
+          // Use event date if in event mode, otherwise use today
+          const dateToCheck = eventDate || new Date();
           const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-          const currentDay = days[today.getDay()];
+          const dayIndex = dateToCheck.getDay();
+          const dayToCheck = days[dayIndex];
           
-          console.log("🔍 [TimeSlotSelector] Jour actuel:", currentDay, today.getDay());
+          console.log("🔍 [TimeSlotSelector] Jour vérifié:", dayToCheck, dayIndex, isEventMode ? `(événement: ${targetDate})` : "(aujourd'hui)");
           
-          const todayHours = weekHours.filter(day => day.day === currentDay);
-          console.log("🔍 [TimeSlotSelector] Horaires du jour trouvées:", todayHours);
+          const targetDayHours = weekHours.filter(day => day.day === dayToCheck);
+          console.log("🔍 [TimeSlotSelector] Horaires du jour trouvées:", targetDayHours);
           
-          if (todayHours.length > 0) {
-            const formattedHours = todayHours.map(hour => ({
+          if (targetDayHours.length > 0) {
+            const formattedHours = targetDayHours.map(hour => ({
               is_open: hour.is_open,
               open_time: hour.open_time,
               close_time: hour.close_time,
@@ -105,7 +132,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
     };
     
     checkOpeningStatus();
-  }, [cartRestaurant]);
+  }, [cartRestaurant, targetDate, isEventMode, eventDate]);
 
   useEffect(() => {
     if (!isLoading && todayOpeningHours && cartRestaurant) {
@@ -128,10 +155,15 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
 
   const getSlotDataBatch = async () => {
     try {
-      const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-      const todayString = today.toISOString().split('T')[0];
+      // Use target date for event mode, otherwise use today
+      const dateToUse = eventDate || new Date();
+      const startOfDay = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate());
+      const endOfDay = new Date(dateToUse.getFullYear(), dateToUse.getMonth(), dateToUse.getDate() + 1);
+      const dateString = format(dateToUse, 'yyyy-MM-dd');
+      
+      if (isEventMode) {
+        console.log("🎄 [TimeSlotSelector] Récupération créneaux pour événement:", dateString);
+      }
       
       // Récupérer toutes les commandes du jour en une seule requête
       const ordersPromise = supabase
@@ -147,7 +179,7 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
         .from('blocked_time_slots')
         .select('blocked_time, blocked_service_type')
         .eq('restaurant_id', cartRestaurant?.id)
-        .eq('blocked_date', todayString);
+        .eq('blocked_date', dateString);
 
       const [ordersResult, blockedResult] = await Promise.all([ordersPromise, blockedSlotsPromise]);
 
@@ -301,20 +333,24 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
 
       while (currentTime <= endDate) {
         const timeValue = format(currentTime, "HH:mm");
-        // Vérifier si le créneau est dans le passé
-        // Un créneau est considéré comme passé s'il est antérieur à l'heure actuelle + délai minimum
-        const currentTimeWithDelay = addMinutes(now, 30); // Délai minimum de 30 minutes
-        const isPassedTime = isAfter(currentTimeWithDelay, currentTime);
         
-        // Debug: Afficher les informations de débogage
-        if (timeValue === "12:45" || timeValue === "12:30") {
-          console.log(`🕐 DEBUG CRÉNEAU ${timeValue}:`, {
-            heureActuelle: format(now, "HH:mm"),
-            heureAvecDélai: format(currentTimeWithDelay, "HH:mm"),
-            heureCréneau: format(currentTime, "HH:mm"),
-            isPassedTime: isPassedTime,
-            isAfterResult: isAfter(currentTimeWithDelay, currentTime)
-          });
+        // For event mode (future date), no time is "passed" - all slots are available
+        // For normal mode, check if the slot is in the past
+        let isPassedTime = false;
+        if (!isEventMode) {
+          const currentTimeWithDelay = addMinutes(now, 30); // Délai minimum de 30 minutes
+          isPassedTime = isAfter(currentTimeWithDelay, currentTime);
+          
+          // Debug: Afficher les informations de débogage
+          if (timeValue === "12:45" || timeValue === "12:30") {
+            console.log(`🕐 DEBUG CRÉNEAU ${timeValue}:`, {
+              heureActuelle: format(now, "HH:mm"),
+              heureAvecDélai: format(currentTimeWithDelay, "HH:mm"),
+              heureCréneau: format(currentTime, "HH:mm"),
+              isPassedTime: isPassedTime,
+              isAfterResult: isAfter(currentTimeWithDelay, currentTime)
+            });
+          }
         }
         
         // Vérifier la capacité du créneau selon le type de commande
@@ -380,7 +416,9 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
     onSelect(time);
   };
 
-  const formattedDate = format(new Date(), "EEEE d MMMM", { locale: fr });
+  // Use event date for display if in event mode
+  const displayDate = eventDate || new Date();
+  const formattedDate = format(displayDate, "EEEE d MMMM", { locale: fr });
 
   if (isLoading) {
     return (
@@ -413,11 +451,19 @@ const TimeSlotSelector = ({ orderType, onSelect, selectedTime, cartRestaurant }:
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">
-        Horaire de {orderType === "delivery" ? "livraison" : "retrait"}
-      </h3>
+      <div className="flex items-center gap-2">
+        <h3 className="text-lg font-medium">
+          Horaire de {orderType === "delivery" ? "livraison" : "retrait"}
+        </h3>
+        {isEventMode && eventName && (
+          <Badge className="bg-gradient-to-r from-red-500 to-green-600 text-white gap-1">
+            <Gift className="h-3 w-3" />
+            🎄 {eventName}
+          </Badge>
+        )}
+      </div>
       <p className="text-sm text-gray-500">
-        Choisissez l'heure à laquelle vous souhaitez {orderType === "delivery" ? "être livré" : "récupérer votre commande"} pour {formattedDate}
+        Choisissez l'heure à laquelle vous souhaitez {orderType === "delivery" ? "être livré" : "récupérer votre commande"} pour <span className={isEventMode ? "font-semibold text-red-600" : ""}>{formattedDate}</span>
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
