@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Gift, Calendar, Package } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useAdminRestaurantSession } from '@/hooks/useAdminRestaurantSession';
+import { useRestaurantContext } from '@/hooks/useRestaurantContext';
 import {
   Select,
   SelectContent,
@@ -47,7 +47,8 @@ interface Product {
 const DEFAULT_ALLOWED_CATEGORIES = ['desserts', 'boissons'];
 
 export const SpecialEventsManager = () => {
-  const { sessionRestaurant: selectedRestaurantId } = useAdminRestaurantSession();
+  const { currentRestaurant } = useRestaurantContext();
+  const selectedRestaurantId = currentRestaurant?.id || null;
   const { toast } = useToast();
   const [events, setEvents] = useState<SpecialEvent[]>([]);
   const [eventProducts, setEventProducts] = useState<Record<string, EventProduct[]>>({});
