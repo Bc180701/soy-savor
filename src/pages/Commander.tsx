@@ -299,6 +299,14 @@ const CommanderContent = () => {
     setOrderingLocked(isOrderingLocked);
   }, [isOrderingLocked, setOrderingLocked]);
 
+  // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
+  // et appliquer la logique d'exclusivité des produits événements
+  // IMPORTANT: Ce useMemo doit être AVANT les early returns pour respecter les règles des hooks
+  const nonEmptyCategories = useMemo(() => {
+    const withProducts = categories.filter(cat => cat.items.length > 0);
+    return filterCategoriesForEventExclusivity(withProducts, cartEventInfo, allEventProductIds);
+  }, [categories, cartEventInfo, allEventProductIds]);
+
   // Si les commandes sont verrouillées, afficher un message au lieu du menu
   if (isOrderingStatusLoading || isOrderingLocked) {
     return <OrderingLockedMessage />;
@@ -315,15 +323,6 @@ const CommanderContent = () => {
       />
     );
   }
-
-  // Filtrer les catégories pour n'afficher que celles qui contiennent des produits
-  // et appliquer la logique d'exclusivité des produits événements
-  const filteredCategories = useMemo(() => {
-    const withProducts = categories.filter(cat => cat.items.length > 0);
-    return filterCategoriesForEventExclusivity(withProducts, cartEventInfo, allEventProductIds);
-  }, [categories, cartEventInfo, allEventProductIds]);
-  
-  const nonEmptyCategories = filteredCategories;
 
   // Debug logs supprimés pour éviter le spam console
 
