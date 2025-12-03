@@ -376,15 +376,49 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   };
 
   const handleSauceToggle = (sauce: string) => {
+    const restaurantId = getRestaurantId();
     const existingSauce = selectedSauces.find(s => s.name === sauce);
+    
     if (existingSauce) {
       const newSauces = selectedSauces.filter(s => s.name !== sauce);
       setSelectedSauces(newSauces);
-      addSauceToCart(sauce, 0); // Supprimer du panier
+      
+      if (sauce === "Aucune") {
+        // Supprimer l'item "Aucune sauce" du panier
+        const aucuneItem = items.find(item => item.menuItem?.name === "Aucune sauce");
+        if (aucuneItem) {
+          removeItem(aucuneItem.menuItem.id);
+        }
+      } else {
+        addSauceToCart(sauce, 0); // Supprimer du panier
+      }
     } else {
       const newSauces = [...selectedSauces, { name: sauce, quantity: 1 }];
       setSelectedSauces(newSauces);
-      if (sauce !== "Aucune") {
+      
+      if (sauce === "Aucune") {
+        // Ajouter un item "Aucune sauce" au panier pour valider le choix
+        if (restaurantId) {
+          const aucuneItem = {
+            id: `sauce-aucune-${Date.now()}`,
+            name: "Aucune sauce",
+            description: "Pas de sauce demandée",
+            price: 0,
+            imageUrl: "",
+            category: "Sauce" as const,
+            restaurant_id: restaurantId,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          };
+          addItem(aucuneItem, 1);
+        }
+      } else {
         addSauceToCart(sauce, 1); // Ajouter au panier
       }
     }
