@@ -48,35 +48,34 @@ const EventBanner = () => {
   return (
     <section className="relative w-full overflow-hidden pt-16 md:pt-20 mb-8 md:mb-12">
       <Link to="/commander" className="block">
+        {/* Image */}
         <div className="relative w-full aspect-[2/1] md:aspect-[3/1] lg:aspect-[3.5/1]">
           <img
             src={activeEvent.image_url}
             alt={activeEvent.name}
             className="w-full h-full object-cover"
           />
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
-          
-          {/* Content overlay */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center text-white space-y-3 px-4">
-              <div className="flex items-center justify-center gap-2">
-                <Gift className="h-6 w-6 md:h-8 md:w-8 text-gold-400" />
-                <h2 className="text-xl md:text-3xl lg:text-4xl font-bold drop-shadow-lg">
-                  {activeEvent.name}
-                </h2>
-                <Gift className="h-6 w-6 md:h-8 md:w-8 text-gold-400" />
-              </div>
-              <p className="text-sm md:text-base drop-shadow">
-                Précommandez maintenant !
-              </p>
-              <Button 
-                variant="default" 
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                Commander
-              </Button>
+        </div>
+        
+        {/* Content below image */}
+        <div className="bg-background py-6 md:py-8">
+          <div className="text-center space-y-3 px-4">
+            <div className="flex items-center justify-center gap-2">
+              <Gift className="h-6 w-6 md:h-8 md:w-8 text-gold-500" />
+              <h2 className="text-xl md:text-3xl lg:text-4xl font-bold text-foreground">
+                {activeEvent.name}
+              </h2>
+              <Gift className="h-6 w-6 md:h-8 md:w-8 text-gold-500" />
             </div>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Précommandez maintenant !
+            </p>
+            <Button 
+              variant="default" 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              Commander
+            </Button>
           </div>
         </div>
       </Link>
