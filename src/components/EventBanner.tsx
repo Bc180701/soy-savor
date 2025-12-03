@@ -46,9 +46,9 @@ const EventBanner = () => {
   }
 
   return (
-    <section className="relative w-full overflow-hidden pt-16 md:pt-20">
+    <section className="relative w-full overflow-hidden pt-16 md:pt-20 mb-8 md:mb-12">
       <Link to="/commander" className="block">
-        <div className="relative w-full aspect-[3/1] md:aspect-[4/1] lg:aspect-[5/1]">
+        <div className="relative w-full aspect-[2/1] md:aspect-[3/1] lg:aspect-[3.5/1]">
           <img
             src={activeEvent.image_url}
             alt={activeEvent.name}
