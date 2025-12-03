@@ -69,6 +69,8 @@ export const SpecialEventsManager = () => {
   useEffect(() => {
     if (selectedRestaurantId) {
       fetchData();
+    } else {
+      setIsLoading(false);
     }
   }, [selectedRestaurantId]);
 
@@ -279,6 +281,14 @@ export const SpecialEventsManager = () => {
     return (
       <div className="flex justify-center py-8">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!selectedRestaurantId) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Veuillez sélectionner un restaurant dans le menu déroulant en haut à gauche.
       </div>
     );
   }
