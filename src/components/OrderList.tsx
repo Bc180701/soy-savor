@@ -23,7 +23,7 @@ interface OrderListProps {
 const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>(defaultTab);
-  const [orderFilter, setOrderFilter] = useState<"all" | "normal" | "event">("all");
+  const [orderFilter, setOrderFilter] = useState<"all" | "normal" | "event">("normal");
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
