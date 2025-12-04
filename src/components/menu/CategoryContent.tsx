@@ -18,6 +18,7 @@ import { useDessertBoissonOffer } from "@/hooks/useDessertBoissonOffer";
 import { useWrapSelection } from "@/hooks/useWrapSelection";
 import { WrapSelectionModal } from "./WrapSelectionModal";
 import { WineFormatSelector } from "./WineFormatSelector";
+import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -33,6 +34,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
+  const { isEventProduct } = useSpecialEvents(currentRestaurant?.id);
   
   // Vérifier si c'est après 14h
   const isAfter2PM = () => {
@@ -372,11 +374,11 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
                 >
-                  <Card className={`overflow-hidden transition-shadow border-0 rounded-xl h-full ${
+                  <Card className={`overflow-hidden transition-shadow rounded-xl h-full ${
                     isBoxDuMidi(category) && isAfter2PM() 
-                      ? 'bg-gray-100 cursor-not-allowed' 
+                      ? 'bg-gray-100 cursor-not-allowed border-0' 
                       : 'bg-white hover:shadow-lg'
-                  }`}>
+                  } ${isEventProduct(item.id) ? 'border-2 border-red-500 ring-2 ring-red-200' : 'border-0'}`}>
                     <CardContent className="p-0 h-full">
                       {isMobile ? (
                         // Mobile layout - Vertical card
