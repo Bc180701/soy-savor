@@ -69,7 +69,13 @@ export const useSpecialEvents = (restaurantId?: string) => {
           ...e,
           delivery_enabled: e.delivery_enabled ?? true,
           pickup_enabled: e.pickup_enabled ?? true,
-          time_slots: Array.isArray(e.time_slots) ? (e.time_slots as unknown as EventTimeSlot[]) : []
+          // Transform time_slots: convert max_orders (snake_case) to maxOrders (camelCase)
+          time_slots: Array.isArray(e.time_slots) 
+            ? (e.time_slots as any[]).map((slot: any) => ({
+                time: slot.time,
+                maxOrders: slot.max_orders || slot.maxOrders // Support both formats
+              }))
+            : []
         }));
 
         console.log('🎄 Active special events:', transformedEvents);
