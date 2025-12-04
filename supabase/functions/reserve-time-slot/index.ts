@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface EventTimeSlot {
+  time: string;
+  maxOrders?: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,14 +33,14 @@ serve(async (req) => {
       );
     }
 
-    // Définir les limites par type de commande
-    const limits = {
+    // Définir les limites par défaut par type de commande
+    const defaultLimits = {
       delivery: 1,
       pickup: 2,
       'dine-in': 10
     };
 
-    const maxAllowed = limits[orderType as keyof typeof limits] || 1;
+    let maxAllowed = defaultLimits[orderType as keyof typeof defaultLimits] || 1;
     
     // Si sur place, pas de limitation stricte
     if (orderType === 'dine-in') {
@@ -46,8 +51,41 @@ serve(async (req) => {
       );
     }
 
-    // VÉRIFICATION ET RÉSERVATION ATOMIQUE avec une transaction
+    // Extraire la date et l'heure du créneau
     const scheduledDate = new Date(scheduledFor);
+    const dateOnly = scheduledDate.toISOString().split('T')[0]; // Format "2025-12-24"
+    const timeOnly = scheduledDate.toTimeString().slice(0, 5); // Format "13:40"
+
+    console.log('📅 Vérification événement spécial pour:', { dateOnly, timeOnly, restaurantId });
+
+    // Chercher un événement spécial actif pour cette date
+    const { data: eventData, error: eventError } = await supabase
+      .from('special_events')
+      .select('id, name, time_slots')
+      .eq('is_active', true)
+      .eq('event_date', dateOnly)
+      .maybeSingle();
+
+    if (eventError) {
+      console.error('⚠️ Erreur recherche événement:', eventError);
+    }
+
+    // Si un événement est trouvé, utiliser ses limites
+    if (eventData && eventData.time_slots) {
+      const eventSlots = eventData.time_slots as EventTimeSlot[];
+      const matchingSlot = eventSlots.find(s => s.time === timeOnly);
+      
+      if (matchingSlot && matchingSlot.maxOrders) {
+        maxAllowed = matchingSlot.maxOrders;
+        console.log(`🎄 Créneau événement "${eventData.name}" détecté - Limite: ${maxAllowed} (au lieu de ${defaultLimits[orderType as keyof typeof defaultLimits]})`);
+      } else {
+        console.log(`🎄 Événement "${eventData.name}" trouvé mais pas de limite spécifique pour ${timeOnly}, utilisation limite par défaut: ${maxAllowed}`);
+      }
+    } else {
+      console.log(`📋 Pas d'événement spécial pour ${dateOnly}, utilisation limite par défaut: ${maxAllowed}`);
+    }
+
+    // VÉRIFICATION ET RÉSERVATION ATOMIQUE avec une transaction
     const startTime = scheduledDate.toISOString();
     const endTime = new Date(scheduledDate.getTime() + 60000).toISOString(); // +1 minute
     
@@ -57,7 +95,8 @@ serve(async (req) => {
       scheduledFor,
       startTime,
       endTime,
-      maxAllowed
+      maxAllowed,
+      isEventSlot: !!eventData
     });
 
     // Utiliser une transaction pour garantir l'atomicité
@@ -90,7 +129,8 @@ serve(async (req) => {
         JSON.stringify({ 
           available: true, 
           message: 'Créneau réservé avec succès',
-          reserved: true
+          reserved: true,
+          isEventSlot: !!eventData
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -101,7 +141,8 @@ serve(async (req) => {
           available: false, 
           message: result?.message || `Limite de ${maxAllowed} ${orderType} atteinte pour ce créneau`,
           currentCount: result?.current_count || 0,
-          maxAllowed: maxAllowed
+          maxAllowed: maxAllowed,
+          isEventSlot: !!eventData
         }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -119,4 +160,3 @@ serve(async (req) => {
     );
   }
 });
-
