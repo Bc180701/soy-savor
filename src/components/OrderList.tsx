@@ -70,9 +70,6 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     return orders.filter(order => !isEventOrder(order));
   }, [orders, orderFilter, isEventOrder]);
 
-  // Compter les commandes par type
-  const eventOrdersCount = useMemo(() => orders.filter(isEventOrder).length, [orders, isEventOrder]);
-  const normalOrdersCount = useMemo(() => orders.filter(o => !isEventOrder(o)).length, [orders, isEventOrder]);
 
   // Fonction pour mettre à jour l'onglet dans l'URL
   const handleTabChange = useCallback((newTab: string) => {
@@ -224,15 +221,15 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
           >
             <ToggleGroupItem value="all" className="text-sm gap-1.5">
               <Calendar className="h-4 w-4" />
-              Toutes ({orders.length})
+              Toutes
             </ToggleGroupItem>
             <ToggleGroupItem value="normal" className="text-sm gap-1.5">
               <FileText className="h-4 w-4" />
-              Normales ({normalOrdersCount})
+              Normales
             </ToggleGroupItem>
             <ToggleGroupItem value="event" className="text-sm gap-1.5 text-red-600">
               <TreePine className="h-4 w-4" />
-              Noël 24 ({eventOrdersCount})
+              Noël 24
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
