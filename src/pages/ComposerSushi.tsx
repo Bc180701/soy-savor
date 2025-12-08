@@ -161,55 +161,54 @@ const ComposerSushi = () => {
       return;
     }
 
-    if (step < 7) {
-      // Validation for each step
-      if (step === 1 && !selectedBox) {
-        toast({
-          title: "Sélection requise",
-          description: "Veuillez sélectionner une box",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (step === 2 && !selectedEnrobage) {
-        toast({
-          title: "Sélection requise",
-          description: "Veuillez sélectionner un enrobage",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (step === 3 && !selectedBase) {
-        toast({
-          title: "Sélection requise",
-          description: "Veuillez sélectionner une base",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (step === 4 && selectedGarnitures.length === 0) {
-        toast({
-          title: "Sélection requise",
-          description: "Veuillez sélectionner au moins une garniture",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // For topping, check if enrobage is not nori, otherwise topping is optional
-      if (step === 5 && selectedEnrobage?.name.toLowerCase().includes("nori") && selectedTopping) {
-        toast({
-          title: "Information",
-          description: "Les toppings ne sont pas disponibles avec l'enrobage feuille d'algue nori",
-        });
-        setSelectedTopping(null);
-      }
+    // Validation for each step
+    if (step === 1 && !selectedBox) {
+      toast({
+        title: "Sélection requise",
+        description: "Veuillez sélectionner une box",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (step === 2 && !selectedEnrobage) {
+      toast({
+        title: "Sélection requise",
+        description: "Veuillez sélectionner un enrobage",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (step === 3 && !selectedBase) {
+      toast({
+        title: "Sélection requise",
+        description: "Veuillez sélectionner une base",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (step === 4 && selectedGarnitures.length === 0) {
+      toast({
+        title: "Sélection requise",
+        description: "Veuillez sélectionner au moins une garniture",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // For topping, check if enrobage is not nori, otherwise topping is optional
+    if (step === 5 && selectedEnrobage?.name.toLowerCase().includes("nori") && selectedTopping) {
+      toast({
+        title: "Information",
+        description: "Les toppings ne sont pas disponibles avec l'enrobage feuille d'algue nori",
+      });
+      setSelectedTopping(null);
+    }
 
-      setStep(step + 1);
-    } else {
+    // Step 6 (sauce) - complete current creation
+    if (step === 6) {
       // Step 6 (sauce) - complete current creation
       if (!selectedSauce) {
         toast({
@@ -275,12 +274,18 @@ const ComposerSushi = () => {
         // Navigate back to menu
         navigate("/commander");
       }
+      return;
     }
+
+    // Continue to next step
+    setStep(step + 1);
   };
 
   // Handle back navigation
   const handleBack = () => {
-    if (step > 0) {
+    if (hasInitialRestaurant && step === 1) {
+      navigate("/commander");
+    } else if (step > 0) {
       setStep(step - 1);
     } else {
       navigate("/commander");
@@ -411,7 +416,7 @@ const ComposerSushi = () => {
                 variant="outline" 
                 onClick={handleBack}
               >
-                {step > 0 ? "Précédent" : "Annuler"}
+                {(hasInitialRestaurant && step === 1) || step === 0 ? "Annuler" : "Précédent"}
               </Button>
               <Button onClick={handleNext}>
                 {step === 0 
