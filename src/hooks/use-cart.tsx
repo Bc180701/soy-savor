@@ -193,10 +193,14 @@ export const useCart = create<CartStore>()(
     }),
     {
       name: 'sushieats-cart',
-      skipHydration: true,
     }
   )
 );
+
+// Hydrater le store au chargement
+if (typeof window !== 'undefined') {
+  useCart.persist.rehydrate();
+}
 
 // Hook personnalisé pour obtenir le total de manière réactive
 export const useCartTotal = () => {
