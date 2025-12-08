@@ -2,12 +2,14 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { usePromotions } from "@/hooks/usePromotions";
 import { getDayName } from "@/services/promotionService";
 
 const PromotionalBanner = () => {
   const { activePromotions } = usePromotions();
+  const location = useLocation();
+  const navigate = useNavigate();
   
   if (activePromotions.length === 0) {
     return null;
@@ -19,6 +21,36 @@ const PromotionalBanner = () => {
 
   // Vérifier si c'est l'offre gourmande pour afficher le message spécial
   const isOffreGourmande = mainPromotion.title.toLowerCase().includes('gourmande');
+
+  const handleClick = () => {
+    // Trouver et scroller vers la catégorie box_du_midi
+    const scrollToBoxCategory = () => {
+      // Chercher les éléments de catégorie contenant "box"
+      const categoryElements = document.querySelectorAll('[data-category-id]');
+      let boxElement: Element | null = null;
+      
+      categoryElements.forEach((el) => {
+        const categoryId = el.getAttribute('data-category-id');
+        if (categoryId && categoryId.toLowerCase().includes('box')) {
+          boxElement = el;
+        }
+      });
+      
+      if (boxElement) {
+        boxElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    if (location.pathname === '/commander') {
+      // Si on est déjà sur la page commander, scroller directement
+      scrollToBoxCategory();
+    } else {
+      // Sinon, naviguer vers commander puis scroller
+      navigate('/commander');
+      // Attendre que la page charge puis scroller
+      setTimeout(scrollToBoxCategory, 500);
+    }
+  };
 
   return (
     <motion.div 
@@ -48,8 +80,11 @@ const PromotionalBanner = () => {
           Horaires: {mainPromotion.startTime} - {mainPromotion.endTime}
         </div>
       )}
-      <Button asChild className="bg-white hover:bg-gray-100 text-red-600">
-        <Link to="/commander">Profiter de l'offre</Link>
+      <Button 
+        onClick={handleClick}
+        className="bg-white hover:bg-gray-100 text-red-600"
+      >
+        J'en profite
       </Button>
     </motion.div>
   );
