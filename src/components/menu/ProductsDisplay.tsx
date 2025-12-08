@@ -33,6 +33,7 @@ const ProductsDisplay = ({ categories, onAddToCart, categoryRefs }: ProductsDisp
           <div 
             key={category.id}
             id={category.id}
+            data-category-id={category.id}
             ref={el => refs.current[category.id] = el}
           >
             <CategoryContent 
