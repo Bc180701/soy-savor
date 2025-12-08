@@ -822,9 +822,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                 <label className="text-sm font-medium leading-none">
                   Baguettes
                 </label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  1 paire gratuite par 10€ • +0,50€ par paire supplémentaire
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -886,9 +883,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                 <label className="text-sm font-medium leading-none">
                   Fourchettes
                 </label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  1 gratuite par 10€ • +0,50€ par fourchette supplémentaire
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -950,9 +944,6 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
                 <label className="text-sm font-medium leading-none">
                   Cuillères
                 </label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  1 gratuite par 10€ • +0,50€ par cuillère supplémentaire
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
