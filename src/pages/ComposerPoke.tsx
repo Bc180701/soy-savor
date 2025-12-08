@@ -31,8 +31,9 @@ const ComposerPoke = () => {
 
   const { baseItem } = (location.state as ComposerPokeState) || { baseItem: null };
   
-  // Si un restaurant est déjà sélectionné, commencer à l'étape 1
-  const [step, setStep] = useState<number>(currentRestaurant ? 1 : 0);
+  // Si un restaurant est déjà sélectionné, on saute l'étape restaurant
+  const hasInitialRestaurant = !!currentRestaurant;
+  const [step, setStep] = useState<number>(hasInitialRestaurant ? 1 : 0);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(currentRestaurant);
   
   // Synchroniser avec le contexte si le restaurant change
@@ -339,7 +340,7 @@ const ComposerPoke = () => {
         )}
 
         <div className="flex mb-6 overflow-x-auto">
-          {[0, 1, 2, 3].map((stepNumber) => (
+          {(hasInitialRestaurant ? [1, 2, 3] : [0, 1, 2, 3]).map((stepNumber, index) => (
             <div 
               key={stepNumber}
               className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mr-2 ${
@@ -353,7 +354,7 @@ const ComposerPoke = () => {
               {stepNumber < step ? (
                 <Check className="h-5 w-5" />
               ) : (
-                stepNumber === 0 ? "R" : stepNumber
+                stepNumber === 0 ? "R" : (hasInitialRestaurant ? index + 1 : stepNumber)
               )}
             </div>
           ))}
@@ -363,7 +364,7 @@ const ComposerPoke = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">
-                {step === 0 ? "Restaurant" : `Étape ${step}/3`}
+                {step === 0 ? "Restaurant" : `Étape ${hasInitialRestaurant ? step : step}/3`}
               </h2>
               {step > 0 && (
                 <div className="text-right">
