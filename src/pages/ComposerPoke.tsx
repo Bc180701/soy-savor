@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -15,6 +14,7 @@ import { ArrowLeft, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { RestaurantSelector } from "@/components/creation/RestaurantSelector";
 import { IngredientQuantitySelector } from "@/components/poke/IngredientQuantitySelector";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 interface ComposerPokeState {
   baseItem: MenuItem;
@@ -27,11 +27,21 @@ const ComposerPoke = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const cart = useCart();
+  const { currentRestaurant } = useRestaurantContext();
 
   const { baseItem } = (location.state as ComposerPokeState) || { baseItem: null };
   
-  const [step, setStep] = useState<number>(0); // Commencer à 0 pour la sélection de restaurant
-  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  // Si un restaurant est déjà sélectionné, commencer à l'étape 1
+  const [step, setStep] = useState<number>(currentRestaurant ? 1 : 0);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(currentRestaurant);
+  
+  // Synchroniser avec le contexte si le restaurant change
+  useEffect(() => {
+    if (currentRestaurant && !selectedRestaurant) {
+      setSelectedRestaurant(currentRestaurant);
+      if (step === 0) setStep(1);
+    }
+  }, [currentRestaurant]);
   // Nouveau système avec quantités
   interface IngredientWithQuantity {
     ingredient: PokeIngredient;

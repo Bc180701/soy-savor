@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useCart } from "@/hooks/use-cart";
 import { MenuItem } from "@/types";
 import { Restaurant } from "@/types/restaurant";
 import { ArrowLeft, Check } from "lucide-react";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 // Import types and utilities
 import { SushiOption, BoxOption, SushiCreation } from "@/types/sushi-creator";
@@ -36,11 +37,21 @@ const ComposerSushi = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const cart = useCart();
+  const { currentRestaurant } = useRestaurantContext();
 
   const { baseItem } = (location.state as ComposerSushiState) || { baseItem: null };
 
-  const [step, setStep] = useState<number>(0); // Commencer à 0 pour la sélection de restaurant
-  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  // Si un restaurant est déjà sélectionné, commencer à l'étape 1
+  const [step, setStep] = useState<number>(currentRestaurant ? 1 : 0);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(currentRestaurant);
+  
+  // Synchroniser avec le contexte si le restaurant change
+  useEffect(() => {
+    if (currentRestaurant && !selectedRestaurant) {
+      setSelectedRestaurant(currentRestaurant);
+      if (step === 0) setStep(1);
+    }
+  }, [currentRestaurant]);
   const [selectedBox, setSelectedBox] = useState<BoxOption | null>(null);
   
   // Current creation being built
