@@ -37,7 +37,7 @@ const CommanderContent = () => {
   const { addItem: addToCart, checkRestaurantCompatibility, clearCart, selectedRestaurantId, checkDessertForBoissonOffer } = useCartWithRestaurant();
   const { setOrderingLocked } = useCart();
   const { isOrderingLocked, isLoading: isOrderingStatusLoading } = useOrderingLockStatus();
-  const { currentRestaurant, setCurrentRestaurant } = useRestaurantContext();
+  const { currentRestaurant, setCurrentRestaurant, restaurants, isLoading: isRestaurantsLoading } = useRestaurantContext();
   
   // Hook pour gérer les produits d'événements spéciaux et l'exclusivité
   const cartEventInfo = useCartEventProducts(currentRestaurant?.id);
@@ -102,12 +102,15 @@ const CommanderContent = () => {
     };
     
     checkAuth();
-
-    // Toujours afficher le dialog de sélection de restaurant au début
-    // Ne pas dépendre de currentRestaurant pour décider
-    setShowRestaurantDialog(true);
     setIsLoading(false);
   }, []);
+
+  // Afficher le dialog seulement si aucun restaurant n'est sélectionné après le chargement
+  useEffect(() => {
+    if (!isRestaurantsLoading && restaurants.length > 0 && !currentRestaurant) {
+      setShowRestaurantDialog(true);
+    }
+  }, [isRestaurantsLoading, currentRestaurant, restaurants]);
 
   useEffect(() => {
     // Vérifier si le restaurant sélectionné est ouvert maintenant

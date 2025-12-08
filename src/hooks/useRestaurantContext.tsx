@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import type { RestaurantContext, Restaurant } from "@/types/restaurant";
 import { fetchRestaurants } from "@/services/restaurantService";
 
+const RESTAURANT_STORAGE_KEY = "selected_restaurant_id";
+
 const RestaurantContextObj = createContext<RestaurantContext | undefined>(undefined);
 
 export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
@@ -36,24 +38,44 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     loadRestaurants();
   }, []); // Seulement au montage initial
 
-  // Récupérer le restaurant depuis les URL params (séparé du fetch)
+  // Récupérer le restaurant depuis les URL params OU localStorage (séparé du fetch)
   useEffect(() => {
-    const restaurantId = searchParams.get("restaurant");
-    if (restaurantId && restaurants.length > 0) {
+    if (restaurants.length === 0) return;
+    
+    // Priorité: URL params > localStorage
+    const restaurantIdFromUrl = searchParams.get("restaurant");
+    const restaurantIdFromStorage = localStorage.getItem(RESTAURANT_STORAGE_KEY);
+    const restaurantId = restaurantIdFromUrl || restaurantIdFromStorage;
+    
+    if (restaurantId) {
       const savedRestaurant = restaurants.find(r => r.id === restaurantId);
       if (savedRestaurant && (!currentRestaurant || currentRestaurant.id !== savedRestaurant.id)) {
-        console.log("Restaurant restauré depuis URL:", savedRestaurant.name);
+        console.log("Restaurant restauré:", savedRestaurant.name, "depuis", restaurantIdFromUrl ? "URL" : "localStorage");
         setCurrentRestaurant(savedRestaurant);
+        
+        // Synchroniser l'URL si le restaurant vient du localStorage
+        if (!restaurantIdFromUrl && restaurantIdFromStorage) {
+          const newParams = new URLSearchParams(searchParams);
+          newParams.set("restaurant", restaurantId);
+          setSearchParams(newParams, { replace: true });
+        }
       }
     }
-  }, [restaurants, searchParams.get("restaurant")]);
+  }, [restaurants]);
 
-  // Fonction pour changer de restaurant et persister dans l'URL
+  // Fonction pour changer de restaurant et persister dans l'URL ET localStorage
   const handleSetCurrentRestaurant = (restaurant: Restaurant | null) => {
     const currentRestaurantId = searchParams.get("restaurant");
     const newRestaurantId = restaurant?.id || null;
     
-    // Ne mettre à jour que si le restaurant a vraiment changé
+    // Toujours mettre à jour localStorage
+    if (restaurant) {
+      localStorage.setItem(RESTAURANT_STORAGE_KEY, restaurant.id);
+    } else {
+      localStorage.removeItem(RESTAURANT_STORAGE_KEY);
+    }
+    
+    // Ne mettre à jour l'URL que si le restaurant a vraiment changé
     if (currentRestaurantId !== newRestaurantId) {
       setCurrentRestaurant(restaurant);
       
@@ -64,7 +86,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
       } else {
         newParams.delete("restaurant");
       }
-      setSearchParams(newParams);
+      setSearchParams(newParams, { replace: true });
     } else if (!currentRestaurant && restaurant) {
       // Mettre à jour l'état local si le restaurant n'est pas encore défini
       setCurrentRestaurant(restaurant);
