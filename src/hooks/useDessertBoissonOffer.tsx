@@ -44,11 +44,11 @@ export const DessertBoissonOfferProvider = ({ children }: DessertBoissonOfferPro
       duration: 5000,
     });
 
-    // 🍰 AFFICHAGE DU POPUP OFFRE GOURMANDE APRÈS 2 SECONDES
+    // 🍰 AFFICHAGE DU POPUP OFFRE GOURMANDE APRÈS 0.5 SECONDES
     setTimeout(() => {
-      console.log("🍰 Affichage du popup offre gourmande après 2 secondes");
+      console.log("🍰 Affichage du popup offre gourmande après 0.5 secondes");
       setShowOffreGourmande(true);
-    }, 2000);
+    }, 500);
   };
 
   const acceptGourmetOffer = () => {
