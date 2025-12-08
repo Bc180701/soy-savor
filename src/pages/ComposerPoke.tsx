@@ -160,31 +160,29 @@ const ComposerPoke = () => {
       return;
     }
 
-    if (step < 4) {
-      // Validation for each step - minimum 5 ingredients (total quantity)
-      const totalIngredientQuantity = selectedIngredients.reduce((sum, item) => sum + item.quantity, 0);
-      if (step === 1 && totalIngredientQuantity < 5) {
-        toast({
-          title: "Sélection incomplète",
-          description: "Veuillez sélectionner au moins 5 ingrédients au total",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const totalProteinQuantity = selectedProteins.reduce((sum, item) => sum + item.quantity, 0);
-      if (step === 2 && totalProteinQuantity < 1) {
-        toast({
-          title: "Sélection incomplète",
-          description: "Veuillez sélectionner au moins 1 protéine",
-          variant: "destructive",
-        });
-        return;
-      }
+    // Validation for each step
+    const totalIngredientQuantity = selectedIngredients.reduce((sum, item) => sum + item.quantity, 0);
+    if (step === 1 && totalIngredientQuantity < 5) {
+      toast({
+        title: "Sélection incomplète",
+        description: "Veuillez sélectionner au moins 5 ingrédients au total",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const totalProteinQuantity = selectedProteins.reduce((sum, item) => sum + item.quantity, 0);
+    if (step === 2 && totalProteinQuantity < 1) {
+      toast({
+        title: "Sélection incomplète",
+        description: "Veuillez sélectionner au moins 1 protéine",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      setStep(step + 1);
-    } else {
-      // Step 3 (sauce) - add to cart and complete
+    // Step 3 (sauce) - validate and add to cart
+    if (step === 3) {
       const totalSauceQuantity = selectedSauces.reduce((sum, item) => sum + item.quantity, 0);
       if (totalSauceQuantity < 1) {
         toast({
@@ -251,7 +249,11 @@ const ComposerPoke = () => {
       
       // Navigate back to menu
       navigate("/commander");
+      return;
     }
+
+    // Continue to next step for steps 1 and 2
+    setStep(step + 1);
   };
 
   // Get current step content
@@ -382,9 +384,17 @@ const ComposerPoke = () => {
             <div className="mt-6 flex justify-between">
               <Button 
                 variant="outline" 
-                onClick={() => step > 0 ? setStep(step - 1) : navigate("/commander")}
+                onClick={() => {
+                  if (hasInitialRestaurant && step === 1) {
+                    navigate("/commander");
+                  } else if (step > 0) {
+                    setStep(step - 1);
+                  } else {
+                    navigate("/commander");
+                  }
+                }}
               >
-                {step > 0 ? "Précédent" : "Annuler"}
+                {(hasInitialRestaurant && step === 1) || step === 0 ? "Annuler" : "Précédent"}
               </Button>
               <Button onClick={handleNext}>
                 {step === 0 ? "Continuer" : step < 3 ? "Continuer" : "Ajouter au panier"}
