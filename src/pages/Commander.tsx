@@ -105,9 +105,19 @@ const CommanderContent = () => {
     setIsLoading(false);
   }, []);
 
-  // Afficher le dialog seulement si aucun restaurant n'est sélectionné après le chargement
+  // Afficher le dialog seulement si aucun restaurant n'est sélectionné après le chargement complet
   useEffect(() => {
-    if (!isRestaurantsLoading && restaurants.length > 0 && !currentRestaurant) {
+    // Attendre que le chargement des restaurants soit terminé
+    if (isRestaurantsLoading) return;
+    
+    // Ne pas afficher le dialog si un restaurant est déjà sélectionné
+    if (currentRestaurant) {
+      setShowRestaurantDialog(false);
+      return;
+    }
+    
+    // Afficher le dialog seulement si aucun restaurant n'est sélectionné
+    if (restaurants.length > 0 && !currentRestaurant) {
       setShowRestaurantDialog(true);
     }
   }, [isRestaurantsLoading, currentRestaurant, restaurants]);
