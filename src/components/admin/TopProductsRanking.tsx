@@ -23,6 +23,16 @@ const TopProductsRanking = () => {
     const fetchTopProducts = async () => {
       setLoading(true);
       try {
+        // Fetch product codes for decoding
+        const { data: productCodes } = await supabase
+          .from('product_codes')
+          .select('code, item_name');
+
+        const codeToName = new Map<string, string>();
+        productCodes?.forEach(pc => {
+          codeToName.set(pc.code, pc.item_name);
+        });
+
         let query = supabase
           .from('orders')
           .select('items_summary')
@@ -47,10 +57,24 @@ const TopProductsRanking = () => {
           const items = order.items_summary as any[];
           if (Array.isArray(items)) {
             items.forEach(item => {
-              // Handle both encoded and direct formats
-              const name = item.name || item.n || 'Produit inconnu';
-              const quantity = item.quantity || item.q || 1;
-              const price = item.price || (item.p ? item.p / 100 : 0);
+              // Handle both encoded (n, p, q) and direct (name, price, quantity) formats
+              let name: string;
+              let quantity: number;
+              let price: number;
+
+              if (item.name) {
+                // Direct format
+                name = item.name;
+                quantity = item.quantity || 1;
+                price = item.price || 0;
+              } else if (item.n) {
+                // Encoded format - decode using product_codes
+                name = codeToName.get(item.n) || item.n;
+                quantity = item.q || 1;
+                price = item.p ? item.p / 100 : 0;
+              } else {
+                return; // Skip invalid items
+              }
 
               const existing = productMap.get(name) || { quantity: 0, revenue: 0 };
               productMap.set(name, {
