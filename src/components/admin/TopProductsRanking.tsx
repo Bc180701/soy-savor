@@ -86,7 +86,12 @@ const TopProductsRanking = () => {
         });
 
         // Items to exclude from ranking (condiments/extras)
-        const excludedItems = ['soja sucrée', 'soja salée', 'baguettes', 'wasabi', 'gingembre'];
+        const excludedItems = [
+          'soja sucrée', 'soja salée', 'baguettes', 'wasabi', 'gingembre',
+          'sauces: soja sucrée', 'sauce: soja sucrée', 'sauce: soja salée',
+          'accompagnements: wasabi', 'accompagnements: gingembre',
+          'baguettes (1 paire)', 'fourchettes (1 paire)', 'cuillères (1 paire)'
+        ];
 
         // Convert to array, filter and sort by quantity
         const sortedProducts = Array.from(productMap.entries())
