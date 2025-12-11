@@ -85,8 +85,12 @@ const TopProductsRanking = () => {
           }
         });
 
-        // Convert to array and sort by quantity
+        // Items to exclude from ranking (condiments/extras)
+        const excludedItems = ['soja sucrée', 'soja salée', 'baguettes', 'wasabi', 'gingembre'];
+
+        // Convert to array, filter and sort by quantity
         const sortedProducts = Array.from(productMap.entries())
+          .filter(([name]) => !excludedItems.includes(name.toLowerCase()))
           .map(([name, data]) => ({
             name,
             quantity: data.quantity,
