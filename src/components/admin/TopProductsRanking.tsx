@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trophy, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 interface ProductSales {
   name: string;
@@ -13,11 +12,14 @@ interface ProductSales {
   revenue: number;
 }
 
-const TopProductsRanking = () => {
+interface TopProductsRankingProps {
+  restaurantId?: string | null;
+}
+
+const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
   const [products, setProducts] = useState<ProductSales[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
-  const { currentRestaurant } = useRestaurantContext();
 
   useEffect(() => {
     const fetchTopProducts = async () => {
@@ -38,8 +40,8 @@ const TopProductsRanking = () => {
           .select('items_summary')
           .eq('payment_status', 'paid');
 
-        if (currentRestaurant?.id) {
-          query = query.eq('restaurant_id', currentRestaurant.id);
+        if (restaurantId) {
+          query = query.eq('restaurant_id', restaurantId);
         }
 
         const { data, error } = await query;
@@ -113,7 +115,7 @@ const TopProductsRanking = () => {
     };
 
     fetchTopProducts();
-  }, [currentRestaurant]);
+  }, [restaurantId]);
 
   const displayedProducts = showAll ? products : products.slice(0, 10);
 
@@ -135,7 +137,7 @@ const TopProductsRanking = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `classement-produits-${currentRestaurant?.name || 'tous'}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `classement-produits-${restaurantId || 'tous'}-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
