@@ -127,7 +127,7 @@ const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
           }
         });
 
-        const excludedItems = ['gingembre'];
+        const excludedItems = ['gingembre', 'soja sucrée', 'soja salée'];
 
         const sortedProducts = Array.from(productMap.entries())
           .filter(([name, data]) => data.revenue > 0 && !excludedItems.includes(name.toLowerCase()))
