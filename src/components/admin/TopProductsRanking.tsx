@@ -87,9 +87,12 @@ const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
           }
         });
 
-        // Convert to array, filter out free items (0€) and sort by quantity
+        // Items to always exclude (condiments)
+        const excludedItems = ['gingembre'];
+
+        // Convert to array, filter out free items (0€) and excluded items, sort by quantity
         const sortedProducts = Array.from(productMap.entries())
-          .filter(([_, data]) => data.revenue > 0) // Exclude free items
+          .filter(([name, data]) => data.revenue > 0 && !excludedItems.includes(name.toLowerCase()))
           .map(([name, data]) => ({
             name,
             quantity: data.quantity,
