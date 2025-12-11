@@ -86,7 +86,7 @@ const AdminManager = () => {
           <div className="space-y-6">
             <PWAInstallGuide />
             <PushNotificationToggle restaurantId={sessionRestaurant} />
-            <DashboardStats />
+            <DashboardStats sessionRestaurantId={sessionRestaurant} />
             <OrdersCSVExport />
           </div>
         );

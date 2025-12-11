@@ -7,7 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
-const DashboardStats = () => {
+interface DashboardStatsProps {
+  sessionRestaurantId?: string | null;
+}
+
+const DashboardStats = ({ sessionRestaurantId }: DashboardStatsProps) => {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
   const [pendingOrders, setPendingOrders] = useState(0);
@@ -17,15 +21,18 @@ const DashboardStats = () => {
   const [monthRevenue, setMonthRevenue] = useState(0);
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
+  
+  // Use sessionRestaurantId if provided, otherwise fall back to context
   const { currentRestaurant } = useRestaurantContext();
+  const activeRestaurantId = sessionRestaurantId || currentRestaurant?.id;
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        console.log("Récupération des statistiques pour le restaurant:", currentRestaurant?.id);
+        console.log("Récupération des statistiques pour le restaurant:", activeRestaurantId);
 
         // Get total revenue for the selected restaurant
-        const revenue = await getTotalRevenue(currentRestaurant?.id);
+        const revenue = await getTotalRevenue(activeRestaurantId);
         setTotalRevenue(revenue);
 
         // Calculer les dates
@@ -55,8 +62,8 @@ const DashboardStats = () => {
             query = query.lt('created_at', endDate.toISOString());
           }
           
-          if (currentRestaurant?.id) {
-            query = query.eq('restaurant_id', currentRestaurant.id);
+          if (activeRestaurantId) {
+            query = query.eq('restaurant_id', activeRestaurantId);
           }
           
           const { data, error } = await query;
@@ -86,8 +93,8 @@ const DashboardStats = () => {
           .from('orders')
           .select('*', { count: 'exact', head: true });
         
-        if (currentRestaurant?.id) {
-          totalQuery = totalQuery.eq('restaurant_id', currentRestaurant.id);
+        if (activeRestaurantId) {
+          totalQuery = totalQuery.eq('restaurant_id', activeRestaurantId);
         }
         
         const { count: totalCount, error: totalError } = await totalQuery;
@@ -102,8 +109,8 @@ const DashboardStats = () => {
           .select('*', { count: 'exact', head: true })
           .in('status', ['pending', 'confirmed', 'preparing']);
         
-        if (currentRestaurant?.id) {
-          pendingQuery = pendingQuery.eq('restaurant_id', currentRestaurant.id);
+        if (activeRestaurantId) {
+          pendingQuery = pendingQuery.eq('restaurant_id', activeRestaurantId);
         }
         
         const { count: pendingCount, error: pendingError } = await pendingQuery;
@@ -112,7 +119,7 @@ const DashboardStats = () => {
           setPendingOrders(pendingCount || 0);
         }
 
-        console.log(`Statistiques récupérées pour ${currentRestaurant?.name || 'tous les restaurants'}: ${totalCount} commandes totales, ${pendingCount} en attente, ${revenue.toFixed(2)}€ de revenus`);
+        console.log(`Statistiques récupérées pour restaurant ${activeRestaurantId || 'tous'}: ${totalCount} commandes totales, ${pendingCount} en attente, ${revenue.toFixed(2)}€ de revenus`);
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
       } finally {
@@ -121,7 +128,7 @@ const DashboardStats = () => {
     };
 
     fetchStats();
-  }, [currentRestaurant]);
+  }, [activeRestaurantId]);
 
   if (loading) {
     return (
@@ -174,13 +181,13 @@ const DashboardStats = () => {
             title="Revenu Total"
             value={`${totalRevenue.toFixed(2)} €`}
             icon={<TrendingUp className="h-4 w-4" />}
-            description={`${currentRestaurant?.name || 'Tous les restaurants'}`}
+            description={activeRestaurantId ? 'Restaurant sélectionné' : 'Tous les restaurants'}
           />
           <StatisticsCard
             title="Commandes Totales"
             value={totalOrders}
             icon={<ShoppingBag className="h-4 w-4" />}
-            description={`${currentRestaurant?.name || 'Tous les restaurants'}`}
+            description={activeRestaurantId ? 'Restaurant sélectionné' : 'Tous les restaurants'}
           />
           <StatisticsCard
             title="Commandes en Attente"
@@ -198,7 +205,7 @@ const DashboardStats = () => {
       </div>
 
       {/* Classement des produits les plus vendus */}
-      <TopProductsRanking />
+      <TopProductsRanking restaurantId={activeRestaurantId} />
     </div>
   );
 };
