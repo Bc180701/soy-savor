@@ -1,7 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { CreditCard, Package, ShoppingBag, TrendingUp } from "lucide-react";
 import StatisticsCard from "./StatisticsCard";
+import TopProductsRanking from "./TopProductsRanking";
 import { getTotalRevenue } from "@/services/analyticsService";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -196,6 +196,9 @@ const DashboardStats = () => {
           />
         </div>
       </div>
+
+      {/* Classement des produits les plus vendus */}
+      <TopProductsRanking />
     </div>
   );
 };
