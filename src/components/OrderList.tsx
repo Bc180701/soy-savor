@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, ChefHat, Truck, RefreshCw, TreePine, Calendar } from "lucide-react";
+import { FileText, ChefHat, Truck, RefreshCw } from "lucide-react";
 import OrdersAccountingView from "./orders/OrdersAccountingView";
 import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
@@ -14,7 +14,6 @@ import { useSearchParams } from "react-router-dom";
 import { useOptimizedOrders } from "@/hooks/useOptimizedOrders";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface OrderListProps {
   defaultTab?: string;
@@ -23,7 +22,6 @@ interface OrderListProps {
 const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>(defaultTab);
-  const [orderFilter, setOrderFilter] = useState<"all" | "normal" | "event">("normal");
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -52,23 +50,6 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     updateOrderLocally, 
     isFromCache 
   } = useOptimizedOrders(restaurantId);
-
-  // Détecte si une commande est pour un événement (Noël = 24 décembre)
-  const isEventOrder = useCallback((order: Order) => {
-    if (!order.scheduledFor) return false;
-    const scheduledDate = new Date(order.scheduledFor);
-    const month = scheduledDate.getMonth(); // 0-indexed, décembre = 11
-    const day = scheduledDate.getDate();
-    // Noël = 24 décembre
-    return month === 11 && day === 24;
-  }, []);
-
-  // Filtrer les commandes selon le filtre sélectionné
-  const filteredOrders = useMemo(() => {
-    if (orderFilter === "all") return orders;
-    if (orderFilter === "event") return orders.filter(isEventOrder);
-    return orders.filter(order => !isEventOrder(order));
-  }, [orders, orderFilter, isEventOrder]);
 
 
   // Fonction pour mettre à jour l'onglet dans l'URL
@@ -210,30 +191,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
         </div>
       )}
 
-      {/* Filtre Normales / Noël */}
-      {!loading && !restaurantLoading && !error && (
-        <div className={`${isMobile ? 'px-2 py-3' : 'px-6 pt-4'} border-b`}>
-          <ToggleGroup 
-            type="single" 
-            value={orderFilter} 
-            onValueChange={(value) => value && setOrderFilter(value as "all" | "normal" | "event")}
-            className="justify-start"
-          >
-            <ToggleGroupItem value="all" className="text-sm gap-1.5">
-              <Calendar className="h-4 w-4" />
-              Toutes
-            </ToggleGroupItem>
-            <ToggleGroupItem value="normal" className="text-sm gap-1.5">
-              <FileText className="h-4 w-4" />
-              Normales
-            </ToggleGroupItem>
-            <ToggleGroupItem value="event" className="text-sm gap-1.5 text-red-600">
-              <TreePine className="h-4 w-4" />
-              Noël 24
-            </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-      )}
+      
       
       {(loading || restaurantLoading) ? (
         <div className="flex flex-col items-center justify-center py-8">
@@ -284,7 +242,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
           <div className={isMobile ? "p-0" : "p-6"}>
             <TabsContent value="accounting" className="mt-0">
               <OrdersAccountingView 
-                orders={filteredOrders} 
+                orders={orders} 
                 onViewDetails={handleViewDetails} 
                 onUpdateStatus={handleUpdateStatus} 
               />
@@ -292,7 +250,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
             
             <TabsContent value="kitchen" className="mt-0">
               <OrdersKitchenView 
-                orders={filteredOrders} 
+                orders={orders} 
                 onViewDetails={handleViewDetails} 
                 onUpdateStatus={handleUpdateStatus} 
               />
@@ -300,7 +258,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
             
             <TabsContent value="delivery" className="mt-0">
               <OrdersDeliveryView 
-                orders={filteredOrders} 
+                orders={orders} 
                 onViewDetails={handleViewDetails} 
                 onUpdateStatus={handleUpdateStatus} 
               />
