@@ -380,6 +380,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const existingSauce = selectedSauces.find(s => s.name === sauce);
     
     if (existingSauce) {
+      // Désélectionner la sauce
       const newSauces = selectedSauces.filter(s => s.name !== sauce);
       setSelectedSauces(newSauces);
       
@@ -393,10 +394,16 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         addSauceToCart(sauce, 0); // Supprimer du panier
       }
     } else {
-      const newSauces = [...selectedSauces, { name: sauce, quantity: 1 }];
-      setSelectedSauces(newSauces);
-      
+      // Sélectionner la sauce
       if (sauce === "Aucune") {
+        // Si on sélectionne "Aucune", désélectionner toutes les autres sauces
+        selectedSauces.forEach(s => {
+          if (s.name !== "Aucune") {
+            addSauceToCart(s.name, 0); // Supprimer du panier
+          }
+        });
+        setSelectedSauces([{ name: "Aucune", quantity: 1 }]);
+        
         // Ajouter un item "Aucune sauce" au panier pour valider le choix
         if (restaurantId) {
           const aucuneItem = {
@@ -419,6 +426,19 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           addItem(aucuneItem, 1);
         }
       } else {
+        // Si on sélectionne une sauce, désélectionner "Aucune" si elle était cochée
+        const aucuneSelected = selectedSauces.find(s => s.name === "Aucune");
+        if (aucuneSelected) {
+          // Supprimer l'item "Aucune sauce" du panier
+          const aucuneItem = items.find(item => item.menuItem?.name === "Aucune sauce");
+          if (aucuneItem) {
+            removeItem(aucuneItem.menuItem.id);
+          }
+          const newSauces = selectedSauces.filter(s => s.name !== "Aucune");
+          setSelectedSauces([...newSauces, { name: sauce, quantity: 1 }]);
+        } else {
+          setSelectedSauces([...selectedSauces, { name: sauce, quantity: 1 }]);
+        }
         addSauceToCart(sauce, 1); // Ajouter au panier
       }
     }
