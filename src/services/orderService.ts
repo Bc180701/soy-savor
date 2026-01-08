@@ -303,7 +303,6 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
         id,
         user_id,
         restaurant_id,
-        items_summary,
         subtotal,
         tax,
         delivery_fee,
@@ -378,8 +377,7 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
     const formattedOrders: Order[] = orders.map(order => ({
       id: order.id,
       userId: order.user_id,
-      restaurant_id: order.restaurant_id,
-      itemsSummary: Array.isArray(order.items_summary) ? order.items_summary : [],
+      restaurant_id: order.restaurant_id, // IMPORTANT: inclure le restaurant_id
       subtotal: order.subtotal,
       tax: order.tax,
       deliveryFee: order.delivery_fee,
