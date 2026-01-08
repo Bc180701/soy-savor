@@ -40,22 +40,21 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     }
   }, [order, open]);
 
-  const fetchCartBackupItems = async (clientEmail: string) => {
+  // CORRECTION: Chercher cart_backup par order_id au lieu de session_id/email
+  const fetchCartBackupItems = async (orderId: string) => {
     try {
       const { data, error } = await supabase
         .from('cart_backup')
         .select('cart_items')
-        .eq('session_id', clientEmail)
-        .eq('is_used', false)
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .eq('order_id', orderId)
+        .maybeSingle();
 
-      if (error || !data || data.length === 0) {
-        console.log('No cart backup found for email:', clientEmail);
+      if (error || !data) {
+        console.log('No cart backup found for order_id:', orderId);
         return [];
       }
 
-      return data[0].cart_items || [];
+      return data.cart_items || [];
     } catch (error) {
       console.error('Error fetching cart backup:', error);
       return [];
@@ -74,13 +73,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         setCustomerDetails(completeOrderDetails.customer);
         setAddressDetails(completeOrderDetails.delivery_address);
         
-        // Toujours récupérer cart_backup pour avoir les données complètes
-        if (completeOrderDetails.client_email) {
-          const backupItems = await fetchCartBackupItems(completeOrderDetails.client_email);
-          setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
-        } else {
-          setCartBackupItems([]);
-        }
+        // CORRECTION: Récupérer cart_backup par order_id au lieu d'email
+        const backupItems = await fetchCartBackupItems(orderId);
+        setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des détails de la commande:", error);

@@ -481,6 +481,31 @@ serve(async (req) => {
         console.log('⚠️ Aucun article à traiter pour les order_items');
       }
 
+      // NOUVEAU: Lier le cart_backup à la commande créée
+      if (orderData.client_email) {
+        console.log('🔗 Liaison cart_backup à la commande...');
+        try {
+          const { error: linkError } = await supabase
+            .from('cart_backup')
+            .update({ 
+              order_id: order.id,
+              is_used: true 
+            })
+            .eq('session_id', orderData.client_email)
+            .eq('is_used', false)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (linkError) {
+            console.error('❌ Erreur liaison cart_backup:', linkError);
+          } else {
+            console.log('✅ Cart_backup lié à la commande:', order.id);
+          }
+        } catch (linkErr) {
+          console.error('❌ Exception liaison cart_backup:', linkErr);
+        }
+      }
+
       // NOUVEAU: Logique de récupération des order_items manquants
       try {
         console.log('🔄 Vérification des order_items manquants...');

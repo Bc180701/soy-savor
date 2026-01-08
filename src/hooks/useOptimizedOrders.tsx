@@ -136,50 +136,41 @@ export function useOptimizedOrders(restaurantId: string | null) {
             );
           }
 
-          // 🔄 Charger tous les cart_backup d'un coup
-          console.log("📦 Chargement global des cart_backup...");
+          // 🔄 Charger les cart_backup liés par order_id
+          console.log("📦 Chargement des cart_backup par order_id...");
 
-          const clientEmails = verifiedOrders
-            .map(o => o.clientEmail)
-            .filter(Boolean);
-
+          const orderIds = verifiedOrders.map(o => o.id);
           let ordersWithCartBackup = [...verifiedOrders];
 
-          if (clientEmails.length > 0) {
+          if (orderIds.length > 0) {
             try {
               const { data: cartBackups, error: cartError } = await supabase
                 .from("cart_backup")
-                .select("session_id, cart_items, created_at")
-                .in("session_id", clientEmails)
-                .eq("is_used", false)
-                .order("created_at", { ascending: false });
+                .select("order_id, cart_items")
+                .in("order_id", orderIds);
 
               if (cartError) throw cartError;
 
-              const latestCartMap: Record<string, any[]> = {};
+              // Map par order_id pour récupérer directement le bon cart_backup
+              const cartByOrderId: Record<string, any[]> = {};
               cartBackups?.forEach(cb => {
-                if (!latestCartMap[cb.session_id]) {
-                  latestCartMap[cb.session_id] = Array.isArray(cb.cart_items) 
+                if (cb.order_id) {
+                  cartByOrderId[cb.order_id] = Array.isArray(cb.cart_items) 
                     ? cb.cart_items 
                     : [];
                 }
               });
 
               ordersWithCartBackup = verifiedOrders.map(order => {
-                if (!order.clientEmail) return order;
-                const cartItems = latestCartMap[order.clientEmail] || [];
+                const cartItems = cartByOrderId[order.id] || [];
                 return { ...order, cartBackupItems: cartItems };
               });
 
               const cartBackupCount = ordersWithCartBackup.filter(o => o.cartBackupItems?.length).length;
-              console.log(`✅ ${verifiedOrders.length} commandes validées (${cartBackupCount} avec cart_backup)`);
+              console.log(`✅ ${verifiedOrders.length} commandes validées (${cartBackupCount} avec cart_backup lié)`);
             } catch (err: any) {
-              console.error("💥 Erreur récupération globale des cart_backup:", err);
-              toast({
-                title: "Erreur cart_backup",
-                description: "Impossible de charger les articles des commandes",
-                variant: "destructive",
-              });
+              console.error("💥 Erreur récupération cart_backup par order_id:", err);
+              // Pas de toast car ce n'est pas critique - items_summary est prioritaire
             }
           }
 
