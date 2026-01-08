@@ -53,6 +53,7 @@ export type Database = {
           created_at: string
           id: string
           is_used: boolean
+          order_id: string | null
           restaurant_id: string
           session_id: string
         }
@@ -61,6 +62,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_used?: boolean
+          order_id?: string | null
           restaurant_id: string
           session_id: string
         }
@@ -69,10 +71,19 @@ export type Database = {
           created_at?: string
           id?: string
           is_used?: boolean
+          order_id?: string | null
           restaurant_id?: string
           session_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cart_backup_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {

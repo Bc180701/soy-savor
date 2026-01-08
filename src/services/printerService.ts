@@ -56,20 +56,8 @@ export async function sendOrderToPrinter(order: Order): Promise<{
     // Préparer les articles à imprimer
     const items: PrintItem[] = [];
     
-    // Utiliser cart_backup en priorité (le plus complet)
-    if (order.cartBackupItems && order.cartBackupItems.length > 0) {
-      order.cartBackupItems.forEach((item: any) => {
-        items.push({
-          name: item.menuItem?.name || 'Produit',
-          quantity: item.quantity || 1,
-          price: item.menuItem?.price || 0,
-          description: item.menuItem?.description || '',
-          specialInstructions: item.specialInstructions || '',
-        });
-      });
-    } 
-    // Sinon utiliser itemsSummary
-    else if (order.itemsSummary && order.itemsSummary.length > 0) {
+    // CORRECTION: Utiliser itemsSummary en PRIORITÉ (stocké dans la commande, toujours correct)
+    if (order.itemsSummary && order.itemsSummary.length > 0) {
       order.itemsSummary.forEach((item: any) => {
         items.push({
           name: item.name || 'Produit',
@@ -77,6 +65,18 @@ export async function sendOrderToPrinter(order: Order): Promise<{
           price: item.price || 0,
           description: item.description || '',
           specialInstructions: item.special_instructions || '',
+        });
+      });
+    } 
+    // Fallback sur cartBackupItems seulement si lié directement à la commande (via order_id)
+    else if (order.cartBackupItems && order.cartBackupItems.length > 0) {
+      order.cartBackupItems.forEach((item: any) => {
+        items.push({
+          name: item.menuItem?.name || 'Produit',
+          quantity: item.quantity || 1,
+          price: item.menuItem?.price || 0,
+          description: item.menuItem?.description || '',
+          specialInstructions: item.specialInstructions || '',
         });
       });
     }
