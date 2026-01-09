@@ -100,20 +100,6 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     });
   };
 
-  // Format spécifique pour created_at qui nécessite -1h d'ajustement
-  const formatCreatedAt = (dateString: string) => {
-    const date = new Date(dateString);
-    date.setHours(date.getHours() - 1);
-    return date.toLocaleString('fr-FR', { 
-      day: '2-digit',
-      month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit', 
-      minute: '2-digit',
-      timeZone: 'Europe/Paris'
-    });
-  };
-
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'pending': return "default";
@@ -255,7 +241,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Calendar className="h-3.5 w-3.5" />
-                  <span>Commande passée le {formatCreatedAt(orderDetails.created_at)}</span>
+                  <span>Commande passée le {formatDate(orderDetails.created_at)}</span>
                 </div>
               </div>
             )}
@@ -540,7 +526,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Calendar className="h-3.5 w-3.5" />
-                  <span>Commande passée le {formatCreatedAt(orderDetails.created_at)}</span>
+                  <span>Commande passée le {formatDate(orderDetails.created_at)}</span>
                 </div>
               </div>
             )}
