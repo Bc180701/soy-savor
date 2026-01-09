@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +31,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { 
   getAllPromotions, 
   createPromotion, 
@@ -41,6 +46,7 @@ import {
   getDayName 
 } from "@/services/promotionService";
 import { supabase } from "@/integrations/supabase/client";
+import PromoCodesManager from "./PromoCodesManager";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Dimanche' },
@@ -301,9 +307,17 @@ const PromotionsManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Gestion des promotions</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <h2 className="text-2xl font-bold">Gestion des promotions</h2>
+      
+      <Tabs defaultValue="day-promotions" className="w-full">
+        <TabsList>
+          <TabsTrigger value="day-promotions">Promotions par jour</TabsTrigger>
+          <TabsTrigger value="promo-codes">Codes promo</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="day-promotions" className="space-y-6">
+          <div className="flex justify-end">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleNewPromotionClick} className="bg-gold-600 hover:bg-gold-700">
               <Plus className="h-4 w-4 mr-2" />
@@ -591,6 +605,12 @@ const PromotionsManager = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+        
+        <TabsContent value="promo-codes">
+          <PromoCodesManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
