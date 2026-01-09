@@ -1626,6 +1626,7 @@ export type Database = {
         Returns: boolean
       }
       insert_homepage_data: { Args: never; Returns: undefined }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
       is_super_admin: { Args: { user_id: string }; Returns: boolean }
       update_all_products_status: {
         Args: { flag_name: string; flag_value: boolean }
