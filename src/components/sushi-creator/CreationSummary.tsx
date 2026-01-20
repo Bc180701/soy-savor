@@ -41,9 +41,9 @@ export const CreationSummary = ({
               <span className="font-semibold">Garnitures:</span>
               <span className="text-right">
                 {selectedGarnitures.map(g => g.name).join(', ')}
-                {selectedGarnitures.length > 2 && (
+                {selectedGarnitures.length > 1 && (
                   <span className="block text-sm text-gold-600">
-                    (+{selectedGarnitures.length - 2}€ supplément)
+                    (+{((selectedGarnitures.length - 1) * 0.5).toFixed(2)}€ supplément)
                   </span>
                 )}
               </span>
