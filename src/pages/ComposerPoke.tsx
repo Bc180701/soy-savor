@@ -133,10 +133,10 @@ const ComposerPoke = () => {
     console.log('🥩 Total protéines:', totalProteinQuantity, 'Supplémentaires:', extraProteins, 'Coût:', proteinCost);
     
     // Calculer le coût des sauces avec quantités
-    // Pour les sauces, on compte 1€ par sauce supplémentaire au-delà de 1
+    // Pour les sauces, 1 incluse, +0.50€ par sauce supplémentaire (illimité)
     const totalSauceQuantity = selectedSauces.reduce((sum, item) => sum + item.quantity, 0);
     const extraSauces = Math.max(0, totalSauceQuantity - 1);
-    const sauceCost = extraSauces * 1.0; // 1€ par sauce supplémentaire
+    const sauceCost = extraSauces * 0.5; // 0.50€ par sauce supplémentaire
     total += sauceCost;
     console.log('🥄 Total sauces:', totalSauceQuantity, 'Supplémentaires:', extraSauces, 'Coût:', sauceCost);
     
@@ -314,8 +314,9 @@ const ComposerPoke = () => {
             selectedIngredients={selectedSauces}
             onIngredientChange={setSelectedSauces}
             minIngredients={1}
-            title="3 : Sauces (1 minimum)"
-            description="Sélectionnez vos sauces. Vous pouvez en prendre plusieurs ou doubler la même."
+            extraCostPerItem={0.5}
+            title="3 : Sauces (1 incluse, +0.50€ par ajout)"
+            description="Sélectionnez vos sauces. 1 incluse, +0.50€ par sauce supplémentaire."
             showPricing={true}
           />
         );
