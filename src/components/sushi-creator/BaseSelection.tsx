@@ -1,21 +1,24 @@
 
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SushiOption } from "@/types/sushi-creator";
 
 interface BaseSelectionProps {
-  selectedBase: SushiOption | null;
+  selectedBases: SushiOption[];
   baseOptions: SushiOption[];
-  onBaseSelect: (option: SushiOption | null) => void;
+  onBaseSelect: (option: SushiOption) => void;
 }
 
-export const BaseSelection = ({ selectedBase, baseOptions, onBaseSelect }: BaseSelectionProps) => {
+export const BaseSelection = ({ selectedBases, baseOptions, onBaseSelect }: BaseSelectionProps) => {
   console.log("BaseSelection render - options:", baseOptions);
+  
+  // Calculer le coût des bases (1 incluse, +0.50€ pour la 2ème, max 2)
+  const baseExtraCost = selectedBases.length > 1 ? 0.5 : 0;
   
   if (baseOptions.length === 0) {
     return (
       <div>
-        <h3 className="text-xl font-bold mb-4">Choisis ta base (1 choix inclus)</h3>
+        <h3 className="text-xl font-bold mb-4">Choisis ta base (1 incluse, 2 max)</h3>
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-gray-600">Aucune base disponible pour le moment.</p>
           <p className="text-sm text-gray-500 mt-2">
@@ -28,20 +31,41 @@ export const BaseSelection = ({ selectedBase, baseOptions, onBaseSelect }: BaseS
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Choisis ta base (1 choix inclus)</h3>
-      <RadioGroup value={selectedBase?.id || ""} onValueChange={(value) => {
-        const option = baseOptions.find(opt => opt.id === value);
-        onBaseSelect(option || null);
-      }}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {baseOptions.map((option) => (
+      <h3 className="text-xl font-bold mb-4">Choisis ta base (1 incluse, 2 max)</h3>
+      <p className="text-sm text-gray-500 mb-4">
+        La première base est incluse, 2ème base: +0.50€
+      </p>
+      {baseExtraCost > 0 && (
+        <p className="text-sm text-gold-600 mb-4">
+          Supplément base : +{baseExtraCost.toFixed(2)}€
+        </p>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {baseOptions.map((option) => {
+          const isSelected = selectedBases.some(b => b.id === option.id);
+          const isDisabled = !isSelected && selectedBases.length >= 2;
+          return (
             <div key={option.id} className="flex items-center space-x-2 mb-2">
-              <RadioGroupItem value={option.id} id={`base-${option.id}`} />
-              <Label htmlFor={`base-${option.id}`}>{option.name}</Label>
+              <Checkbox 
+                id={`base-${option.id}`}
+                checked={isSelected}
+                onCheckedChange={() => {
+                  if (!isDisabled || isSelected) {
+                    onBaseSelect(option);
+                  }
+                }}
+                disabled={isDisabled}
+              />
+              <Label 
+                htmlFor={`base-${option.id}`}
+                className={isDisabled ? "text-gray-400" : "cursor-pointer"}
+              >
+                {option.name}
+              </Label>
             </div>
-          ))}
-        </div>
-      </RadioGroup>
+          );
+        })}
+      </div>
     </div>
   );
 };

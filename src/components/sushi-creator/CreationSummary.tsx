@@ -5,7 +5,7 @@ import { SushiOption } from "@/types/sushi-creator";
 
 interface CreationSummaryProps {
   selectedEnrobage: SushiOption | null;
-  selectedBase: SushiOption | null;
+  selectedBases: SushiOption[];
   selectedGarnitures: SushiOption[];
   selectedToppings: SushiOption[];
   selectedSauce: SushiOption | null;
@@ -14,13 +14,15 @@ interface CreationSummaryProps {
 
 export const CreationSummary = ({
   selectedEnrobage,
-  selectedBase,
+  selectedBases,
   selectedGarnitures,
   selectedToppings,
   selectedSauce,
   totalPrice
 }: CreationSummaryProps) => {
-  // Calculer le supplément toppings (1 inclus, +0.50€ par ajout)
+  // Calculer les suppléments
+  const baseExtraCost = selectedBases.length > 1 ? 0.5 : 0;
+  const garnitureExtraCost = selectedGarnitures.length > 1 ? (selectedGarnitures.length - 1) * 0.5 : 0;
   const toppingExtraCost = selectedToppings.length > 1 ? (selectedToppings.length - 1) * 0.5 : 0;
 
   return (
@@ -33,17 +35,24 @@ export const CreationSummary = ({
               <span className="font-semibold">Enrobage:</span>
               <span>{selectedEnrobage?.name} {!selectedEnrobage?.included && `(+${selectedEnrobage?.price}€)`}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start">
               <span className="font-semibold">Base:</span>
-              <span>{selectedBase?.name}</span>
+              <span className="text-right">
+                {selectedBases.map(b => b.name).join(', ')}
+                {baseExtraCost > 0 && (
+                  <span className="block text-sm text-gold-600">
+                    (+{baseExtraCost.toFixed(2)}€ supplément)
+                  </span>
+                )}
+              </span>
             </div>
             <div className="flex justify-between items-start">
               <span className="font-semibold">Garnitures:</span>
               <span className="text-right">
                 {selectedGarnitures.map(g => g.name).join(', ')}
-                {selectedGarnitures.length > 1 && (
+                {garnitureExtraCost > 0 && (
                   <span className="block text-sm text-gold-600">
-                    (+{((selectedGarnitures.length - 1) * 0.5).toFixed(2)}€ supplément)
+                    (+{garnitureExtraCost.toFixed(2)}€ supplément)
                   </span>
                 )}
               </span>
