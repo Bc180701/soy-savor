@@ -91,8 +91,21 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    // Soustraire 1 heure pour corriger le décalage d'affichage
+    // Soustraire 1 heure pour corriger le décalage d'affichage de created_at
     date.setHours(date.getHours() - 1);
+    return date.toLocaleString('fr-FR', { 
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'Europe/Paris'
+    });
+  };
+
+  // Format pour les heures de retrait/livraison (sans décalage)
+  const formatScheduledTime = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleString('fr-FR', { 
       day: '2-digit',
       month: '2-digit', 
@@ -323,9 +336,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       {orderDetails.order_type === 'delivery' ? (
-                        <span>Livraison prévue: {formatDate(orderDetails.scheduled_for)}</span>
+                        <span>Livraison prévue: {formatScheduledTime(orderDetails.scheduled_for)}</span>
                       ) : (
-                        <span>Retrait prévu: {formatDate(orderDetails.scheduled_for)}</span>
+                        <span>Retrait prévu: {formatScheduledTime(orderDetails.scheduled_for)}</span>
                       )}
                     </div>
                     
@@ -609,9 +622,9 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     {orderDetails.order_type === 'delivery' ? (
-                      <span>Livraison prévue: {formatDate(orderDetails.scheduled_for)}</span>
+                      <span>Livraison prévue: {formatScheduledTime(orderDetails.scheduled_for)}</span>
                     ) : (
-                      <span>Retrait prévu: {formatDate(orderDetails.scheduled_for)}</span>
+                      <span>Retrait prévu: {formatScheduledTime(orderDetails.scheduled_for)}</span>
                     )}
                   </div>
                   
