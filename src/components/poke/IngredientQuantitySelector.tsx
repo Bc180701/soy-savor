@@ -16,6 +16,7 @@ interface IngredientQuantitySelectorProps {
   onIngredientChange: (ingredients: IngredientWithQuantity[]) => void;
   minIngredients: number;
   maxIngredients?: number;
+  extraCostPerItem?: number; // Coût par ingrédient supplémentaire (défaut: 1€)
   title: string;
   description?: string;
   showPricing?: boolean;
@@ -27,6 +28,7 @@ export const IngredientQuantitySelector: React.FC<IngredientQuantitySelectorProp
   onIngredientChange,
   minIngredients,
   maxIngredients,
+  extraCostPerItem = 1.0,
   title,
   description,
   showPricing = true
@@ -47,6 +49,11 @@ export const IngredientQuantitySelector: React.FC<IngredientQuantitySelectorProp
 
   // Ajouter ou augmenter la quantité d'un ingrédient
   const addIngredient = (ingredient: PokeIngredient) => {
+    // Vérifier si on a atteint le maximum
+    if (maxIngredients && totalSelectedQuantity >= maxIngredients) {
+      return;
+    }
+    
     const existingItem = selectedIngredients.find(item => item.ingredient.id === ingredient.id);
     
     if (existingItem) {
@@ -90,9 +97,9 @@ export const IngredientQuantitySelector: React.FC<IngredientQuantitySelectorProp
   const calculateExtraCost = () => {
     const totalQuantity = selectedIngredients.reduce((sum, item) => sum + item.quantity, 0);
     const extraQuantity = Math.max(0, totalQuantity - minIngredients);
-    const totalCost = extraQuantity * 1.0; // 1€ par ingrédient supplémentaire
+    const totalCost = extraQuantity * extraCostPerItem;
     
-    console.log('🔍 [IngredientQuantitySelector] Total quantité:', totalQuantity, 'Minimum:', minIngredients, 'Supplémentaires:', extraQuantity, 'Coût:', totalCost);
+    console.log('🔍 [IngredientQuantitySelector] Total quantité:', totalQuantity, 'Minimum:', minIngredients, 'Supplémentaires:', extraQuantity, 'Coût unitaire:', extraCostPerItem, 'Coût total:', totalCost);
     return totalCost;
   };
 
