@@ -8,7 +8,7 @@ interface CreationSummaryProps {
   selectedBases: SushiOption[];
   selectedGarnitures: SushiOption[];
   selectedToppings: SushiOption[];
-  selectedSauce: SushiOption | null;
+  selectedSauces: SushiOption[];
   totalPrice: number;
 }
 
@@ -17,13 +17,14 @@ export const CreationSummary = ({
   selectedBases,
   selectedGarnitures,
   selectedToppings,
-  selectedSauce,
+  selectedSauces,
   totalPrice
 }: CreationSummaryProps) => {
   // Calculer les suppléments
   const baseExtraCost = selectedBases.length > 1 ? 0.5 : 0;
   const garnitureExtraCost = selectedGarnitures.length > 1 ? (selectedGarnitures.length - 1) * 0.5 : 0;
   const toppingExtraCost = selectedToppings.length > 1 ? (selectedToppings.length - 1) * 0.5 : 0;
+  const sauceExtraCost = selectedSauces.length > 1 ? (selectedSauces.length - 1) * 0.5 : 0;
 
   return (
     <div className="mt-6">
@@ -70,10 +71,17 @@ export const CreationSummary = ({
                 </span>
               </div>
             )}
-            {selectedSauce && (
-              <div className="flex justify-between">
-                <span className="font-semibold">Sauce:</span>
-                <span>{selectedSauce.name}</span>
+            {selectedSauces.length > 0 && (
+              <div className="flex justify-between items-start">
+                <span className="font-semibold">Sauces:</span>
+                <span className="text-right">
+                  {selectedSauces.map(s => s.name).join(', ')}
+                  {sauceExtraCost > 0 && (
+                    <span className="block text-sm text-gold-600">
+                      (+{sauceExtraCost.toFixed(2)}€ supplément)
+                    </span>
+                  )}
+                </span>
               </div>
             )}
             <Separator className="my-2" />

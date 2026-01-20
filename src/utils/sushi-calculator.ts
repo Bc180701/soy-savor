@@ -5,7 +5,8 @@ export const calculateCreationExtraCost = (
   enrobage: SushiOption | null,
   bases: SushiOption[] = [],
   garnitures: SushiOption[],
-  toppings: SushiOption[] = []
+  toppings: SushiOption[] = [],
+  sauces: SushiOption[] = []
 ) => {
   let extraCost = 0;
 
@@ -29,6 +30,11 @@ export const calculateCreationExtraCost = (
     extraCost += (toppings.length - 1) * 0.5;
   }
 
+  // Extra cost for sauces (first 1 included, +0.50€ per extra)
+  if (sauces.length > 1) {
+    extraCost += (sauces.length - 1) * 0.5;
+  }
+
   return extraCost;
 };
 
@@ -37,7 +43,8 @@ export const calculateTotalExtraCost = (
   currentEnrobage: SushiOption | null,
   currentBases: SushiOption[] = [],
   currentGarnitures: SushiOption[],
-  currentToppings: SushiOption[] = []
+  currentToppings: SushiOption[] = [],
+  currentSauces: SushiOption[] = []
 ) => {
   let totalExtraCost = 0;
   
@@ -59,10 +66,15 @@ export const calculateTotalExtraCost = (
     if (creationToppings.length > 1) {
       totalExtraCost += (creationToppings.length - 1) * 0.5;
     }
+    // Sauces: 1 incluse, +0.50€ par ajout
+    const creationSauces = creation.sauces || [];
+    if (creationSauces.length > 1) {
+      totalExtraCost += (creationSauces.length - 1) * 0.5;
+    }
   });
   
   // Add current creation extra cost
-  totalExtraCost += calculateCreationExtraCost(currentEnrobage, currentBases, currentGarnitures, currentToppings);
+  totalExtraCost += calculateCreationExtraCost(currentEnrobage, currentBases, currentGarnitures, currentToppings, currentSauces);
   
   return totalExtraCost;
 };

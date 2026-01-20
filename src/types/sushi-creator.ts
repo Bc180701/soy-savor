@@ -22,5 +22,5 @@ export interface SushiCreation {
   bases: SushiOption[];
   garnitures: SushiOption[];
   toppings: SushiOption[];
-  sauce: SushiOption | null;
+  sauces: SushiOption[];
 }
