@@ -22,7 +22,7 @@ export const CompletedCreations = ({ completedCreations, selectedBox }: Complete
                 <div><span className="font-medium">Enrobage:</span> {creation.enrobage?.name}</div>
                 <div><span className="font-medium">Base:</span> {creation.base?.name}</div>
                 <div><span className="font-medium">Garnitures:</span> {creation.garnitures.map(g => g.name).join(', ')}</div>
-                {creation.topping && <div><span className="font-medium">Topping:</span> {creation.topping.name}</div>}
+                {creation.toppings.length > 0 && <div><span className="font-medium">Toppings:</span> {creation.toppings.map(t => t.name).join(', ')}</div>}
                 <div><span className="font-medium">Sauce:</span> {creation.sauce?.name}</div>
               </div>
             </CardContent>

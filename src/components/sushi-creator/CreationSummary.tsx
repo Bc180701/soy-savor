@@ -7,7 +7,7 @@ interface CreationSummaryProps {
   selectedEnrobage: SushiOption | null;
   selectedBase: SushiOption | null;
   selectedGarnitures: SushiOption[];
-  selectedTopping: SushiOption | null;
+  selectedToppings: SushiOption[];
   selectedSauce: SushiOption | null;
   totalPrice: number;
 }
@@ -16,10 +16,13 @@ export const CreationSummary = ({
   selectedEnrobage,
   selectedBase,
   selectedGarnitures,
-  selectedTopping,
+  selectedToppings,
   selectedSauce,
   totalPrice
 }: CreationSummaryProps) => {
+  // Calculer le supplément toppings (1 inclus, +0.50€ par ajout)
+  const toppingExtraCost = selectedToppings.length > 1 ? (selectedToppings.length - 1) * 0.5 : 0;
+
   return (
     <div className="mt-6">
       <h3 className="text-xl font-bold mb-4">Récapitulatif de la création actuelle</h3>
@@ -45,10 +48,17 @@ export const CreationSummary = ({
                 )}
               </span>
             </div>
-            {(selectedTopping && !selectedEnrobage?.name.toLowerCase().includes("nori")) && (
-              <div className="flex justify-between">
-                <span className="font-semibold">Topping:</span>
-                <span>{selectedTopping.name}</span>
+            {(selectedToppings.length > 0 && !selectedEnrobage?.name.toLowerCase().includes("nori")) && (
+              <div className="flex justify-between items-start">
+                <span className="font-semibold">Toppings:</span>
+                <span className="text-right">
+                  {selectedToppings.map(t => t.name).join(', ')}
+                  {toppingExtraCost > 0 && (
+                    <span className="block text-sm text-gold-600">
+                      (+{toppingExtraCost.toFixed(2)}€ supplément)
+                    </span>
+                  )}
+                </span>
               </div>
             )}
             {selectedSauce && (
