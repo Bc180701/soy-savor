@@ -90,7 +90,10 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('fr-FR', { 
+    const date = new Date(dateString);
+    // Soustraire 1 heure pour corriger le décalage d'affichage
+    date.setHours(date.getHours() - 1);
+    return date.toLocaleString('fr-FR', { 
       day: '2-digit',
       month: '2-digit', 
       year: 'numeric',
