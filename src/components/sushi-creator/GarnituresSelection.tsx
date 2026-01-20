@@ -30,7 +30,7 @@ export const GarnituresSelection = ({ selectedGarnitures, garnituresOptions, onG
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis tes garnitures (1 choix inclus)</h3>
       <p className="text-sm text-gray-500 mb-4">
-        Le premier choix est inclus, chaque garniture supplémentaire: +1€
+        Le premier choix est inclus, chaque garniture supplémentaire: +0.50€
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {garnituresOptions.map((option) => (
@@ -46,7 +46,7 @@ export const GarnituresSelection = ({ selectedGarnitures, garnituresOptions, onG
       </div>
       {selectedGarnitures.length > 1 && (
         <p className="text-sm text-gold-600 mt-2">
-          +{selectedGarnitures.length - 1}€ pour {selectedGarnitures.length - 1} garniture(s) supplémentaire(s)
+          +{((selectedGarnitures.length - 1) * 0.5).toFixed(2)}€ pour {selectedGarnitures.length - 1} garniture(s) supplémentaire(s)
         </p>
       )}
     </div>
