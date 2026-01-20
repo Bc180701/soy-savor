@@ -125,10 +125,10 @@ const ComposerPoke = () => {
     console.log('🥗 Total ingrédients:', totalIngredientQuantity, 'Supplémentaires:', extraIngredients, 'Coût:', ingredientCost);
     
     // Calculer le coût des protéines avec quantités
-    // Pour les protéines, on compte 1€ par protéine supplémentaire au-delà de 1
+    // Pour les protéines, 1 incluse, +0.50€ pour la 2ème (max 2)
     const totalProteinQuantity = selectedProteins.reduce((sum, item) => sum + item.quantity, 0);
     const extraProteins = Math.max(0, totalProteinQuantity - 1);
-    const proteinCost = extraProteins * 1.0; // 1€ par protéine supplémentaire
+    const proteinCost = extraProteins * 0.5; // 0.50€ par protéine supplémentaire
     total += proteinCost;
     console.log('🥩 Total protéines:', totalProteinQuantity, 'Supplémentaires:', extraProteins, 'Coût:', proteinCost);
     
@@ -176,6 +176,16 @@ const ComposerPoke = () => {
       toast({
         title: "Sélection incomplète",
         description: "Veuillez sélectionner au moins 1 protéine",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Limite de 2 protéines max
+    if (step === 2 && totalProteinQuantity > 2) {
+      toast({
+        title: "Maximum atteint",
+        description: "Vous pouvez sélectionner 2 protéines maximum",
         variant: "destructive",
       });
       return;
@@ -289,8 +299,10 @@ const ComposerPoke = () => {
             selectedIngredients={selectedProteins}
             onIngredientChange={setSelectedProteins}
             minIngredients={1}
-            title="2 : Protéines (1 minimum)"
-            description="Choisissez vos protéines. Vous pouvez en prendre plusieurs ou doubler la même."
+            maxIngredients={2}
+            extraCostPerItem={0.5}
+            title="2 : Protéines (1 incluse, 2 max)"
+            description="Choisissez vos protéines. 1 incluse, +0.50€ pour la 2ème (2 maximum)."
             showPricing={true}
           />
         );
