@@ -632,9 +632,9 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                                 </AnimatePresence>
                                 
                                 {/* Allergènes */}
-                                {item.allergens && expandedItems[item.id] && (
+                                {item.allergens && item.allergens.length > 0 && expandedItems[item.id] && (
                                   <p className="text-xs text-gray-500 mt-2">
-                                    Allergènes: {item.allergens}
+                                    Allergènes: {Array.isArray(item.allergens) ? item.allergens.join(', ') : item.allergens}
                                   </p>
                                 )}
                               </div>
