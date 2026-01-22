@@ -255,9 +255,9 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                                 </AnimatePresence>
                                 
                                 {/* Allergènes */}
-                                {item.allergens && expandedItems[item.id] && (
+                                {item.allergens && item.allergens.length > 0 && expandedItems[item.id] && (
                                   <p className="text-xs text-gray-500 mt-2">
-                                    Allergènes: {item.allergens}
+                                    Allergènes: {Array.isArray(item.allergens) ? item.allergens.join(', ') : item.allergens}
                                   </p>
                                 )}
                               </div>
@@ -329,11 +329,11 @@ const MenuCategoryContent = ({ category }: MenuCategoryContentProps) => {
                   </div>
                 )}
                 
-                {selectedProductDetails.allergens && (
+                {selectedProductDetails.allergens && selectedProductDetails.allergens.length > 0 && (
                   <div className="mb-4">
                     <span className="text-sm text-gray-500">Allergènes: </span>
                     <span className="text-sm font-medium text-gray-700">
-                      {selectedProductDetails.allergens}
+                      {Array.isArray(selectedProductDetails.allergens) ? selectedProductDetails.allergens.join(', ') : selectedProductDetails.allergens}
                     </span>
                   </div>
                 )}
