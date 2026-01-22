@@ -768,11 +768,11 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                   </div>
                 )}
                 
-                {selectedProductDetails.allergens && (
+                {selectedProductDetails.allergens && selectedProductDetails.allergens.length > 0 && (
                   <div className="mb-4">
                     <span className="text-sm text-gray-500">Allergènes: </span>
                     <span className="text-sm font-medium text-gray-700">
-                      {selectedProductDetails.allergens}
+                      {Array.isArray(selectedProductDetails.allergens) ? selectedProductDetails.allergens.join(', ') : selectedProductDetails.allergens}
                     </span>
                   </div>
                 )}
