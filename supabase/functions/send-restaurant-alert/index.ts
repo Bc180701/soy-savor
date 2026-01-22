@@ -103,7 +103,7 @@ Client: ${order.client_name || 'Anonyme'} ${order.client_phone || ''}`.trim();
 
     // Envoyer le SMS via Gateway API
     const smsBody = {
-      sender: 'SushiEats',
+      sender: 'SUSHIEATS',
       message: message,
       recipients: [{ msisdn: formattedPhone }],
     };

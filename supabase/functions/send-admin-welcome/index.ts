@@ -60,18 +60,18 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(resendApiKey);
 
     // Prepare email content
-    const subject = "Bienvenue dans l'équipe d'administration SushiEats";
+    const subject = "Bienvenue dans l'équipe d'administration SUSHIEATS";
     const htmlContent = `
       <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2c3e50; margin-bottom: 10px;">SushiEats</h1>
+            <h1 style="color: #2c3e50; margin-bottom: 10px;">SUSHIEATS</h1>
             <div style="height: 3px; background: linear-gradient(90deg, #ff6b6b, #4ecdc4); margin: 0 auto; width: 100px;"></div>
           </div>
           
           <h1 style="color: #2c3e50;">Bienvenue dans l'équipe d'administration !</h1>
           <p>Bonjour,</p>
-          <p>Vous avez été ajouté(e) en tant qu'administrateur sur la plateforme SushiEats.</p>
+          <p>Vous avez été ajouté(e) en tant qu'administrateur sur la plateforme SUSHIEATS.</p>
           
           <div style="background-color: #f8f4e5; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 5px solid #d4af37;">
             <h2 style="color: #2c3e50; margin-top: 0;">Vos identifiants de connexion</h2>
@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
           <p>En cas de question, n'hésitez pas à contacter l'administrateur principal.</p>
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
-            <p><strong>SushiEats</strong> - L'art du sushi à Châteaurenard</p>
+            <p><strong>SUSHIEATS</strong> - L'art du sushi à Châteaurenard</p>
             <p>Cet email contient des informations confidentielles.</p>
           </div>
         </body>
@@ -102,7 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email via Resend API
     try {
       const emailResponse = await resend.emails.send({
-        from: "SushiEats Admin <admin@emailsend.clwebdesign.fr>",
+        from: "SUSHIEATS Admin <admin@emailsend.clwebdesign.fr>",
         to: [email],
         subject: subject,
         html: htmlContent,

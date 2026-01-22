@@ -113,7 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
           <div class="container">
             <div class="header">
               <h1>Confirmation de commande</h1>
-              <p>Merci pour votre commande chez ${order.restaurants?.name || 'Sushi Eats'} !</p>
+              <p>Merci pour votre commande chez ${order.restaurants?.name || 'SUSHIEATS'} !</p>
             </div>
             
             <div class="content">
@@ -194,9 +194,9 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
 
             <div class="footer">
-              <img src="https://sushieats.fr/lovable-uploads/80663134-a018-4c55-8a81-5ee048c700e3.png" alt="Sushi Eats Logo" style="width: 120px; height: auto; margin-bottom: 16px;">
+              <img src="https://sushieats.fr/lovable-uploads/80663134-a018-4c55-8a81-5ee048c700e3.png" alt="SUSHIEATS Logo" style="width: 120px; height: auto; margin-bottom: 16px;">
               <p>Cordialement,</p>
-              <p>L'équipe Sushi Eats</p>
+              <p>L'équipe SUSHIEATS</p>
             </div>
           </div>
         </body>
@@ -205,9 +205,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Envoyer l'email
     const emailResponse = await resend.emails.send({
-      from: `SushiEats - ${order.restaurants?.name || 'Restaurant'} <confirmation@email.contact.sushieats.fr>`,
+      from: `SUSHIEATS - ${order.restaurants?.name || 'Restaurant'} <confirmation@email.contact.sushieats.fr>`,
       to: [order.client_email],
-      subject: `SushiEats - Confirmation de commande n° ${order.id.slice(-8).toUpperCase()}`,
+      subject: `SUSHIEATS - Confirmation de commande n° ${order.id.slice(-8).toUpperCase()}`,
       html: emailHTML,
     });
 

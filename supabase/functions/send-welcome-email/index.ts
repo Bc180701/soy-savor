@@ -42,18 +42,18 @@ const handler = async (req: Request): Promise<Response> => {
     const userName = name || email.split('@')[0];
     
     // Préparer le contenu de l'email
-    const subject = "Bienvenue chez SushiEats - Votre code promo de 10%";
+    const subject = "Bienvenue chez SUSHIEATS - Votre code promo de 10%";
     const htmlContent = `
       <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2c3e50; margin-bottom: 10px;">SushiEats</h1>
+            <h1 style="color: #2c3e50; margin-bottom: 10px;">SUSHIEATS</h1>
             <div style="height: 3px; background: linear-gradient(90deg, #ff6b6b, #4ecdc4); margin: 0 auto; width: 100px;"></div>
           </div>
           
-          <h1 style="color: #2c3e50;">Bienvenue chez SushiEats !</h1>
+          <h1 style="color: #2c3e50;">Bienvenue chez SUSHIEATS !</h1>
           <p>Bonjour <strong>${userName}</strong>,</p>
-          <p>Nous sommes ravis de vous accueillir sur SushiEats, votre nouvelle destination pour des sushis délicieux et authentiques.</p>
+          <p>Nous sommes ravis de vous accueillir sur SUSHIEATS, votre nouvelle destination pour des sushis délicieux et authentiques.</p>
           
           <div style="background-color: #f8f4e5; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 5px solid #d4af37; text-align: center;">
             <h2 style="color: #2c3e50; margin-top: 0;">🎁 Votre code promo de bienvenue</h2>
@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
           <p>Bon appétit !</p>
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
-            <p><strong>SushiEats</strong> - L'art du sushi à Châteaurenard</p>
+            <p><strong>SUSHIEATS</strong> - L'art du sushi à Châteaurenard</p>
             <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
           </div>
         </body>
@@ -80,7 +80,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Préparer les données pour l'API Resend
     const emailData = {
-      from: "SushiEats <bienvenue@emailsend.clwebdesign.fr>",
+      from: "SUSHIEATS <bienvenue@emailsend.clwebdesign.fr>",
       to: [email],
       subject: subject,
       html: htmlContent,
