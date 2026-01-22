@@ -62,7 +62,7 @@ serve(async (req) => {
       <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #2c3e50; margin-bottom: 10px;">🍣 SushiEats</h1>
+            <h1 style="color: #2c3e50; margin-bottom: 10px;">🍣 SUSHIEATS</h1>
             <div style="height: 3px; background: linear-gradient(90deg, #ff6b6b, #4ecdc4); margin: 0 auto; width: 100px;"></div>
           </div>
           
@@ -79,7 +79,7 @@ serve(async (req) => {
           <p>Merci de nous faire confiance pour vos repas japonais !</p>
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
-            <p><strong>SushiEats</strong> - L'art du sushi à Châteaurenard</p>
+            <p><strong>SUSHIEATS</strong> - L'art du sushi à Châteaurenard</p>
             <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
           </div>
         </body>
@@ -90,7 +90,7 @@ serve(async (req) => {
     console.log("📧 Destinataire:", email);
     
     const emailResponse = await resend.emails.send({
-      from: Deno.env.get("EMAIL_FROM") || "SushiEats <commande@email.contact.sushieats.fr>",
+      from: Deno.env.get("EMAIL_FROM") || "SUSHIEATS <commande@email.contact.sushieats.fr>",
       to: [email],
       subject: subject,
       html: htmlContent,

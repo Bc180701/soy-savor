@@ -44,7 +44,7 @@ serve(async (req) => {
 
     // Préparer les données à envoyer
     const requestBody = {
-      sender: 'SushiEats',
+      sender: 'SUSHIEATS',
       message: message,
       recipients: [
         {
