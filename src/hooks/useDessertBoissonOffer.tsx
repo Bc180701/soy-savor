@@ -54,6 +54,7 @@ export const DessertBoissonOfferProvider = ({ children }: DessertBoissonOfferPro
   const acceptGourmetOffer = () => {
     console.log("🍰 Utilisateur accepte l'offre gourmande");
     setShowOffreGourmande(false);
+    // Affichage instantané du popup dessert
     setShowDessertSelector(true);
   };
 
