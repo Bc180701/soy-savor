@@ -90,16 +90,21 @@ export const DeliveryStep = ({
     }
   }, [eventInfo.hasEventProducts, eventInfo.deliveryEnabled, deliveryInfo.orderType]);
 
-  // Pop-up pour livraison gratuite si total entre 25€ et 35€
+  // Calculer le sous-total sans les frais de livraison pour le popup livraison gratuite
+  // Note: orderTotal inclut les frais de livraison, on doit recalculer le subtotal
+  const subtotalForFreeDelivery = deliveryInfo.orderType === "delivery" ? orderTotal - 5 : orderTotal;
+  
+  // Pop-up pour livraison gratuite si sous-total entre 25€ et 35€
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (orderTotal >= 25 && orderTotal < 35 && deliveryInfo.orderType === "delivery") {
+      // Utiliser le sous-total réel (sans frais de livraison) pour le calcul
+      if (subtotalForFreeDelivery >= 25 && subtotalForFreeDelivery < 35 && deliveryInfo.orderType === "delivery") {
         setShowFreeDeliveryDialog(true);
       }
     }, 3000); // 3 secondes de délai
 
     return () => clearTimeout(timer);
-  }, [orderTotal, deliveryInfo.orderType]);
+  }, [subtotalForFreeDelivery, deliveryInfo.orderType]);
 
   // Charger le profil utilisateur si connecté
   useEffect(() => {
@@ -361,7 +366,7 @@ export const DeliveryStep = ({
             <DialogDescription className="text-base pt-4">
               <div className="space-y-3">
                 <p className="font-medium text-foreground">
-                  Vous êtes à seulement <span className="text-gold-600 font-bold">{(35 - orderTotal).toFixed(2)}€</span> de la livraison gratuite !
+                  Vous êtes à seulement <span className="text-gold-600 font-bold">{(35 - subtotalForFreeDelivery).toFixed(2)}€</span> de la livraison gratuite !
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Ajoutez encore quelques articles à votre panier pour atteindre 35€ et bénéficier de la livraison offerte.
