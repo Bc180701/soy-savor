@@ -15,10 +15,12 @@ export const ToppingSelection = ({ selectedToppings, toppingOptions, selectedEnr
 
   // Calculer le coût des toppings (1 inclus, +0.50€ par ajout)
   const toppingExtraCost = selectedToppings.length > 1 ? (selectedToppings.length - 1) * 0.5 : 0;
+  const maxToppings = 3;
+  const isMaxReached = selectedToppings.length >= maxToppings;
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Choisis tes toppings (1 inclus, +0.50€ par ajout)</h3>
+      <h3 className="text-xl font-bold mb-4">Choisis tes toppings (1 inclus, max 3, +0.50€ par ajout)</h3>
       {toppingExtraCost > 0 && (
         <p className="text-sm text-gold-600 mb-4">
           Supplément toppings : +{toppingExtraCost.toFixed(2)}€
@@ -32,21 +34,22 @@ export const ToppingSelection = ({ selectedToppings, toppingOptions, selectedEnr
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {toppingOptions.map((option) => {
           const isSelected = selectedToppings.some(t => t.id === option.id);
+          const isDisabled = isNoriDisabled || (!isSelected && isMaxReached);
           return (
             <div key={option.id} className="flex items-center space-x-2 mb-2">
               <Checkbox 
                 id={`topping-${option.id}`}
                 checked={isSelected}
                 onCheckedChange={() => {
-                  if (!isNoriDisabled) {
+                  if (!isNoriDisabled && (isSelected || !isMaxReached)) {
                     onToppingSelect(option);
                   }
                 }}
-                disabled={isNoriDisabled}
+                disabled={isDisabled}
               />
               <Label 
                 htmlFor={`topping-${option.id}`}
-                className={isNoriDisabled ? "text-gray-400" : "cursor-pointer"}
+                className={isDisabled ? "text-gray-400" : "cursor-pointer"}
               >
                 {option.name}
               </Label>
@@ -54,6 +57,11 @@ export const ToppingSelection = ({ selectedToppings, toppingOptions, selectedEnr
           );
         })}
       </div>
+      {isMaxReached && !isNoriDisabled && (
+        <p className="text-sm text-amber-600 mt-2">
+          Maximum de 3 toppings atteint
+        </p>
+      )}
     </div>
   );
 };

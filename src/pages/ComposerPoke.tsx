@@ -117,18 +117,18 @@ const ComposerPoke = () => {
     console.log('💰 Calcul du prix - Prix de base:', basePrice);
     
     // Calculer le coût des ingrédients avec quantités
-    // Pour les ingrédients, on compte 1€ par ingrédient supplémentaire au-delà de 5
+    // Pour les ingrédients, on compte 0.50€ par ingrédient supplémentaire au-delà de 5
     const totalIngredientQuantity = selectedIngredients.reduce((sum, item) => sum + item.quantity, 0);
     const extraIngredients = Math.max(0, totalIngredientQuantity - 5);
-    const ingredientCost = extraIngredients * 1.0; // 1€ par ingrédient supplémentaire
+    const ingredientCost = extraIngredients * 0.5; // 0.50€ par ingrédient supplémentaire
     total += ingredientCost;
     console.log('🥗 Total ingrédients:', totalIngredientQuantity, 'Supplémentaires:', extraIngredients, 'Coût:', ingredientCost);
     
     // Calculer le coût des protéines avec quantités
-    // Pour les protéines, 1 incluse, +0.50€ pour la 2ème (max 2)
+    // Pour les protéines, 1 incluse, +1€ pour la 2ème (max 2)
     const totalProteinQuantity = selectedProteins.reduce((sum, item) => sum + item.quantity, 0);
     const extraProteins = Math.max(0, totalProteinQuantity - 1);
-    const proteinCost = extraProteins * 0.5; // 0.50€ par protéine supplémentaire
+    const proteinCost = extraProteins * 1.0; // 1€ par protéine supplémentaire
     total += proteinCost;
     console.log('🥩 Total protéines:', totalProteinQuantity, 'Supplémentaires:', extraProteins, 'Coût:', proteinCost);
     
@@ -286,8 +286,9 @@ const ComposerPoke = () => {
             selectedIngredients={selectedIngredients}
             onIngredientChange={setSelectedIngredients}
             minIngredients={5}
+            extraCostPerItem={0.5}
             title="1 : Ingrédients (5 minimum)"
-            description="Sélectionnez vos ingrédients préférés. Vous pouvez doubler certains ingrédients pour atteindre le minimum de 5."
+            description="Sélectionnez vos ingrédients préférés. +0.50€ par ingrédient supplémentaire."
             showPricing={true}
           />
         );
@@ -300,9 +301,9 @@ const ComposerPoke = () => {
             onIngredientChange={setSelectedProteins}
             minIngredients={1}
             maxIngredients={2}
-            extraCostPerItem={0.5}
+            extraCostPerItem={1.0}
             title="2 : Protéines (1 incluse, 2 max)"
-            description="Choisissez vos protéines. 1 incluse, +0.50€ pour la 2ème (2 maximum)."
+            description="Choisissez vos protéines. 1 incluse, +1€ pour la 2ème (2 maximum)."
             showPricing={true}
           />
         );

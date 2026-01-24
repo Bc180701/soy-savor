@@ -26,27 +26,44 @@ export const GarnituresSelection = ({ selectedGarnitures, garnituresOptions, onG
     );
   }
 
+  const maxGarnitures = 3;
+  const isMaxReached = selectedGarnitures.length >= maxGarnitures;
+
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Choisis tes garnitures (1 choix inclus)</h3>
+      <h3 className="text-xl font-bold mb-4">Choisis tes garnitures (1 incluse, max 3)</h3>
       <p className="text-sm text-gray-500 mb-4">
-        Le premier choix est inclus, chaque garniture supplémentaire: +0.50€
+        Le premier choix est inclus, chaque garniture supplémentaire: +0.50€ (max 3)
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {garnituresOptions.map((option) => (
-          <div key={option.id} className="flex items-center space-x-2 mb-2">
-            <Checkbox 
-              id={`garniture-${option.id}`} 
-              checked={selectedGarnitures.some(item => item.id === option.id)}
-              onCheckedChange={() => onGarnitureSelect(option)}
-            />
-            <Label htmlFor={`garniture-${option.id}`}>{option.name}</Label>
-          </div>
-        ))}
+        {garnituresOptions.map((option) => {
+          const isSelected = selectedGarnitures.some(item => item.id === option.id);
+          return (
+            <div key={option.id} className="flex items-center space-x-2 mb-2">
+              <Checkbox 
+                id={`garniture-${option.id}`} 
+                checked={isSelected}
+                onCheckedChange={() => onGarnitureSelect(option)}
+                disabled={!isSelected && isMaxReached}
+              />
+              <Label 
+                htmlFor={`garniture-${option.id}`}
+                className={!isSelected && isMaxReached ? "text-gray-400" : "cursor-pointer"}
+              >
+                {option.name}
+              </Label>
+            </div>
+          );
+        })}
       </div>
       {selectedGarnitures.length > 1 && (
         <p className="text-sm text-gold-600 mt-2">
           +{((selectedGarnitures.length - 1) * 0.5).toFixed(2)}€ pour {selectedGarnitures.length - 1} garniture(s) supplémentaire(s)
+        </p>
+      )}
+      {isMaxReached && (
+        <p className="text-sm text-amber-600 mt-2">
+          Maximum de 3 garnitures atteint
         </p>
       )}
     </div>
