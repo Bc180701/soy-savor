@@ -57,7 +57,7 @@ const ComposerSushi = () => {
   
   // Current creation being built
   const [currentCreationIndex, setCurrentCreationIndex] = useState<number>(0);
-  const [selectedEnrobage, setSelectedEnrobage] = useState<SushiOption | null>(null);
+  const [selectedEnrobages, setSelectedEnrobages] = useState<SushiOption[]>([]);
   const [selectedBases, setSelectedBases] = useState<SushiOption[]>([]);
   const [selectedGarnitures, setSelectedGarnitures] = useState<SushiOption[]>([]);
   const [selectedToppings, setSelectedToppings] = useState<SushiOption[]>([]);
@@ -114,11 +114,22 @@ const ComposerSushi = () => {
 
   // Reset current creation when starting a new one
   const resetCurrentCreation = () => {
-    setSelectedEnrobage(null);
+    setSelectedEnrobages([]);
     setSelectedBases([]);
     setSelectedGarnitures([]);
     setSelectedToppings([]);
     setSelectedSauces([]);
+  };
+
+  // Handle enrobage selection (multiple, 1 included, +1€ for 2nd, max 2)
+  const handleEnrobageSelect = (option: SushiOption) => {
+    const isAlreadySelected = selectedEnrobages.some(item => item.id === option.id);
+    
+    if (isAlreadySelected) {
+      setSelectedEnrobages(selectedEnrobages.filter(item => item.id !== option.id));
+    } else if (selectedEnrobages.length < 2) {
+      setSelectedEnrobages([...selectedEnrobages, option]);
+    }
   };
 
   // Handle sauce selection (multiple, 1 included, +0.50€ per extra)
@@ -175,7 +186,7 @@ const ComposerSushi = () => {
   };
 
   // Calculate total extra cost for all creations
-  const totalExtraCost = calculateTotalExtraCost(completedCreations, selectedEnrobage, selectedBases, selectedGarnitures, selectedToppings, selectedSauces);
+  const totalExtraCost = calculateTotalExtraCost(completedCreations, selectedEnrobages, selectedBases, selectedGarnitures, selectedToppings, selectedSauces);
   const totalPrice = calculateTotalPrice(selectedBox, totalExtraCost);
 
   // Navigate to next step or complete order
@@ -204,10 +215,10 @@ const ComposerSushi = () => {
       return;
     }
     
-    if (step === 2 && !selectedEnrobage) {
+    if (step === 2 && selectedEnrobages.length === 0) {
       toast({
         title: "Sélection requise",
-        description: "Veuillez sélectionner un enrobage",
+        description: "Veuillez sélectionner au moins un enrobage",
         variant: "destructive",
       });
       return;
@@ -232,7 +243,7 @@ const ComposerSushi = () => {
     }
     
     // For topping, check if enrobage is not nori, otherwise clear toppings
-    if (step === 5 && selectedEnrobage?.name.toLowerCase().includes("nori") && selectedToppings.length > 0) {
+    if (step === 5 && selectedEnrobages.some(e => e.name.toLowerCase().includes("nori")) && selectedToppings.length > 0) {
       toast({
         title: "Information",
         description: "Les toppings ne sont pas disponibles avec l'enrobage feuille d'algue nori",
@@ -254,7 +265,7 @@ const ComposerSushi = () => {
       
       // Save current creation
       const currentCreation: SushiCreation = {
-        enrobage: selectedEnrobage,
+        enrobages: [...selectedEnrobages],
         bases: [...selectedBases],
         garnitures: [...selectedGarnitures],
         toppings: [...selectedToppings],
@@ -278,7 +289,7 @@ const ComposerSushi = () => {
       } else {
         // All creations completed - add each creation as separate item to cart
         updatedCompletedCreations.forEach((creation, index) => {
-          const creationExtraCost = calculateCreationExtraCost(creation.enrobage, creation.bases, creation.garnitures, creation.toppings, creation.sauces);
+          const creationExtraCost = calculateCreationExtraCost(creation.enrobages, creation.bases, creation.garnitures, creation.toppings, creation.sauces);
           const basePrice = (selectedBox?.price || 0) / (selectedBox?.creations || 1);
           const finalPrice = basePrice + creationExtraCost;
           
@@ -288,7 +299,7 @@ const ComposerSushi = () => {
           const customSushiItem: MenuItem = {
             id: uniqueId,
             name: `Sushi Créa ${uniqueId.substr(-5)} - Création ${index + 1}`,
-            description: `Enrobage: ${creation.enrobage?.name} | Base: ${creation.bases.map(b => b.name).join(', ')} | Garnitures: ${creation.garnitures.map(g => g.name).join(', ')}${creation.toppings.length > 0 ? ` | Toppings: ${creation.toppings.map(t => t.name).join(', ')}` : ''} | Sauces: ${creation.sauces.map(s => s.name).join(', ')}`,
+            description: `Enrobage: ${creation.enrobages.map(e => e.name).join(', ')} | Base: ${creation.bases.map(b => b.name).join(', ')} | Garnitures: ${creation.garnitures.map(g => g.name).join(', ')}${creation.toppings.length > 0 ? ` | Toppings: ${creation.toppings.map(t => t.name).join(', ')}` : ''} | Sauces: ${creation.sauces.map(s => s.name).join(', ')}`,
             price: finalPrice,
             category: "custom",
             pieces: 6,
@@ -345,13 +356,13 @@ const ComposerSushi = () => {
       case 1:
         return <BoxSelection selectedBox={selectedBox} boxOptions={boxOptions} onBoxSelect={handleBoxSelect} />;
       case 2:
-        return <EnrobageSelection selectedEnrobage={selectedEnrobage} enrobageOptions={enrobageOptions} onEnrobageSelect={setSelectedEnrobage} />;
+        return <EnrobageSelection selectedEnrobages={selectedEnrobages} enrobageOptions={enrobageOptions} onEnrobageSelect={handleEnrobageSelect} />;
       case 3:
         return <BaseSelection selectedBases={selectedBases} baseOptions={baseOptions} onBaseSelect={handleBaseSelect} />;
       case 4:
         return <GarnituresSelection selectedGarnitures={selectedGarnitures} garnituresOptions={garnituresOptions} onGarnitureSelect={handleGarnitureSelect} />;
       case 5:
-        return <ToppingSelection selectedToppings={selectedToppings} toppingOptions={toppingOptions} selectedEnrobage={selectedEnrobage} onToppingSelect={handleToppingSelect} />;
+        return <ToppingSelection selectedToppings={selectedToppings} toppingOptions={toppingOptions} selectedEnrobages={selectedEnrobages} onToppingSelect={handleToppingSelect} />;
       case 6:
         return <SauceSelection selectedSauces={selectedSauces} sauceOptions={sauceOptions} onSauceSelect={handleSauceSelect} />;
       default:
@@ -468,7 +479,7 @@ const ComposerSushi = () => {
         
         {step === 6 && (
           <CreationSummary
-            selectedEnrobage={selectedEnrobage}
+            selectedEnrobages={selectedEnrobages}
             selectedBases={selectedBases}
             selectedGarnitures={selectedGarnitures}
             selectedToppings={selectedToppings}

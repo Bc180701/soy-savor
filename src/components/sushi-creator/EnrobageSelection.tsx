@@ -1,15 +1,15 @@
 
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SushiOption } from "@/types/sushi-creator";
 
 interface EnrobageSelectionProps {
-  selectedEnrobage: SushiOption | null;
+  selectedEnrobages: SushiOption[];
   enrobageOptions: SushiOption[];
-  onEnrobageSelect: (option: SushiOption | null) => void;
+  onEnrobageSelect: (option: SushiOption) => void;
 }
 
-export const EnrobageSelection = ({ selectedEnrobage, enrobageOptions, onEnrobageSelect }: EnrobageSelectionProps) => {
+export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnrobageSelect }: EnrobageSelectionProps) => {
   console.log("EnrobageSelection render - options:", enrobageOptions);
   
   if (enrobageOptions.length === 0) {
@@ -26,46 +26,57 @@ export const EnrobageSelection = ({ selectedEnrobage, enrobageOptions, onEnrobag
     );
   }
 
-  const includedOptions = enrobageOptions.filter(opt => opt.included);
-  const premiumOptions = enrobageOptions.filter(opt => !opt.included);
+  const isSelected = (option: SushiOption) => selectedEnrobages.some(e => e.id === option.id);
+  const isMaxReached = selectedEnrobages.length >= 2;
 
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis ton enrobage extérieur</h3>
+      <p className="text-sm text-gray-600 mb-4">
+        1 enrobage inclus, +1€ pour le 2ème (max 2)
+      </p>
       
-      <RadioGroup value={selectedEnrobage?.id || ""} onValueChange={(value) => {
-        const option = enrobageOptions.find(opt => opt.id === value);
-        onEnrobageSelect(option || null);
-      }}>
-        {includedOptions.length > 0 && (
-          <>
-            <h4 className="font-semibold mb-2">Enrobage classique (inclus) :</h4>
-            {includedOptions.map((option) => (
-              <div key={option.id} className="flex items-center space-x-2 mb-2">
-                <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
-                <Label htmlFor={`enrobage-${option.id}`}>{option.name}</Label>
-              </div>
-            ))}
-          </>
-        )}
-      
-        {premiumOptions.length > 0 && (
-          <>
-            <h4 className="font-semibold mt-4 mb-2">Enrobage premium (+1€) :</h4>
-            {premiumOptions.map((option) => (
-              <div key={option.id} className="flex items-center space-x-2 mb-2">
-                <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
-                <Label htmlFor={`enrobage-${option.id}`}>
-                  <div className="flex justify-between">
-                    <span>{option.name}</span>
-                    <span className="font-semibold">+{option.price}€</span>
-                  </div>
-                </Label>
-              </div>
-            ))}
-          </>
-        )}
-      </RadioGroup>
+      <div className="space-y-3">
+        {enrobageOptions.map((option) => {
+          const selected = isSelected(option);
+          const disabled = !selected && isMaxReached;
+          
+          return (
+            <div 
+              key={option.id} 
+              className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
+                selected ? 'border-gold-500 bg-gold-50' : disabled ? 'opacity-50' : 'hover:border-gray-300'
+              }`}
+            >
+              <Checkbox 
+                id={`enrobage-${option.id}`}
+                checked={selected}
+                disabled={disabled}
+                onCheckedChange={() => onEnrobageSelect(option)}
+              />
+              <Label 
+                htmlFor={`enrobage-${option.id}`}
+                className={`flex-1 cursor-pointer ${disabled ? 'cursor-not-allowed' : ''}`}
+              >
+                <div className="flex justify-between items-center">
+                  <span>{option.name}</span>
+                  {selectedEnrobages.length > 0 && !selected && (
+                    <span className="text-sm text-gold-600 font-semibold">+1€</span>
+                  )}
+                </div>
+              </Label>
+            </div>
+          );
+        })}
+      </div>
+
+      {selectedEnrobages.length > 1 && (
+        <div className="mt-4 p-3 bg-gold-50 border border-gold-200 rounded-lg">
+          <p className="text-sm text-gold-800">
+            Supplément enrobage : <span className="font-semibold">+1€</span>
+          </p>
+        </div>
+      )}
     </div>
   );
 };

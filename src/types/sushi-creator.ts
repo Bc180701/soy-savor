@@ -18,7 +18,7 @@ export interface BoxOption {
 }
 
 export interface SushiCreation {
-  enrobage: SushiOption | null;
+  enrobages: SushiOption[];
   bases: SushiOption[];
   garnitures: SushiOption[];
   toppings: SushiOption[];

@@ -6,12 +6,12 @@ import { SushiOption } from "@/types/sushi-creator";
 interface ToppingSelectionProps {
   selectedToppings: SushiOption[];
   toppingOptions: SushiOption[];
-  selectedEnrobage: SushiOption | null;
+  selectedEnrobages: SushiOption[];
   onToppingSelect: (option: SushiOption) => void;
 }
 
-export const ToppingSelection = ({ selectedToppings, toppingOptions, selectedEnrobage, onToppingSelect }: ToppingSelectionProps) => {
-  const isNoriDisabled = selectedEnrobage?.name.toLowerCase().includes("nori");
+export const ToppingSelection = ({ selectedToppings, toppingOptions, selectedEnrobages, onToppingSelect }: ToppingSelectionProps) => {
+  const isNoriDisabled = selectedEnrobages.some(e => e.name.toLowerCase().includes("nori"));
 
   // Calculer le coût des toppings (1 inclus, +0.50€ par ajout)
   const toppingExtraCost = selectedToppings.length > 1 ? (selectedToppings.length - 1) * 0.5 : 0;
