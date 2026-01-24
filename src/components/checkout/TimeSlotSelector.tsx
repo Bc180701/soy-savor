@@ -389,8 +389,8 @@ const TimeSlotSelector = ({
       const startDate = new Date();
       startDate.setHours(openHour, openMinute, 0, 0);
       
-      // Ajouter 30 minutes après l'heure d'ouverture pour le premier créneau disponible
-      const adjustedStartDate = addMinutes(startDate, 30);
+      // Ajouter 15 minutes après l'heure d'ouverture pour le premier créneau disponible
+      const adjustedStartDate = addMinutes(startDate, 15);
 
       const endDate = new Date();
       endDate.setHours(closeHour, closeMinute, 0, 0);
