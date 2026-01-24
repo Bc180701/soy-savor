@@ -12,10 +12,12 @@ interface SauceSelectionProps {
 export const SauceSelection = ({ selectedSauces, sauceOptions, onSauceSelect }: SauceSelectionProps) => {
   // Calculer le coût des sauces (1 incluse, +0.50€ par ajout)
   const sauceExtraCost = selectedSauces.length > 1 ? (selectedSauces.length - 1) * 0.5 : 0;
+  const maxSauces = 3;
+  const isMaxReached = selectedSauces.length >= maxSauces;
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Choisis tes sauces (1 incluse, +0.50€ par ajout)</h3>
+      <h3 className="text-xl font-bold mb-4">Choisis tes sauces (1 incluse, max 3, +0.50€ par ajout)</h3>
       {sauceExtraCost > 0 && (
         <p className="text-sm text-gold-600 mb-4">
           Supplément sauces : +{sauceExtraCost.toFixed(2)}€
@@ -30,14 +32,23 @@ export const SauceSelection = ({ selectedSauces, sauceOptions, onSauceSelect }: 
                 id={`sauce-${option.id}`}
                 checked={isSelected}
                 onCheckedChange={() => onSauceSelect(option)}
+                disabled={!isSelected && isMaxReached}
               />
-              <Label htmlFor={`sauce-${option.id}`} className="cursor-pointer">
+              <Label 
+                htmlFor={`sauce-${option.id}`} 
+                className={!isSelected && isMaxReached ? "text-gray-400" : "cursor-pointer"}
+              >
                 {option.name}
               </Label>
             </div>
           );
         })}
       </div>
+      {isMaxReached && (
+        <p className="text-sm text-amber-600 mt-2">
+          Maximum de 3 sauces atteint
+        </p>
+      )}
     </div>
   );
 };

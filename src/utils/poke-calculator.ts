@@ -3,9 +3,9 @@ import { PokeIngredient } from "@/types/poke-creator";
 export const calculatePokeExtraCost = (ingredients: PokeIngredient[]) => {
   let extraCost = 0;
 
-  // Ingrédients au-delà de 5 coûtent 1€ chaque
+  // Ingrédients au-delà de 5 coûtent 0.50€ chaque (étape 1)
   if (ingredients.length > 5) {
-    extraCost += (ingredients.length - 5) * 1;
+    extraCost += (ingredients.length - 5) * 0.5;
   }
 
   // Ajouter les coûts des ingrédients premium
@@ -21,7 +21,7 @@ export const calculatePokeExtraCost = (ingredients: PokeIngredient[]) => {
 export const calculatePokeProteinExtraCost = (proteins: PokeIngredient[]) => {
   let extraCost = 0;
 
-  // Protéines au-delà de 1 coûtent 1€ chaque
+  // Protéines au-delà de 1 coûtent 1€ chaque (étape 2)
   if (proteins.length > 1) {
     extraCost += (proteins.length - 1) * 1;
   }
