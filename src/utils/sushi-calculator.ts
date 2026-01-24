@@ -21,9 +21,9 @@ export const calculateCreationExtraCost = (
     }
   });
 
-  // Extra cost for bases (first 1 included, +0.50€ for 2nd, max 2)
+  // Extra cost for bases (first 1 included, +1€ for 2nd, max 2)
   if (bases.length > 1) {
-    extraCost += 0.5;
+    extraCost += 1;
   }
 
   // Extra cost for garnitures (first 1 included, +0.50€ per extra)
@@ -65,10 +65,10 @@ export const calculateTotalExtraCost = (
         totalExtraCost += 1;
       }
     });
-    // Bases: 1 incluse, +0.50€ pour la 2ème
+    // Bases: 1 incluse, +1€ pour la 2ème
     const creationBases = creation.bases || [];
     if (creationBases.length > 1) {
-      totalExtraCost += 0.5;
+      totalExtraCost += 1;
     }
     if (creation.garnitures.length > 1) {
       totalExtraCost += (creation.garnitures.length - 1) * 0.5;

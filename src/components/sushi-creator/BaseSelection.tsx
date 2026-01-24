@@ -12,8 +12,8 @@ interface BaseSelectionProps {
 export const BaseSelection = ({ selectedBases, baseOptions, onBaseSelect }: BaseSelectionProps) => {
   console.log("BaseSelection render - options:", baseOptions);
   
-  // Calculer le coût des bases (1 incluse, +0.50€ pour la 2ème, max 2)
-  const baseExtraCost = selectedBases.length > 1 ? 0.5 : 0;
+  // Calculer le coût des bases (1 incluse, +1€ pour la 2ème, max 2)
+  const baseExtraCost = selectedBases.length > 1 ? 1 : 0;
   
   if (baseOptions.length === 0) {
     return (
@@ -33,7 +33,7 @@ export const BaseSelection = ({ selectedBases, baseOptions, onBaseSelect }: Base
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis ta base (1 incluse, 2 max)</h3>
       <p className="text-sm text-gray-500 mb-4">
-        La première base est incluse, 2ème base: +0.50€
+        La première base est incluse, 2ème base: +1€
       </p>
       {baseExtraCost > 0 && (
         <p className="text-sm text-gold-600 mb-4">
