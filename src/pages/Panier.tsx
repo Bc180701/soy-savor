@@ -10,7 +10,6 @@ import { DeliveryStep } from "@/components/cart/DeliveryStep";
 import { PaymentStep } from "@/components/cart/PaymentStep";
 import { CheckoutSteps, CheckoutStep } from "@/components/cart/CheckoutSteps";
 import { type CartExtras } from "@/components/cart/CartExtrasSection";
-import { RestaurantProvider } from "@/hooks/useRestaurantContext";
 import { useCartRestaurant } from "@/hooks/useCartRestaurant";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
 import { format, parseISO } from "date-fns";
@@ -534,11 +533,7 @@ const PanierContent = () => {
 };
 
 const Panier = () => {
-  return (
-    <RestaurantProvider>
-      <PanierContent />
-    </RestaurantProvider>
-  );
+  return <PanierContent />;
 };
 
 export default Panier;
