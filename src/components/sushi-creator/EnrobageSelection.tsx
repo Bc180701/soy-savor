@@ -26,54 +26,111 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
     );
   }
 
+  const includedOptions = enrobageOptions.filter(opt => opt.included);
+  const premiumOptions = enrobageOptions.filter(opt => !opt.included);
+
   const isSelected = (option: SushiOption) => selectedEnrobages.some(e => e.id === option.id);
   const isMaxReached = selectedEnrobages.length >= 2;
+
+  // Calculer le coût total des enrobages
+  const calculateEnrobageCost = () => {
+    let cost = 0;
+    selectedEnrobages.forEach((enrobage, index) => {
+      if (!enrobage.included) {
+        // Premium enrobage: toujours +1€
+        cost += enrobage.price;
+      } else if (index > 0) {
+        // Enrobage classique en 2ème position: +1€
+        cost += 1;
+      }
+    });
+    return cost;
+  };
+
+  const enrobageCost = calculateEnrobageCost();
 
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis ton enrobage extérieur</h3>
       <p className="text-sm text-gray-600 mb-4">
-        1 enrobage inclus, +1€ pour le 2ème (max 2)
+        1 enrobage classique inclus, +1€ pour le 2ème (max 2)
       </p>
       
-      <div className="space-y-3">
-        {enrobageOptions.map((option) => {
-          const selected = isSelected(option);
-          const disabled = !selected && isMaxReached;
-          
-          return (
-            <div 
-              key={option.id} 
-              className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
-                selected ? 'border-gold-500 bg-gold-50' : disabled ? 'opacity-50' : 'hover:border-gray-300'
-              }`}
-            >
-              <Checkbox 
-                id={`enrobage-${option.id}`}
-                checked={selected}
-                disabled={disabled}
-                onCheckedChange={() => onEnrobageSelect(option)}
-              />
-              <Label 
-                htmlFor={`enrobage-${option.id}`}
-                className={`flex-1 cursor-pointer ${disabled ? 'cursor-not-allowed' : ''}`}
-              >
-                <div className="flex justify-between items-center">
-                  <span>{option.name}</span>
-                  {selectedEnrobages.length > 0 && !selected && (
-                    <span className="text-sm text-gold-600 font-semibold">+1€</span>
-                  )}
+      {includedOptions.length > 0 && (
+        <>
+          <h4 className="font-semibold mb-2">Enrobage classique (inclus) :</h4>
+          <div className="space-y-2 mb-4">
+            {includedOptions.map((option) => {
+              const selected = isSelected(option);
+              const disabled = !selected && isMaxReached;
+              
+              return (
+                <div 
+                  key={option.id} 
+                  className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
+                    selected ? 'border-gold-500 bg-gold-50' : disabled ? 'opacity-50' : 'hover:border-gray-300'
+                  }`}
+                >
+                  <Checkbox 
+                    id={`enrobage-${option.id}`}
+                    checked={selected}
+                    disabled={disabled}
+                    onCheckedChange={() => onEnrobageSelect(option)}
+                  />
+                  <Label 
+                    htmlFor={`enrobage-${option.id}`}
+                    className={`flex-1 cursor-pointer ${disabled ? 'cursor-not-allowed' : ''}`}
+                  >
+                    <span>{option.name}</span>
+                  </Label>
                 </div>
-              </Label>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-      {selectedEnrobages.length > 1 && (
+      {premiumOptions.length > 0 && (
+        <>
+          <h4 className="font-semibold mt-4 mb-2">Enrobage premium (+1€) :</h4>
+          <div className="space-y-2">
+            {premiumOptions.map((option) => {
+              const selected = isSelected(option);
+              const disabled = !selected && isMaxReached;
+              
+              return (
+                <div 
+                  key={option.id} 
+                  className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
+                    selected ? 'border-gold-500 bg-gold-50' : disabled ? 'opacity-50' : 'hover:border-gray-300'
+                  }`}
+                >
+                  <Checkbox 
+                    id={`enrobage-${option.id}`}
+                    checked={selected}
+                    disabled={disabled}
+                    onCheckedChange={() => onEnrobageSelect(option)}
+                  />
+                  <Label 
+                    htmlFor={`enrobage-${option.id}`}
+                    className={`flex-1 cursor-pointer ${disabled ? 'cursor-not-allowed' : ''}`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span>{option.name}</span>
+                      <span className="font-semibold text-gold-600">+{option.price}€</span>
+                    </div>
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {enrobageCost > 0 && (
         <div className="mt-4 p-3 bg-gold-50 border border-gold-200 rounded-lg">
           <p className="text-sm text-gold-800">
-            Supplément enrobage : <span className="font-semibold">+1€</span>
+            Supplément enrobage : <span className="font-semibold">+{enrobageCost.toFixed(2)}€</span>
           </p>
         </div>
       )}

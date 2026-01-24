@@ -10,10 +10,16 @@ export const calculateCreationExtraCost = (
 ) => {
   let extraCost = 0;
 
-  // Extra cost for enrobages (first 1 included, +1€ for 2nd, max 2)
-  if (enrobages.length > 1) {
-    extraCost += 1;
-  }
+  // Extra cost for enrobages
+  enrobages.forEach((enrobage, index) => {
+    if (!enrobage.included) {
+      // Premium enrobage: always costs its price
+      extraCost += enrobage.price;
+    } else if (index > 0) {
+      // Classic enrobage as 2nd choice: +1€
+      extraCost += 1;
+    }
+  });
 
   // Extra cost for bases (first 1 included, +0.50€ for 2nd, max 2)
   if (bases.length > 1) {
@@ -50,11 +56,15 @@ export const calculateTotalExtraCost = (
   
   // Add extra costs from completed creations
   completedCreations.forEach(creation => {
-    // Enrobages: 1 inclus, +1€ pour le 2ème
+    // Enrobages: premium toujours payant, classique +1€ si 2ème
     const creationEnrobages = creation.enrobages || [];
-    if (creationEnrobages.length > 1) {
-      totalExtraCost += 1;
-    }
+    creationEnrobages.forEach((enrobage, index) => {
+      if (!enrobage.included) {
+        totalExtraCost += enrobage.price;
+      } else if (index > 0) {
+        totalExtraCost += 1;
+      }
+    });
     // Bases: 1 incluse, +0.50€ pour la 2ème
     const creationBases = creation.bases || [];
     if (creationBases.length > 1) {
