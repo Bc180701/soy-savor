@@ -28,6 +28,21 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const { addItem, removeItem, selectedRestaurantId, items, getTotalPrice } = useCart();
   const getRestaurantId = () => selectedRestaurantId || items[0]?.menuItem.restaurant_id;
 
+  // Synchroniser le state selectedSauces avec les items du panier au chargement
+  useEffect(() => {
+    const sauceItems = items.filter(item => item.menuItem.category === "Sauce");
+    if (sauceItems.length > 0) {
+      const saucesFromCart = sauceItems.map(item => {
+        // Gérer le cas "Aucune sauce"
+        if (item.menuItem.name === "Aucune sauce") {
+          return { name: "Aucune", quantity: 1 };
+        }
+        return { name: item.menuItem.name, quantity: item.quantity };
+      });
+      setSelectedSauces(saucesFromCart);
+    }
+  }, []); // Seulement au montage du composant
+
   // Notifier le parent des changements pour débloquer le bouton continuer
   useEffect(() => {
     const hasAnySauceSelection = selectedSauces.length > 0 || 
@@ -391,17 +406,24 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           removeItem(aucuneItem.menuItem.id);
         }
       } else {
-        addSauceToCart(sauce, 0); // Supprimer du panier
+        // Supprimer cette sauce du panier
+        const sauceItem = items.find(item => 
+          item.menuItem.category === "Sauce" && 
+          item.menuItem.name === sauce
+        );
+        if (sauceItem) {
+          removeItem(sauceItem.menuItem.id);
+        }
       }
     } else {
       // Sélectionner la sauce
       if (sauce === "Aucune") {
-        // Si on sélectionne "Aucune", désélectionner toutes les autres sauces
-        selectedSauces.forEach(s => {
-          if (s.name !== "Aucune") {
-            addSauceToCart(s.name, 0); // Supprimer du panier
-          }
+        // Si on sélectionne "Aucune", supprimer TOUTES les sauces du panier
+        const allSauceItems = items.filter(item => item.menuItem.category === "Sauce");
+        allSauceItems.forEach(item => {
+          removeItem(item.menuItem.id);
         });
+        
         setSelectedSauces([{ name: "Aucune", quantity: 1 }]);
         
         // Ajouter un item "Aucune sauce" au panier pour valider le choix
@@ -426,20 +448,18 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           addItem(aucuneItem, 1);
         }
       } else {
-        // Si on sélectionne une sauce, désélectionner "Aucune" si elle était cochée
-        const aucuneSelected = selectedSauces.find(s => s.name === "Aucune");
-        if (aucuneSelected) {
-          // Supprimer l'item "Aucune sauce" du panier
-          const aucuneItem = items.find(item => item.menuItem?.name === "Aucune sauce");
-          if (aucuneItem) {
-            removeItem(aucuneItem.menuItem.id);
-          }
-          const newSauces = selectedSauces.filter(s => s.name !== "Aucune");
-          setSelectedSauces([...newSauces, { name: sauce, quantity: 1 }]);
-        } else {
-          setSelectedSauces([...selectedSauces, { name: sauce, quantity: 1 }]);
+        // Si on sélectionne une sauce, supprimer "Aucune sauce" du panier si présente
+        const aucuneItem = items.find(item => item.menuItem?.name === "Aucune sauce");
+        if (aucuneItem) {
+          removeItem(aucuneItem.menuItem.id);
         }
-        addSauceToCart(sauce, 1); // Ajouter au panier
+        
+        // Mettre à jour le state
+        const newSauces = selectedSauces.filter(s => s.name !== "Aucune");
+        setSelectedSauces([...newSauces, { name: sauce, quantity: 1 }]);
+        
+        // Ajouter au panier
+        addSauceToCart(sauce, 1);
       }
     }
   };
