@@ -94,18 +94,18 @@ const handler = async (req: Request): Promise<Response> => {
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background-color: #f9fafb; }
             .container { max-width: 600px; margin: 0 auto; background-color: white; }
-            .header { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 32px 24px; text-align: center; }
+            .header { background: linear-gradient(135deg, #e1c174, #d4a84b); color: white; padding: 32px 24px; text-align: center; }
             .content { padding: 32px 24px; }
-            .order-number { font-size: 24px; font-weight: bold; color: #dc2626; margin-bottom: 16px; }
+            .order-number { font-size: 24px; font-weight: bold; color: #e1c174; margin-bottom: 16px; }
             .section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e5e7eb; }
             .section:last-child { border-bottom: none; }
             .section-title { font-size: 18px; font-weight: 600; color: #1f2937; margin-bottom: 12px; }
             .item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
             .item-name { font-weight: 500; }
-            .item-price { font-weight: 600; color: #dc2626; }
+            .item-price { font-weight: 600; color: #e1c174; }
             .total-line { display: flex; justify-content: space-between; padding: 8px 0; }
-            .total-line.grand-total { font-size: 18px; font-weight: bold; color: #dc2626; border-top: 2px solid #dc2626; padding-top: 12px; margin-top: 12px; }
-            .info-box { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 16px 0; }
+            .total-line.grand-total { font-size: 18px; font-weight: bold; color: #e1c174; border-top: 2px solid #e1c174; padding-top: 12px; margin-top: 12px; }
+            .info-box { background-color: #fdf8ed; border: 1px solid #e1c174; border-radius: 8px; padding: 16px; margin: 16px 0; }
             .footer { background-color: #f9fafb; padding: 24px; text-align: center; color: #6b7280; font-size: 14px; }
           </style>
         </head>
@@ -176,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
                 ${order.stripe_receipt_url ? `
                   <p style="margin-top: 16px;">
                     <a href="${order.stripe_receipt_url}" 
-                       style="display: inline-block; background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                       style="display: inline-block; background-color: #e1c174; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
                       📄 Télécharger votre reçu Stripe
                     </a>
                   </p>
