@@ -441,7 +441,7 @@ const TimeSlotSelector = ({
 
       let currentTime = new Date(finalMinTime);
 
-      while (currentTime <= endDate) {
+      while (currentTime < endDate) {
         const timeValue = format(currentTime, "HH:mm");
         
         // For event mode (future date), no time is "passed" - all slots are available
