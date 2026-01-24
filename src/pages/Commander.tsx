@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MenuItem, MenuCategory } from "@/types";
 import { getMenuData, initializeCategories, initializeFullMenu } from "@/services/productService";
 import { supabase } from "@/integrations/supabase/client";
-import { useRestaurantContext, RestaurantProvider } from "@/hooks/useRestaurantContext";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { Restaurant } from "@/types/restaurant";
 import { isRestaurantOpenNow, getNextOpenDay } from "@/services/openingHoursService";
 import LoadingSpinner from "@/components/menu/LoadingSpinner";
@@ -72,7 +72,6 @@ const CommanderContent = () => {
     declineGourmetOffer
   } = useDessertBoissonOffer();
   const [showRestaurantDialog, setShowRestaurantDialog] = useState(false);
-  const [isRestaurantStabilizing, setIsRestaurantStabilizing] = useState(true);
   const [activeCategory, setActiveCategory] = useState("");
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -106,37 +105,22 @@ const CommanderContent = () => {
     setIsLoading(false);
   }, []);
 
-  // Période de stabilisation pour éviter le flash du dialog lors de la détection automatique du restaurant
+  // Afficher le dialog seulement si aucun restaurant n'est sélectionné après le chargement complet
   useEffect(() => {
     // Attendre que le chargement des restaurants soit terminé
     if (isRestaurantsLoading) return;
-    
-    // Si un restaurant est déjà sélectionné, pas besoin de stabilisation
+
+    // Ne pas afficher le dialog si un restaurant est déjà sélectionné
     if (currentRestaurant) {
-      setIsRestaurantStabilizing(false);
       setShowRestaurantDialog(false);
       return;
     }
-    
-    // Attendre un court délai pour laisser le temps au restaurant d'être détecté
-    // (depuis localStorage, URL params, ou état de navigation)
-    const stabilizationTimer = setTimeout(() => {
-      setIsRestaurantStabilizing(false);
-      // Afficher le dialog seulement si après stabilisation aucun restaurant n'est sélectionné
-      if (restaurants.length > 0 && !currentRestaurant) {
-        setShowRestaurantDialog(true);
-      }
-    }, 150); // 150ms de délai pour laisser le temps à la détection automatique
-    
-    return () => clearTimeout(stabilizationTimer);
-  }, [isRestaurantsLoading, currentRestaurant, restaurants]);
 
-  // Réinitialiser la stabilisation si on change de restaurant
-  useEffect(() => {
-    if (currentRestaurant) {
-      setShowRestaurantDialog(false);
+    // Afficher le dialog seulement si aucun restaurant n'est sélectionné
+    if (restaurants.length > 0 && !currentRestaurant) {
+      setShowRestaurantDialog(true);
     }
-  }, [currentRestaurant]);
+  }, [isRestaurantsLoading, currentRestaurant, restaurants]);
 
   useEffect(() => {
     // Vérifier si le restaurant sélectionné est ouvert maintenant
@@ -510,11 +494,9 @@ const CommanderContent = () => {
 
 const Commander = () => {
   return (
-    <RestaurantProvider>
-      <DessertBoissonOfferProvider>
-        <CommanderContent />
-      </DessertBoissonOfferProvider>
-    </RestaurantProvider>
+    <DessertBoissonOfferProvider>
+      <CommanderContent />
+    </DessertBoissonOfferProvider>
   );
 };
 

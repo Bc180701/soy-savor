@@ -11,7 +11,7 @@ import PromotionalBanner from "@/components/menu/PromotionalBanner";
 import CategorySection from "@/components/menu/CategorySection";
 import MenuProductsDisplay from "@/components/menu/MenuProductsDisplay";
 import RestaurantStatusBanner from "@/components/menu/RestaurantStatusBanner";
-import { RestaurantProvider, useRestaurantContext } from "@/hooks/useRestaurantContext";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import SEOHead from "@/components/SEOHead";
 import menuHeroImage from "@/assets/carte-hero-new.jpg";
 
@@ -158,11 +158,7 @@ const CarteContent = () => {
 };
 
 const Carte = () => {
-  return (
-    <RestaurantProvider>
-      <CarteContent />
-    </RestaurantProvider>
-  );
+  return <CarteContent />;
 };
 
 export default Carte;
