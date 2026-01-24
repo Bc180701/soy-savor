@@ -191,6 +191,22 @@ const handler = async (req: Request): Promise<Response> => {
                   ${order.restaurants.phone ? `<p>Téléphone : ${order.restaurants.phone}</p>` : ''}
                 </div>
               ` : ''}
+
+              <div class="section" style="text-align: center;">
+                <div class="section-title">⭐ Votre avis compte !</div>
+                <p style="color: #6b7280; margin-bottom: 16px;">Vous avez apprécié votre repas ? Laissez-nous un avis sur Google !</p>
+                ${order.restaurant_id === '11111111-1111-1111-1111-111111111111' ? `
+                  <a href="https://www.google.com/knowledgegraphshares?client=safari&hs=nDt9&sca_esv=d866c615fc56355b&hl=fr-fr&channel=43&authuser=2&sxsrf=ANbL-n5yJnM3aduM6VOT1H7i--dGouI1Lg:1769252387710&kgmid=/g/11lz56mpc0&q=SushiEats&shem=bdsle,ptotple&shndl=30&source=sh/x/loc/act/m4/3" 
+                     style="display: inline-block; background-color: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                    ⭐ Laisser un avis - Châteaurenard
+                  </a>
+                ` : `
+                  <a href="https://www.google.com/knowledgegraphshares?client=safari&hs=6Dt9&sca_esv=d866c615fc56355b&hl=fr-fr&channel=43&authuser=2&sxsrf=ANbL-n5Oy_-utFoxX4yARkX3mmfbfYsX2w:1769253520742&kgmid=/g/11xrfsvfb1&q=SushiEats&shem=bdsle,ptotple&shndl=30&source=sh/x/loc/act/m4/3" 
+                     style="display: inline-block; background-color: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                    ⭐ Laisser un avis - St Martin de Crau
+                  </a>
+                `}
+              </div>
             </div>
 
             <div class="footer">
