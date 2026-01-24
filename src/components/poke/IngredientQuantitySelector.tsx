@@ -135,11 +135,6 @@ export const IngredientQuantitySelector: React.FC<IngredientQuantitySelectorProp
                           +{ingredient.price.toFixed(2)}€
                         </span>
                       )}
-                      {showPricing && ingredient.included && (
-                        <span className="text-green-600 text-xs">
-                          Inclus
-                        </span>
-                      )}
                     </div>
                     
                     {isSelected && (
