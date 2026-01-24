@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { HeroSection } from "@/components/HeroSection";
 import { OrderCTA } from "@/components/OrderCTA";
 import { DeliveryMap } from "@/components/DeliveryMap";
@@ -134,6 +135,7 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
 };
 
 const Index = () => {
+  const navigate = useNavigate();
   // Use the homepage data hook
   const { data: homepageData, loading } = useHomepageData();
   const { activePromotions } = usePromotions();
@@ -187,7 +189,10 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 better-times-gold">Nos Promotions du Moment</h2>
             {activePromotions.length > 0 && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div 
+                className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg cursor-pointer hover:bg-red-100 transition-colors"
+                onClick={() => navigate('/commander')}
+              >
                 <h3 className="text-lg font-semibold text-red-800 mb-2">🎉 Promotions actives aujourd'hui :</h3>
                 <ul className="space-y-1">
                   {activePromotions.map(promo => (
