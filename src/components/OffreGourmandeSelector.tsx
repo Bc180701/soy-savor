@@ -50,9 +50,12 @@ export const OffreGourmandeSelector = ({
             Ajoutez un dessert délicieux et recevez une boisson soft offerte !
           </div>
           
-          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-4 rounded-lg">
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-4 rounded-lg space-y-2">
             <div className="text-sm font-medium text-primary">
-              🎁 1 Dessert acheté = 1 Boisson offerte
+              🎁 1 Dessert acheté = 1 Boisson soft offerte !
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Valable uniquement pour les Box du Midi • Sur place et à emporter
             </div>
           </div>
         </div>
