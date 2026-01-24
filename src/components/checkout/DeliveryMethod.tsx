@@ -77,7 +77,6 @@ const DeliveryMethod = ({ defaultValue = "delivery", onChange, restaurant }: Del
             </div>
             <div>
               <h4 className="font-medium">Livraison à domicile</h4>
-              <p className="text-sm text-gray-500">Livraison en 30-45 minutes environ</p>
               {deliveryDisabled && (
                 <p className="text-xs text-red-600 font-medium mt-1">❌ Indisponible pour ce restaurant</p>
               )}
@@ -109,7 +108,6 @@ const DeliveryMethod = ({ defaultValue = "delivery", onChange, restaurant }: Del
             </div>
             <div>
               <h4 className="font-medium">À emporter</h4>
-              <p className="text-sm text-gray-500">Prêt en 15-20 minutes environ</p>
               {pickupDisabled && (
                 <p className="text-xs text-red-600 font-medium mt-1">❌ Indisponible pour ce restaurant</p>
               )}
