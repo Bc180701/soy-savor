@@ -2,7 +2,7 @@
 import { SushiOption, SushiCreation, BoxOption } from "@/types/sushi-creator";
 
 export const calculateCreationExtraCost = (
-  enrobage: SushiOption | null,
+  enrobages: SushiOption[] = [],
   bases: SushiOption[] = [],
   garnitures: SushiOption[],
   toppings: SushiOption[] = [],
@@ -10,9 +10,9 @@ export const calculateCreationExtraCost = (
 ) => {
   let extraCost = 0;
 
-  // Extra cost for enrobage
-  if (enrobage && !enrobage.included) {
-    extraCost += enrobage.price;
+  // Extra cost for enrobages (first 1 included, +1€ for 2nd, max 2)
+  if (enrobages.length > 1) {
+    extraCost += 1;
   }
 
   // Extra cost for bases (first 1 included, +0.50€ for 2nd, max 2)
@@ -40,7 +40,7 @@ export const calculateCreationExtraCost = (
 
 export const calculateTotalExtraCost = (
   completedCreations: SushiCreation[],
-  currentEnrobage: SushiOption | null,
+  currentEnrobages: SushiOption[] = [],
   currentBases: SushiOption[] = [],
   currentGarnitures: SushiOption[],
   currentToppings: SushiOption[] = [],
@@ -50,8 +50,10 @@ export const calculateTotalExtraCost = (
   
   // Add extra costs from completed creations
   completedCreations.forEach(creation => {
-    if (creation.enrobage && !creation.enrobage.included) {
-      totalExtraCost += creation.enrobage.price;
+    // Enrobages: 1 inclus, +1€ pour le 2ème
+    const creationEnrobages = creation.enrobages || [];
+    if (creationEnrobages.length > 1) {
+      totalExtraCost += 1;
     }
     // Bases: 1 incluse, +0.50€ pour la 2ème
     const creationBases = creation.bases || [];
@@ -74,7 +76,7 @@ export const calculateTotalExtraCost = (
   });
   
   // Add current creation extra cost
-  totalExtraCost += calculateCreationExtraCost(currentEnrobage, currentBases, currentGarnitures, currentToppings, currentSauces);
+  totalExtraCost += calculateCreationExtraCost(currentEnrobages, currentBases, currentGarnitures, currentToppings, currentSauces);
   
   return totalExtraCost;
 };

@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { SushiOption } from "@/types/sushi-creator";
 
 interface CreationSummaryProps {
-  selectedEnrobage: SushiOption | null;
+  selectedEnrobages: SushiOption[];
   selectedBases: SushiOption[];
   selectedGarnitures: SushiOption[];
   selectedToppings: SushiOption[];
@@ -13,7 +13,7 @@ interface CreationSummaryProps {
 }
 
 export const CreationSummary = ({
-  selectedEnrobage,
+  selectedEnrobages,
   selectedBases,
   selectedGarnitures,
   selectedToppings,
@@ -21,6 +21,7 @@ export const CreationSummary = ({
   totalPrice
 }: CreationSummaryProps) => {
   // Calculer les suppléments
+  const enrobageExtraCost = selectedEnrobages.length > 1 ? 1 : 0;
   const baseExtraCost = selectedBases.length > 1 ? 0.5 : 0;
   const garnitureExtraCost = selectedGarnitures.length > 1 ? (selectedGarnitures.length - 1) * 0.5 : 0;
   const toppingExtraCost = selectedToppings.length > 1 ? (selectedToppings.length - 1) * 0.5 : 0;
@@ -32,9 +33,16 @@ export const CreationSummary = ({
       <Card>
         <CardContent className="mt-4">
           <div className="space-y-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-start">
               <span className="font-semibold">Enrobage:</span>
-              <span>{selectedEnrobage?.name} {!selectedEnrobage?.included && `(+${selectedEnrobage?.price}€)`}</span>
+              <span className="text-right">
+                {selectedEnrobages.map(e => e.name).join(', ')}
+                {enrobageExtraCost > 0 && (
+                  <span className="block text-sm text-gold-600">
+                    (+{enrobageExtraCost.toFixed(2)}€ supplément)
+                  </span>
+                )}
+              </span>
             </div>
             <div className="flex justify-between items-start">
               <span className="font-semibold">Base:</span>
@@ -58,7 +66,7 @@ export const CreationSummary = ({
                 )}
               </span>
             </div>
-            {(selectedToppings.length > 0 && !selectedEnrobage?.name.toLowerCase().includes("nori")) && (
+            {(selectedToppings.length > 0 && !selectedEnrobages.some(e => e.name.toLowerCase().includes("nori"))) && (
               <div className="flex justify-between items-start">
                 <span className="font-semibold">Toppings:</span>
                 <span className="text-right">
