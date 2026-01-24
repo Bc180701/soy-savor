@@ -20,14 +20,6 @@ export const BoissonOfferteSelector = ({
 
   const boissons = [
     {
-      id: 'cafe',
-      name: "Café",
-      description: "Café chaud",
-      price: 0,
-      category: 'boissons' as any,
-      restaurant_id: restaurantId
-    },
-    {
       id: 'eau-plate',
       name: "Eau plate",
       description: "Bouteille d'eau plate",
