@@ -22,7 +22,7 @@ export const CreationSummary = ({
 }: CreationSummaryProps) => {
   // Calculer les suppléments
   const enrobageExtraCost = selectedEnrobages.length > 1 ? 1 : 0;
-  const baseExtraCost = selectedBases.length > 1 ? 0.5 : 0;
+  const baseExtraCost = selectedBases.length > 1 ? 1 : 0;
   const garnitureExtraCost = selectedGarnitures.length > 1 ? (selectedGarnitures.length - 1) * 0.5 : 0;
   const toppingExtraCost = selectedToppings.length > 1 ? (selectedToppings.length - 1) * 0.5 : 0;
   const sauceExtraCost = selectedSauces.length > 1 ? (selectedSauces.length - 1) * 0.5 : 0;
