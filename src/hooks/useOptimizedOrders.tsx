@@ -136,43 +136,40 @@ export function useOptimizedOrders(restaurantId: string | null) {
             );
           }
 
-          // 🔄 Charger tous les cart_backup d'un coup
+          // 🔄 Charger tous les cart_backup d'un coup - PAR ORDER_ID et non par email
           console.log("📦 Chargement global des cart_backup...");
 
-          const clientEmails = verifiedOrders
-            .map(o => o.clientEmail)
-            .filter(Boolean);
+          const orderIds = verifiedOrders.map(o => o.id);
 
           let ordersWithCartBackup = [...verifiedOrders];
 
-          if (clientEmails.length > 0) {
+          if (orderIds.length > 0) {
             try {
+              // Charger les cart_backup liés aux order_id spécifiques
               const { data: cartBackups, error: cartError } = await supabase
                 .from("cart_backup")
-                .select("session_id, cart_items, created_at")
-                .in("session_id", clientEmails)
-                .eq("is_used", false)
-                .order("created_at", { ascending: false });
+                .select("order_id, cart_items, created_at")
+                .in("order_id", orderIds);
 
               if (cartError) throw cartError;
 
-              const latestCartMap: Record<string, any[]> = {};
+              // Créer une map order_id -> cart_items
+              const cartByOrderId: Record<string, any[]> = {};
               cartBackups?.forEach(cb => {
-                if (!latestCartMap[cb.session_id]) {
-                  latestCartMap[cb.session_id] = Array.isArray(cb.cart_items) 
+                if (cb.order_id && !cartByOrderId[cb.order_id]) {
+                  cartByOrderId[cb.order_id] = Array.isArray(cb.cart_items) 
                     ? cb.cart_items 
                     : [];
                 }
               });
 
               ordersWithCartBackup = verifiedOrders.map(order => {
-                if (!order.clientEmail) return order;
-                const cartItems = latestCartMap[order.clientEmail] || [];
+                const cartItems = cartByOrderId[order.id] || [];
                 return { ...order, cartBackupItems: cartItems };
               });
 
               const cartBackupCount = ordersWithCartBackup.filter(o => o.cartBackupItems?.length).length;
-              console.log(`✅ ${verifiedOrders.length} commandes validées (${cartBackupCount} avec cart_backup)`);
+              console.log(`✅ ${verifiedOrders.length} commandes validées (${cartBackupCount} avec cart_backup par order_id)`);
             } catch (err: any) {
               console.error("💥 Erreur récupération globale des cart_backup:", err);
               toast({
