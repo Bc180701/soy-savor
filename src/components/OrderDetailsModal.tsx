@@ -32,12 +32,35 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
   const [orderDetails, setOrderDetails] = useState<any | null>(null);
   const [customerDetails, setCustomerDetails] = useState<any | null>(null);
   const [addressDetails, setAddressDetails] = useState<any | null>(null);
+  const [cartBackupItems, setCartBackupItems] = useState<any[]>([]);
 
   useEffect(() => {
     if (order && open) {
       fetchOrderDetails(order.id);
     }
   }, [order, open]);
+
+  const fetchCartBackupItems = async (clientEmail: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('cart_backup')
+        .select('cart_items')
+        .eq('session_id', clientEmail)
+        .eq('is_used', false)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error || !data || data.length === 0) {
+        console.log('No cart backup found for email:', clientEmail);
+        return [];
+      }
+
+      return data[0].cart_items || [];
+    } catch (error) {
+      console.error('Error fetching cart backup:', error);
+      return [];
+    }
+  };
 
   const fetchOrderDetails = async (orderId: string) => {
     if (!orderId) return;
@@ -50,6 +73,14 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         setOrderDetails(completeOrderDetails);
         setCustomerDetails(completeOrderDetails.customer);
         setAddressDetails(completeOrderDetails.delivery_address);
+        
+        // Toujours récupérer cart_backup pour avoir les données complètes
+        if (completeOrderDetails.client_email) {
+          const backupItems = await fetchCartBackupItems(completeOrderDetails.client_email);
+          setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
+        } else {
+          setCartBackupItems([]);
+        }
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des détails de la commande:", error);
@@ -352,8 +383,54 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
-                      <DecodedItemsList items={orderDetails.items_summary} />
+                    {cartBackupItems.length > 0 ? (
+                      cartBackupItems.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.menuItem?.name || 'Produit inconnu'}
+                            </div>
+                            {item.menuItem?.description && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {item.menuItem.description}
+                              </div>
+                            )}
+                            {item.specialInstructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.specialInstructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                      orderDetails.items_summary.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.name}
+                            </div>
+                            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
+                            {item.special_instructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.special_instructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
                     ) : orderDetails.order_items && orderDetails.order_items.length > 0 ? (
                       orderDetails.order_items.map((item: any, index: number) => (
                         <div key={item.id || index} className="p-4 flex justify-between">
@@ -589,7 +666,33 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
+                      cartBackupItems.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.menuItem?.name || 'Produit inconnu'}
+                            </div>
+                            {item.menuItem?.description && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {item.menuItem.description}
+                              </div>
+                            )}
+                            {item.specialInstructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.specialInstructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
                       <DecodedItemsList items={orderDetails.items_summary} />
                     ) : orderDetails.order_items && orderDetails.order_items.length > 0 ? (
                      orderDetails.order_items.map((item: any, index: number) => (
