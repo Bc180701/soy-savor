@@ -43,6 +43,181 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     }
   }, []); // Seulement au montage du composant
 
+  // Calculer le total du panier SANS les extras (sauces, accompagnements, accessoires)
+  const getProductsOnlyTotal = () => {
+    return items
+      .filter(item => 
+        item.menuItem.category !== "Sauce" && 
+        item.menuItem.category !== "Accompagnement" && 
+        item.menuItem.category !== "Accessoire"
+      )
+      .reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
+  };
+
+  // Recalculer les prix des sauces/accompagnements/couverts quand le total du panier change
+  useEffect(() => {
+    const productsTotal = getProductsOnlyTotal();
+    const newFreeCount = Math.floor(productsTotal / 10);
+    
+    // Recalculer les sauces
+    const sauceItems = items.filter(item => 
+      item.menuItem.category === "Sauce" && 
+      item.menuItem.name !== "Aucune sauce"
+    );
+    
+    sauceItems.forEach(sauceItem => {
+      const quantity = sauceItem.quantity;
+      const sauceName = sauceItem.menuItem.name;
+      
+      // Calculer combien de sauces autres sont dans le panier
+      const otherSaucesCount = sauceItems
+        .filter(item => item.menuItem.id !== sauceItem.menuItem.id)
+        .reduce((sum, item) => sum + item.quantity, 0);
+      
+      const freeRemaining = Math.max(0, newFreeCount - otherSaucesCount);
+      const freeForThis = Math.min(quantity, freeRemaining);
+      const paidForThis = quantity - freeForThis;
+      
+      // Calculer le nouveau prix
+      const expectedPrice = paidForThis > 0 ? (paidForThis * 0.5 / quantity) : 0;
+      
+      // Si le prix est différent, mettre à jour
+      if (Math.abs(sauceItem.menuItem.price - expectedPrice) > 0.001) {
+        const restaurantId = getRestaurantId();
+        if (restaurantId) {
+          removeItem(sauceItem.menuItem.id);
+          
+          let description = "";
+          if (freeForThis > 0 && paidForThis > 0) {
+            description = `${freeForThis}x gratuite + ${paidForThis}x supplémentaire`;
+          } else if (freeForThis > 0) {
+            description = `Sauce gratuite (${quantity}x)`;
+          } else {
+            description = `Sauce supplémentaire (${quantity}x)`;
+          }
+          
+          const updatedSauceItem = {
+            id: `sauce-${sauceName}-${Date.now()}`,
+            name: sauceName,
+            description: description,
+            price: expectedPrice,
+            imageUrl: "",
+            category: "Sauce" as const,
+            restaurant_id: restaurantId,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          };
+          addItem(updatedSauceItem, quantity);
+        }
+      }
+    });
+
+    // Recalculer les accompagnements
+    const accompItems = items.filter(item => 
+      item.menuItem.category === "Accompagnement" &&
+      !item.menuItem.name.startsWith("Beaucoup de")
+    );
+    
+    accompItems.forEach(accompItem => {
+      const quantity = accompItem.quantity;
+      const accompName = accompItem.menuItem.name;
+      
+      const otherAccompCount = accompItems
+        .filter(item => item.menuItem.id !== accompItem.menuItem.id)
+        .reduce((sum, item) => sum + item.quantity, 0);
+      
+      const freeRemaining = Math.max(0, newFreeCount - otherAccompCount);
+      const freeForThis = Math.min(quantity, freeRemaining);
+      const paidForThis = quantity - freeForThis;
+      
+      const expectedPrice = paidForThis > 0 ? (paidForThis * 0.5 / quantity) : 0;
+      
+      if (Math.abs(accompItem.menuItem.price - expectedPrice) > 0.001) {
+        const restaurantId = getRestaurantId();
+        if (restaurantId) {
+          removeItem(accompItem.menuItem.id);
+          
+          let description = "";
+          if (freeForThis > 0 && paidForThis > 0) {
+            description = `${freeForThis}x gratuit + ${paidForThis}x supplémentaire`;
+          } else if (freeForThis > 0) {
+            description = `Accompagnement gratuit (${quantity}x)`;
+          } else {
+            description = `Accompagnement supplémentaire (${quantity}x)`;
+          }
+          
+          const updatedAccompItem = {
+            id: `accompagnement-${accompName}-${Date.now()}`,
+            name: accompName,
+            description: description,
+            price: expectedPrice,
+            imageUrl: "",
+            category: "Accompagnement" as const,
+            restaurant_id: restaurantId,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          };
+          addItem(updatedAccompItem, quantity);
+        }
+      }
+    });
+
+    // Recalculer les couverts (baguettes, fourchettes, cuillères)
+    const accessoireItems = items.filter(item => item.menuItem.category === "Accessoire");
+    
+    accessoireItems.forEach(accessoireItem => {
+      const quantity = accessoireItem.quantity;
+      const name = accessoireItem.menuItem.name;
+      
+      const freeForThis = Math.min(quantity, newFreeCount);
+      const paidForThis = Math.max(0, quantity - newFreeCount);
+      const expectedPrice = paidForThis > 0 ? (paidForThis * 0.5 / quantity) : 0;
+      
+      if (Math.abs(accessoireItem.menuItem.price - expectedPrice) > 0.001) {
+        const restaurantId = getRestaurantId();
+        if (restaurantId) {
+          removeItem(accessoireItem.menuItem.id);
+          
+          let baseName = "Accessoire";
+          if (name.toLowerCase().includes("baguette")) baseName = "Baguettes";
+          else if (name.toLowerCase().includes("fourchette")) baseName = "Fourchettes";
+          else if (name.toLowerCase().includes("cuillère") || name.toLowerCase().includes("cuillere")) baseName = "Cuillères";
+          
+          const updatedAccessoireItem = {
+            id: `${baseName.toLowerCase()}-${Date.now()}`,
+            name: paidForThis > 0 ? `${baseName} (${freeForThis} gratuite(s) + ${paidForThis} payante(s))` : baseName,
+            description: paidForThis > 0 ? `${quantity} ${baseName.toLowerCase()} dont ${freeForThis} offertes` : `${quantity} ${baseName.toLowerCase()} offerte(s)`,
+            price: expectedPrice,
+            imageUrl: "",
+            category: "Accessoire" as const,
+            restaurant_id: restaurantId,
+            isVegetarian: true,
+            isSpicy: false,
+            isNew: false,
+            isBestSeller: false,
+            isGlutenFree: true,
+            allergens: [],
+            pieces: null,
+            prepTime: null
+          };
+          addItem(updatedAccessoireItem, quantity);
+        }
+      }
+    });
+  }, [getProductsOnlyTotal()]); // Déclenché quand le total des produits change
+
   // Notifier le parent des changements pour débloquer le bouton continuer
   useEffect(() => {
     const hasAnySauceSelection = selectedSauces.length > 0 || 
