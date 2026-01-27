@@ -288,9 +288,17 @@ const ComposerSushi = () => {
         });
       } else {
         // All creations completed - add each creation as separate item to cart
+        // For box "3+1 offerte" (24 pieces), the 4th creation is free (only extras cost)
+        const isBox3Plus1 = selectedBox?.id === "box-24";
+        const paidCreationsCount = isBox3Plus1 ? 3 : (selectedBox?.creations || 1);
+        const basePricePerPaidCreation = (selectedBox?.price || 0) / paidCreationsCount;
+        
         updatedCompletedCreations.forEach((creation, index) => {
           const creationExtraCost = calculateCreationExtraCost(creation.enrobages, creation.bases, creation.garnitures, creation.toppings, creation.sauces);
-          const basePrice = (selectedBox?.price || 0) / (selectedBox?.creations || 1);
+          
+          // For box 3+1: first 3 creations have base price, 4th is free (only extras)
+          const isFreeCreation = isBox3Plus1 && index === 3;
+          const basePrice = isFreeCreation ? 0 : basePricePerPaidCreation;
           const finalPrice = basePrice + creationExtraCost;
           
           // Generate unique ID with timestamp and random component
@@ -298,7 +306,7 @@ const ComposerSushi = () => {
           
           const customSushiItem: MenuItem = {
             id: uniqueId,
-            name: `Sushi Créa ${uniqueId.substr(-5)} - Création ${index + 1}`,
+            name: `Sushi Créa ${uniqueId.substr(-5)} - Création ${index + 1}${isFreeCreation ? ' (OFFERTE)' : ''}`,
             description: `Enrobage: ${creation.enrobages.map(e => e.name).join(', ')} | Base: ${creation.bases.map(b => b.name).join(', ')} | Garnitures: ${creation.garnitures.map(g => g.name).join(', ')}${creation.toppings.length > 0 ? ` | Toppings: ${creation.toppings.map(t => t.name).join(', ')}` : ''} | Sauces: ${creation.sauces.map(s => s.name).join(', ')}`,
             price: finalPrice,
             category: "custom",
