@@ -30,7 +30,7 @@ export const BaseSelection = ({ selectedBases, baseOptions, onBaseSelect }: Base
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Choisis ta base (1 incluse, 2 max)</h3>
+      <h3 className="text-xl font-bold mb-4">Choisis la base (intérieur)</h3>
       <p className="text-sm text-gray-500 mb-4">Une base incluse, supplément +1€</p>
       {baseExtraCost > 0 && (
         <p className="text-sm text-gold-600 mb-4">Supplément base : +{baseExtraCost.toFixed(2)}€</p>
