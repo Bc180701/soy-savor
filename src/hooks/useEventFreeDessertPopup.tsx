@@ -68,7 +68,7 @@ export const EventFreeDessertPopupProvider = ({ children }: EventFreeDessertPopu
   }, []);
 
   const triggerFreeDessertOffer = useCallback(async (eventProduct: MenuItem, restaurantId: string) => {
-    console.log('🎁 Déclenchement offre dessert gratuit pour produit événement:', eventProduct.name);
+    console.log('🎁 Ajout automatique dessert gratuit pour produit événement:', eventProduct.name);
     
     // Charger le dessert correspondant au restaurant
     const dessert = await loadFreeDessert(restaurantId);
@@ -77,11 +77,8 @@ export const EventFreeDessertPopupProvider = ({ children }: EventFreeDessertPopu
       setPendingEventProduct(eventProduct);
       setPendingRestaurantId(restaurantId);
       setFreeDessertProduct(dessert);
-      
-      // Petit délai avant d'afficher le popup
-      setTimeout(() => {
-        setShowFreeDessertPopup(true);
-      }, 300);
+      // Afficher immédiatement le popup de confirmation
+      setShowFreeDessertPopup(true);
     }
   }, [loadFreeDessert]);
 

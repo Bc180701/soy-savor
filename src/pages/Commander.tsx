@@ -303,17 +303,11 @@ const CommanderContent = () => {
 
     // 🎁 Vérifier si c'est un produit d'événement avec desserts offerts
     const eventForProduct = isEventProduct(item.id);
-    console.log("🎁 Vérification produit événement:", item.name, "Event:", eventForProduct?.name, "free_desserts_enabled:", eventForProduct?.free_desserts_enabled);
     
     if (eventForProduct && eventForProduct.free_desserts_enabled && currentRestaurant?.id) {
-      console.log("🎁 Produit événement détecté, déclenchement popup dessert gratuit");
       // Ajouter d'abord le produit au panier
       handleBoxAddToCart(item, 1);
-      toast({
-        title: "Ajouté au panier",
-        description: `${item.name} a été ajouté à votre panier`,
-      });
-      // Puis déclencher le popup dessert gratuit
+      // Ajouter automatiquement le dessert gratuit
       triggerFreeDessertOffer(item, currentRestaurant.id);
       return;
     }
