@@ -30,6 +30,7 @@ import commanderHeroImage from "@/assets/commander-hero.jpg";
 import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
 import { useCartEventProducts, filterCategoriesForEventExclusivity } from "@/hooks/useCartEventProducts";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
+import { useEventFreeDessertPopup } from "@/hooks/useEventFreeDessertPopup";
 
 const CommanderContent = () => {
   const { toast } = useToast();
@@ -41,7 +42,8 @@ const CommanderContent = () => {
   
   // Hook pour gérer les produits d'événements spéciaux et l'exclusivité
   const cartEventInfo = useCartEventProducts(currentRestaurant?.id);
-  const { getEventProductIds, activeEvents } = useSpecialEvents(currentRestaurant?.id);
+  const { getEventProductIds, activeEvents, isEventProduct } = useSpecialEvents(currentRestaurant?.id);
+  const { triggerFreeDessertOffer } = useEventFreeDessertPopup();
   
   // Récupérer tous les IDs de produits d'événements actifs
   const allEventProductIds = useMemo(() => {
@@ -296,6 +298,23 @@ const CommanderContent = () => {
         title: "Dessert ajouté !",
         description: `${item.name} ajouté. Choisissez votre boisson offerte !`,
       });
+      return;
+    }
+
+    // 🎁 Vérifier si c'est un produit d'événement avec desserts offerts
+    const eventForProduct = isEventProduct(item.id);
+    console.log("🎁 Vérification produit événement:", item.name, "Event:", eventForProduct?.name, "free_desserts_enabled:", eventForProduct?.free_desserts_enabled);
+    
+    if (eventForProduct && eventForProduct.free_desserts_enabled && currentRestaurant?.id) {
+      console.log("🎁 Produit événement détecté, déclenchement popup dessert gratuit");
+      // Ajouter d'abord le produit au panier
+      handleBoxAddToCart(item, 1);
+      toast({
+        title: "Ajouté au panier",
+        description: `${item.name} a été ajouté à votre panier`,
+      });
+      // Puis déclencher le popup dessert gratuit
+      triggerFreeDessertOffer(item, currentRestaurant.id);
       return;
     }
 
