@@ -21,6 +21,7 @@ import { WineFormatSelector } from "./WineFormatSelector";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
 import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
+import { useEventFreeDessertPopup } from "@/hooks/useEventFreeDessertPopup";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -36,9 +37,10 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
-  const { isEventProduct } = useSpecialEvents(currentRestaurant?.id);
+  const { isEventProduct, activeEvents } = useSpecialEvents(currentRestaurant?.id);
   const cartEventInfo = useCartEventProducts(currentRestaurant?.id);
-  const { eventProductsCount, customFreeDessertId } = useEventFreeDesserts(currentRestaurant?.id);
+  const { eventProductsCount, customFreeDessertId, freeDessertsEnabled } = useEventFreeDesserts(currentRestaurant?.id);
+  const { triggerFreeDessertOffer } = useEventFreeDessertPopup();
   
   // Vérifier si un item dessert doit avoir son prix à 0€
   const isDessertCategory = (categoryId: string) => categoryId?.toLowerCase().includes('dessert');
@@ -244,13 +246,25 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
       return;
     } 
     
+    // Vérifier si c'est un produit d'événement et déclencher l'offre dessert gratuit
+    const eventForProduct = isEventProduct(item.id);
+    const shouldTriggerFreeDessert = eventForProduct && 
+      eventForProduct.free_desserts_enabled && 
+      currentRestaurant?.id;
+    
     console.log("🟩 Pas une box ni wrap box, appel de onAddToCart");
-    // Sinon, ajouter directement au panier
+    // Ajouter directement au panier
     onAddToCart(item);
     toast({
       title: "Ajouté au panier",
       description: `${item.name} a été ajouté à votre panier`,
     });
+    
+    // PRIORITÉ 3: Si c'est un produit événement avec desserts offerts, déclencher le popup
+    if (shouldTriggerFreeDessert && currentRestaurant?.id) {
+      console.log("🎁 Produit événement détecté, déclenchement popup dessert gratuit");
+      triggerFreeDessertOffer(item, currentRestaurant.id);
+    }
     
     // Reset animation after 600ms to allow the +1 message to fade out
     setTimeout(() => {
