@@ -17,7 +17,8 @@ export const SauceSelection = ({ selectedSauces, sauceOptions, onSauceSelect }: 
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Choisis tes sauces (1 incluse, max 3, +0.50€ par ajout)</h3>
+      <h3 className="text-xl font-bold mb-4">Choisis tes sauces (1 incluse, max 3)</h3>
+      <p className="text-sm text-gray-500 mb-4">Une sauce incluse, supplément 0.50€</p>
       {sauceExtraCost > 0 && (
         <p className="text-sm text-gold-600 mb-4">
           Supplément sauces : +{sauceExtraCost.toFixed(2)}€
