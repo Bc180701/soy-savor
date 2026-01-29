@@ -20,7 +20,8 @@ export const ToppingSelection = ({ selectedToppings, toppingOptions, selectedEnr
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Choisis tes toppings (1 inclus, max 3, +0.50€ par ajout)</h3>
+      <h3 className="text-xl font-bold mb-4">Choisis tes toppings (1 inclus, max 3)</h3>
+      <p className="text-sm text-gray-500 mb-4">1 inclus, max 3, +0.50€ par ajout</p>
       {toppingExtraCost > 0 && (
         <p className="text-sm text-gold-600 mb-4">
           Supplément toppings : +{toppingExtraCost.toFixed(2)}€
