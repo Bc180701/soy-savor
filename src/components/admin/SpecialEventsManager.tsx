@@ -41,6 +41,7 @@ interface SpecialEvent {
   image_url: string | null;
   banner_title: string | null;
   banner_description: string | null;
+  free_desserts_enabled: boolean;
 }
 
 interface EventProduct {
@@ -91,6 +92,7 @@ export const SpecialEventsManager = () => {
     banner_title: '',
     banner_description: '',
     is_global: true, // Par défaut global
+    free_desserts_enabled: false, // Desserts offerts quand produit de l'événement dans le panier
   });
   
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
@@ -132,6 +134,7 @@ export const SpecialEventsManager = () => {
       const transformedEvents = (eventsData || []).map(e => ({
         ...e,
         time_slots: (Array.isArray(e.time_slots) ? e.time_slots : []) as unknown as TimeSlot[],
+        free_desserts_enabled: (e as any).free_desserts_enabled ?? false,
       }));
       setEvents(transformedEvents);
 
@@ -193,13 +196,14 @@ export const SpecialEventsManager = () => {
     }
 
     try {
-      const { time_slots, is_global, ...insertData } = formData;
+      const { time_slots, is_global, free_desserts_enabled, ...insertData } = formData;
       const { data, error } = await supabase
         .from('special_events')
         .insert({
           ...insertData,
           restaurant_id: is_global ? null : selectedRestaurantId,
           time_slots: time_slots as unknown as any,
+          free_desserts_enabled,
         })
         .select()
         .single();
@@ -227,6 +231,7 @@ export const SpecialEventsManager = () => {
         banner_title: '',
         banner_description: '',
         is_global: true,
+        free_desserts_enabled: false,
       });
 
       toast({
@@ -528,6 +533,21 @@ export const SpecialEventsManager = () => {
               </div>
             </div>
 
+            {/* Offre desserts offerts */}
+            <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
+              <Gift className="h-5 w-5 text-green-600" />
+              <div className="flex-1">
+                <Label className="font-medium">Desserts offerts</Label>
+                <p className="text-xs text-muted-foreground">
+                  Si activé, tous les desserts passent à 0€ quand un produit de cet événement est dans le panier
+                </p>
+              </div>
+              <Switch
+                checked={formData.free_desserts_enabled}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, free_desserts_enabled: checked }))}
+              />
+            </div>
+
             {/* Bannière d'image */}
             <div className="space-y-3 border rounded-lg p-4">
               <div className="flex items-center gap-2">
@@ -737,6 +757,12 @@ export const SpecialEventsManager = () => {
                       <Store className="h-4 w-4" />
                       <span>Retrait</span>
                     </div>
+                    {(event as any).free_desserts_enabled && (
+                      <Badge className="bg-green-500 gap-1">
+                        <Gift className="h-3 w-3" />
+                        Desserts offerts
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
@@ -862,6 +888,32 @@ export const SpecialEventsManager = () => {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* Toggle desserts offerts pour événement existant */}
+                <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
+                  <Gift className="h-5 w-5 text-green-600" />
+                  <div className="flex-1">
+                    <Label className="font-medium">Desserts offerts</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Tous les desserts passent à 0€ quand un produit de cet événement est dans le panier
+                    </p>
+                  </div>
+                  <Switch
+                    checked={(event as any).free_desserts_enabled || false}
+                    onCheckedChange={async (checked) => {
+                      await supabase
+                        .from('special_events')
+                        .update({ free_desserts_enabled: checked })
+                        .eq('id', event.id);
+                      setEvents(prev => prev.map(ev => 
+                        ev.id === event.id ? { ...ev, free_desserts_enabled: checked } as any : ev
+                      ));
+                      toast({
+                        title: checked ? 'Desserts offerts activés' : 'Desserts offerts désactivés',
+                      });
+                    }}
+                  />
                 </div>
 
                 <div className="border-t pt-4">

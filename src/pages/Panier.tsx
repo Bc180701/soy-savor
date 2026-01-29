@@ -12,6 +12,7 @@ import { CheckoutSteps, CheckoutStep } from "@/components/cart/CheckoutSteps";
 import { type CartExtras } from "@/components/cart/CartExtrasSection";
 import { useCartRestaurant } from "@/hooks/useCartRestaurant";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
+import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
 import { format, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { fr } from "date-fns/locale";
@@ -45,6 +46,9 @@ const PanierContent = () => {
   
   // Detect event products (Christmas, etc.) in the cart
   const eventInfo = useCartEventProducts(cartRestaurant?.id);
+  
+  // Hook pour les desserts offerts événement
+  const { calculateDessertDiscount, freeDessertsEnabled } = useEventFreeDesserts(cartRestaurant?.id);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
   
@@ -138,8 +142,11 @@ const PanierContent = () => {
       : appliedPromoCode.discount
     : 0;
   
+  // Calculer la réduction des desserts offerts par l'événement
+  const eventDessertDiscount = calculateDessertDiscount(items);
+  
   // Le total TTC (sans ajouter de TVA car déjà incluse dans les prix)
-  const orderTotal = subtotal + deliveryFee + tip - discount;
+  const orderTotal = subtotal + deliveryFee + tip - discount - eventDessertDiscount;
   
   // TVA incluse dans le total TTC (10%) - pour affichage uniquement
   const tax = orderTotal / 1.1 * 0.1;
@@ -390,8 +397,8 @@ const PanierContent = () => {
       
       console.log("📅 Heure sélectionnée pour checkout (sans conversion):", localISOString);
       
-      // Recalcule le montant total incluant le pourboire juste avant l'appel à Stripe
-      const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount;
+      // Recalcule le montant total incluant le pourboire et les desserts offerts juste avant l'appel à Stripe
+      const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount - eventDessertDiscount;
       
       // Appel à la fonction edge pour créer la session de paiement - avec restaurant ID
       const { data, error } = await supabase.functions.invoke('create-checkout', {
@@ -401,7 +408,7 @@ const PanierContent = () => {
           tax,
           deliveryFee,
           tip,
-          discount: discount,
+          discount: discount + eventDessertDiscount, // Inclure les desserts offerts dans la réduction
           promoCode: appliedPromoCode?.code,
           total: finalOrderTotal,
           orderType: deliveryInfo.orderType,

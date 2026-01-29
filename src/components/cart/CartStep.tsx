@@ -9,8 +9,10 @@ import { useEffect, useState } from "react";
 import { MenuItem } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Gift } from "lucide-react";
 import { generateProductImageUrl, generateProductImageAlt } from "@/utils/productImageUtils";
+import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
+import { useCartRestaurant } from "@/hooks/useCartRestaurant";
 
 interface CartStepProps {
   items: any[];
@@ -40,7 +42,13 @@ export const CartStep = ({
     addItem
   } = useCart();
   
-  const orderTotal = subtotal - discount;
+  const { cartRestaurant } = useCartRestaurant();
+  const { freeDessertsEnabled, eventName, calculateDessertDiscount } = useEventFreeDesserts(cartRestaurant?.id);
+  
+  // Calculer la réduction des desserts offerts par l'événement
+  const eventDessertDiscount = calculateDessertDiscount(items);
+  
+  const orderTotal = subtotal - discount - eventDessertDiscount;
   const isCartEmpty = items.length === 0;
   
   // Vérifier qu'une SAUCE (gratuite OU payante) a bien été AJOUTÉE au panier via le bouton "Ajouter mes accompagnements"
@@ -172,8 +180,18 @@ export const CartStep = ({
               
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Réduction</span>
+                  <span>Réduction code promo</span>
                   <span>-{formatEuro(discount)}</span>
+                </div>
+              )}
+              
+              {eventDessertDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span className="flex items-center gap-1">
+                    <Gift className="h-4 w-4" />
+                    Desserts offerts ({eventName})
+                  </span>
+                  <span>-{formatEuro(eventDessertDiscount)}</span>
                 </div>
               )}
               
