@@ -50,7 +50,7 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
 
   return (
     <div>
-      <h3 className="text-xl font-bold mb-4">Choisis ton enrobage extérieur</h3>
+      <h3 className="text-xl font-bold mb-4">Choisis l'enrobage (extérieur)</h3>
       <p className="text-sm text-gray-600 mb-4">1 enrobage inclus, supplément +1€</p>
 
       {includedOptions.length > 0 && (
