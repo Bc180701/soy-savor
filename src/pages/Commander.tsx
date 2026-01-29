@@ -301,11 +301,10 @@ const CommanderContent = () => {
       return;
     }
 
-    // 🎁 Vérifier si c'est un produit d'événement avec desserts offerts
+    // 🎁 Vérifier si c'est un produit d'événement - toujours proposer le dessert offert
     const eventForProduct = isEventProduct(item.id);
-    console.log("🎁 Vérification produit événement:", item.name, "Event:", eventForProduct?.name, "free_desserts_enabled:", eventForProduct?.free_desserts_enabled);
     
-    if (eventForProduct && eventForProduct.free_desserts_enabled && currentRestaurant?.id) {
+    if (eventForProduct && currentRestaurant?.id) {
       console.log("🎁 Produit événement détecté, déclenchement popup dessert gratuit");
       // Ajouter d'abord le produit au panier
       handleBoxAddToCart(item, 1);
