@@ -14,7 +14,7 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
   if (enrobageOptions.length === 0) {
     return (
       <div>
-        <h3 className="text-xl font-bold mb-4">Choisis ton enrobage extérieur</h3>
+        <h3 className="text-xl font-bold mb-4">Choisis l'enrobage (extérieur)</h3>
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-gray-600">Aucun enrobage disponible pour le moment.</p>
           <p className="text-sm text-gray-500 mt-2">
