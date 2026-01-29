@@ -12,6 +12,7 @@ interface CartEventInfo {
   pickupEnabled: boolean;
   eventTimeSlots: EventTimeSlot[];
   eventProductIds: string[];
+  freeDessertsEnabled: boolean;
 }
 
 // Helper function to check if a category is allowed with event products
@@ -39,6 +40,7 @@ export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
       pickupEnabled: true,
       eventTimeSlots: [],
       eventProductIds: [],
+      freeDessertsEnabled: false,
     };
 
     if (!items.length) {
@@ -81,6 +83,7 @@ export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
         pickupEnabled: foundEvent.pickup_enabled,
         eventTimeSlots: foundEvent.time_slots || [],
         eventProductIds: getEventProductIds(foundEvent.id),
+        freeDessertsEnabled: foundEvent.free_desserts_enabled || false,
       };
     }
 

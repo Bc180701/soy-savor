@@ -1354,6 +1354,7 @@ export type Database = {
           created_at: string | null
           delivery_enabled: boolean | null
           event_date: string
+          free_desserts_enabled: boolean | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -1374,6 +1375,7 @@ export type Database = {
           created_at?: string | null
           delivery_enabled?: boolean | null
           event_date: string
+          free_desserts_enabled?: boolean | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -1394,6 +1396,7 @@ export type Database = {
           created_at?: string | null
           delivery_enabled?: boolean | null
           event_date?: string
+          free_desserts_enabled?: boolean | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null

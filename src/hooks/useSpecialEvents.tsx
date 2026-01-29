@@ -23,6 +23,7 @@ export interface SpecialEvent {
   image_url: string | null;
   banner_title: string | null;
   banner_description: string | null;
+  free_desserts_enabled: boolean;
 }
 
 export interface EventProduct {
@@ -69,6 +70,7 @@ export const useSpecialEvents = (restaurantId?: string) => {
           ...e,
           delivery_enabled: e.delivery_enabled ?? true,
           pickup_enabled: e.pickup_enabled ?? true,
+          free_desserts_enabled: (e as any).free_desserts_enabled ?? false,
           // Transform time_slots: convert max_orders (snake_case) to maxOrders (camelCase)
           time_slots: Array.isArray(e.time_slots) 
             ? (e.time_slots as any[]).map((slot: any) => ({
