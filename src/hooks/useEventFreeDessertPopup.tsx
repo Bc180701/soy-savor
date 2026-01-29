@@ -78,10 +78,10 @@ export const EventFreeDessertPopupProvider = ({ children }: EventFreeDessertPopu
       setPendingRestaurantId(restaurantId);
       setFreeDessertProduct(dessert);
       
-      // Petit délai avant d'afficher le popup
+      // Délai court avant d'afficher le popup
       setTimeout(() => {
         setShowFreeDessertPopup(true);
-      }, 300);
+      }, 100);
     }
   }, [loadFreeDessert]);
 
