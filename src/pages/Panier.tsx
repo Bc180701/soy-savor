@@ -492,7 +492,7 @@ const PanierContent = () => {
             subtotal={subtotal}
             tax={tax}
             deliveryFee={deliveryFee}
-            discount={discount}
+            discount={discount + eventDessertDiscount}
             appliedPromoCode={appliedPromoCode}
             setAppliedPromoCode={setAppliedPromoCode}
             deliveryInfo={deliveryInfo}
@@ -502,6 +502,8 @@ const PanierContent = () => {
             tip={tip}
             setTip={setTip}
             eventDate={eventInfo.hasEventProducts ? eventInfo.eventDate : undefined}
+            eventDessertDiscount={eventDessertDiscount}
+            eventName={eventInfo.eventName}
           />
         );
       default:

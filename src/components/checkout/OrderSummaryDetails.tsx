@@ -1,8 +1,10 @@
 import { CartItem } from "@/types";
 import { formatEuro } from "@/utils/formatters";
-import { TicketPercent } from "lucide-react";
+import { TicketPercent, Gift } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
+import { useCartRestaurant } from "@/hooks/useCartRestaurant";
 
 interface OrderSummaryDetailsProps {
   items: CartItem[];
@@ -10,7 +12,7 @@ interface OrderSummaryDetailsProps {
   tax: number;
   deliveryFee: number;
   discount: number;
-  tip?: number; // Add tip property
+  tip?: number;
   appliedPromoCode: {
     code: string;
     discount: number;
@@ -32,7 +34,9 @@ interface OrderSummaryDetailsProps {
     id: string;
     name: string;
   }[];
-  eventDate?: string; // Date de l'événement si commande événement (ex: "2025-12-24")
+  eventDate?: string;
+  eventDessertDiscount?: number;
+  eventName?: string | null;
 }
 
 export const OrderSummaryDetails = ({ 
@@ -41,13 +45,18 @@ export const OrderSummaryDetails = ({
   tax, 
   deliveryFee, 
   discount,
-  tip = 0, // Add default value
+  tip = 0,
   appliedPromoCode,
   deliveryInfo,
   allergyOptions,
-  eventDate
+  eventDate,
+  eventDessertDiscount = 0,
+  eventName
 }: OrderSummaryDetailsProps) => {
-  const orderTotal = subtotal + deliveryFee + (tip || 0) - discount; // TVA incluse dans les prix
+  const { cartRestaurant } = useCartRestaurant();
+  const { getFreeDessertInfo } = useEventFreeDesserts(cartRestaurant?.id);
+  
+  const orderTotal = subtotal + deliveryFee + (tip || 0) - discount;
 
   // Formater la date d'affichage (aujourd'hui ou date de l'événement)
   const getDateLabel = () => {
@@ -63,17 +72,31 @@ export const OrderSummaryDetails = ({
       {/* Récapitulatif des articles */}
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-3">Articles</h3>
-        {items.map((item) => (
-          <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex justify-between py-2 border-b">
-            <div>
-              <span className="font-medium">{item.quantity}x</span> {item.menuItem.name}
-              {item.specialInstructions && (
-                <p className="text-sm text-gray-500">{item.specialInstructions}</p>
-              )}
+        {items.map((item) => {
+          const freeDessertInfo = getFreeDessertInfo(item);
+          const { freeQuantity } = freeDessertInfo;
+          const paidQuantity = item.quantity - freeQuantity;
+          const displayPrice = freeQuantity > 0 
+            ? item.menuItem.price * paidQuantity 
+            : item.menuItem.price * item.quantity;
+          
+          return (
+            <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex justify-between py-2 border-b">
+              <div>
+                <span className="font-medium">{item.quantity}x</span> {item.menuItem.name}
+                {freeQuantity > 0 && (
+                  <span className="ml-2 text-green-600 text-sm">
+                    ({freeQuantity} offert{freeQuantity > 1 ? 's' : ''})
+                  </span>
+                )}
+                {item.specialInstructions && (
+                  <p className="text-sm text-gray-500">{item.specialInstructions}</p>
+                )}
+              </div>
+              <span>{formatEuro(displayPrice)}</span>
             </div>
-            <span>{formatEuro(item.menuItem.price * item.quantity)}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
       
       {/* Informations de livraison */}
@@ -163,10 +186,19 @@ export const OrderSummaryDetails = ({
             <span>{formatEuro(tip)}</span>
           </div>
         )}
+        {eventDessertDiscount > 0 && (
+          <div className="flex justify-between mb-2 text-green-600">
+            <span className="flex items-center gap-1">
+              <Gift className="h-4 w-4" />
+              Desserts offerts {eventName ? `(${eventName})` : ''}
+            </span>
+            <span>-{formatEuro(eventDessertDiscount)}</span>
+          </div>
+        )}
         {appliedPromoCode && (
           <div className="flex justify-between mb-2 text-green-600">
-            <span>Réduction</span>
-            <span>-{formatEuro(discount)}</span>
+            <span>Réduction code promo</span>
+            <span>-{formatEuro(discount - eventDessertDiscount)}</span>
           </div>
         )}
         {/* TVA incluse - affichage informatif */}
