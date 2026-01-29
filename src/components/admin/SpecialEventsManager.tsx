@@ -42,6 +42,7 @@ interface SpecialEvent {
   banner_title: string | null;
   banner_description: string | null;
   free_desserts_enabled: boolean;
+  custom_free_dessert_id: string | null;
 }
 
 interface EventProduct {
@@ -93,6 +94,7 @@ export const SpecialEventsManager = () => {
     banner_description: '',
     is_global: true, // Par défaut global
     free_desserts_enabled: false, // Desserts offerts quand produit de l'événement dans le panier
+    custom_free_dessert_id: null as string | null, // Dessert personnalisé offert
   });
   
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
@@ -135,6 +137,7 @@ export const SpecialEventsManager = () => {
         ...e,
         time_slots: (Array.isArray(e.time_slots) ? e.time_slots : []) as unknown as TimeSlot[],
         free_desserts_enabled: (e as any).free_desserts_enabled ?? false,
+        custom_free_dessert_id: (e as any).custom_free_dessert_id ?? null,
       }));
       setEvents(transformedEvents);
 
@@ -196,7 +199,7 @@ export const SpecialEventsManager = () => {
     }
 
     try {
-      const { time_slots, is_global, free_desserts_enabled, ...insertData } = formData;
+      const { time_slots, is_global, free_desserts_enabled, custom_free_dessert_id, ...insertData } = formData;
       const { data, error } = await supabase
         .from('special_events')
         .insert({
@@ -204,6 +207,7 @@ export const SpecialEventsManager = () => {
           restaurant_id: is_global ? null : selectedRestaurantId,
           time_slots: time_slots as unknown as any,
           free_desserts_enabled,
+          custom_free_dessert_id: free_desserts_enabled ? custom_free_dessert_id : null,
         })
         .select()
         .single();
@@ -232,6 +236,7 @@ export const SpecialEventsManager = () => {
         banner_description: '',
         is_global: true,
         free_desserts_enabled: false,
+        custom_free_dessert_id: null,
       });
 
       toast({
@@ -534,18 +539,71 @@ export const SpecialEventsManager = () => {
             </div>
 
             {/* Offre desserts offerts */}
-            <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
-              <Gift className="h-5 w-5 text-green-600" />
-              <div className="flex-1">
-                <Label className="font-medium">Desserts offerts</Label>
-                <p className="text-xs text-muted-foreground">
-                  Si activé, tous les desserts passent à 0€ quand un produit de cet événement est dans le panier
-                </p>
+            <div className="space-y-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-900">
+              <div className="flex items-center gap-3">
+                <Gift className="h-5 w-5 text-green-600" />
+                <div className="flex-1">
+                  <Label className="font-medium">Desserts offerts</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Si activé, les desserts passent à 0€ quand un produit de cet événement est dans le panier (1 produit = 1 dessert offert)
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.free_desserts_enabled}
+                  onCheckedChange={(checked) => setFormData(prev => ({ 
+                    ...prev, 
+                    free_desserts_enabled: checked,
+                    custom_free_dessert_id: checked ? prev.custom_free_dessert_id : null
+                  }))}
+                />
               </div>
-              <Switch
-                checked={formData.free_desserts_enabled}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, free_desserts_enabled: checked }))}
-              />
+              
+              {/* Option dessert personnalisé */}
+              {formData.free_desserts_enabled && (
+                <div className="ml-8 p-3 bg-white dark:bg-gray-900 rounded-lg border border-green-100 dark:border-green-900/50">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Switch
+                      checked={formData.custom_free_dessert_id !== null}
+                      onCheckedChange={(checked) => setFormData(prev => ({ 
+                        ...prev, 
+                        custom_free_dessert_id: checked ? '' : null
+                      }))}
+                    />
+                    <div>
+                      <Label className="font-medium text-sm">Dessert personnalisé uniquement</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Limiter l'offre à un seul produit spécifique
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {formData.custom_free_dessert_id !== null && (
+                    <Select
+                      value={formData.custom_free_dessert_id || ''}
+                      onValueChange={(value) => setFormData(prev => ({ 
+                        ...prev, 
+                        custom_free_dessert_id: value 
+                      }))}
+                    >
+                      <SelectTrigger className="w-full mt-2">
+                        <SelectValue placeholder="Sélectionner le dessert offert..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allProducts
+                          .filter(p => p.category_id?.toLowerCase().includes('dessert'))
+                          .map((product) => {
+                            const restaurant = restaurants.find(r => r.id === product.restaurant_id);
+                            return (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name} {restaurant ? `(${restaurant.name})` : ''}
+                              </SelectItem>
+                            );
+                          })}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Bannière d'image */}
@@ -757,10 +815,12 @@ export const SpecialEventsManager = () => {
                       <Store className="h-4 w-4" />
                       <span>Retrait</span>
                     </div>
-                    {(event as any).free_desserts_enabled && (
+                    {event.free_desserts_enabled && (
                       <Badge className="bg-green-500 gap-1">
                         <Gift className="h-3 w-3" />
-                        Desserts offerts
+                        {event.custom_free_dessert_id 
+                          ? `Dessert offert: ${getProductName(event.custom_free_dessert_id).split(' (')[0]}`
+                          : 'Tous desserts offerts'}
                       </Badge>
                     )}
                   </div>

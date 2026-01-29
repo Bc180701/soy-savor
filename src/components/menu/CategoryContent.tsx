@@ -38,16 +38,25 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const { currentRestaurant } = useRestaurantContext();
   const { isEventProduct } = useSpecialEvents(currentRestaurant?.id);
   const cartEventInfo = useCartEventProducts(currentRestaurant?.id);
-  const { eventProductsCount } = useEventFreeDesserts(currentRestaurant?.id);
+  const { eventProductsCount, customFreeDessertId } = useEventFreeDesserts(currentRestaurant?.id);
   
   // Vérifier si un item dessert doit avoir son prix à 0€
   const isDessertCategory = (categoryId: string) => categoryId?.toLowerCase().includes('dessert');
   const isBoissonCategory = (categoryId: string) => categoryId?.toLowerCase().includes('boisson');
-  const shouldShowFreeDessertPrice = isDessertCategory(category.id) && 
-    !isBoissonCategory(category.id) && 
-    cartEventInfo.freeDessertsEnabled && 
-    cartEventInfo.hasEventProducts &&
-    eventProductsCount > 0;
+  
+  // Fonction pour vérifier si un produit spécifique doit afficher le prix gratuit
+  const shouldShowFreeDessertPriceForItem = (itemId: string) => {
+    if (!isDessertCategory(category.id) || isBoissonCategory(category.id)) return false;
+    if (!cartEventInfo.freeDessertsEnabled || !cartEventInfo.hasEventProducts || eventProductsCount <= 0) return false;
+    
+    // Si un dessert personnalisé est défini, seul ce produit affiche le prix gratuit
+    if (customFreeDessertId) {
+      return itemId === customFreeDessertId;
+    }
+    
+    // Sinon, tous les desserts peuvent être offerts
+    return true;
+  };
   
   // Vérifier si c'est après 14h
   const isAfter2PM = () => {
@@ -482,7 +491,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                             {/* Prix et bouton - En bas de la carte */}
                             <div className="mt-auto">
                               <div className="flex justify-between items-center">
-                                {shouldShowFreeDessertPrice ? (
+                                {shouldShowFreeDessertPriceForItem(item.id) ? (
                                   <div className="flex items-center gap-1">
                                     <Gift className="h-3 w-3 text-green-600" />
                                     <span className="text-sm font-bold text-green-600">0,00€</span>
@@ -662,7 +671,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                               {/* Prix et bouton */}
                               <div className="flex flex-col items-end ml-6">
-                                {shouldShowFreeDessertPrice ? (
+                                {shouldShowFreeDessertPriceForItem(item.id) ? (
                                   <div className="flex flex-col items-end mb-4">
                                     <div className="flex items-center gap-1">
                                       <Gift className="h-4 w-4 text-green-600" />

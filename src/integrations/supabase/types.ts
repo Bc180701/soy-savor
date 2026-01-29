@@ -1352,6 +1352,7 @@ export type Database = {
           banner_description: string | null
           banner_title: string | null
           created_at: string | null
+          custom_free_dessert_id: string | null
           delivery_enabled: boolean | null
           event_date: string
           free_desserts_enabled: boolean | null
@@ -1373,6 +1374,7 @@ export type Database = {
           banner_description?: string | null
           banner_title?: string | null
           created_at?: string | null
+          custom_free_dessert_id?: string | null
           delivery_enabled?: boolean | null
           event_date: string
           free_desserts_enabled?: boolean | null
@@ -1394,6 +1396,7 @@ export type Database = {
           banner_description?: string | null
           banner_title?: string | null
           created_at?: string | null
+          custom_free_dessert_id?: string | null
           delivery_enabled?: boolean | null
           event_date?: string
           free_desserts_enabled?: boolean | null
@@ -1411,6 +1414,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "special_events_custom_free_dessert_id_fkey"
+            columns: ["custom_free_dessert_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "special_events_restaurant_id_fkey"
             columns: ["restaurant_id"]
