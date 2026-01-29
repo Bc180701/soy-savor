@@ -1,4 +1,3 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SushiOption } from "@/types/sushi-creator";
@@ -11,7 +10,7 @@ interface EnrobageSelectionProps {
 
 export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnrobageSelect }: EnrobageSelectionProps) => {
   console.log("EnrobageSelection render - options:", enrobageOptions);
-  
+
   if (enrobageOptions.length === 0) {
     return (
       <div>
@@ -26,10 +25,10 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
     );
   }
 
-  const includedOptions = enrobageOptions.filter(opt => opt.included);
-  const premiumOptions = enrobageOptions.filter(opt => !opt.included);
+  const includedOptions = enrobageOptions.filter((opt) => opt.included);
+  const premiumOptions = enrobageOptions.filter((opt) => !opt.included);
 
-  const isSelected = (option: SushiOption) => selectedEnrobages.some(e => e.id === option.id);
+  const isSelected = (option: SushiOption) => selectedEnrobages.some((e) => e.id === option.id);
   const isMaxReached = selectedEnrobages.length >= 2;
 
   // Calculer le coût total des enrobages
@@ -52,10 +51,8 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis ton enrobage extérieur</h3>
-      <p className="text-sm text-gray-600 mb-4">
-        1 enrobage classique inclus, +1€ pour le 2ème (max 2)
-      </p>
-      
+      <p className="text-sm text-gray-600 mb-4">1 enrobage inclus, supplément +1€</p>
+
       {includedOptions.length > 0 && (
         <>
           <h4 className="font-semibold mb-2">Enrobage classique (inclus) :</h4>
@@ -63,23 +60,23 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
             {includedOptions.map((option) => {
               const selected = isSelected(option);
               const disabled = !selected && isMaxReached;
-              
+
               return (
-                <div 
-                  key={option.id} 
+                <div
+                  key={option.id}
                   className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
-                    selected ? 'border-gold-500 bg-gold-50' : disabled ? 'opacity-50' : 'hover:border-gray-300'
+                    selected ? "border-gold-500 bg-gold-50" : disabled ? "opacity-50" : "hover:border-gray-300"
                   }`}
                 >
-                  <Checkbox 
+                  <Checkbox
                     id={`enrobage-${option.id}`}
                     checked={selected}
                     disabled={disabled}
                     onCheckedChange={() => onEnrobageSelect(option)}
                   />
-                  <Label 
+                  <Label
                     htmlFor={`enrobage-${option.id}`}
-                    className={`flex-1 cursor-pointer ${disabled ? 'cursor-not-allowed' : ''}`}
+                    className={`flex-1 cursor-pointer ${disabled ? "cursor-not-allowed" : ""}`}
                   >
                     <span>{option.name}</span>
                   </Label>
@@ -97,23 +94,23 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
             {premiumOptions.map((option) => {
               const selected = isSelected(option);
               const disabled = !selected && isMaxReached;
-              
+
               return (
-                <div 
-                  key={option.id} 
+                <div
+                  key={option.id}
                   className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
-                    selected ? 'border-gold-500 bg-gold-50' : disabled ? 'opacity-50' : 'hover:border-gray-300'
+                    selected ? "border-gold-500 bg-gold-50" : disabled ? "opacity-50" : "hover:border-gray-300"
                   }`}
                 >
-                  <Checkbox 
+                  <Checkbox
                     id={`enrobage-${option.id}`}
                     checked={selected}
                     disabled={disabled}
                     onCheckedChange={() => onEnrobageSelect(option)}
                   />
-                  <Label 
+                  <Label
                     htmlFor={`enrobage-${option.id}`}
-                    className={`flex-1 cursor-pointer ${disabled ? 'cursor-not-allowed' : ''}`}
+                    className={`flex-1 cursor-pointer ${disabled ? "cursor-not-allowed" : ""}`}
                   >
                     <div className="flex justify-between items-center">
                       <span>{option.name}</span>
