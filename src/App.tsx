@@ -24,6 +24,8 @@ import NosRestaurants from "./pages/NosRestaurants";
 import MentionsLegales from "./pages/MentionsLegales";
 import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import { RestaurantProvider } from "./hooks/useRestaurantContext";
+import { EventFreeDessertPopupProvider } from "./hooks/useEventFreeDessertPopup";
+import { EventFreeDessertPopup } from "./components/menu/EventFreeDessertPopup";
 
 const queryClient = new QueryClient();
 
@@ -32,32 +34,35 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <RestaurantProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route path="/" element={<Layout><Outlet /></Layout>}>
-              <Route index element={<Index />} />
-              <Route path="carte" element={<Carte />} />
-              <Route path="menu" element={<Carte />} />
-              <Route path="commander" element={<Commander />} />
-              <Route path="composer-sushi" element={<ComposerSushi />} />
-              <Route path="composer-poke" element={<ComposerPoke />} />
-              <Route path="panier" element={<Panier />} />
-              <Route path="contact" element={<Contact />} />
-              <Route path="nos-restaurants" element={<NosRestaurants />} />
-              <Route path="compte" element={<Compte />} />
-              <Route path="login" element={<Login />} />
-              <Route path="register" element={<Register />} />
-              <Route path="reset-password" element={<ResetPassword />} />
-              <Route path="update-password" element={<UpdatePassword />} />
-              <Route path="commande-confirmee" element={<CommandeConfirmee />} />
-              <Route path="commande-confirmee/:orderId" element={<CommandeConfirmee />} />
-              <Route path="mentions-legales" element={<MentionsLegales />} />
-              <Route path="politique-confidentialite" element={<PolitiqueConfidentialite />} />
-              <Route path="admin" element={<Admin />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
+          <EventFreeDessertPopupProvider>
+            <Toaster />
+            <Sonner />
+            <EventFreeDessertPopup />
+            <Routes>
+              <Route path="/" element={<Layout><Outlet /></Layout>}>
+                <Route index element={<Index />} />
+                <Route path="carte" element={<Carte />} />
+                <Route path="menu" element={<Carte />} />
+                <Route path="commander" element={<Commander />} />
+                <Route path="composer-sushi" element={<ComposerSushi />} />
+                <Route path="composer-poke" element={<ComposerPoke />} />
+                <Route path="panier" element={<Panier />} />
+                <Route path="contact" element={<Contact />} />
+                <Route path="nos-restaurants" element={<NosRestaurants />} />
+                <Route path="compte" element={<Compte />} />
+                <Route path="login" element={<Login />} />
+                <Route path="register" element={<Register />} />
+                <Route path="reset-password" element={<ResetPassword />} />
+                <Route path="update-password" element={<UpdatePassword />} />
+                <Route path="commande-confirmee" element={<CommandeConfirmee />} />
+                <Route path="commande-confirmee/:orderId" element={<CommandeConfirmee />} />
+                <Route path="mentions-legales" element={<MentionsLegales />} />
+                <Route path="politique-confidentialite" element={<PolitiqueConfidentialite />} />
+                <Route path="admin" element={<Admin />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </EventFreeDessertPopupProvider>
         </RestaurantProvider>
       </BrowserRouter>
     </TooltipProvider>
