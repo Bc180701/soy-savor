@@ -74,21 +74,23 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
       {classicOptions.length > 0 && (
         <>
           <h4 className="font-semibold mb-2">Enrobage classique (inclus) :</h4>
-          <RadioGroup value={selectedClassicId} onValueChange={handleClassicSelect} className="space-y-2 mb-4">
-            {classicOptions.map((option) => (
-              <div
-                key={option.id}
-                className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
-                  isSelected(option) ? "border-gold-500 bg-gold-50" : "hover:border-gray-300"
-                }`}
-              >
-                <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
-                <Label htmlFor={`enrobage-${option.id}`} className="flex-1 cursor-pointer">
-                  <span>{option.name}</span>
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+          <div className="border rounded-lg mb-4 overflow-hidden">
+            <RadioGroup value={selectedClassicId} onValueChange={handleClassicSelect}>
+              {classicOptions.map((option, index) => (
+                <div
+                  key={option.id}
+                  className={`flex items-center space-x-3 p-3 transition-colors ${
+                    isSelected(option) ? "bg-gold-50" : "hover:bg-gray-50"
+                  } ${index < classicOptions.length - 1 ? "border-b" : ""}`}
+                >
+                  <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
+                  <Label htmlFor={`enrobage-${option.id}`} className="flex-1 cursor-pointer">
+                    <span>{option.name}</span>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
         </>
       )}
 
