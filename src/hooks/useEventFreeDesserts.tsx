@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { CartItem } from '@/hooks/use-cart';
 import { useCartEventProducts } from './useCartEventProducts';
+import { useCart } from '@/hooks/use-cart';
 
 interface FreeDessertInfo {
   isFreeDessert: boolean;
@@ -19,21 +20,78 @@ const isBoissonItem = (category: string): boolean => {
 };
 
 export const useEventFreeDesserts = (restaurantId?: string) => {
+  const { items } = useCart();
   const cartEventInfo = useCartEventProducts(restaurantId);
 
-  // Vérifier si un item doit avoir un prix réduit à 0
-  const getFreeDessertInfo = (item: CartItem): FreeDessertInfo => {
+  // Compter le nombre de produits événement dans le panier (en tenant compte des quantités)
+  const eventProductsCount = useMemo(() => {
+    if (!cartEventInfo.hasEventProducts || !cartEventInfo.eventProductIds.length) {
+      return 0;
+    }
+    
+    return items.reduce((count, item) => {
+      if (cartEventInfo.eventProductIds.includes(item.menuItem?.id)) {
+        return count + item.quantity;
+      }
+      return count;
+    }, 0);
+  }, [items, cartEventInfo.eventProductIds, cartEventInfo.hasEventProducts]);
+
+  // Identifier quels desserts sont offerts (limité au nombre de produits événement)
+  const freeDessertItemIds = useMemo(() => {
+    if (!cartEventInfo.freeDessertsEnabled || !cartEventInfo.hasEventProducts || eventProductsCount === 0) {
+      return new Set<string>();
+    }
+
+    const freeIds = new Set<string>();
+    let remainingFreeSlots = eventProductsCount;
+
+    // Parcourir les items du panier et marquer les desserts comme offerts
+    for (const item of items) {
+      if (remainingFreeSlots <= 0) break;
+      
+      const category = item.menuItem?.category || '';
+      if (isDessertItem(category) && !isBoissonItem(category)) {
+        // Calculer combien de ce dessert peuvent être offerts
+        const freeQuantity = Math.min(item.quantity, remainingFreeSlots);
+        if (freeQuantity > 0) {
+          freeIds.add(item.menuItem.id);
+          remainingFreeSlots -= freeQuantity;
+        }
+      }
+    }
+
+    return freeIds;
+  }, [items, cartEventInfo.freeDessertsEnabled, cartEventInfo.hasEventProducts, eventProductsCount]);
+
+  // Vérifier si un item doit avoir un prix réduit à 0 (et combien d'unités)
+  const getFreeDessertInfo = (item: CartItem): FreeDessertInfo & { freeQuantity: number } => {
     const category = item.menuItem?.category || '';
     
-    // Si l'offre desserts offerts est active ET qu'il y a des produits événement dans le panier
-    if (cartEventInfo.freeDessertsEnabled && cartEventInfo.hasEventProducts) {
-      // Seuls les desserts sont offerts, pas les boissons
+    if (cartEventInfo.freeDessertsEnabled && cartEventInfo.hasEventProducts && eventProductsCount > 0) {
       if (isDessertItem(category) && !isBoissonItem(category)) {
-        return {
-          isFreeDessert: true,
-          originalPrice: item.menuItem.price,
-          eventName: cartEventInfo.eventName,
-        };
+        // Calculer combien de desserts gratuits restent avant cet item
+        let freeSlotsBefore = eventProductsCount;
+        
+        for (const otherItem of items) {
+          if (otherItem.menuItem.id === item.menuItem.id) break;
+          
+          const otherCategory = otherItem.menuItem?.category || '';
+          if (isDessertItem(otherCategory) && !isBoissonItem(otherCategory)) {
+            freeSlotsBefore -= otherItem.quantity;
+          }
+        }
+
+        const freeQuantity = Math.max(0, Math.min(item.quantity, freeSlotsBefore));
+        
+        if (freeQuantity > 0) {
+          return {
+            isFreeDessert: true,
+            originalPrice: item.menuItem.price,
+            eventName: cartEventInfo.eventName,
+            freeQuantity,
+          };
+        }
       }
     }
     
@@ -41,64 +99,38 @@ export const useEventFreeDesserts = (restaurantId?: string) => {
       isFreeDessert: false,
       originalPrice: item.menuItem.price,
       eventName: null,
+      freeQuantity: 0,
     };
   };
 
-  // Appliquer les prix gratuits aux desserts dans une liste d'items
-  const applyFreeDessertPrices = (items: CartItem[]): CartItem[] => {
-    if (!cartEventInfo.freeDessertsEnabled || !cartEventInfo.hasEventProducts) {
-      return items;
-    }
-
-    return items.map(item => {
-      const info = getFreeDessertInfo(item);
-      if (info.isFreeDessert) {
-        return {
-          ...item,
-          menuItem: {
-            ...item.menuItem,
-            price: 0,
-            originalPrice: info.originalPrice,
-          },
-          specialInstructions: item.specialInstructions 
-            ? `${item.specialInstructions} - Dessert offert (${info.eventName})`
-            : `Dessert offert (${info.eventName})`,
-        };
-      }
-      return item;
-    });
-  };
-
-  // Calculer le total avec les desserts offerts
-  const calculateTotalWithFreeDesserts = (items: CartItem[]): number => {
-    return items.reduce((total, item) => {
-      const info = getFreeDessertInfo(item);
-      const price = info.isFreeDessert ? 0 : item.menuItem.price;
-      return total + (price * item.quantity);
-    }, 0);
-  };
-
   // Calculer la réduction totale grâce aux desserts offerts
-  const calculateDessertDiscount = (items: CartItem[]): number => {
-    if (!cartEventInfo.freeDessertsEnabled || !cartEventInfo.hasEventProducts) {
+  const calculateDessertDiscount = (cartItems: CartItem[]): number => {
+    if (!cartEventInfo.freeDessertsEnabled || !cartEventInfo.hasEventProducts || eventProductsCount === 0) {
       return 0;
     }
 
-    return items.reduce((discount, item) => {
-      const info = getFreeDessertInfo(item);
-      if (info.isFreeDessert) {
-        return discount + (info.originalPrice * item.quantity);
+    let discount = 0;
+    let remainingFreeSlots = eventProductsCount;
+
+    for (const item of cartItems) {
+      if (remainingFreeSlots <= 0) break;
+      
+      const category = item.menuItem?.category || '';
+      if (isDessertItem(category) && !isBoissonItem(category)) {
+        const freeQuantity = Math.min(item.quantity, remainingFreeSlots);
+        discount += item.menuItem.price * freeQuantity;
+        remainingFreeSlots -= freeQuantity;
       }
-      return discount;
-    }, 0);
+    }
+
+    return discount;
   };
 
   return {
     freeDessertsEnabled: cartEventInfo.freeDessertsEnabled && cartEventInfo.hasEventProducts,
     eventName: cartEventInfo.eventName,
+    eventProductsCount,
     getFreeDessertInfo,
-    applyFreeDessertPrices,
-    calculateTotalWithFreeDesserts,
     calculateDessertDiscount,
     isDessertItem,
     isBoissonItem,

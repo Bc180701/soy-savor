@@ -43,7 +43,7 @@ export const CartStep = ({
   } = useCart();
   
   const { cartRestaurant } = useCartRestaurant();
-  const { freeDessertsEnabled, eventName, calculateDessertDiscount } = useEventFreeDesserts(cartRestaurant?.id);
+  const { freeDessertsEnabled, eventName, eventProductsCount, calculateDessertDiscount } = useEventFreeDesserts(cartRestaurant?.id);
   
   // Calculer la réduction des desserts offerts par l'événement
   const eventDessertDiscount = calculateDessertDiscount(items);
