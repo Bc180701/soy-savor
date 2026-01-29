@@ -2,7 +2,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Heart, Eye } from "lucide-react";
+import { Plus, Pencil, Heart, Eye, Gift } from "lucide-react";
 import { MenuItem, MenuCategory } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -19,6 +19,7 @@ import { useWrapSelection } from "@/hooks/useWrapSelection";
 import { WrapSelectionModal } from "./WrapSelectionModal";
 import { WineFormatSelector } from "./WineFormatSelector";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
+import { useCartEventProducts } from "@/hooks/useCartEventProducts";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -35,6 +36,15 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
   const { isEventProduct } = useSpecialEvents(currentRestaurant?.id);
+  const cartEventInfo = useCartEventProducts(currentRestaurant?.id);
+  
+  // Vérifier si un item dessert doit avoir son prix à 0€
+  const isDessertCategory = (categoryId: string) => categoryId?.toLowerCase().includes('dessert');
+  const isBoissonCategory = (categoryId: string) => categoryId?.toLowerCase().includes('boisson');
+  const shouldShowFreeDessertPrice = isDessertCategory(category.id) && 
+    !isBoissonCategory(category.id) && 
+    cartEventInfo.freeDessertsEnabled && 
+    cartEventInfo.hasEventProducts;
   
   // Vérifier si c'est après 14h
   const isAfter2PM = () => {
@@ -469,9 +479,17 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
                             {/* Prix et bouton - En bas de la carte */}
                             <div className="mt-auto">
                               <div className="flex justify-between items-center">
-                                <span className="text-sm font-bold text-gray-900">
-                                  {item.price.toFixed(2)}€
-                                </span>
+                                {shouldShowFreeDessertPrice ? (
+                                  <div className="flex items-center gap-1">
+                                    <Gift className="h-3 w-3 text-green-600" />
+                                    <span className="text-sm font-bold text-green-600">0,00€</span>
+                                    <span className="text-xs text-gray-400 line-through">{item.price.toFixed(2)}€</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-sm font-bold text-gray-900">
+                                    {item.price.toFixed(2)}€
+                                  </span>
+                                )}
                                 
                                 <div className="relative">
                                   {isCustomProduct(item) ? (
@@ -641,9 +659,19 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
 
                               {/* Prix et bouton */}
                               <div className="flex flex-col items-end ml-6">
-                                <span className="text-lg font-bold text-gray-900 mb-4">
-                                  {item.price.toFixed(2)}€
-                                </span>
+                                {shouldShowFreeDessertPrice ? (
+                                  <div className="flex flex-col items-end mb-4">
+                                    <div className="flex items-center gap-1">
+                                      <Gift className="h-4 w-4 text-green-600" />
+                                      <span className="text-lg font-bold text-green-600">0,00€</span>
+                                    </div>
+                                    <span className="text-sm text-gray-400 line-through">{item.price.toFixed(2)}€</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-lg font-bold text-gray-900 mb-4">
+                                    {item.price.toFixed(2)}€
+                                  </span>
+                                )}
                                 
                                 <div className="relative">
                                   {isCustomProduct(item) ? (
