@@ -7,9 +7,10 @@ interface EnrobageSelectionProps {
   selectedEnrobages: SushiOption[];
   enrobageOptions: SushiOption[];
   onEnrobageSelect: (option: SushiOption) => void;
+  onClassicSelect: (option: SushiOption) => void;
 }
 
-export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnrobageSelect }: EnrobageSelectionProps) => {
+export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnrobageSelect, onClassicSelect }: EnrobageSelectionProps) => {
   console.log("EnrobageSelection render - options:", enrobageOptions);
 
   if (enrobageOptions.length === 0) {
@@ -33,10 +34,9 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
   
   // Compter les enrobages premium sélectionnés
   const selectedPremiumCount = selectedEnrobages.filter((e) => !e.included).length;
-  const selectedClassicCount = selectedEnrobages.filter((e) => e.included).length;
   
-  // Logique: max 1 premium en plus (soit classique + 1 premium, soit premium + 1 premium)
-  const isPremiumMaxReached = selectedPremiumCount >= 1 && selectedEnrobages.length >= 2;
+  // Logique: max 1 premium en plus
+  const isPremiumMaxReached = selectedPremiumCount >= 1;
   
   // On ne peut sélectionner qu'un seul classique (radio)
   const selectedClassicId = selectedEnrobages.find((e) => e.included)?.id || "";
@@ -48,21 +48,11 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
 
   const enrobageCost = calculateEnrobageCost();
 
-  // Handler pour la sélection classique (radio - un seul à la fois)
+  // Handler pour la sélection classique (radio - appelle directement le parent)
   const handleClassicSelect = (optionId: string) => {
     const option = classicOptions.find((o) => o.id === optionId);
     if (option) {
-      // Si on change de classique, on garde les premium sélectionnés
-      const currentPremiums = selectedEnrobages.filter((e) => !e.included);
-      // On simule un toggle pour le nouveau classique
-      if (!isSelected(option)) {
-        // Désélectionner l'ancien classique s'il y en a un
-        const oldClassic = selectedEnrobages.find((e) => e.included);
-        if (oldClassic) {
-          onEnrobageSelect(oldClassic); // désélectionne
-        }
-        onEnrobageSelect(option); // sélectionne le nouveau
-      }
+      onClassicSelect(option);
     }
   };
 

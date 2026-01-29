@@ -121,7 +121,7 @@ const ComposerSushi = () => {
     setSelectedSauces([]);
   };
 
-  // Handle enrobage selection (multiple, 1 included, +1€ for 2nd, max 2)
+  // Handle enrobage premium selection (toggle)
   const handleEnrobageSelect = (option: SushiOption) => {
     const isAlreadySelected = selectedEnrobages.some(item => item.id === option.id);
     
@@ -130,6 +130,15 @@ const ComposerSushi = () => {
     } else if (selectedEnrobages.length < 2) {
       setSelectedEnrobages([...selectedEnrobages, option]);
     }
+  };
+
+  // Handle enrobage classique selection (replace - only one classic at a time)
+  const handleClassicEnrobageSelect = (option: SushiOption) => {
+    setSelectedEnrobages(prev => {
+      // Keep only premiums, replace classic
+      const premiums = prev.filter(item => !item.included);
+      return [option, ...premiums];
+    });
   };
 
   // Handle sauce selection (multiple, 1 included, +0.50€ per extra)
@@ -364,7 +373,7 @@ const ComposerSushi = () => {
       case 1:
         return <BoxSelection selectedBox={selectedBox} boxOptions={boxOptions} onBoxSelect={handleBoxSelect} />;
       case 2:
-        return <EnrobageSelection selectedEnrobages={selectedEnrobages} enrobageOptions={enrobageOptions} onEnrobageSelect={handleEnrobageSelect} />;
+        return <EnrobageSelection selectedEnrobages={selectedEnrobages} enrobageOptions={enrobageOptions} onEnrobageSelect={handleEnrobageSelect} onClassicSelect={handleClassicEnrobageSelect} />;
       case 3:
         return <BaseSelection selectedBases={selectedBases} baseOptions={baseOptions} onBaseSelect={handleBaseSelect} />;
       case 4:
