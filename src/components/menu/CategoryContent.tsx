@@ -248,11 +248,13 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     
     // Vérifier si c'est un produit d'événement et déclencher l'offre dessert gratuit
     const eventForProduct = isEventProduct(item.id);
+    console.log("🎁 Vérification produit événement:", item.name, "Event:", eventForProduct?.name, "free_desserts_enabled:", eventForProduct?.free_desserts_enabled, "restaurant:", currentRestaurant?.id);
+    
     const shouldTriggerFreeDessert = eventForProduct && 
       eventForProduct.free_desserts_enabled && 
       currentRestaurant?.id;
     
-    console.log("🟩 Pas une box ni wrap box, appel de onAddToCart");
+    console.log("🟩 Pas une box ni wrap box, appel de onAddToCart, shouldTriggerFreeDessert:", shouldTriggerFreeDessert);
     // Ajouter directement au panier
     onAddToCart(item);
     toast({
