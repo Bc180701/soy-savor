@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Gift, Calendar, Package, Truck, Store, Clock, ImageIcon, Upload, Globe } from 'lucide-react';
+import { Plus, Trash2, Gift, Calendar, Package, Truck, Store, Clock, ImageIcon, Upload, Globe, Pencil, X, Save } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRestaurantContext } from '@/hooks/useRestaurantContext';
@@ -76,6 +76,7 @@ export const SpecialEventsManager = () => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -251,6 +252,108 @@ export const SpecialEventsManager = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  // Ouvrir le formulaire en mode édition
+  const handleEditEvent = (event: SpecialEvent) => {
+    setFormData({
+      name: event.name,
+      slug: event.slug,
+      event_date: event.event_date,
+      preorder_start: event.preorder_start,
+      preorder_end: event.preorder_end,
+      restrict_menu_on_event: event.restrict_menu_on_event,
+      allowed_categories: event.allowed_categories || DEFAULT_ALLOWED_CATEGORIES,
+      delivery_enabled: event.delivery_enabled,
+      pickup_enabled: event.pickup_enabled,
+      time_slots: event.time_slots.map(s => ({ time: s.time, max_orders: s.max_orders || (s as any).maxOrders || 10 })),
+      image_url: event.image_url || '',
+      banner_title: event.banner_title || '',
+      banner_description: event.banner_description || '',
+      is_global: event.restaurant_id === null,
+      free_desserts_enabled: event.free_desserts_enabled,
+      custom_free_dessert_id: event.custom_free_dessert_id,
+    });
+    setEditingEventId(event.id);
+    setShowForm(true);
+  };
+
+  // Sauvegarder les modifications d'un événement
+  const handleUpdateEvent = async () => {
+    if (!editingEventId) return;
+    
+    if (!formData.name || !formData.slug || !formData.event_date || !formData.preorder_start || !formData.preorder_end) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez remplir tous les champs obligatoires',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { time_slots, is_global, free_desserts_enabled, custom_free_dessert_id, ...updateData } = formData;
+      const { data, error } = await supabase
+        .from('special_events')
+        .update({
+          ...updateData,
+          restaurant_id: is_global ? null : selectedRestaurantId,
+          time_slots: time_slots as unknown as any,
+          free_desserts_enabled,
+          custom_free_dessert_id: free_desserts_enabled ? custom_free_dessert_id : null,
+        })
+        .eq('id', editingEventId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const transformedData = {
+        ...data,
+        time_slots: (Array.isArray(data.time_slots) ? data.time_slots : []) as unknown as TimeSlot[],
+        free_desserts_enabled: data.free_desserts_enabled ?? false,
+        custom_free_dessert_id: data.custom_free_dessert_id ?? null,
+      };
+      
+      setEvents(prev => prev.map(e => e.id === editingEventId ? transformedData : e));
+      resetForm();
+
+      toast({
+        title: 'Succès',
+        description: 'Événement mis à jour avec succès',
+      });
+    } catch (error) {
+      console.error('Error updating event:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de mettre à jour l\'événement',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Réinitialiser le formulaire
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingEventId(null);
+    setFormData({
+      name: '',
+      slug: '',
+      event_date: '',
+      preorder_start: '',
+      preorder_end: '',
+      restrict_menu_on_event: true,
+      allowed_categories: DEFAULT_ALLOWED_CATEGORIES,
+      delivery_enabled: true,
+      pickup_enabled: true,
+      time_slots: [],
+      image_url: '',
+      banner_title: '',
+      banner_description: '',
+      is_global: true,
+      free_desserts_enabled: false,
+      custom_free_dessert_id: null,
+    });
   };
 
   const handleToggleActive = async (eventId: string, isActive: boolean) => {
@@ -434,16 +537,23 @@ export const SpecialEventsManager = () => {
           <Gift className="h-6 w-6 text-red-500" />
           <h2 className="text-2xl font-bold">Événements Spéciaux</h2>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nouvel événement
-        </Button>
+        {!showForm && (
+          <Button onClick={() => { resetForm(); setShowForm(true); }} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nouvel événement
+          </Button>
+        )}
       </div>
 
       {showForm && (
         <Card className="border-2 border-dashed border-primary/50">
-          <CardHeader>
-            <CardTitle className="text-lg">Créer un événement</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">
+              {editingEventId ? 'Modifier l\'événement' : 'Créer un événement'}
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={resetForm}>
+              <X className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Toggle global */}
@@ -742,8 +852,20 @@ export const SpecialEventsManager = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleCreateEvent}>Créer l'événement</Button>
-              <Button variant="outline" onClick={() => setShowForm(false)}>Annuler</Button>
+              {editingEventId ? (
+                <>
+                  <Button onClick={handleUpdateEvent} className="gap-2">
+                    <Save className="h-4 w-4" />
+                    Enregistrer les modifications
+                  </Button>
+                  <Button variant="outline" onClick={resetForm}>Annuler</Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={handleCreateEvent}>Créer l'événement</Button>
+                  <Button variant="outline" onClick={resetForm}>Annuler</Button>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -782,6 +904,14 @@ export const SpecialEventsManager = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => handleEditEvent(event)}
+                    title="Modifier l'événement"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <Switch
                     checked={event.is_active}
                     onCheckedChange={(checked) => handleToggleActive(event.id, checked)}
