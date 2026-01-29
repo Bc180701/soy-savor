@@ -1,19 +1,21 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import { updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, ChefHat, Truck, RefreshCw } from "lucide-react";
+import { FileText, ChefHat, Truck, RefreshCw, CalendarHeart } from "lucide-react";
 import OrdersAccountingView from "./orders/OrdersAccountingView";
 import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
+import OrdersEventView from "./orders/OrdersEventView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useSearchParams } from "react-router-dom";
 import { useOptimizedOrders } from "@/hooks/useOptimizedOrders";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 
 interface OrderListProps {
   defaultTab?: string;
@@ -26,6 +28,9 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { currentRestaurant, isLoading: restaurantLoading } = useRestaurantContext();
+  
+  // Récupérer les événements actifs
+  const { activeEvents } = useSpecialEvents(currentRestaurant?.id);
   
   // Attendre que le contexte restaurant soit initialisé ET stable avant de charger les commandes
   const restaurantId = restaurantLoading ? undefined : (currentRestaurant?.id || null);
@@ -51,6 +56,38 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     isFromCache 
   } = useOptimizedOrders(restaurantId);
 
+  // Filtrer les commandes par événement actif (basé sur la date de l'événement)
+  const eventOrdersMap = useMemo(() => {
+    const map = new Map<string, { event: typeof activeEvents[0]; orders: Order[] }>();
+    
+    activeEvents.forEach(event => {
+      // Filtrer les commandes dont scheduled_for correspond à la date de l'événement
+      const eventDate = event.event_date; // Format YYYY-MM-DD
+      
+      const eventOrders = orders.filter(order => {
+        const orderDate = new Date(order.scheduledFor);
+        const orderDateStr = orderDate.toISOString().split('T')[0];
+        return orderDateStr === eventDate;
+      });
+      
+      if (eventOrders.length > 0 || event.is_active) {
+        map.set(event.id, { event, orders: eventOrders });
+      }
+    });
+    
+    return map;
+  }, [activeEvents, orders]);
+
+  // Commandes normales (exclure les commandes d'événements)
+  const regularOrders = useMemo(() => {
+    const eventDates = new Set(activeEvents.map(e => e.event_date));
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.scheduledFor);
+      const orderDateStr = orderDate.toISOString().split('T')[0];
+      return !eventDates.has(orderDateStr);
+    });
+  }, [orders, activeEvents]);
 
   // Fonction pour mettre à jour l'onglet dans l'URL
   const handleTabChange = useCallback((newTab: string) => {
@@ -159,6 +196,15 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     setSelectedOrder(order);
   }, []);
 
+  // Convertir la map en tableau pour le rendu
+  const activeEventsList = useMemo(() => 
+    Array.from(eventOrdersMap.entries()).map(([id, data]) => ({
+      id,
+      ...data
+    })),
+    [eventOrdersMap]
+  );
+
   return (
     <div className={`${isMobile ? 'w-full px-2' : 'bg-white rounded-lg shadow-md'} overflow-hidden`}>
       {!isMobile && (
@@ -211,7 +257,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
         <Tabs value={activeView} onValueChange={handleTabChange} className="w-full">
           <TabsList 
             variant={isMobile ? "horizontal" : "default"} 
-            className={`${isMobile ? 'w-full rounded-none border-b bg-white p-0 h-auto' : 'mb-6 w-full'}`}
+            className={`${isMobile ? 'w-full rounded-none border-b bg-white p-0 h-auto overflow-x-auto' : 'mb-6 w-full'}`}
           >
             <TabsTrigger 
               variant={isMobile ? "horizontal" : "default"}
@@ -237,12 +283,32 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
               <Truck className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
               <span className={isMobile ? "text-xs" : ""}>Livraison</span>
             </TabsTrigger>
+            
+            {/* Onglets dynamiques pour les événements actifs */}
+            {activeEventsList.map(({ id, event, orders: eventOrders }) => (
+              <TabsTrigger 
+                key={id}
+                variant={isMobile ? "horizontal" : "default"}
+                value={`event-${id}`} 
+                className={`flex items-center gap-2 ${isMobile ? 'flex-1 py-3 text-sm whitespace-nowrap' : ''}`}
+              >
+                <CalendarHeart className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+                <span className={isMobile ? "text-xs" : ""}>
+                  {event.name}
+                  {eventOrders.length > 0 && (
+                    <span className="ml-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                      {eventOrders.length}
+                    </span>
+                  )}
+                </span>
+              </TabsTrigger>
+            ))}
           </TabsList>
           
           <div className={isMobile ? "p-0" : "p-6"}>
             <TabsContent value="accounting" className="mt-0">
               <OrdersAccountingView 
-                orders={orders} 
+                orders={regularOrders} 
                 onViewDetails={handleViewDetails} 
                 onUpdateStatus={handleUpdateStatus} 
               />
@@ -250,7 +316,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
             
             <TabsContent value="kitchen" className="mt-0">
               <OrdersKitchenView 
-                orders={orders} 
+                orders={regularOrders} 
                 onViewDetails={handleViewDetails} 
                 onUpdateStatus={handleUpdateStatus} 
               />
@@ -258,11 +324,23 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
             
             <TabsContent value="delivery" className="mt-0">
               <OrdersDeliveryView 
-                orders={orders} 
+                orders={regularOrders} 
                 onViewDetails={handleViewDetails} 
                 onUpdateStatus={handleUpdateStatus} 
               />
             </TabsContent>
+            
+            {/* Contenus dynamiques pour les événements */}
+            {activeEventsList.map(({ id, event, orders: eventOrders }) => (
+              <TabsContent key={id} value={`event-${id}`} className="mt-0">
+                <OrdersEventView
+                  orders={eventOrders}
+                  eventName={event.name}
+                  onViewDetails={handleViewDetails}
+                  onUpdateStatus={handleUpdateStatus}
+                />
+              </TabsContent>
+            ))}
           </div>
         </Tabs>
       )}
