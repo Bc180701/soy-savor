@@ -1,4 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { SushiOption } from "@/types/sushi-creator";
 
@@ -25,75 +26,80 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
     );
   }
 
-  const includedOptions = enrobageOptions.filter((opt) => opt.included);
+  const classicOptions = enrobageOptions.filter((opt) => opt.included);
   const premiumOptions = enrobageOptions.filter((opt) => !opt.included);
 
   const isSelected = (option: SushiOption) => selectedEnrobages.some((e) => e.id === option.id);
-  const isMaxReached = selectedEnrobages.length >= 2;
+  
+  // Compter les enrobages premium sélectionnés
+  const selectedPremiumCount = selectedEnrobages.filter((e) => !e.included).length;
+  const selectedClassicCount = selectedEnrobages.filter((e) => e.included).length;
+  
+  // Logique: max 1 premium en plus (soit classique + 1 premium, soit premium + 1 premium)
+  const isPremiumMaxReached = selectedPremiumCount >= 1 && selectedEnrobages.length >= 2;
+  
+  // On ne peut sélectionner qu'un seul classique (radio)
+  const selectedClassicId = selectedEnrobages.find((e) => e.included)?.id || "";
 
-  // Calculer le coût total des enrobages
+  // Calculer le coût total des enrobages (seuls les premium coûtent +1€)
   const calculateEnrobageCost = () => {
-    let cost = 0;
-    selectedEnrobages.forEach((enrobage, index) => {
-      if (!enrobage.included) {
-        // Premium enrobage: toujours +1€
-        cost += enrobage.price;
-      } else if (index > 0) {
-        // Enrobage classique en 2ème position: +1€
-        cost += 1;
-      }
-    });
-    return cost;
+    return selectedEnrobages.filter((e) => !e.included).reduce((sum, e) => sum + e.price, 0);
   };
 
   const enrobageCost = calculateEnrobageCost();
 
+  // Handler pour la sélection classique (radio - un seul à la fois)
+  const handleClassicSelect = (optionId: string) => {
+    const option = classicOptions.find((o) => o.id === optionId);
+    if (option) {
+      // Si on change de classique, on garde les premium sélectionnés
+      const currentPremiums = selectedEnrobages.filter((e) => !e.included);
+      // On simule un toggle pour le nouveau classique
+      if (!isSelected(option)) {
+        // Désélectionner l'ancien classique s'il y en a un
+        const oldClassic = selectedEnrobages.find((e) => e.included);
+        if (oldClassic) {
+          onEnrobageSelect(oldClassic); // désélectionne
+        }
+        onEnrobageSelect(option); // sélectionne le nouveau
+      }
+    }
+  };
+
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis l'enrobage (extérieur)</h3>
-      <p className="text-sm text-gray-600 mb-4">1 enrobage inclus, supplément +1€</p>
+      <p className="text-sm text-gray-500 mb-4">1 enrobage inclus, supplément premium +1€</p>
 
-      {includedOptions.length > 0 && (
+      {classicOptions.length > 0 && (
         <>
           <h4 className="font-semibold mb-2">Enrobage classique (inclus) :</h4>
-          <div className="space-y-2 mb-4">
-            {includedOptions.map((option) => {
-              const selected = isSelected(option);
-              const disabled = !selected && isMaxReached;
-
-              return (
-                <div
-                  key={option.id}
-                  className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
-                    selected ? "border-gold-500 bg-gold-50" : disabled ? "opacity-50" : "hover:border-gray-300"
-                  }`}
-                >
-                  <Checkbox
-                    id={`enrobage-${option.id}`}
-                    checked={selected}
-                    disabled={disabled}
-                    onCheckedChange={() => onEnrobageSelect(option)}
-                  />
-                  <Label
-                    htmlFor={`enrobage-${option.id}`}
-                    className={`flex-1 cursor-pointer ${disabled ? "cursor-not-allowed" : ""}`}
-                  >
-                    <span>{option.name}</span>
-                  </Label>
-                </div>
-              );
-            })}
-          </div>
+          <RadioGroup value={selectedClassicId} onValueChange={handleClassicSelect} className="space-y-2 mb-4">
+            {classicOptions.map((option) => (
+              <div
+                key={option.id}
+                className={`flex items-center space-x-3 p-3 border rounded-lg transition-colors ${
+                  isSelected(option) ? "border-gold-500 bg-gold-50" : "hover:border-gray-300"
+                }`}
+              >
+                <RadioGroupItem value={option.id} id={`enrobage-${option.id}`} />
+                <Label htmlFor={`enrobage-${option.id}`} className="flex-1 cursor-pointer">
+                  <span>{option.name}</span>
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
         </>
       )}
 
       {premiumOptions.length > 0 && (
         <>
           <h4 className="font-semibold mt-4 mb-2">Enrobage premium (+1€) :</h4>
+          <p className="text-xs text-gray-500 mb-2">Maximum 1 enrobage premium en supplément</p>
           <div className="space-y-2">
             {premiumOptions.map((option) => {
               const selected = isSelected(option);
-              const disabled = !selected && isMaxReached;
+              const disabled = !selected && isPremiumMaxReached;
 
               return (
                 <div
