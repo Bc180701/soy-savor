@@ -17,7 +17,7 @@ export const BaseSelection = ({ selectedBases, baseOptions, onBaseSelect }: Base
   if (baseOptions.length === 0) {
     return (
       <div>
-        <h3 className="text-xl font-bold mb-4">Choisis ta base (1 incluse, 2 max)</h3>
+        <h3 className="text-xl font-bold mb-4">Choisis la base (intérieur)</h3>
         <div className="p-4 border rounded-lg bg-gray-50">
           <p className="text-gray-600">Aucune base disponible pour le moment.</p>
           <p className="text-sm text-gray-500 mt-2">
