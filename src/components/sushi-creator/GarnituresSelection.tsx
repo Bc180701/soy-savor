@@ -1,4 +1,3 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SushiOption } from "@/types/sushi-creator";
@@ -9,9 +8,13 @@ interface GarnituresSelectionProps {
   onGarnitureSelect: (option: SushiOption) => void;
 }
 
-export const GarnituresSelection = ({ selectedGarnitures, garnituresOptions, onGarnitureSelect }: GarnituresSelectionProps) => {
+export const GarnituresSelection = ({
+  selectedGarnitures,
+  garnituresOptions,
+  onGarnitureSelect,
+}: GarnituresSelectionProps) => {
   console.log("🥗 GarnituresSelection render - options:", garnituresOptions);
-  
+
   if (garnituresOptions.length === 0) {
     return (
       <div>
@@ -32,21 +35,19 @@ export const GarnituresSelection = ({ selectedGarnitures, garnituresOptions, onG
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis tes garnitures (1 incluse, max 3)</h3>
-      <p className="text-sm text-gray-500 mb-4">
-        Le premier choix est inclus, chaque garniture supplémentaire: +0.50€ (max 3)
-      </p>
+      <p className="text-sm text-gray-500 mb-4">Une garniture incluse, supplément 0.50€</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {garnituresOptions.map((option) => {
-          const isSelected = selectedGarnitures.some(item => item.id === option.id);
+          const isSelected = selectedGarnitures.some((item) => item.id === option.id);
           return (
             <div key={option.id} className="flex items-center space-x-2 mb-2">
-              <Checkbox 
-                id={`garniture-${option.id}`} 
+              <Checkbox
+                id={`garniture-${option.id}`}
                 checked={isSelected}
                 onCheckedChange={() => onGarnitureSelect(option)}
                 disabled={!isSelected && isMaxReached}
               />
-              <Label 
+              <Label
                 htmlFor={`garniture-${option.id}`}
                 className={!isSelected && isMaxReached ? "text-gray-400" : "cursor-pointer"}
               >
@@ -58,14 +59,11 @@ export const GarnituresSelection = ({ selectedGarnitures, garnituresOptions, onG
       </div>
       {selectedGarnitures.length > 1 && (
         <p className="text-sm text-gold-600 mt-2">
-          +{((selectedGarnitures.length - 1) * 0.5).toFixed(2)}€ pour {selectedGarnitures.length - 1} garniture(s) supplémentaire(s)
+          +{((selectedGarnitures.length - 1) * 0.5).toFixed(2)}€ pour {selectedGarnitures.length - 1} garniture(s)
+          supplémentaire(s)
         </p>
       )}
-      {isMaxReached && (
-        <p className="text-sm text-amber-600 mt-2">
-          Maximum de 3 garnitures atteint
-        </p>
-      )}
+      {isMaxReached && <p className="text-sm text-amber-600 mt-2">Maximum de 3 garnitures atteint</p>}
     </div>
   );
 };
