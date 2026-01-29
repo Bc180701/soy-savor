@@ -20,6 +20,7 @@ import { WrapSelectionModal } from "./WrapSelectionModal";
 import { WineFormatSelector } from "./WineFormatSelector";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
+import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -37,6 +38,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const { currentRestaurant } = useRestaurantContext();
   const { isEventProduct } = useSpecialEvents(currentRestaurant?.id);
   const cartEventInfo = useCartEventProducts(currentRestaurant?.id);
+  const { eventProductsCount } = useEventFreeDesserts(currentRestaurant?.id);
   
   // Vérifier si un item dessert doit avoir son prix à 0€
   const isDessertCategory = (categoryId: string) => categoryId?.toLowerCase().includes('dessert');
@@ -44,7 +46,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const shouldShowFreeDessertPrice = isDessertCategory(category.id) && 
     !isBoissonCategory(category.id) && 
     cartEventInfo.freeDessertsEnabled && 
-    cartEventInfo.hasEventProducts;
+    cartEventInfo.hasEventProducts &&
+    eventProductsCount > 0;
   
   // Vérifier si c'est après 14h
   const isAfter2PM = () => {

@@ -16,7 +16,7 @@ interface CartItemListProps {
 
 export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemListProps) => {
   const { cartRestaurant } = useCartRestaurant();
-  const { freeDessertsEnabled, eventName, getFreeDessertInfo } = useEventFreeDesserts(cartRestaurant?.id);
+  const { freeDessertsEnabled, eventName, eventProductsCount, getFreeDessertInfo } = useEventFreeDesserts(cartRestaurant?.id);
 
   if (items.length === 0) {
     return (
@@ -36,14 +36,15 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex items-center gap-2">
           <Gift className="h-5 w-5 text-green-600" />
           <p className="text-green-800 text-sm font-medium">
-            🎉 Offre active : Desserts offerts avec {eventName} !
+            🎉 Offre active : {eventProductsCount} dessert{eventProductsCount > 1 ? 's' : ''} offert{eventProductsCount > 1 ? 's' : ''} avec {eventName} !
           </p>
         </div>
       )}
 
       {items.map((item) => {
         const freeDessertInfo = getFreeDessertInfo(item as any);
-        const displayPrice = freeDessertInfo.isFreeDessert ? 0 : item.menuItem.price;
+        const { freeQuantity } = freeDessertInfo;
+        const paidQuantity = item.quantity - freeQuantity;
         
         return (
           <div key={`${item.menuItem.id}-${item.specialInstructions}`} className="flex items-start border-b py-4">
@@ -57,10 +58,10 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="font-medium">{item.menuItem.name}</h3>
-                {freeDessertInfo.isFreeDessert && (
+                {freeDessertInfo.isFreeDessert && freeQuantity > 0 && (
                   <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
                     <Gift className="h-3 w-3" />
-                    Offert
+                    {freeQuantity} offert{freeQuantity > 1 ? 's' : ''}
                   </span>
                 )}
               </div>
@@ -95,15 +96,29 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
               </div>
             </div>
             <div className="text-right">
-              {freeDessertInfo.isFreeDessert ? (
+              {freeDessertInfo.isFreeDessert && freeQuantity > 0 ? (
                 <div>
-                  <p className="font-medium text-green-600">Gratuit</p>
-                  <p className="text-sm text-gray-400 line-through">
-                    {formatEuro(freeDessertInfo.originalPrice * item.quantity)}
-                  </p>
+                  {paidQuantity > 0 ? (
+                    <>
+                      <p className="font-medium">{formatEuro(item.menuItem.price * paidQuantity)}</p>
+                      <p className="text-sm text-green-600">
+                        + {freeQuantity} gratuit{freeQuantity > 1 ? 's' : ''}
+                      </p>
+                      <p className="text-xs text-gray-400 line-through">
+                        {formatEuro(item.menuItem.price * item.quantity)}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium text-green-600">Gratuit</p>
+                      <p className="text-sm text-gray-400 line-through">
+                        {formatEuro(freeDessertInfo.originalPrice * item.quantity)}
+                      </p>
+                    </>
+                  )}
                 </div>
               ) : (
-                <p className="font-medium">{formatEuro(displayPrice * item.quantity)}</p>
+                <p className="font-medium">{formatEuro(item.menuItem.price * item.quantity)}</p>
               )}
               <button
                 className="text-red-500 hover:text-red-700 text-sm mt-1"
