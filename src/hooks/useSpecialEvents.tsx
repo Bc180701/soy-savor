@@ -24,6 +24,7 @@ export interface SpecialEvent {
   banner_title: string | null;
   banner_description: string | null;
   free_desserts_enabled: boolean;
+  custom_free_dessert_id: string | null; // ID du dessert personnalisé offert
 }
 
 export interface EventProduct {
@@ -71,6 +72,7 @@ export const useSpecialEvents = (restaurantId?: string) => {
           delivery_enabled: e.delivery_enabled ?? true,
           pickup_enabled: e.pickup_enabled ?? true,
           free_desserts_enabled: (e as any).free_desserts_enabled ?? false,
+          custom_free_dessert_id: (e as any).custom_free_dessert_id ?? null,
           // Transform time_slots: convert max_orders (snake_case) to maxOrders (camelCase)
           time_slots: Array.isArray(e.time_slots) 
             ? (e.time_slots as any[]).map((slot: any) => ({

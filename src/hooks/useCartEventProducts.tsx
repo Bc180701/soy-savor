@@ -13,6 +13,7 @@ interface CartEventInfo {
   eventTimeSlots: EventTimeSlot[];
   eventProductIds: string[];
   freeDessertsEnabled: boolean;
+  customFreeDessertId: string | null; // ID du dessert personnalisé offert
 }
 
 // Helper function to check if a category is allowed with event products
@@ -41,6 +42,7 @@ export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
       eventTimeSlots: [],
       eventProductIds: [],
       freeDessertsEnabled: false,
+      customFreeDessertId: null,
     };
 
     if (!items.length) {
@@ -84,6 +86,7 @@ export const useCartEventProducts = (restaurantId?: string): CartEventInfo => {
         eventTimeSlots: foundEvent.time_slots || [],
         eventProductIds: getEventProductIds(foundEvent.id),
         freeDessertsEnabled: foundEvent.free_desserts_enabled || false,
+        customFreeDessertId: foundEvent.custom_free_dessert_id || null,
       };
     }
 

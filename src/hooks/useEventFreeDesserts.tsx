@@ -45,32 +45,72 @@ export const useEventFreeDesserts = (restaurantId?: string) => {
 
     const freeIds = new Set<string>();
     let remainingFreeSlots = eventProductsCount;
+    const customDessertId = cartEventInfo.customFreeDessertId;
 
     // Parcourir les items du panier et marquer les desserts comme offerts
     for (const item of items) {
       if (remainingFreeSlots <= 0) break;
       
       const category = item.menuItem?.category || '';
-      if (isDessertItem(category) && !isBoissonItem(category)) {
-        // Calculer combien de ce dessert peuvent être offerts
-        const freeQuantity = Math.min(item.quantity, remainingFreeSlots);
-        if (freeQuantity > 0) {
-          freeIds.add(item.menuItem.id);
-          remainingFreeSlots -= freeQuantity;
+      const productId = item.menuItem?.id;
+      
+      // Si un dessert personnalisé est défini, seul ce produit peut être offert
+      if (customDessertId) {
+        if (productId === customDessertId) {
+          const freeQuantity = Math.min(item.quantity, remainingFreeSlots);
+          if (freeQuantity > 0) {
+            freeIds.add(productId);
+            remainingFreeSlots -= freeQuantity;
+          }
+        }
+      } else {
+        // Sinon, tous les desserts peuvent être offerts
+        if (isDessertItem(category) && !isBoissonItem(category)) {
+          const freeQuantity = Math.min(item.quantity, remainingFreeSlots);
+          if (freeQuantity > 0) {
+            freeIds.add(productId);
+            remainingFreeSlots -= freeQuantity;
+          }
         }
       }
     }
 
     return freeIds;
-  }, [items, cartEventInfo.freeDessertsEnabled, cartEventInfo.hasEventProducts, eventProductsCount]);
+  }, [items, cartEventInfo.freeDessertsEnabled, cartEventInfo.hasEventProducts, eventProductsCount, cartEventInfo.customFreeDessertId]);
 
   // Vérifier si un item doit avoir un prix réduit à 0 (et combien d'unités)
   const getFreeDessertInfo = (item: CartItem): FreeDessertInfo & { freeQuantity: number } => {
     const category = item.menuItem?.category || '';
+    const productId = item.menuItem?.id;
+    const customDessertId = cartEventInfo.customFreeDessertId;
     
     if (cartEventInfo.freeDessertsEnabled && cartEventInfo.hasEventProducts && eventProductsCount > 0) {
-      if (isDessertItem(category) && !isBoissonItem(category)) {
-        // Calculer combien de desserts gratuits restent avant cet item
+      // Si dessert personnalisé défini, seul ce produit peut être offert
+      if (customDessertId) {
+        if (productId === customDessertId) {
+          // Calculer combien de ce dessert gratuits restent avant cet item
+          let freeSlotsBefore = eventProductsCount;
+          
+          for (const otherItem of items) {
+            if (otherItem.menuItem.id === item.menuItem.id) break;
+            if (otherItem.menuItem.id === customDessertId) {
+              freeSlotsBefore -= otherItem.quantity;
+            }
+          }
+
+          const freeQuantity = Math.max(0, Math.min(item.quantity, freeSlotsBefore));
+          
+          if (freeQuantity > 0) {
+            return {
+              isFreeDessert: true,
+              originalPrice: item.menuItem.price,
+              eventName: cartEventInfo.eventName,
+              freeQuantity,
+            };
+          }
+        }
+      } else if (isDessertItem(category) && !isBoissonItem(category)) {
+        // Sinon, tous les desserts peuvent être offerts
         let freeSlotsBefore = eventProductsCount;
         
         for (const otherItem of items) {
@@ -111,12 +151,22 @@ export const useEventFreeDesserts = (restaurantId?: string) => {
 
     let discount = 0;
     let remainingFreeSlots = eventProductsCount;
+    const customDessertId = cartEventInfo.customFreeDessertId;
 
     for (const item of cartItems) {
       if (remainingFreeSlots <= 0) break;
       
       const category = item.menuItem?.category || '';
-      if (isDessertItem(category) && !isBoissonItem(category)) {
+      const productId = item.menuItem?.id;
+      
+      // Si dessert personnalisé défini, seul ce produit peut être offert
+      if (customDessertId) {
+        if (productId === customDessertId) {
+          const freeQuantity = Math.min(item.quantity, remainingFreeSlots);
+          discount += item.menuItem.price * freeQuantity;
+          remainingFreeSlots -= freeQuantity;
+        }
+      } else if (isDessertItem(category) && !isBoissonItem(category)) {
         const freeQuantity = Math.min(item.quantity, remainingFreeSlots);
         discount += item.menuItem.price * freeQuantity;
         remainingFreeSlots -= freeQuantity;
@@ -134,5 +184,6 @@ export const useEventFreeDesserts = (restaurantId?: string) => {
     calculateDessertDiscount,
     isDessertItem,
     isBoissonItem,
+    customFreeDessertId: cartEventInfo.customFreeDessertId,
   };
 };
