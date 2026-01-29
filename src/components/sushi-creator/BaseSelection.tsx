@@ -1,4 +1,3 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SushiOption } from "@/types/sushi-creator";
@@ -11,10 +10,10 @@ interface BaseSelectionProps {
 
 export const BaseSelection = ({ selectedBases, baseOptions, onBaseSelect }: BaseSelectionProps) => {
   console.log("BaseSelection render - options:", baseOptions);
-  
+
   // Calculer le coût des bases (1 incluse, +1€ pour la 2ème, max 2)
   const baseExtraCost = selectedBases.length > 1 ? 1 : 0;
-  
+
   if (baseOptions.length === 0) {
     return (
       <div>
@@ -32,21 +31,17 @@ export const BaseSelection = ({ selectedBases, baseOptions, onBaseSelect }: Base
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis ta base (1 incluse, 2 max)</h3>
-      <p className="text-sm text-gray-500 mb-4">
-        La première base est incluse, 2ème base: +1€
-      </p>
+      <p className="text-sm text-gray-500 mb-4">Une base incluse, supplément +1€</p>
       {baseExtraCost > 0 && (
-        <p className="text-sm text-gold-600 mb-4">
-          Supplément base : +{baseExtraCost.toFixed(2)}€
-        </p>
+        <p className="text-sm text-gold-600 mb-4">Supplément base : +{baseExtraCost.toFixed(2)}€</p>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {baseOptions.map((option) => {
-          const isSelected = selectedBases.some(b => b.id === option.id);
+          const isSelected = selectedBases.some((b) => b.id === option.id);
           const isDisabled = !isSelected && selectedBases.length >= 2;
           return (
             <div key={option.id} className="flex items-center space-x-2 mb-2">
-              <Checkbox 
+              <Checkbox
                 id={`base-${option.id}`}
                 checked={isSelected}
                 onCheckedChange={() => {
@@ -56,10 +51,7 @@ export const BaseSelection = ({ selectedBases, baseOptions, onBaseSelect }: Base
                 }}
                 disabled={isDisabled}
               />
-              <Label 
-                htmlFor={`base-${option.id}`}
-                className={isDisabled ? "text-gray-400" : "cursor-pointer"}
-              >
+              <Label htmlFor={`base-${option.id}`} className={isDisabled ? "text-gray-400" : "cursor-pointer"}>
                 {option.name}
               </Label>
             </div>
