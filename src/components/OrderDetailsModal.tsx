@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { fetchOrderWithDetails } from "@/integrations/supabase/client";
 import { supabase } from "@/integrations/supabase/client";
-import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare, Calendar, Gift } from "lucide-react";
+import { ClipboardList, Clock, MapPin, Mail, User, Phone, CreditCard, AlertCircle, MessageSquare, Calendar, Gift, ShoppingBag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Order } from "@/types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -33,6 +33,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
   const [customerDetails, setCustomerDetails] = useState<any | null>(null);
   const [addressDetails, setAddressDetails] = useState<any | null>(null);
   const [cartBackupItems, setCartBackupItems] = useState<any[]>([]);
+  const [customerOrderCount, setCustomerOrderCount] = useState<number>(0);
 
   useEffect(() => {
     if (order && open) {
@@ -62,6 +63,36 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     }
   };
 
+  const fetchCustomerOrderCount = async (email: string, phone: string) => {
+    try {
+      // Compter les commandes par email OU par téléphone (pour les clients récurrents)
+      let query = supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('payment_status', 'paid');
+      
+      if (email) {
+        query = query.eq('client_email', email);
+      } else if (phone) {
+        query = query.eq('client_phone', phone);
+      } else {
+        return 0;
+      }
+      
+      const { count, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching customer order count:', error);
+        return 0;
+      }
+      
+      return count || 0;
+    } catch (error) {
+      console.error('Error fetching customer order count:', error);
+      return 0;
+    }
+  };
+
   const fetchOrderDetails = async (orderId: string) => {
     if (!orderId) return;
     
@@ -81,6 +112,13 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         } else {
           setCartBackupItems([]);
         }
+        
+        // Récupérer le nombre de commandes du client
+        const orderCount = await fetchCustomerOrderCount(
+          completeOrderDetails.client_email,
+          completeOrderDetails.client_phone
+        );
+        setCustomerOrderCount(orderCount);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des détails de la commande:", error);
@@ -277,6 +315,12 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
                       {getClientName()}
+                      {customerOrderCount > 0 && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          <ShoppingBag className="h-3 w-3 mr-1" />
+                          {customerOrderCount} commande{customerOrderCount > 1 ? 's' : ''}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
@@ -563,6 +607,12 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
                     {getClientName()}
+                    {customerOrderCount > 0 && (
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        <ShoppingBag className="h-3 w-3 mr-1" />
+                        {customerOrderCount} commande{customerOrderCount > 1 ? 's' : ''}
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
