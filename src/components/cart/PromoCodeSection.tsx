@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TicketPercent, X, Loader2, CheckCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { validatePromoCode, recordPromoCodeUsage } from "@/services/deliveryService";
 import { formatEuro } from "@/utils/formatters";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PromoCodeSectionProps {
   appliedPromoCode: {
@@ -25,7 +26,17 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
   const [promoCode, setPromoCode] = useState<string>("");
   const [promoCodeLoading, setPromoCodeLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const { toast } = useToast();
+
+  // Vérifier si l'utilisateur est réellement connecté (pas juste un email rempli)
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session?.user);
+    };
+    checkAuth();
+  }, []);
 
   const handleApplyPromoCode = async () => {
     if (!promoCode.trim()) return;
@@ -102,8 +113,8 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
   return (
     <div className="border-t pt-4 mb-4">
       <div className="flex flex-col space-y-4">
-        {/* Message promo visible pour les utilisateurs non connectés - AU DESSUS du titre */}
-        {!userEmail && !appliedPromoCode && (
+        {/* Message promo visible pour les utilisateurs NON CONNECTÉS */}
+        {!isLoggedIn && !appliedPromoCode && (
           <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-400 rounded-xl p-4 text-center shadow-sm">
             <p className="text-xl font-bold text-amber-700 mb-1">
               🎁 -10% sur votre 1ère commande !
