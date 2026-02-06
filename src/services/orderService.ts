@@ -326,7 +326,8 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
         client_email,
         delivery_street,
         delivery_city,
-        delivery_postal_code
+        delivery_postal_code,
+        items_summary
       `)
       .order('created_at', { ascending: false });
 
@@ -402,6 +403,7 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       deliveryStreet: order.delivery_street || undefined,
       deliveryCity: order.delivery_city || undefined,
       deliveryPostalCode: order.delivery_postal_code || undefined,
+      itemsSummary: Array.isArray(order.items_summary) ? order.items_summary : [], // Fallback pour impression
       items: [] // Nous allons les récupérer séparément
     }));
 
