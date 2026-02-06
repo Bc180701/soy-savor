@@ -35,7 +35,7 @@ export const GarnituresSelection = ({
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis la garniture (intérieur)</h3>
-      <p className="text-sm text-gray-500 mb-4">Une garniture incluse, supplément 0.50€</p>
+      <p className="text-sm text-gray-500 mb-4">Une garniture incluse, supplément 0.50€ (max 3)</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {garnituresOptions.map((option) => {
           const isSelected = selectedGarnitures.some((item) => item.id === option.id);
