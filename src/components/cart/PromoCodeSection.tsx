@@ -102,6 +102,18 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
   return (
     <div className="border-t pt-4 mb-4">
       <div className="flex flex-col space-y-4">
+        {/* Message promo visible pour les utilisateurs non connectés - AU DESSUS du titre */}
+        {!userEmail && !appliedPromoCode && (
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-400 rounded-xl p-4 text-center shadow-sm">
+            <p className="text-xl font-bold text-amber-700 mb-1">
+              🎁 -10% sur votre 1ère commande !
+            </p>
+            <p className="text-sm text-amber-600">
+              Créez un compte client pour bénéficier de cette offre exclusive
+            </p>
+          </div>
+        )}
+        
         <h3 className="text-lg font-medium">Code promo</h3>
         
         {appliedPromoCode ? (
@@ -158,16 +170,6 @@ export const PromoCodeSection = ({ appliedPromoCode, setAppliedPromoCode, userEm
                 {errorMessage}
               </div>
             )}
-          </div>
-        )}
-        {!userEmail && !appliedPromoCode && (
-          <div className="bg-gradient-to-r from-gold-100 to-amber-100 border-2 border-gold-400 rounded-lg p-4 text-center">
-            <p className="text-lg font-bold text-gold-700 mb-1">
-              🎁 Profitez de -10% sur votre 1ère commande !
-            </p>
-            <p className="text-sm text-gold-600">
-              Créez un compte client pour bénéficier de cette offre exclusive
-            </p>
           </div>
         )}
       </div>
