@@ -80,18 +80,33 @@ export const DeliveryStep = ({
   const eventInfo = useCartEventProducts(cartRestaurant?.id);
   
   // Detect if there's a product from "Box du Midi" category - restrict to morning slots only
-  // Category IDs may have restaurant suffixes (e.g., box-du-midi_stmartin)
+  // Category IDs may have restaurant suffixes (e.g., box_du_midi_stmartin)
   const { items: cartItems } = useCart();
+  
+  // Debug: log all cart items categories
+  console.log("🛒 [DeliveryStep] Articles du panier:", cartItems.map(item => ({
+    name: item.menuItem.name,
+    category: item.menuItem.category,
+    allFields: Object.keys(item.menuItem)
+  })));
+  
   const hasBoxDuMidi = cartItems.some(item => {
     const category = String(item.menuItem.category || "").toLowerCase();
-    // Check for box_du_midi or box-du-midi category (with possible restaurant suffix)
-    return category.includes("box_du_midi") || 
-           category.includes("box-du-midi") ||
-           category.includes("boxdumidi");
+    console.log(`🔍 Vérification catégorie: "${category}" pour produit "${item.menuItem.name}"`);
+    // Check for box_du_midi category (with possible restaurant suffix)
+    const isBoxDuMidi = category.includes("box_du_midi") || 
+                        category.includes("box-du-midi") ||
+                        category.includes("boxdumidi");
+    if (isBoxDuMidi) {
+      console.log(`✅ Produit Box du Midi trouvé: ${item.menuItem.name}`);
+    }
+    return isBoxDuMidi;
   });
   
   if (hasBoxDuMidi) {
     console.log("🍱 [DeliveryStep] Produit catégorie Box du Midi détecté - restriction aux créneaux du matin");
+  } else {
+    console.log("❌ [DeliveryStep] Aucun produit Box du Midi détecté");
   }
   
   // Auto-switch to pickup if delivery is disabled for this event
