@@ -79,14 +79,19 @@ export const DeliveryStep = ({
   // Detect event products in cart (Christmas, etc.)
   const eventInfo = useCartEventProducts(cartRestaurant?.id);
   
-  // Detect if there's a "Box du Midi" in the cart - restrict to morning slots only
+  // Detect if there's a "Box du Midi" or "Lunch Box" in the cart - restrict to morning slots only
   const { items: cartItems } = useCart();
-  const hasBoxDuMidi = cartItems.some(item => 
-    item.menuItem.name.toLowerCase().includes("box du midi")
-  );
+  const hasBoxDuMidi = cartItems.some(item => {
+    const productName = item.menuItem.name.toLowerCase();
+    const category = (item.menuItem.category || "").toLowerCase();
+    return productName.includes("box du midi") || 
+           productName.includes("lunch box") ||
+           category.includes("box-du-midi") ||
+           category.includes("box du midi");
+  });
   
   if (hasBoxDuMidi) {
-    console.log("🍱 [DeliveryStep] Box du Midi détectée - restriction aux créneaux du matin");
+    console.log("🍱 [DeliveryStep] Box du Midi/Lunch Box détectée - restriction aux créneaux du matin");
   }
   
   // Auto-switch to pickup if delivery is disabled for this event
