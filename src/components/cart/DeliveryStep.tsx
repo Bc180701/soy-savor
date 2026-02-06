@@ -17,6 +17,7 @@ import { Restaurant } from "@/types/restaurant";
 import { type CartExtras } from "./CartExtrasSection";
 import { User, Mail, Phone, MapPin, Clock, MessageSquare, AlertCircle, CheckCircle2, TruckIcon, Gift, CalendarDays } from "lucide-react";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
+import { useCart } from "@/hooks/use-cart";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -77,6 +78,16 @@ export const DeliveryStep = ({
   
   // Detect event products in cart (Christmas, etc.)
   const eventInfo = useCartEventProducts(cartRestaurant?.id);
+  
+  // Detect if there's a "Box du Midi" in the cart - restrict to morning slots only
+  const { items: cartItems } = useCart();
+  const hasBoxDuMidi = cartItems.some(item => 
+    item.menuItem.name.toLowerCase().includes("box du midi")
+  );
+  
+  if (hasBoxDuMidi) {
+    console.log("🍱 [DeliveryStep] Box du Midi détectée - restriction aux créneaux du matin");
+  }
   
   // Auto-switch to pickup if delivery is disabled for this event
   useEffect(() => {
@@ -686,6 +697,7 @@ export const DeliveryStep = ({
             targetDate={eventInfo.hasEventProducts ? eventInfo.eventDate ?? undefined : undefined}
             eventName={eventInfo.hasEventProducts ? eventInfo.eventName ?? undefined : undefined}
             eventTimeSlots={eventInfo.hasEventProducts ? eventInfo.eventTimeSlots : undefined}
+            restrictToMorningSlots={hasBoxDuMidi}
           />
         </CardContent>
       </Card>

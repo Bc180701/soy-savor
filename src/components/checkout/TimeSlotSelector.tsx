@@ -24,6 +24,8 @@ interface TimeSlotSelectorProps {
   targetDate?: string; // Format: "2025-12-24" - for preorder mode
   eventName?: string; // e.g., "Noël"
   eventTimeSlots?: EventTimeSlot[]; // Custom time slots for the event
+  // Restrict to morning slots only (slot_number === 1) - used for Box du Midi
+  restrictToMorningSlots?: boolean;
 }
 
 const TimeSlotSelector = ({ 
@@ -33,7 +35,8 @@ const TimeSlotSelector = ({
   cartRestaurant,
   targetDate,
   eventName,
-  eventTimeSlots
+  eventTimeSlots,
+  restrictToMorningSlots = false
 }: TimeSlotSelectorProps) => {
   const [timeSlots, setTimeSlots] = useState<TimeOption[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(selectedTime || null);
@@ -63,8 +66,8 @@ const TimeSlotSelector = ({
 
   // Generate a unique key for the current fetch parameters
   const fetchKey = useMemo(() => 
-    `${cartRestaurant?.id}-${targetDate}-${orderType}-${eventTimeSlotsKey}`,
-    [cartRestaurant?.id, targetDate, orderType, eventTimeSlotsKey]
+    `${cartRestaurant?.id}-${targetDate}-${orderType}-${eventTimeSlotsKey}-${restrictToMorningSlots}`,
+    [cartRestaurant?.id, targetDate, orderType, eventTimeSlotsKey, restrictToMorningSlots]
   );
 
   useEffect(() => {
@@ -360,9 +363,15 @@ const TimeSlotSelector = ({
     const slots: TimeOption[] = [];
     
     // Filtrer seulement les créneaux ouverts
-    const openSlots = todayOpeningHours.filter(slot => slot.is_open);
+    // Si restrictToMorningSlots est true (Box du Midi), on filtre pour n'avoir que le slot 1 (matin)
+    let openSlots = todayOpeningHours.filter(slot => slot.is_open);
+    
+    if (restrictToMorningSlots) {
+      openSlots = openSlots.filter(slot => slot.slot_number === 1);
+      console.log("🍱 [TimeSlotSelector] Restriction Box du Midi: créneaux matin uniquement (slot 1)");
+    }
 
-    console.log("🔍 [TimeSlotSelector] Créneaux ouverts trouvés:", openSlots.length);
+    console.log("🔍 [TimeSlotSelector] Créneaux ouverts trouvés:", openSlots.length, restrictToMorningSlots ? "(matin uniquement)" : "");
 
     // Si aucun créneau n'est ouvert aujourd'hui
     if (openSlots.length === 0) {
