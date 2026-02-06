@@ -283,22 +283,29 @@ const PanierContent = () => {
 
       // 💾 SAUVEGARDE PRÉVENTIVE DU PANIER AVANT LE CHECKOUT
       console.log("💾 Sauvegarde préventive du panier...");
-      try {
-        const { error: backupError } = await supabase
-          .from('cart_backup')
-          .insert({
-            session_id: deliveryInfo.email || 'anonymous',
-            cart_items: items as any,
-            restaurant_id: cartRestaurant?.id || selectedRestaurantId || ''
-          });
-        
-        if (backupError) {
-          console.error("Erreur lors de la sauvegarde du panier:", backupError);
-        } else {
-          console.log("✅ Panier sauvegardé avec succès pour:", deliveryInfo.email);
+      const restaurantIdForBackup = cartRestaurant?.id || selectedRestaurantId;
+      
+      // Validation : ne pas insérer si pas de restaurant_id valide (UUID = 36 chars)
+      if (!restaurantIdForBackup || restaurantIdForBackup.length < 10) {
+        console.warn("⚠️ Pas de restaurant_id valide, sauvegarde du panier impossible");
+      } else {
+        try {
+          const { error: backupError } = await supabase
+            .from('cart_backup')
+            .insert({
+              session_id: deliveryInfo.email || 'anonymous',
+              cart_items: items as any,
+              restaurant_id: restaurantIdForBackup
+            });
+          
+          if (backupError) {
+            console.error("Erreur lors de la sauvegarde du panier:", backupError);
+          } else {
+            console.log("✅ Panier sauvegardé avec succès pour:", deliveryInfo.email);
+          }
+        } catch (backupError) {
+          console.error("Erreur critique lors de la sauvegarde:", backupError);
         }
-      } catch (backupError) {
-        console.error("Erreur critique lors de la sauvegarde:", backupError);
       }
 
       // 🚨 VÉRIFICATION FINALE DU CRÉNEAU AVANT PAIEMENT

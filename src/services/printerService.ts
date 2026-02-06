@@ -56,8 +56,16 @@ export async function sendOrderToPrinter(order: Order): Promise<{
     // Préparer les articles à imprimer
     const items: PrintItem[] = [];
     
+    // Log des sources de données disponibles pour debug
+    console.log('🔍 [PRINT] Sources de données disponibles:', {
+      cartBackupItems: order.cartBackupItems?.length || 0,
+      itemsSummary: order.itemsSummary?.length || 0,
+      items: order.items?.length || 0
+    });
+    
     // Utiliser cart_backup en priorité (le plus complet)
     if (order.cartBackupItems && order.cartBackupItems.length > 0) {
+      console.log('📦 [PRINT] Utilisation de cartBackupItems');
       order.cartBackupItems.forEach((item: any) => {
         items.push({
           name: item.menuItem?.name || 'Produit',
@@ -68,8 +76,9 @@ export async function sendOrderToPrinter(order: Order): Promise<{
         });
       });
     } 
-    // Sinon utiliser itemsSummary
+    // Sinon utiliser itemsSummary (fallback principal)
     else if (order.itemsSummary && order.itemsSummary.length > 0) {
+      console.log('📦 [PRINT] Utilisation de itemsSummary (fallback)');
       order.itemsSummary.forEach((item: any) => {
         items.push({
           name: item.name || 'Produit',
@@ -80,8 +89,9 @@ export async function sendOrderToPrinter(order: Order): Promise<{
         });
       });
     }
-    // Fallback sur items
+    // Fallback sur items (dernier recours)
     else if (order.items && order.items.length > 0) {
+      console.log('📦 [PRINT] Utilisation de items (dernier recours)');
       order.items.forEach((item: any) => {
         items.push({
           name: item.name || 'Produit',
@@ -91,6 +101,8 @@ export async function sendOrderToPrinter(order: Order): Promise<{
           specialInstructions: item.special_instructions || '',
         });
       });
+    } else {
+      console.error('❌ [PRINT] Aucune source de données pour les articles !');
     }
 
     // Préparer les données de la commande avec l'ID du restaurant
