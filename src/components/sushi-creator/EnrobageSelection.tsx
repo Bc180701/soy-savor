@@ -10,7 +10,12 @@ interface EnrobageSelectionProps {
   onClassicSelect: (option: SushiOption) => void;
 }
 
-export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnrobageSelect, onClassicSelect }: EnrobageSelectionProps) => {
+export const EnrobageSelection = ({
+  selectedEnrobages,
+  enrobageOptions,
+  onEnrobageSelect,
+  onClassicSelect,
+}: EnrobageSelectionProps) => {
   console.log("EnrobageSelection render - options:", enrobageOptions);
 
   if (enrobageOptions.length === 0) {
@@ -31,13 +36,13 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
   const premiumOptions = enrobageOptions.filter((opt) => !opt.included);
 
   const isSelected = (option: SushiOption) => selectedEnrobages.some((e) => e.id === option.id);
-  
+
   // Compter les enrobages premium sélectionnés
   const selectedPremiumCount = selectedEnrobages.filter((e) => !e.included).length;
-  
+
   // Logique: max 1 premium en plus
   const isPremiumMaxReached = selectedPremiumCount >= 1;
-  
+
   // On ne peut sélectionner qu'un seul classique (radio)
   const selectedClassicId = selectedEnrobages.find((e) => e.included)?.id || "";
 
@@ -59,7 +64,7 @@ export const EnrobageSelection = ({ selectedEnrobages, enrobageOptions, onEnroba
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis l'enrobage (extérieur)</h3>
-      <p className="text-sm text-gray-500 mb-4">1 enrobage inclus, supplément premium +1€</p>
+      <p className="text-sm text-gray-500 mb-4">1 enrobage inclus, supplément +1€ (max 2)</p>
 
       {classicOptions.length > 0 && (
         <>
