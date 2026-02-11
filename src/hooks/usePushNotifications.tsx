@@ -62,7 +62,7 @@ export const usePushNotifications = (restaurantId: string | null) => {
     
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
       setIsSubscribed(!!subscription);
     } catch (err) {
       console.error('Erreur vérification subscription:', err);
@@ -103,7 +103,7 @@ export const usePushNotifications = (restaurantId: string | null) => {
       console.log('[Push] Service Worker ready for subscription');
 
       // 3. Créer la subscription VAPID
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
@@ -147,7 +147,7 @@ export const usePushNotifications = (restaurantId: string | null) => {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
 
       if (subscription) {
         await subscription.unsubscribe();

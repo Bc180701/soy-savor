@@ -12,9 +12,10 @@ interface CartItemListProps {
   items: CartItem[];
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  plateauCount?: number;
 }
 
-export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemListProps) => {
+export const CartItemList = ({ items, removeItem, updateQuantity, plateauCount = 0 }: CartItemListProps) => {
   const { cartRestaurant } = useCartRestaurant();
   const { freeDessertsEnabled, eventName, eventProductsCount, getFreeDessertInfo } = useEventFreeDesserts(cartRestaurant?.id);
 
@@ -74,24 +75,35 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
               )}
               <div className="flex items-center mt-2">
                 {/* Masquer les contrôles de quantité pour les accompagnements */}
-              {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) && !(item.specialInstructions?.includes('Dessert offert')) ? (
-                  <>
-                    <button
-                      className="w-6 h-6 flex items-center justify-center border rounded-full"
-                      onClick={() => updateQuantity(item.menuItem.id, Math.max(1, item.quantity - 1))}
-                    >
-                      -
-                    </button>
-                    <span className="mx-2">{item.quantity}</span>
-                    <button
-                      className="w-6 h-6 flex items-center justify-center border rounded-full"
-                      onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
-                    >
-                      +
-                    </button>
-                  </>
+              {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) ? (
+                  (() => {
+                    const isFreeDessertItem = item.specialInstructions?.includes('Dessert offert');
+                    const maxQty = isFreeDessertItem ? plateauCount : Infinity;
+                    const canIncrease = item.quantity < maxQty;
+                    return (
+                      <>
+                        <button
+                          className="w-6 h-6 flex items-center justify-center border rounded-full"
+                          onClick={() => updateQuantity(item.menuItem.id, Math.max(1, item.quantity - 1))}
+                        >
+                          -
+                        </button>
+                        <span className="mx-2">{item.quantity}</span>
+                        <button
+                          className="w-6 h-6 flex items-center justify-center border rounded-full disabled:opacity-30 disabled:cursor-not-allowed"
+                          onClick={() => canIncrease && updateQuantity(item.menuItem.id, item.quantity + 1)}
+                          disabled={!canIncrease}
+                        >
+                          +
+                        </button>
+                        {isFreeDessertItem && (
+                          <span className="text-xs text-muted-foreground ml-2">max {maxQty}</span>
+                        )}
+                      </>
+                    );
+                  })()
                 ) : (
-                  <span className="text-sm text-gray-600">Quantité: {item.quantity}</span>
+                  <span className="text-sm text-muted-foreground">Quantité: {item.quantity}</span>
                 )}
               </div>
             </div>
