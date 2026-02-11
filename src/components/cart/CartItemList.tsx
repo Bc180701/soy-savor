@@ -74,7 +74,7 @@ export const CartItemList = ({ items, removeItem, updateQuantity }: CartItemList
               )}
               <div className="flex items-center mt-2">
                 {/* Masquer les contrôles de quantité pour les accompagnements */}
-                {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) ? (
+              {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) && !(item.specialInstructions?.includes('Dessert offert')) ? (
                   <>
                     <button
                       className="w-6 h-6 flex items-center justify-center border rounded-full"
