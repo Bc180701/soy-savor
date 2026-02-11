@@ -301,10 +301,10 @@ const CommanderContent = () => {
       return;
     }
 
-    // 🎁 Vérifier si c'est un produit d'événement - proposer le dessert offert seulement si activé
+    // 🎁 Vérifier si c'est un produit d'événement - toujours proposer le dessert offert
     const eventForProduct = isEventProduct(item.id);
     
-    if (eventForProduct && eventForProduct.free_desserts_enabled && currentRestaurant?.id) {
+    if (eventForProduct && currentRestaurant?.id) {
       console.log("🎁 Produit événement détecté, déclenchement popup dessert gratuit");
       // Ajouter d'abord le produit au panier
       handleBoxAddToCart(item, 1);
@@ -312,7 +312,7 @@ const CommanderContent = () => {
         title: "Ajouté au panier",
         description: `${item.name} a été ajouté à votre panier`,
       });
-      // Puis déclencher le popup dessert gratuit (vérifie le ratio 1:1 en interne)
+      // Puis déclencher le popup dessert gratuit
       triggerFreeDessertOffer(item, currentRestaurant.id);
       return;
     }

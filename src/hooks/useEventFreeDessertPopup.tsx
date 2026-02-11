@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { MenuItem } from '@/types';
-import { useCart } from '@/hooks/use-cart';
 import { supabase } from '@/integrations/supabase/client';
 
 // Mapping des desserts gratuits par restaurant pour Saint Valentin
@@ -70,37 +69,6 @@ export const EventFreeDessertPopupProvider = ({ children }: EventFreeDessertPopu
 
   const triggerFreeDessertOffer = useCallback(async (eventProduct: MenuItem, restaurantId: string) => {
     console.log('🎁 Déclenchement offre dessert gratuit pour produit événement:', eventProduct.name);
-    
-    // Vérifier le ratio : nombre de desserts offerts déjà dans le panier vs nombre de plateaux événement
-    const { items } = useCart.getState();
-    const dessertId = EVENT_FREE_DESSERTS[restaurantId];
-    
-    // Compter les desserts offerts déjà dans le panier
-    const freeDessertCount = items.reduce((count, item) => {
-      if (item.specialInstructions?.includes('Dessert offert') || 
-          item.specialInstructions?.includes('Saint Valentin')) {
-        return count + item.quantity;
-      }
-      return count;
-    }, 0);
-    
-    // Compter les plateaux événement dans le panier (y compris celui qu'on vient d'ajouter)
-    // Note: le produit vient d'être ajouté au panier avant cet appel
-    const eventProductCount = items.reduce((count, item) => {
-      // On considère l'événement product comme celui qui a le même ID
-      if (item.menuItem?.id === eventProduct.id) {
-        return count + item.quantity;
-      }
-      return count;
-    }, 0);
-    
-    console.log(`🎁 Ratio desserts/plateaux: ${freeDessertCount}/${eventProductCount}`);
-    
-    // Si on a déjà autant de desserts que de plateaux, ne pas proposer
-    if (freeDessertCount >= eventProductCount) {
-      console.log('🎁 Limite atteinte: pas de nouveau dessert offert');
-      return;
-    }
     
     // Charger le dessert correspondant au restaurant
     const dessert = await loadFreeDessert(restaurantId);
