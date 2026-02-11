@@ -12,10 +12,10 @@ interface CartItemListProps {
   items: CartItem[];
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
-  plateauCount?: number;
+  maxFreeDesserts?: number;
 }
 
-export const CartItemList = ({ items, removeItem, updateQuantity, plateauCount = 0 }: CartItemListProps) => {
+export const CartItemList = ({ items, removeItem, updateQuantity, maxFreeDesserts = 0 }: CartItemListProps) => {
   const { cartRestaurant } = useCartRestaurant();
   const { freeDessertsEnabled, eventName, eventProductsCount, getFreeDessertInfo } = useEventFreeDesserts(cartRestaurant?.id);
 
@@ -78,7 +78,7 @@ export const CartItemList = ({ items, removeItem, updateQuantity, plateauCount =
               {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) ? (
                   (() => {
                     const isFreeDessertItem = item.specialInstructions?.includes('Dessert offert');
-                    const maxQty = isFreeDessertItem ? plateauCount : Infinity;
+                    const maxQty = isFreeDessertItem ? maxFreeDesserts : Infinity;
                     const canIncrease = item.quantity < maxQty;
                     return (
                       <>

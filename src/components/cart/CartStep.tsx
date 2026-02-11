@@ -166,7 +166,7 @@ export const CartStep = ({
             items={items} 
             removeItem={removeItem} 
             updateQuantity={updateQuantity}
-            plateauCount={plateauCount}
+            maxFreeDesserts={eventProductsCount || plateauCount}
           />
           
           {/* Section obligatoire des extras */}
