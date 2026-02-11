@@ -166,6 +166,7 @@ export const CartStep = ({
             items={items} 
             removeItem={removeItem} 
             updateQuantity={updateQuantity}
+            plateauCount={plateauCount}
           />
           
           {/* Section obligatoire des extras */}
