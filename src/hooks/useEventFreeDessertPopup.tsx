@@ -68,22 +68,10 @@ export const EventFreeDessertPopupProvider = ({ children }: EventFreeDessertPopu
   }, []);
 
   const triggerFreeDessertOffer = useCallback(async (eventProduct: MenuItem, restaurantId: string) => {
-    console.log('🎁 Déclenchement offre dessert gratuit pour produit événement:', eventProduct.name);
-    
-    // Charger le dessert correspondant au restaurant
-    const dessert = await loadFreeDessert(restaurantId);
-    
-    if (dessert) {
-      setPendingEventProduct(eventProduct);
-      setPendingRestaurantId(restaurantId);
-      setFreeDessertProduct(dessert);
-      
-      // Délai court avant d'afficher le popup
-      setTimeout(() => {
-        setShowFreeDessertPopup(true);
-      }, 100);
-    }
-  }, [loadFreeDessert]);
+    // Désactivé - pas de popup dessert gratuit pour Saint Valentin
+    console.log('🎁 Offre dessert gratuit désactivée pour le moment');
+    return;
+  }, []);
 
   const handleAcceptFreeDessert = useCallback(() => {
     if (freeDessertProduct) {
