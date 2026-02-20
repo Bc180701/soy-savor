@@ -44,14 +44,6 @@ export const BoissonOfferteSelector = ({
       restaurant_id: restaurantId
     },
     {
-      id: 'fuzetea-vert-citron',
-      name: "Fuzetea thé vert citron",
-      description: "Thé glacé au citron",
-      price: 0,
-      category: 'boissons' as any,
-      restaurant_id: restaurantId
-    },
-    {
       id: 'coca-cola-zero',
       name: "Coca-Cola zéro",
       description: "Coca-Cola sans sucre",
