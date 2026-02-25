@@ -143,6 +143,26 @@ export const validatePromoCode = async (code: string, email?: string): Promise<{
           };
         }
         
+        // Pour le code BIENVENUE : vérifier que c'est bien la première commande
+        if (upperCode === 'BIENVENUE') {
+          const { data: previousOrders, error: ordersError } = await supabase
+            .from('orders')
+            .select('id')
+            .eq('client_email', email)
+            .neq('payment_status', 'pending')
+            .limit(1);
+
+          console.log("🔍 Vérification première commande pour", email, ":", { previousOrders, ordersError });
+
+          if (previousOrders && previousOrders.length > 0) {
+            console.log("❌ BLOCAGE: Ce n'est pas la première commande!");
+            return { 
+              valid: false, 
+              message: "Le code BIENVENUE est réservé à votre toute première commande" 
+            };
+          }
+        }
+        
         console.log("✅ Aucun usage trouvé, code valide pour cet email");
       }
 
