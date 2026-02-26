@@ -339,14 +339,34 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       console.log("🌍 [getAllOrders] AUCUN FILTRE - récupération de TOUTES les commandes");
     }
       
-    const response = await query;
+    // Récupérer TOUTES les commandes avec pagination (Supabase limite à 1000 par défaut)
+    let allOrders: any[] = [];
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data: pageData, error: pageError } = await query.range(from, from + pageSize - 1);
       
-    if (response.error) {
-      console.error("❌ Erreur lors de la récupération des commandes:", response.error);
-      return { orders: [], error: new Error(response.error.message) };
+      if (pageError) {
+        console.error("❌ Erreur lors de la récupération des commandes:", pageError);
+        return { orders: [], error: new Error(pageError.message) };
+      }
+      
+      if (pageData && pageData.length > 0) {
+        allOrders = [...allOrders, ...pageData];
+        from += pageSize;
+        hasMore = pageData.length === pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+      
+    if (false) { // dead code kept for structure
+      return { orders: [], error: new Error('unreachable') };
     }
     
-    const orders = response.data || [];
+    const orders = allOrders;
     console.log(`✅ ${orders.length} commandes récupérées de Supabase pour le restaurant ${restaurantId || 'tous'}`);
     
     // VALIDATION SERVEUR: vérifier l'attribution des commandes
