@@ -216,29 +216,66 @@ const Compte = () => {
                       {orders.map((order) => (
                         <div key={order.id} className="border rounded-lg p-4">
                           <div className="flex justify-between items-center mb-2">
-                            <div>
+                            <div className="flex items-center gap-2">
                               <span className="font-medium">Commande #{order.id.substring(0, 8)}</span>
-                              <Badge className="ml-2" variant={getStatusBadgeVariant(order.status)}>
+                              <Badge className="ml-1" variant={getStatusBadgeVariant(order.status)}>
                                 {translateStatus(order.status)}
                               </Badge>
                             </div>
-                            <span className="text-sm text-gray-500">
-                              {order.pickupTime 
-                                ? order.pickupTime 
-                                : new Date(order.scheduledFor).toLocaleString('fr-FR')}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">
+                                {order.pickupTime 
+                                  ? order.pickupTime 
+                                  : new Date(order.scheduledFor).toLocaleString('fr-FR')}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => toggleOrderDetails(order.id)}
+                              >
+                                {expandedOrderId === order.id ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                          <p className="text-gray-600">
-                            Total: {order.total.toFixed(2)} €
-                          </p>
-                          <p className="text-gray-600">
-                            Type: {order.orderType === 'delivery' ? 'Livraison' : 
-                                  order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}
-                          </p>
-                          <p className="text-gray-600">
-                            Paiement: {order.paymentMethod === 'credit-card' ? 'Carte de crédit' : 
-                                      order.paymentMethod === 'cash' ? 'Espèces' : 'PayPal'}
-                          </p>
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Total: {order.total.toFixed(2)} €</span>
+                            <span>{order.orderType === 'delivery' ? 'Livraison' : 
+                                  order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}</span>
+                          </div>
+                          
+                          <AnimatePresence>
+                            {expandedOrderId === order.id && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-3 pt-3 border-t space-y-2">
+                                  <p className="text-sm font-medium flex items-center gap-1">
+                                    <ShoppingBag className="h-4 w-4" /> Articles commandés :
+                                  </p>
+                                  {orderItems[order.id] ? (
+                                    <DecodedItemsList items={orderItems[order.id]} />
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Chargement...</p>
+                                  )}
+                                  {order.discount && order.discount > 0 && (
+                                    <p className="text-sm text-green-600">Réduction : -{order.discount.toFixed(2)} €</p>
+                                  )}
+                                  {order.promoCode && (
+                                    <p className="text-sm text-muted-foreground">Code promo : {order.promoCode}</p>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       ))}
                       <Button 
