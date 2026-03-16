@@ -237,13 +237,41 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
       return { orders: [], error: new Error("Utilisateur non connecté") };
     }
 
-    // Récupérer les commandes de l'utilisateur
-    const { data: ordersData, error: ordersError } = await supabase
+    const userEmail = session.user.email;
+    const userId = session.user.id;
+
+    // Récupérer les commandes par user_id
+    const { data: ordersByUserId, error: errorById } = await supabase
       .from("orders")
       .select("*")
-      .eq("user_id", session.user.id)
-      .eq("payment_status", "paid") // Uniquement les commandes payées
+      .eq("user_id", userId)
+      .neq("status", "cancelled")
       .order("created_at", { ascending: false });
+
+    // Récupérer aussi les commandes par email (commandes passées sans être connecté)
+    let ordersByEmail: any[] = [];
+    if (userEmail) {
+      const { data: emailOrders, error: errorByEmail } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("client_email", userEmail)
+        .is("user_id", null)
+        .neq("status", "cancelled")
+        .order("created_at", { ascending: false });
+      
+      if (!errorByEmail && emailOrders) {
+        ordersByEmail = emailOrders;
+      }
+    }
+
+    const ordersError = errorById;
+    // Fusionner et dédupliquer par id
+    const allOrdersMap = new Map<string, any>();
+    [...(ordersByUserId || []), ...ordersByEmail].forEach(order => {
+      allOrdersMap.set(order.id, order);
+    });
+    const ordersData = Array.from(allOrdersMap.values())
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     if (ordersError) {
       console.error("Erreur lors de la récupération des commandes:", ordersError);
