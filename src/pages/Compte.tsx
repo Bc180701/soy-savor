@@ -114,6 +114,34 @@ const Compte = () => {
     });
   };
 
+  const toggleOrderDetails = async (orderId: string) => {
+    if (expandedOrderId === orderId) {
+      setExpandedOrderId(null);
+      return;
+    }
+    setExpandedOrderId(orderId);
+    
+    // Charger les items via items_summary depuis la commande
+    if (!orderItems[orderId]) {
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        try {
+          const { data, error } = await supabase
+            .from("orders")
+            .select("items_summary")
+            .eq("id", orderId)
+            .single();
+          
+          if (!error && data?.items_summary) {
+            setOrderItems(prev => ({ ...prev, [orderId]: data.items_summary as any[] }));
+          }
+        } catch (e) {
+          console.error("Erreur chargement détails commande:", e);
+        }
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto py-24 px-4">
       <motion.div
