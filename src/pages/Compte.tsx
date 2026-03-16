@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,10 @@ import { Order } from "@/types";
 import { getOrdersByUser } from "@/services/orderService";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ProfileForm from "@/components/profile/ProfileForm";
+import { DecodedItemsList } from "@/components/DecodedItemsList";
 
 const Compte = () => {
   const { orders: localOrders, clearOrders } = useOrder();
