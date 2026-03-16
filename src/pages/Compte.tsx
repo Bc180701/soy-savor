@@ -20,6 +20,8 @@ const Compte = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState("profil");
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [orderItems, setOrderItems] = useState<Record<string, any[]>>({}); 
   const { toast } = useToast();
 
   // Vérifier si l'utilisateur est connecté
