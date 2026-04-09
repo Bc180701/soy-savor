@@ -20,9 +20,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface OrderListProps {
   defaultTab?: string;
+  restaurantId?: string | null;
 }
 
-const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
+const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting", restaurantId: propRestaurantId }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>(defaultTab);
   const [daysBack, setDaysBack] = useState<number>(7);
@@ -31,11 +32,11 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const isMobile = useIsMobile();
   const { currentRestaurant, isLoading: restaurantLoading } = useRestaurantContext();
   
-  // Récupérer les événements actifs
-  const { activeEvents } = useSpecialEvents(currentRestaurant?.id);
+  // Utiliser la prop si fournie (admin), sinon fallback sur le contexte client
+  const restaurantId = propRestaurantId !== undefined ? propRestaurantId : (restaurantLoading ? undefined : (currentRestaurant?.id || null));
   
-  // Attendre que le contexte restaurant soit initialisé ET stable avant de charger les commandes
-  const restaurantId = restaurantLoading ? undefined : (currentRestaurant?.id || null);
+  // Récupérer les événements actifs
+  const { activeEvents } = useSpecialEvents(restaurantId || undefined);
   
   // Suivre les changements de restaurant pour déboguer
   const prevRestaurantId = useRef<string | null | undefined>(undefined);
