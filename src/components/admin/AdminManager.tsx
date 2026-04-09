@@ -91,7 +91,7 @@ const AdminManager = () => {
           </div>
         );
       case "orders":
-        return <OrderList defaultTab={urlParams.get("tab") || "kitchen"} />;
+        return <OrderList defaultTab={urlParams.get("tab") || "kitchen"} restaurantId={sessionRestaurant} />;
       case "products":
         return <ProductManager />;
       case "users":
