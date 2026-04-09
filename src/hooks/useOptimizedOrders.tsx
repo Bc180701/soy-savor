@@ -10,7 +10,7 @@ interface OrdersCache {
   restaurantId: string | null;
 }
 
-const CACHE_DURATION = 2 * 60 * 1000; // 2 min
+const CACHE_DURATION = 10 * 60 * 1000; // 10 min
 const DEBOUNCE_DELAY = 300; // 0,3s
 
 export function useOptimizedOrders(restaurantId: string | null) {
