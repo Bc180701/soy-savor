@@ -1,44 +1,27 @@
 
 
-# Plan d'optimisation egress Supabase
+# Fix: Commandes admin affichent le mauvais restaurant
 
-## Modifications retenues
+## Problème
+`OrderList` utilise `useRestaurantContext()` (contexte client) pour déterminer le restaurant, mais l'admin sélectionne son restaurant via `useAdminRestaurantSession()` (stocké dans `localStorage` sous `admin-restaurant-session`). Ces deux sources ne sont pas synchronisées, ce qui explique pourquoi au premier chargement, les commandes de tous les restaurants (ou du mauvais) s'affichent.
 
-### 1. Filtrer par date dans `getAllOrders` (default 7 jours)
-**Fichier** : `src/services/orderService.ts`
-- Ajouter un paramètre `daysBack: number = 7` à `getAllOrders`
-- Ajouter un filtre `.gte('created_at', dateLimit.toISOString())` à la requête
-- Supprimer la pagination infinie (7 jours = bien moins de 1000 rows)
+## Solution
+Passer le `sessionRestaurant` de l'admin en prop à `OrderList` depuis `AdminManager`, et l'utiliser au lieu de `useRestaurantContext`.
 
-**Fichier** : `src/components/OrderList.tsx`
-- Ajouter un state `daysBack` avec sélecteur de période (7j / 30j / 90j / Tout)
-- Passer `daysBack` au hook `useOptimizedOrders`
+### Fichiers modifiés
 
-**Fichier** : `src/hooks/useOptimizedOrders.tsx`
-- Accepter `daysBack` en paramètre et le transmettre à `getAllOrders`
-- Inclure `daysBack` dans la clé de cache
-
-### 2. Supprimer la boucle N+1 sur order_items
-**Fichier** : `src/services/orderService.ts`
-- Remplacer la boucle `for` (lignes 463-503) qui fait 1 requête par commande par une seule requête batch :
-  ```sql
-  SELECT * FROM order_items WHERE order_id IN (id1, id2, ...) 
+**`src/components/admin/AdminManager.tsx`**
+- Passer `sessionRestaurant` en prop à `OrderList` :
+  ```tsx
+  case "orders":
+    return <OrderList defaultTab={...} restaurantId={sessionRestaurant} />;
   ```
-- Regrouper les résultats par `order_id` côté client avec un `Map`
 
-### 3. Exclure `items_summary` du SELECT par défaut
-**Fichier** : `src/services/orderService.ts`
-- Retirer `items_summary` de la liste des colonnes dans `getAllOrders` (ligne 358)
-- Le chargement à la demande existe déjà dans `OrderDetailsModal` et la page Compte
+**`src/components/OrderList.tsx`**
+- Ajouter `restaurantId` dans les props de `OrderList`
+- Supprimer `useRestaurantContext()` et utiliser directement la prop `restaurantId`
+- Supprimer le calcul intermédiaire `restaurantLoading` / `currentRestaurant?.id`
+- Le state `restaurantId` sera directement la prop, prêt dès le premier rendu
 
-### 4. Augmenter le cache à 10 minutes
-**Fichier** : `src/hooks/useOptimizedOrders.tsx`
-- Changer `CACHE_DURATION` de `2 * 60 * 1000` à `10 * 60 * 1000` (ligne 14)
-
----
-
-## Impact estimé
-- **Requêtes** : de ~100+ requêtes/chargement à ~3 (orders + order_items batch + cart_backup)
-- **Volume** : de ~2500 rows × items_summary (~2 MB) à ~200 rows sans items_summary (~50 KB)
-- **Cache** : 5x moins de rechargements
+Cela garantit que dès l'ouverture de la page admin, le filtre restaurant est immédiatement actif sans attendre le chargement du contexte client.
 
