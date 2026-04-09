@@ -510,9 +510,9 @@ const OrdersKitchenView = ({
               </CardHeader>
               
               <CardContent className="py-2">
-                {/* Nombre de produits - détails visibles via le bouton "Détails" */}
+                {/* Indication pour voir les détails */}
                 <div className="text-sm text-muted-foreground mb-2">
-                  {order.itemsSummary?.length || order.items?.length || 0} produit(s) • Voir détails pour la liste complète
+                  Cliquez sur "Détails" pour voir la liste des produits
                 </div>
 
                 {order.customerNotes && (
