@@ -286,6 +286,32 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     }, 600);
   };
 
+  const handleSushiPushRollSauceConfirm = (sauceLabel: string, sauceValue: string) => {
+    if (!pendingSushiPushRollItem) return;
+    
+    const item = pendingSushiPushRollItem;
+    setPendingSushiPushRollItem(null);
+    
+    // Ajouter le produit au panier
+    onAddToCart(item);
+    
+    // Ajouter la sauce gratuite au panier si une sauce a été choisie
+    if (sauceValue !== "pas_de_sauce") {
+      const sauceItem: MenuItem = {
+        id: `sauce-soja-${sauceValue}-${Date.now()}`,
+        name: `Sauce ${sauceLabel} (offerte)`,
+        price: 0,
+        category: item.category,
+      };
+      onAddToCart(sauceItem);
+    }
+    
+    toast({
+      title: "Ajouté au panier",
+      description: `${item.name} + ${sauceLabel} ajoutés à votre panier`,
+    });
+  };
+
   const toggleItemDetails = (itemId: string) => {
     setExpandedItems(prev => ({
       ...prev,
