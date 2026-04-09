@@ -68,7 +68,7 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
       }
 
       if (!force) {
-        const cached = getCachedOrders(restId);
+        const cached = getCachedOrders(restId, daysBack);
         if (cached) {
           const filteredFromCache = restId
             ? cached.orders.filter((order) => order.restaurant_id === restId)
@@ -94,7 +94,7 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
         console.log("🔍 [FETCH] Commandes pour:", restId || "tous");
         const startTime = performance.now();
 
-        const { orders: fetchedOrders, error: fetchError } = await getAllOrders(restId);
+        const { orders: fetchedOrders, error: fetchError } = await getAllOrders(restId, daysBack);
 
         if (abortControllerRef.current?.signal.aborted) {
           console.log("🚫 Requête annulée pour:", restId || "tous");
@@ -184,7 +184,7 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
           }
 
           setOrders(ordersWithCartBackup);
-          setCachedOrders(ordersWithCartBackup, restId);
+          setCachedOrders(ordersWithCartBackup, restId, daysBack);
 
           if (loadTime > 3000) {
             console.warn("🐌 Chargement lent:", loadTime + "ms");
@@ -235,7 +235,7 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
         const updatedOrders = currentOrders.map((order) =>
           order.id === orderId ? { ...order, ...updates } : order
         );
-        setCachedOrders(updatedOrders, restaurantId);
+        setCachedOrders(updatedOrders, restaurantId, daysBack);
         return updatedOrders;
       });
     },
@@ -268,6 +268,6 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
     refreshOrders,
     updateOrderLocally,
     clearCache,
-    isFromCache: !loading && !!getCachedOrders(restaurantId),
+    isFromCache: !loading && !!getCachedOrders(restaurantId, daysBack),
   };
 }
