@@ -35,7 +35,8 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const { activeEvents } = useSpecialEvents(currentRestaurant?.id);
   
   // Attendre que le contexte restaurant soit initialisé ET stable avant de charger les commandes
-  const restaurantId = restaurantLoading ? undefined : (currentRestaurant?.id || null);
+  // Ne jamais charger avec null (tous les restaurants) - attendre qu'un restaurant soit sélectionné
+  const restaurantId = (restaurantLoading || !currentRestaurant) ? undefined : currentRestaurant.id;
   
   // Suivre les changements de restaurant pour déboguer
   const prevRestaurantId = useRef<string | null | undefined>(undefined);
