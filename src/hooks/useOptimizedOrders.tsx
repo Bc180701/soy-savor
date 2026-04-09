@@ -249,8 +249,8 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
 
   useEffect(() => {
     if (restaurantId !== undefined) {
-      console.log("🎯 Chargement des commandes pour:", restaurantId || "tous");
-      debouncedFetchOrders(restaurantId);
+      console.log("🎯 Chargement des commandes pour:", restaurantId || "tous", "| Période:", daysBack, "jours");
+      debouncedFetchOrders(restaurantId, true);
     } else {
       console.log("⏳ Attente de l'initialisation du restaurant...");
     }
@@ -259,7 +259,7 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
       if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [restaurantId, debouncedFetchOrders]);
+  }, [restaurantId, daysBack, debouncedFetchOrders]);
 
   return {
     orders,
