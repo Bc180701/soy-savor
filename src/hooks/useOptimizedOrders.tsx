@@ -24,6 +24,7 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
   const cacheMapRef = useRef<Map<string, OrdersCache>>(new Map());
   const currentRestaurantRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   const getCachedOrders = useCallback((restId: string | null, days: number): OrdersCache | null => {
     const cacheKey = (restId || "all_restaurants") + `_${days}d`;
