@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { updateOrderStatus } from "@/services/orderService";
 import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -55,8 +55,19 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     error, 
     refreshOrders, 
     updateOrderLocally, 
+    clearCache,
     isFromCache 
   } = useOptimizedOrders(restaurantId, daysBack);
+
+  // Forcer un rafraîchissement au montage pour éviter les données mélangées
+  const hasInitialRefresh = useRef(false);
+  useEffect(() => {
+    if (!hasInitialRefresh.current && restaurantId !== undefined) {
+      hasInitialRefresh.current = true;
+      clearCache();
+      refreshOrders();
+    }
+  }, [restaurantId]);
 
   // Filtrer les commandes par événement actif (basé sur la date de l'événement)
   const eventOrdersMap = useMemo(() => {
