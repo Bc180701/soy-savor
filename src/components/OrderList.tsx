@@ -4,7 +4,7 @@ import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, ChefHat, Truck, RefreshCw, CalendarHeart } from "lucide-react";
+import { FileText, ChefHat, Truck, RefreshCw, CalendarHeart, Calendar } from "lucide-react";
 import OrdersAccountingView from "./orders/OrdersAccountingView";
 import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
@@ -16,6 +16,7 @@ import { useOptimizedOrders } from "@/hooks/useOptimizedOrders";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface OrderListProps {
   defaultTab?: string;
@@ -24,6 +25,7 @@ interface OrderListProps {
 const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>(defaultTab);
+  const [daysBack, setDaysBack] = useState<number>(7);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -54,7 +56,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     refreshOrders, 
     updateOrderLocally, 
     isFromCache 
-  } = useOptimizedOrders(restaurantId);
+  } = useOptimizedOrders(restaurantId, daysBack);
 
   // Filtrer les commandes par événement actif (basé sur la date de l'événement)
   const eventOrdersMap = useMemo(() => {
@@ -224,15 +226,57 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
               </p>
             )}
           </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Select value={String(daysBack)} onValueChange={(v) => setDaysBack(Number(v))}>
+                <SelectTrigger className="w-[130px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">7 derniers jours</SelectItem>
+                  <SelectItem value="30">30 derniers jours</SelectItem>
+                  <SelectItem value="90">90 derniers jours</SelectItem>
+                  <SelectItem value="0">Tout l'historique</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshOrders}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {isMobile && (
+        <div className="flex items-center gap-2 px-2 py-2 border-b bg-background">
+          <Calendar className="h-3 w-3 text-muted-foreground" />
+          <Select value={String(daysBack)} onValueChange={(v) => setDaysBack(Number(v))}>
+            <SelectTrigger className="w-[120px] h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">7 jours</SelectItem>
+              <SelectItem value="30">30 jours</SelectItem>
+              <SelectItem value="90">90 jours</SelectItem>
+              <SelectItem value="0">Tout</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             size="sm"
             onClick={refreshOrders}
             disabled={loading}
-            className="flex items-center gap-2"
+            className="h-8 px-2 ml-auto"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
+            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       )}

@@ -10,10 +10,10 @@ interface OrdersCache {
   restaurantId: string | null;
 }
 
-const CACHE_DURATION = 2 * 60 * 1000; // 2 min
+const CACHE_DURATION = 10 * 60 * 1000; // 10 min
 const DEBOUNCE_DELAY = 300; // 0,3s
 
-export function useOptimizedOrders(restaurantId: string | null) {
+export function useOptimizedOrders(restaurantId: string | null, daysBack: number = 7) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,8 +25,8 @@ export function useOptimizedOrders(restaurantId: string | null) {
   const currentRestaurantRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const getCachedOrders = useCallback((restId: string | null): OrdersCache | null => {
-    const cacheKey = restId || "all_restaurants";
+  const getCachedOrders = useCallback((restId: string | null, days: number): OrdersCache | null => {
+    const cacheKey = (restId || "all_restaurants") + `_${days}d`;
     const cached = cacheMapRef.current.get(cacheKey);
 
     if (cached) {
@@ -42,8 +42,8 @@ export function useOptimizedOrders(restaurantId: string | null) {
     return null;
   }, []);
 
-  const setCachedOrders = useCallback((orders: Order[], restId: string | null) => {
-    const cacheKey = restId || "all_restaurants";
+  const setCachedOrders = useCallback((orders: Order[], restId: string | null, days: number) => {
+    const cacheKey = (restId || "all_restaurants") + `_${days}d`;
     cacheMapRef.current.set(cacheKey, {
       orders,
       timestamp: Date.now(),
@@ -68,7 +68,7 @@ export function useOptimizedOrders(restaurantId: string | null) {
       }
 
       if (!force) {
-        const cached = getCachedOrders(restId);
+        const cached = getCachedOrders(restId, daysBack);
         if (cached) {
           const filteredFromCache = restId
             ? cached.orders.filter((order) => order.restaurant_id === restId)
@@ -94,7 +94,7 @@ export function useOptimizedOrders(restaurantId: string | null) {
         console.log("🔍 [FETCH] Commandes pour:", restId || "tous");
         const startTime = performance.now();
 
-        const { orders: fetchedOrders, error: fetchError } = await getAllOrders(restId);
+        const { orders: fetchedOrders, error: fetchError } = await getAllOrders(restId, daysBack);
 
         if (abortControllerRef.current?.signal.aborted) {
           console.log("🚫 Requête annulée pour:", restId || "tous");
@@ -184,7 +184,7 @@ export function useOptimizedOrders(restaurantId: string | null) {
           }
 
           setOrders(ordersWithCartBackup);
-          setCachedOrders(ordersWithCartBackup, restId);
+          setCachedOrders(ordersWithCartBackup, restId, daysBack);
 
           if (loadTime > 3000) {
             console.warn("🐌 Chargement lent:", loadTime + "ms");
@@ -235,7 +235,7 @@ export function useOptimizedOrders(restaurantId: string | null) {
         const updatedOrders = currentOrders.map((order) =>
           order.id === orderId ? { ...order, ...updates } : order
         );
-        setCachedOrders(updatedOrders, restaurantId);
+        setCachedOrders(updatedOrders, restaurantId, daysBack);
         return updatedOrders;
       });
     },
@@ -249,8 +249,8 @@ export function useOptimizedOrders(restaurantId: string | null) {
 
   useEffect(() => {
     if (restaurantId !== undefined) {
-      console.log("🎯 Chargement des commandes pour:", restaurantId || "tous");
-      debouncedFetchOrders(restaurantId);
+      console.log("🎯 Chargement des commandes pour:", restaurantId || "tous", "| Période:", daysBack, "jours");
+      debouncedFetchOrders(restaurantId, true);
     } else {
       console.log("⏳ Attente de l'initialisation du restaurant...");
     }
@@ -259,7 +259,7 @@ export function useOptimizedOrders(restaurantId: string | null) {
       if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
       if (abortControllerRef.current) abortControllerRef.current.abort();
     };
-  }, [restaurantId, debouncedFetchOrders]);
+  }, [restaurantId, daysBack, debouncedFetchOrders]);
 
   return {
     orders,
@@ -268,6 +268,6 @@ export function useOptimizedOrders(restaurantId: string | null) {
     refreshOrders,
     updateOrderLocally,
     clearCache,
-    isFromCache: !loading && !!getCachedOrders(restaurantId),
+    isFromCache: !loading && !!getCachedOrders(restaurantId, daysBack),
   };
 }

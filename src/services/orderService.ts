@@ -319,12 +319,20 @@ export const getOrdersByUser = async (): Promise<OrderResponse> => {
   }
 };
 
-export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse> => {
+export const getAllOrders = async (restaurantId?: string, daysBack: number = 7): Promise<OrderResponse> => {
   try {
-    console.log("📋 [getAllOrders] Début de récupération pour le restaurant:", restaurantId);
-    console.log("📋 [getAllOrders] Type de restaurantId:", typeof restaurantId, "Valeur:", restaurantId);
+    console.log("📋 [getAllOrders] Récupération pour restaurant:", restaurantId, "| Période:", daysBack, "jours");
     
-    // Construire la requête avec ou sans filtre de restaurant
+    // Calculer la date limite
+    let dateLimit: string | null = null;
+    if (daysBack > 0) {
+      const limitDate = new Date();
+      limitDate.setDate(limitDate.getDate() - daysBack);
+      dateLimit = limitDate.toISOString();
+      console.log("📅 Filtre date: commandes depuis", dateLimit);
+    }
+
+    // Construire la requête SANS items_summary pour réduire le payload
     let query = supabase
       .from('orders')
       .select(`
@@ -354,20 +362,22 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
         client_email,
         delivery_street,
         delivery_city,
-        delivery_postal_code,
-        items_summary
+        delivery_postal_code
       `)
       .order('created_at', { ascending: false });
 
-    // Ajouter le filtre restaurant si fourni avec LOGS DÉTAILLÉS
+    // Filtre restaurant
     if (restaurantId) {
-      console.log("🏪 [getAllOrders] FILTRAGE STRICT pour restaurant:", restaurantId);
       query = query.eq('restaurant_id', restaurantId);
-    } else {
-      console.log("🌍 [getAllOrders] AUCUN FILTRE - récupération de TOUTES les commandes");
+    }
+
+    // Filtre date
+    if (dateLimit) {
+      query = query.gte('created_at', dateLimit);
     }
       
-    // Récupérer TOUTES les commandes avec pagination (Supabase limite à 1000 par défaut)
+    // Avec le filtre date, on ne devrait plus dépasser 1000 rows
+    // Mais on garde une pagination simple par sécurité
     let allOrders: any[] = [];
     let from = 0;
     const pageSize = 1000;
@@ -377,7 +387,7 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       const { data: pageData, error: pageError } = await query.range(from, from + pageSize - 1);
       
       if (pageError) {
-        console.error("❌ Erreur lors de la récupération des commandes:", pageError);
+        console.error("❌ Erreur récupération commandes:", pageError);
         return { orders: [], error: new Error(pageError.message) };
       }
       
@@ -389,44 +399,15 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
         hasMore = false;
       }
     }
-      
-    if (false) { // dead code kept for structure
-      return { orders: [], error: new Error('unreachable') };
-    }
     
     const orders = allOrders;
-    console.log(`✅ ${orders.length} commandes récupérées de Supabase pour le restaurant ${restaurantId || 'tous'}`);
-    
-    // VALIDATION SERVEUR: vérifier l'attribution des commandes
-    if (restaurantId && orders.length > 0) {
-      const badOrders = orders.filter(order => order.restaurant_id !== restaurantId);
-      if (badOrders.length > 0) {
-        console.error("🚨 [SERVEUR] COMMANDES MAL ATTRIBUÉES détectées:", {
-          restaurant_attendu: restaurantId,
-          commandes_incorrectes: badOrders.map(o => ({
-            id: o.id,
-            restaurant_recu: o.restaurant_id,
-            client: o.client_name
-          }))
-        });
-      }
-    }
-    
-    // LOG détaillé de la répartition des restaurants
-    if (orders.length > 0) {
-      const restaurantStats = orders.reduce((acc, order) => {
-        acc[order.restaurant_id] = (acc[order.restaurant_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      console.log("📊 [getAllOrders] Répartition des commandes par restaurant:", restaurantStats);
-    }
+    console.log(`✅ ${orders.length} commandes récupérées (${daysBack > 0 ? daysBack + ' derniers jours' : 'toutes'})`);
 
     // Convertir les données Supabase au format de notre application
     const formattedOrders: Order[] = orders.map(order => ({
       id: order.id,
       userId: order.user_id,
-      restaurant_id: order.restaurant_id, // IMPORTANT: inclure le restaurant_id
+      restaurant_id: order.restaurant_id,
       subtotal: order.subtotal,
       tax: order.tax,
       deliveryFee: order.delivery_fee,
@@ -451,54 +432,63 @@ export const getAllOrders = async (restaurantId?: string): Promise<OrderResponse
       deliveryStreet: order.delivery_street || undefined,
       deliveryCity: order.delivery_city || undefined,
       deliveryPostalCode: order.delivery_postal_code || undefined,
-      itemsSummary: Array.isArray(order.items_summary) ? order.items_summary : [], // Fallback pour impression
-      items: [] // Nous allons les récupérer séparément
+      itemsSummary: [], // items_summary n'est plus chargé par défaut
+      items: []
     }));
 
-    // Calculer la date limite (2 jours en arrière)
+    // BATCH: récupérer les order_items pour les commandes récentes (< 2 jours) en UNE SEULE requête
     const twoDaysAgo = new Date();
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
     
-    // Récupérer les articles de commande UNIQUEMENT pour les commandes récentes (< 2 jours)
-    for (const order of formattedOrders) {
-      // Ne charger les items que pour les commandes de moins de 2 jours
-      if (order.createdAt >= twoDaysAgo) {
-        const { data: items, error: itemsError } = await supabase
-          .from('order_items')
-          .select(`
-            id,
-            product_id,
-            quantity,
-            price,
-            special_instructions,
-            products(name)
-          `)
-          .eq('order_id', order.id);
+    const recentOrderIds = formattedOrders
+      .filter(o => o.createdAt >= twoDaysAgo)
+      .map(o => o.id);
 
-        if (itemsError) {
-          console.error(`Erreur lors de la récupération des articles pour la commande ${order.id}:`, itemsError);
-          continue;
-        }
+    if (recentOrderIds.length > 0) {
+      console.log(`📦 Batch order_items pour ${recentOrderIds.length} commandes récentes`);
+      
+      // Requête batch unique au lieu de N requêtes individuelles
+      const { data: allItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select(`
+          id,
+          order_id,
+          product_id,
+          quantity,
+          price,
+          special_instructions,
+          products(name)
+        `)
+        .in('order_id', recentOrderIds);
 
-        // Mettre en forme les articles de commande
-        if (items && items.length > 0) {
-          console.log(`${items.length} articles trouvés pour la commande ${order.id}`);
-          order.items = items.map(item => ({
-            menuItem: {
-              id: item.product_id,
-              name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
-              price: item.price,
-              category: "plateaux" // Catégorie par défaut
-            },
-            quantity: item.quantity,
-            specialInstructions: item.special_instructions
-          }));
-        } else {
-          console.log(`Aucun article trouvé pour la commande ${order.id}`);
+      if (itemsError) {
+        console.error("❌ Erreur batch order_items:", itemsError);
+      } else if (allItems && allItems.length > 0) {
+        // Regrouper par order_id avec un Map
+        const itemsByOrderId = new Map<string, typeof allItems>();
+        allItems.forEach(item => {
+          const existing = itemsByOrderId.get(item.order_id) || [];
+          existing.push(item);
+          itemsByOrderId.set(item.order_id, existing);
+        });
+
+        // Assigner les items aux commandes
+        for (const order of formattedOrders) {
+          const orderItems = itemsByOrderId.get(order.id);
+          if (orderItems) {
+            order.items = orderItems.map(item => ({
+              menuItem: {
+                id: item.product_id,
+                name: item.products?.name || `Produit ${item.product_id.slice(0, 6)}...`,
+                price: item.price,
+                category: "plateaux"
+              },
+              quantity: item.quantity,
+              specialInstructions: item.special_instructions
+            }));
+          }
         }
-      } else {
-        // Commande de plus de 2 jours : ne pas charger les items (économise les requêtes)
-        order.items = [];
+        console.log(`✅ ${allItems.length} articles chargés en 1 requête batch`);
       }
     }
 
