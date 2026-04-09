@@ -908,6 +908,13 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
           wrapBoxItem={pendingWrapBoxItem}
         />
       )}
+
+      {/* Modale de sélection de sauce pour Sushi Push Roll */}
+      <PokeSauceDialog
+        open={!!pendingSushiPushRollItem}
+        onClose={() => setPendingSushiPushRollItem(null)}
+        onConfirm={handleSushiPushRollSauceConfirm}
+      />
     </>
   );
 };
