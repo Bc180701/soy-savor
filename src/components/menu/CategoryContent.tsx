@@ -18,6 +18,7 @@ import { useDessertBoissonOffer } from "@/hooks/useDessertBoissonOffer";
 import { useWrapSelection } from "@/hooks/useWrapSelection";
 import { WrapSelectionModal } from "./WrapSelectionModal";
 import { WineFormatSelector } from "./WineFormatSelector";
+import PokeSauceDialog from "./PokeSauceDialog";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
 import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
@@ -34,6 +35,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [selectedProductDetails, setSelectedProductDetails] = useState<MenuItem | null>(null);
   const [clickedButton, setClickedButton] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
+  const [pendingSushiPushRollItem, setPendingSushiPushRollItem] = useState<MenuItem | null>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
@@ -226,10 +228,20 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     setSelectedProductDetails(null);
   };
 
+  const isSushiPushRollCategory = (categoryId: string) => 
+    categoryId === 'Sushi Push Roll' || categoryId === 'Sushi-Push-Roll';
+
   const handleAddToCart = (item: MenuItem) => {
     console.log("🟩 CategoryContent.handleAddToCart called with:", item.name);
     setClickedButton(item.id);
     
+    // PRIORITÉ 0: Sushi Push Roll → popup sauce soja (sauf CHOCO DUBAÏ)
+    if (isSushiPushRollCategory(item.category) && !item.name.toUpperCase().includes('CHOCO')) {
+      console.log("🍣 Sushi Push Roll détecté, ouverture popup sauce soja");
+      setPendingSushiPushRollItem(item);
+      return;
+    }
+
     // PRIORITÉ 1: Vérifier si c'est une Wrap Box et utiliser la sélection de wrap
     if (item.name.toLowerCase().includes('wrap box') || item.name.toLowerCase().includes('wrapbox')) {
       console.log("🟩 C'est une Wrap Box, ouvrir la modale de sélection");
@@ -272,6 +284,32 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     setTimeout(() => {
       setClickedButton(null);
     }, 600);
+  };
+
+  const handleSushiPushRollSauceConfirm = (sauceLabel: string, sauceValue: string) => {
+    if (!pendingSushiPushRollItem) return;
+    
+    const item = pendingSushiPushRollItem;
+    setPendingSushiPushRollItem(null);
+    
+    // Ajouter le produit au panier
+    onAddToCart(item);
+    
+    // Ajouter la sauce gratuite au panier si une sauce a été choisie
+    if (sauceValue !== "pas_de_sauce") {
+      const sauceItem: MenuItem = {
+        id: `sauce-soja-${sauceValue}-${Date.now()}`,
+        name: `Sauce ${sauceLabel} (offerte)`,
+        price: 0,
+        category: item.category,
+      };
+      onAddToCart(sauceItem);
+    }
+    
+    toast({
+      title: "Ajouté au panier",
+      description: `${item.name} + ${sauceLabel} ajoutés à votre panier`,
+    });
   };
 
   const toggleItemDetails = (itemId: string) => {
@@ -870,6 +908,13 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
           wrapBoxItem={pendingWrapBoxItem}
         />
       )}
+
+      {/* Modale de sélection de sauce pour Sushi Push Roll */}
+      <PokeSauceDialog
+        open={!!pendingSushiPushRollItem}
+        onClose={() => setPendingSushiPushRollItem(null)}
+        onConfirm={handleSushiPushRollSauceConfirm}
+      />
     </>
   );
 };
