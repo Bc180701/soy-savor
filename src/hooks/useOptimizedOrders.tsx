@@ -55,6 +55,8 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
 
   const fetchOrders = useCallback(
     async (restId: string | null, force = false) => {
+      const requestId = ++requestIdRef.current;
+
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         console.log("🚫 Requête précédente annulée pour:", currentRestaurantRef.current || "tous");
@@ -97,8 +99,8 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
 
         const { orders: fetchedOrders, error: fetchError } = await getAllOrders(restId, daysBack);
 
-        if (abortControllerRef.current?.signal.aborted) {
-          console.log("🚫 Requête annulée pour:", restId || "tous");
+        if (abortControllerRef.current?.signal.aborted || requestId !== requestIdRef.current) {
+          console.log("🚫 Réponse obsolète ignorée pour:", restId || "tous");
           return;
         }
 
@@ -184,6 +186,11 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
             }
           }
 
+          if (requestId !== requestIdRef.current) {
+            console.log("🚫 Mise à jour ignorée, une requête plus récente existe pour:", restId || "tous");
+            return;
+          }
+
           setOrders(ordersWithCartBackup);
           setCachedOrders(ordersWithCartBackup, restId, daysBack);
 
@@ -200,8 +207,10 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
           variant: "destructive",
         });
       } finally {
-        setLoading(false);
-        fetchingRef.current = false;
+        if (requestId === requestIdRef.current) {
+          setLoading(false);
+          fetchingRef.current = false;
+        }
       }
     },
     [toast, getCachedOrders, setCachedOrders, daysBack]
