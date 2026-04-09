@@ -13,7 +13,7 @@ interface OrdersCache {
 const CACHE_DURATION = 10 * 60 * 1000; // 10 min
 const DEBOUNCE_DELAY = 300; // 0,3s
 
-export function useOptimizedOrders(restaurantId: string | null) {
+export function useOptimizedOrders(restaurantId: string | null, daysBack: number = 7) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,8 +25,8 @@ export function useOptimizedOrders(restaurantId: string | null) {
   const currentRestaurantRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const getCachedOrders = useCallback((restId: string | null): OrdersCache | null => {
-    const cacheKey = restId || "all_restaurants";
+  const getCachedOrders = useCallback((restId: string | null, days: number): OrdersCache | null => {
+    const cacheKey = (restId || "all_restaurants") + `_${days}d`;
     const cached = cacheMapRef.current.get(cacheKey);
 
     if (cached) {
@@ -42,8 +42,8 @@ export function useOptimizedOrders(restaurantId: string | null) {
     return null;
   }, []);
 
-  const setCachedOrders = useCallback((orders: Order[], restId: string | null) => {
-    const cacheKey = restId || "all_restaurants";
+  const setCachedOrders = useCallback((orders: Order[], restId: string | null, days: number) => {
+    const cacheKey = (restId || "all_restaurants") + `_${days}d`;
     cacheMapRef.current.set(cacheKey, {
       orders,
       timestamp: Date.now(),
