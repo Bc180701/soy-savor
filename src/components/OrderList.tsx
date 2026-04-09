@@ -10,6 +10,7 @@ import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
 import OrdersEventView from "./orders/OrdersEventView";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useSearchParams } from "react-router-dom";
 import { useOptimizedOrders } from "@/hooks/useOptimizedOrders";
 import { Button } from "@/components/ui/button";
@@ -19,25 +20,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface OrderListProps {
   defaultTab?: string;
-  restaurantId: string | null;
 }
 
-const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting", restaurantId }) => {
+const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>(defaultTab);
   const [daysBack, setDaysBack] = useState<number>(7);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { currentRestaurant, isLoading: restaurantLoading } = useRestaurantContext();
   
-  const { activeEvents } = useSpecialEvents(restaurantId || undefined);
+  // Récupérer les événements actifs
+  const { activeEvents } = useSpecialEvents(currentRestaurant?.id);
+  
+  // Attendre que le contexte restaurant soit initialisé ET stable avant de charger les commandes
+  const restaurantId = restaurantLoading ? undefined : (currentRestaurant?.id || null);
   
   // Suivre les changements de restaurant pour déboguer
   const prevRestaurantId = useRef<string | null | undefined>(undefined);
   if (prevRestaurantId.current !== restaurantId) {
     console.log('🔄 [OrderList] Changement de restaurant:', {
       ancien: prevRestaurantId.current,
-      nouveau: restaurantId
+      nouveau: restaurantId,
+      isLoading: restaurantLoading
     });
     prevRestaurantId.current = restaurantId;
   }
@@ -207,7 +213,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting", restau
         <div className="p-6 border-b flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold">
-              Gestion des Commandes
+              Gestion des Commandes {currentRestaurant?.name && `- ${currentRestaurant.name}`}
             </h2>
             {isFromCache && (
               <p className="text-sm text-muted-foreground">
@@ -277,11 +283,11 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting", restau
 
       
       
-      {loading ? (
+      {(loading || restaurantLoading) ? (
         <div className="flex flex-col items-center justify-center py-8">
           <div className="h-8 w-8 rounded-full border-2 border-t-transparent border-gold-500 animate-spin mb-4" />
           <p className="text-sm text-muted-foreground">
-            Chargement des commandes...
+            {restaurantLoading ? 'Initialisation...' : 'Chargement des commandes...'}
           </p>
         </div>
       ) : error ? (
