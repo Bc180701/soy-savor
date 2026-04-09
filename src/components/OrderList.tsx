@@ -4,7 +4,7 @@ import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import OrderDetailsModal from "@/components/OrderDetailsModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, ChefHat, Truck, RefreshCw, CalendarHeart } from "lucide-react";
+import { FileText, ChefHat, Truck, RefreshCw, CalendarHeart, Calendar } from "lucide-react";
 import OrdersAccountingView from "./orders/OrdersAccountingView";
 import OrdersKitchenView from "./orders/OrdersKitchenView";
 import OrdersDeliveryView from "./orders/OrdersDeliveryView";
@@ -16,6 +16,7 @@ import { useOptimizedOrders } from "@/hooks/useOptimizedOrders";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface OrderListProps {
   defaultTab?: string;
@@ -24,6 +25,7 @@ interface OrderListProps {
 const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeView, setActiveView] = useState<string>(defaultTab);
+  const [daysBack, setDaysBack] = useState<number>(7);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -54,7 +56,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     refreshOrders, 
     updateOrderLocally, 
     isFromCache 
-  } = useOptimizedOrders(restaurantId);
+  } = useOptimizedOrders(restaurantId, daysBack);
 
   // Filtrer les commandes par événement actif (basé sur la date de l'événement)
   const eventOrdersMap = useMemo(() => {
