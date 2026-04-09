@@ -203,7 +203,7 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
         fetchingRef.current = false;
       }
     },
-    [toast, getCachedOrders, setCachedOrders]
+    [toast, getCachedOrders, setCachedOrders, daysBack]
   );
 
   const debouncedFetchOrders = useCallback(
