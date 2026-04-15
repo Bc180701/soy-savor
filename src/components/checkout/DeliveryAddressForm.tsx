@@ -385,14 +385,48 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="city">Ville *</Label>
-            <Input
-              id="city"
-              name="city"
-              value={formData.city}
-              onChange={handleInputChange}
-              placeholder="Votre ville"
-              required
-            />
+            {matchingCities.length > 1 ? (
+              <div className="space-y-2">
+                <Select
+                  value={formData.city}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, city: value }));
+                    setIsPostalCodeValid(null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez votre ville" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {matchingCities.map((city) => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {hasExcludedMessage && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                    ⚠️ Nous ne livrons plus aux Baux-de-Provence
+                  </p>
+                )}
+              </div>
+            ) : matchingCities.length === 1 ? (
+              <Input
+                id="city"
+                name="city"
+                value={matchingCities[0]}
+                readOnly
+                className="bg-gray-50"
+              />
+            ) : (
+              <Input
+                id="city"
+                name="city"
+                value={formData.city}
+                onChange={handleInputChange}
+                placeholder="Votre ville"
+                required
+              />
+            )}
           </div>
           <div>
             <Label htmlFor="postalCode">Code postal *</Label>
