@@ -125,7 +125,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     }));
 
     // Reset postal code validation when postal code changes
-    if (name === "postalCode") {
+    if (name === "postalCode" || name === "city") {
       setIsPostalCodeValid(null);
     }
   };
@@ -159,7 +159,7 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     
     try {
       console.log("🔍 Validation CP:", formData.postalCode, "pour restaurant:", cartRestaurant.name, "ID:", cartRestaurant.id);
-      const isValid = await checkPostalCodeDelivery(formData.postalCode.trim(), cartRestaurant.id);
+      const isValid = await checkPostalCodeDelivery(formData.postalCode.trim(), cartRestaurant.id, formData.city.trim());
       setIsPostalCodeValid(isValid);
       
       if (!isValid) {
