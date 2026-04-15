@@ -1,28 +1,22 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?: string, city?: string): Promise<boolean> => {
+export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?: string): Promise<boolean> => {
   try {
-    console.log("🚚 Vérification code postal:", postalCode, "ville:", city, "pour restaurant:", restaurantId);
+    console.log("🚚 Vérification code postal:", postalCode, "pour restaurant:", restaurantId);
     
     if (!restaurantId) {
       console.log("⚠️ Aucun restaurant spécifié pour la vérification du code postal");
       return false;
     }
     
-    let query = supabase
+    const { data, error } = await supabase
       .from('delivery_locations')
       .select('*')
       .eq('postal_code', postalCode)
       .eq('restaurant_id', restaurantId)
-      .eq('is_active', true);
-    
-    // Si une ville est fournie, vérifier aussi la correspondance ville
-    if (city && city.trim()) {
-      query = query.ilike('city', city.trim());
-    }
-    
-    const { data, error } = await query.limit(1);
+      .eq('is_active', true)
+      .limit(1); // Limiter à 1 résultat pour éviter les doublons
     
     console.log("🚚 Résultat vérification pour restaurant", restaurantId, ":", { data, error, count: data?.length });
     
@@ -32,7 +26,7 @@ export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?:
     }
     
     const isValid = data && data.length > 0;
-    console.log("✅ Code postal", postalCode, "ville", city, isValid ? "accepté" : "refusé", "pour restaurant", restaurantId);
+    console.log("✅ Code postal", postalCode, isValid ? "accepté" : "refusé", "pour restaurant", restaurantId);
     return isValid;
     
   } catch (error) {
