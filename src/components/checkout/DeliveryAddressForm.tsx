@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { checkPostalCodeDelivery, getDeliveryLocations } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
 import { CheckCircle2, XCircle, Loader2, RefreshCw } from "lucide-react";
