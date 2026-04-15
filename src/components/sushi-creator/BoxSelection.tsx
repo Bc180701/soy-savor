@@ -35,7 +35,6 @@ export const BoxSelection = ({ selectedBox, boxOptions, onBoxSelect }: BoxSelect
                         <br />
                         <span className="text-red-600 font-medium">La 4ème est offerte !</span>
                       </span>
-                      </span>
                     ) : (
                       `(${box.description})`
                     )}
