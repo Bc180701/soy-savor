@@ -134,6 +134,13 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
   const currentExcluded = excludedCities[formData.postalCode.trim()] || [];
   const hasExcludedMessage = currentExcluded.length > 0 && matchingCities.length > 0;
 
+  // Auto-set city when only one match
+  useEffect(() => {
+    if (matchingCities.length === 1 && formData.city !== matchingCities[0]) {
+      setFormData(prev => ({ ...prev, city: matchingCities[0] }));
+    }
+  }, [matchingCities]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
