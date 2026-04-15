@@ -56,9 +56,6 @@ export const BoxSelection = ({ selectedBox, boxOptions, onBoxSelect }: BoxSelect
         />
       </div>
       
-      <p className="text-xs text-gray-500 mt-4">
-        Tout supplément au-delà des choix inclus: +1€
-      </p>
     </div>
   );
 };
