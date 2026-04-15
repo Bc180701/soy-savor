@@ -118,6 +118,22 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     loadDeliveryZones();
   }, [cartRestaurant?.id, cartRestaurant?.name]);
 
+  // Villes correspondant au code postal saisi
+  const matchingCities = useMemo(() => {
+    if (!formData.postalCode.trim() || deliveryZones.length === 0) return [];
+    return deliveryZones
+      .filter(z => z.postalCode === formData.postalCode.trim())
+      .map(z => z.city);
+  }, [formData.postalCode, deliveryZones]);
+
+  // Villes exclues pour certains codes postaux (même CP mais hors zone)
+  const excludedCities: Record<string, string[]> = {
+    '13520': ['Les Baux-de-Provence', 'Baux de Provence', 'Les Baux de Provence']
+  };
+
+  const currentExcluded = excludedCities[formData.postalCode.trim()] || [];
+  const hasExcludedMessage = currentExcluded.length > 0 && matchingCities.length > 0;
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -128,6 +144,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     // Reset postal code validation when postal code changes
     if (name === "postalCode") {
       setIsPostalCodeValid(null);
+      // Reset city when postal code changes if we have matching cities
+      setFormData(prev => ({ ...prev, city: "", postalCode: value }));
     }
   };
 
