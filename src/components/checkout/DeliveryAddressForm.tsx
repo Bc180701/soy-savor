@@ -1,9 +1,10 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { checkPostalCodeDelivery, getDeliveryLocations } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
 import { CheckCircle2, XCircle, Loader2, RefreshCw } from "lucide-react";
@@ -117,6 +118,29 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     loadDeliveryZones();
   }, [cartRestaurant?.id, cartRestaurant?.name]);
 
+  // Villes correspondant au code postal saisi
+  const matchingCities = useMemo(() => {
+    if (!formData.postalCode.trim() || deliveryZones.length === 0) return [];
+    return deliveryZones
+      .filter(z => z.postalCode === formData.postalCode.trim())
+      .map(z => z.city);
+  }, [formData.postalCode, deliveryZones]);
+
+  // Villes exclues pour certains codes postaux (même CP mais hors zone)
+  const excludedCities: Record<string, string[]> = {
+    '13520': ['Les Baux-de-Provence', 'Baux de Provence', 'Les Baux de Provence']
+  };
+
+  const currentExcluded = excludedCities[formData.postalCode.trim()] || [];
+  const hasExcludedMessage = currentExcluded.length > 0 && matchingCities.length > 0;
+
+  // Auto-set city when only one match
+  useEffect(() => {
+    if (matchingCities.length === 1 && formData.city !== matchingCities[0]) {
+      setFormData(prev => ({ ...prev, city: matchingCities[0] }));
+    }
+  }, [matchingCities]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -127,6 +151,8 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     // Reset postal code validation when postal code changes
     if (name === "postalCode") {
       setIsPostalCodeValid(null);
+      // Reset city when postal code changes if we have matching cities
+      setFormData(prev => ({ ...prev, city: "", postalCode: value }));
     }
   };
 
@@ -366,14 +392,48 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="city">Ville *</Label>
-            <Input
-              id="city"
-              name="city"
-              value={formData.city}
-              onChange={handleInputChange}
-              placeholder="Votre ville"
-              required
-            />
+            {matchingCities.length > 1 ? (
+              <div className="space-y-2">
+                <Select
+                  value={formData.city}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, city: value }));
+                    setIsPostalCodeValid(null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez votre ville" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {matchingCities.map((city) => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {hasExcludedMessage && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                    ⚠️ Nous ne livrons plus aux Baux-de-Provence
+                  </p>
+                )}
+              </div>
+            ) : matchingCities.length === 1 ? (
+              <Input
+                id="city"
+                name="city"
+                value={matchingCities[0]}
+                readOnly
+                className="bg-gray-50"
+              />
+            ) : (
+              <Input
+                id="city"
+                name="city"
+                value={formData.city}
+                onChange={handleInputChange}
+                placeholder="Votre ville"
+                required
+              />
+            )}
           </div>
           <div>
             <Label htmlFor="postalCode">Code postal *</Label>
