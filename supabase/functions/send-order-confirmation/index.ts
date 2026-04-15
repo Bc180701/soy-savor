@@ -83,6 +83,13 @@ const handler = async (req: Request): Promise<Response> => {
     
     const dateText = `${weekdays[date.getDay()]} ${day} ${months[parseInt(month) - 1]} ${year} à ${hours}:${minutes}`;
 
+    // Séparer les notes client des extras
+    const rawNotes = order.customer_notes || '';
+    const extrasMatch = rawNotes.match(/\[EXTRAS\]\s*(.*)/);
+    const extrasLine = extrasMatch ? extrasMatch[1] : '';
+    const cleanNotes = rawNotes.replace(/\n?\[EXTRAS\].*/, '').trim();
+    const extrasParts = extrasLine ? extrasLine.split(' | ').filter(Boolean) : [];
+
     // Créer le HTML de l'email
     const emailHTML = `
       <!DOCTYPE html>
@@ -140,8 +147,15 @@ const handler = async (req: Request): Promise<Response> => {
                 <p><strong>Type :</strong> ${orderTypeText}</p>
                 <p><strong>Prévu pour :</strong> ${dateText}</p>
                 ${addressText ? `<p><strong>Adresse :</strong> ${addressText}</p>` : ''}
-                ${order.customer_notes ? `<p><strong>Instructions :</strong> ${order.customer_notes}</p>` : ''}
+                ${cleanNotes ? `<p><strong>Instructions :</strong> ${cleanNotes}</p>` : ''}
               </div>
+
+              ${extrasParts.length > 0 ? `
+              <div class="section">
+                <div class="section-title">🥢 Accompagnements & Options</div>
+                ${extrasParts.map((part: string) => `<p style="margin: 4px 0;">${part}</p>`).join('')}
+              </div>
+              ` : ''}
 
               <div class="section">
                 <div class="section-title">Détail de la commande</div>
