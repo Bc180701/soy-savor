@@ -31,9 +31,9 @@ export const BoxSelection = ({ selectedBox, boxOptions, onBoxSelect }: BoxSelect
                   <div className="text-sm">
                     {box.description?.includes("OFFERTE") ? (
                       <span>
-                        ({box.description.split("La 4e création est OFFERTE !")[0].replace(/[()]/g, '').trim()})
+                        ({box.description.split("(La 4e création est OFFERTE !)")[0].trim()}
                         <br />
-                        <span className="text-red-600 font-medium">La 4ème est offerte !</span>
+                        <span className="text-red-600 font-medium">La 4e création est OFFERTE !</span>)
                       </span>
                     ) : (
                       `(${box.description})`
@@ -56,6 +56,9 @@ export const BoxSelection = ({ selectedBox, boxOptions, onBoxSelect }: BoxSelect
         />
       </div>
       
+      <p className="text-xs text-gray-500 mt-4">
+        Tout supplément au-delà des choix inclus: +1€
+      </p>
     </div>
   );
 };

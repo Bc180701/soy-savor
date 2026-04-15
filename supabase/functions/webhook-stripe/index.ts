@@ -385,17 +385,7 @@ serve(async (req) => {
         delivery_street: metadata?.delivery_street || null,
         delivery_city: metadata?.delivery_city || null,
         delivery_postal_code: metadata?.delivery_postal_code || null,
-        customer_notes: (() => {
-          const notes = metadata?.customer_notes || '';
-          const extrasParts: string[] = [];
-          if (metadata?.cart_sauces) extrasParts.push(`Sauces: ${metadata.cart_sauces}`);
-          if (metadata?.cart_accompagnements) extrasParts.push(`Accompagnements: ${metadata.cart_accompagnements}`);
-          if (metadata?.cart_baguettes && metadata.cart_baguettes !== '0') extrasParts.push(`Baguettes: ${metadata.cart_baguettes}`);
-          if (metadata?.cart_couverts && metadata.cart_couverts !== '0') extrasParts.push(`Fourchettes: ${metadata.cart_couverts}`);
-          if (metadata?.cart_cuilleres && metadata.cart_cuilleres !== '0') extrasParts.push(`Cuillères: ${metadata.cart_cuilleres}`);
-          const extrasStr = extrasParts.length > 0 ? `[EXTRAS] ${extrasParts.join(' | ')}` : '';
-          return [notes, extrasStr].filter(Boolean).join('\n') || null;
-        })(),
+        customer_notes: metadata?.customer_notes || null,
         items_summary: itemsSummary,
         stripe_receipt_url: receiptUrl,
       };
