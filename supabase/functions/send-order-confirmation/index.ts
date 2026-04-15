@@ -83,6 +83,13 @@ const handler = async (req: Request): Promise<Response> => {
     
     const dateText = `${weekdays[date.getDay()]} ${day} ${months[parseInt(month) - 1]} ${year} à ${hours}:${minutes}`;
 
+    // Séparer les notes client des extras
+    const rawNotes = order.customer_notes || '';
+    const extrasMatch = rawNotes.match(/\[EXTRAS\]\s*(.*)/);
+    const extrasLine = extrasMatch ? extrasMatch[1] : '';
+    const cleanNotes = rawNotes.replace(/\n?\[EXTRAS\].*/, '').trim();
+    const extrasParts = extrasLine ? extrasLine.split(' | ').filter(Boolean) : [];
+
     // Créer le HTML de l'email
     const emailHTML = `
       <!DOCTYPE html>
