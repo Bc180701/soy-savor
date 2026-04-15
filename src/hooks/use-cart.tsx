@@ -140,10 +140,25 @@ export const useCart = create<CartStore>()(
       
       removeItem: (itemId) => {
         console.log("🛒 Suppression article:", itemId);
-        set((state) => ({
-          ...state,
-          items: state.items.filter(item => item.menuItem.id !== itemId)
-        }));
+        const state = get();
+        const itemToRemove = state.items.find(item => item.menuItem.id === itemId);
+        let newItems = state.items.filter(item => item.menuItem.id !== itemId);
+        
+        // Si c'est un Sushi Push Roll, supprimer aussi la sauce liée
+        if (itemToRemove && itemToRemove.menuItem.name) {
+          const productName = itemToRemove.menuItem.name;
+          newItems = newItems.filter(item => {
+            const name = item.menuItem.name || '';
+            // Sauce liée = contient le nom du produit entre parenthèses
+            if (name.includes('Sauce Soja') && name.includes(`(${productName})`)) {
+              console.log("🗑️ Suppression sauce liée:", name);
+              return false;
+            }
+            return true;
+          });
+        }
+        
+        set({ ...state, items: newItems });
       },
       
       updateQuantity: (itemId, quantity) => {
