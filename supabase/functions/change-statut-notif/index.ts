@@ -79,7 +79,7 @@ serve(async (req) => {
           <p>Merci de nous faire confiance pour vos repas japonais !</p>
           
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666; font-size: 12px;">
-            <p><strong>SUSHIEATS</strong> - L'art du sushi à Châteaurenard</p>
+            <p><strong>SUSHIEATS</strong> - Votre idée . Votre goût . Votre sushi</p>
             <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
           </div>
         </body>
