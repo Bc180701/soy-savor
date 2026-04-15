@@ -31,9 +31,9 @@ export const BoxSelection = ({ selectedBox, boxOptions, onBoxSelect }: BoxSelect
                   <div className="text-sm">
                     {box.description?.includes("OFFERTE") ? (
                       <span>
-                        ({box.description.split("(La 4e création est OFFERTE !)")[0].trim()}
+                        ({box.description.split("La 4e création est OFFERTE !")[0].replace(/[()]/g, '').trim()})
                         <br />
-                        <span className="text-red-600 font-medium">La 4e création est OFFERTE !</span>)
+                        <span className="text-red-600 font-medium">La 4ème est offerte !</span>
                       </span>
                     ) : (
                       `(${box.description})`
