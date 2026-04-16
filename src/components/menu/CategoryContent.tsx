@@ -299,7 +299,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     if (sauceValue !== "pas_de_sauce") {
       const sauceItem: MenuItem = {
         id: `sauce-soja-${sauceValue}-${Date.now()}`,
-        name: `  ↳ Sauce ${sauceLabel} (${item.name})`,
+        name: `Sauce ${sauceLabel} (${item.name})`,
         price: 0,
         category: item.category,
       };
