@@ -75,7 +75,7 @@ export const CartItemList = ({ items, removeItem, updateQuantity, maxFreeDessert
               )}
               <div className="flex items-center mt-2">
                 {/* Masquer les contrôles de quantité pour les accompagnements */}
-              {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) ? (
+              {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) && !item.menuItem.name.startsWith("Sauce Soja") ? (
                   (() => {
                     const isFreeDessertItem = item.specialInstructions?.includes('Dessert offert');
                     const maxQty = isFreeDessertItem ? maxFreeDesserts : Infinity;
