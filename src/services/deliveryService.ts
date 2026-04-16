@@ -35,6 +35,24 @@ export const checkPostalCodeDelivery = async (postalCode: string, restaurantId?:
   }
 };
 
+export const getCitiesForPostalCode = async (postalCode: string, restaurantId: string): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('delivery_locations')
+      .select('city')
+      .eq('postal_code', postalCode)
+      .eq('restaurant_id', restaurantId)
+      .eq('is_active', true);
+
+    if (error || !data) return [];
+
+    const uniqueCities = [...new Set(data.map(d => d.city))];
+    return uniqueCities.sort();
+  } catch {
+    return [];
+  }
+};
+
 export const getDeliveryLocations = async (restaurantId?: string): Promise<{city: string, postalCode: string}[]> => {
   try {
     console.log("📍 Récupération zones de livraison pour restaurant ID:", restaurantId);
