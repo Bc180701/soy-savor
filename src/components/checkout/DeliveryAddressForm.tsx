@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { checkPostalCodeDelivery, getDeliveryLocations } from "@/services/deliveryService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { checkPostalCodeDelivery, getDeliveryLocations, getCitiesForPostalCode } from "@/services/deliveryService";
 import { useToast } from "@/components/ui/use-toast";
-import { CheckCircle2, XCircle, Loader2, RefreshCw } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import { Restaurant } from "@/types/restaurant";
 
 interface DeliveryAddressFormProps {
@@ -21,7 +22,7 @@ interface DeliveryAddressFormProps {
     isPostalCodeValid: boolean;
   }) => void;
   onCancel: () => void;
-  cartRestaurant?: Restaurant | null; // Utiliser le restaurant du panier
+  cartRestaurant?: Restaurant | null;
   initialData?: {
     name?: string;
     email?: string;
@@ -32,6 +33,14 @@ interface DeliveryAddressFormProps {
     deliveryInstructions?: string;
   };
 }
+
+// Postal codes with excluded cities - show warning message
+const EXCLUDED_CITIES_BY_CP: Record<string, { excluded: string[]; message: string }> = {
+  "13520": {
+    excluded: ["Les Baux-de-Provence", "Les Baux de Provence", "Baux-de-Provence", "Baux de Provence"],
+    message: "Nous ne livrons plus aux Baux-de-Provence"
+  }
+};
 
 const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData }: DeliveryAddressFormProps) => {
   const [formData, setFormData] = useState({
@@ -48,18 +57,15 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
   const [isPostalCodeValid, setIsPostalCodeValid] = useState<boolean | null>(null);
   const [deliveryZones, setDeliveryZones] = useState<{city: string, postalCode: string}[]>([]);
   const [loadingZones, setLoadingZones] = useState(false);
+  const [matchingCities, setMatchingCities] = useState<string[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
   const { toast } = useToast();
 
-  // Synchroniser avec les données initiales quand elles changent (seulement si les champs sont vides)
   useEffect(() => {
     if (initialData) {
-      console.log("🔄 Synchronisation avec données initiales:", initialData);
-      
-      // Ne synchroniser que si les champs actuels sont vides pour éviter d'écraser les données validées
       const shouldSync = !formData.name && !formData.email && !formData.phone && !formData.street && !formData.city && !formData.postalCode;
       
       if (shouldSync) {
-        console.log("✅ Synchronisation autorisée - champs vides");
         setFormData({
           name: initialData.name || "",
           email: initialData.email || "",
@@ -69,44 +75,26 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
           postalCode: initialData.postalCode || "",
           instructions: initialData.deliveryInstructions || ""
         });
-        
-        // Reset la validation du code postal car les données ont changé
         setIsPostalCodeValid(null);
-      } else {
-        console.log("❌ Synchronisation ignorée - données déjà présentes");
       }
     }
   }, [initialData]);
 
-  // Charger les zones de livraison quand le restaurant change
   useEffect(() => {
     const loadDeliveryZones = async () => {
-      console.log("🔄 Effect déclenché - Restaurant du panier:", cartRestaurant?.name, "ID:", cartRestaurant?.id);
-      
       if (!cartRestaurant?.id) {
-        console.log("⚠️ Pas de restaurant dans le panier, reset des zones");
         setDeliveryZones([]);
         setIsPostalCodeValid(null);
         return;
       }
       
-      console.log("🚚 Chargement zones pour:", cartRestaurant.name, "ID:", cartRestaurant.id);
       setLoadingZones(true);
-      
       try {
         const zones = await getDeliveryLocations(cartRestaurant.id);
-        console.log("✅ Zones récupérées pour", cartRestaurant.name, ":", zones);
         setDeliveryZones(zones);
-        
-        // Reset la validation du code postal car les zones ont changé
         setIsPostalCodeValid(null);
-        
-        if (zones.length === 0) {
-          console.log("⚠️ Aucune zone trouvée pour", cartRestaurant.name);
-        }
-        
       } catch (error) {
-        console.error("❌ Erreur chargement zones pour", cartRestaurant.name, ":", error);
+        console.error("Erreur chargement zones:", error);
         setDeliveryZones([]);
         setIsPostalCodeValid(null);
       } finally {
@@ -115,7 +103,40 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     };
 
     loadDeliveryZones();
-  }, [cartRestaurant?.id, cartRestaurant?.name]);
+  }, [cartRestaurant?.id]);
+
+  // Lookup cities when postal code changes (5 digits)
+  useEffect(() => {
+    const lookupCities = async () => {
+      const cp = formData.postalCode.trim();
+      if (cp.length !== 5 || !cartRestaurant?.id) {
+        setMatchingCities([]);
+        return;
+      }
+
+      setLoadingCities(true);
+      try {
+        const cities = await getCitiesForPostalCode(cp, cartRestaurant.id);
+        setMatchingCities(cities);
+        
+        // Auto-select if only one city
+        if (cities.length === 1) {
+          setFormData(prev => ({ ...prev, city: cities[0] }));
+        } else if (cities.length > 1) {
+          // Reset city if current selection is not in the list
+          if (!cities.includes(formData.city)) {
+            setFormData(prev => ({ ...prev, city: "" }));
+          }
+        }
+      } catch {
+        setMatchingCities([]);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+
+    lookupCities();
+  }, [formData.postalCode, cartRestaurant?.id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -124,7 +145,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
       [name]: value
     }));
 
-    // Reset postal code validation when postal code changes
     if (name === "postalCode") {
       setIsPostalCodeValid(null);
     }
@@ -145,7 +165,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
       return;
     }
 
-    // Validation
     if (!formData.name || !formData.email || !formData.phone || !formData.street || !formData.city || !formData.postalCode) {
       toast({
         title: "Champs manquants",
@@ -158,7 +177,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     setIsValidatingPostalCode(true);
     
     try {
-      console.log("🔍 Validation CP:", formData.postalCode, "pour restaurant:", cartRestaurant.name, "ID:", cartRestaurant.id);
       const isValid = await checkPostalCodeDelivery(formData.postalCode.trim(), cartRestaurant.id);
       setIsPostalCodeValid(isValid);
       
@@ -174,7 +192,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
           description: `Nous livrons bien au code postal ${formData.postalCode} depuis ${cartRestaurant.name}.`,
         });
         
-        // Confirmer directement l'adresse
         onComplete({
           ...formData,
           isPostalCodeValid: true
@@ -198,7 +215,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     
     setLoadingZones(true);
     try {
-      console.log("🔄 Actualisation manuelle des zones pour:", cartRestaurant.name);
       const zones = await getDeliveryLocations(cartRestaurant.id);
       setDeliveryZones(zones);
       setIsPostalCodeValid(null);
@@ -222,7 +238,6 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
     if (!formData.name || !formData.email || !formData.phone || !formData.street || !formData.city || !formData.postalCode) {
       toast({
         title: "Champs manquants",
@@ -252,6 +267,9 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
     if (isPostalCodeValid === false) return "border-red-500 bg-red-50";
     return "";
   };
+
+  const excludedInfo = EXCLUDED_CITIES_BY_CP[formData.postalCode.trim()];
+  const showCityDropdown = matchingCities.length > 1;
 
   return (
     <div className="space-y-6 p-6 bg-white rounded-lg border">
@@ -365,56 +383,92 @@ const DeliveryAddressForm = ({ onComplete, onCancel, cartRestaurant, initialData
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="city">Ville *</Label>
+            <Label htmlFor="postalCode">Code postal *</Label>
             <Input
-              id="city"
-              name="city"
-              value={formData.city}
+              id="postalCode"
+              name="postalCode"
+              value={formData.postalCode}
               onChange={handleInputChange}
-              placeholder="Votre ville"
+              placeholder="13160"
               required
+              className={getPostalCodeInputClass()}
             />
           </div>
           <div>
-            <Label htmlFor="postalCode">Code postal *</Label>
-            <div className="flex space-x-2">
-              <Input
-                id="postalCode"
-                name="postalCode"
-                value={formData.postalCode}
-                onChange={handleInputChange}
-                placeholder="13160"
-                required
-                className={getPostalCodeInputClass()}
-              />
-              <Button
-                type="button"
-                onClick={validateAndConfirmPostalCode}
-                disabled={isValidatingPostalCode || !formData.postalCode.trim() || !formData.name || !formData.email || !formData.phone || !formData.street || !formData.city}
-                className="bg-gold-500 hover:bg-gold-600 text-white border-0"
-                size="sm"
+            <Label htmlFor="city">Ville *</Label>
+            {showCityDropdown ? (
+              <Select
+                value={formData.city}
+                onValueChange={(value) => {
+                  setFormData(prev => ({ ...prev, city: value }));
+                  setIsPostalCodeValid(null);
+                }}
               >
-                {isValidatingPostalCode ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isPostalCodeValid === true ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : isPostalCodeValid === false ? (
-                  <XCircle className="h-4 w-4" />
-                ) : (
-                  "Vérifier"
-                )}
-              </Button>
-            </div>
-            {isPostalCodeValid === true && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
-                <p className="text-sm text-green-800 font-medium">✓ Adresse validée et confirmée !</p>
-                <p className="text-xs text-green-600">Votre adresse a été enregistrée pour cette commande.</p>
-              </div>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez votre ville" />
+                </SelectTrigger>
+                <SelectContent>
+                  {matchingCities.map((city) => (
+                    <SelectItem key={city} value={city}>
+                      {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="city"
+                name="city"
+                value={formData.city}
+                onChange={handleInputChange}
+                placeholder="Votre ville"
+                required
+              />
             )}
-            {isPostalCodeValid === false && (
-              <p className="text-sm text-red-600 mt-1">✗ Hors zone de livraison</p>
+            {loadingCities && (
+              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> Recherche des villes...
+              </p>
             )}
           </div>
+        </div>
+
+        {/* Warning for excluded cities */}
+        {excludedInfo && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-orange-800">{excludedInfo.message}</p>
+          </div>
+        )}
+
+        <div>
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              onClick={validateAndConfirmPostalCode}
+              disabled={isValidatingPostalCode || !formData.postalCode.trim() || !formData.name || !formData.email || !formData.phone || !formData.street || !formData.city}
+              className="bg-gold-500 hover:bg-gold-600 text-white border-0 w-full"
+            >
+              {isValidatingPostalCode ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Vérification...</>
+              ) : isPostalCodeValid === true ? (
+                <><CheckCircle2 className="h-4 w-4 mr-2" /> Adresse validée</>
+              ) : isPostalCodeValid === false ? (
+                <><XCircle className="h-4 w-4 mr-2" /> Hors zone - Réessayer</>
+              ) : (
+                "Vérifier et confirmer l'adresse"
+              )}
+            </Button>
+          </div>
+          {isPostalCodeValid === true && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
+              <p className="text-sm text-green-800 font-medium">✓ Adresse validée et confirmée !</p>
+              <p className="text-xs text-green-600">Votre adresse a été enregistrée pour cette commande.</p>
+            </div>
+          )}
+          {isPostalCodeValid === false && (
+            <p className="text-sm text-red-600 mt-1">✗ Hors zone de livraison</p>
+          )}
         </div>
 
         <div>
