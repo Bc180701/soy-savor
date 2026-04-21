@@ -31,6 +31,7 @@ import NotFound from "@/pages/NotFound";
 import LivraisonChateaurenard from "@/pages/geo/LivraisonChateaurenard";
 import LivraisonStMartinDeCrau from "@/pages/geo/LivraisonStMartinDeCrau";
 import RestaurantJaponaisBouchesDuRhone from "@/pages/geo/RestaurantJaponaisBouchesDuRhone";
+import SushiPushRollProvence from "@/pages/geo/SushiPushRollProvence";
 
 // Pages par villes
 import {
@@ -106,6 +107,8 @@ function App() {
         <Route path="/livraison-sushi-chateaurenard" element={<Layout><LivraisonChateaurenard /></Layout>} />
         <Route path="/livraison-sushi-saint-martin-de-crau" element={<Layout><LivraisonStMartinDeCrau /></Layout>} />
         <Route path="/restaurant-japonais-bouches-du-rhone" element={<Layout><RestaurantJaponaisBouchesDuRhone /></Layout>} />
+        <Route path="/push-roll" element={<Layout><SushiPushRollProvence /></Layout>} />
+        <Route path="/sushi-push-roll-provence" element={<Layout><SushiPushRollProvence /></Layout>} />
 
         {/* Pages par villes - Zone Châteaurenard */}
         <Route path="/livraison-sushi-eyragues" element={<Layout><LivraisonEyragues /></Layout>} />
