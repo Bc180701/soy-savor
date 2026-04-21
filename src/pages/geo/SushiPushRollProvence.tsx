@@ -165,7 +165,7 @@ const SushiPushRollProvence = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShoppingBag className="h-6 w-6 text-gold-500" />
-                Nos Sushi Push Roll disponibles à Châteaurenard
+                Nos Sushi Push Roll disponibles
               </CardTitle>
             </CardHeader>
             <CardContent>
