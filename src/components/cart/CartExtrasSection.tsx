@@ -174,27 +174,36 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       }
     });
 
-    // Recalculer les couverts (baguettes, fourchettes, cuillères)
+    // Recalculer les couverts (baguettes, fourchettes, cuillères) avec pool partagé
     const accessoireItems = items.filter(item => item.menuItem.category === "Accessoire");
-    
-    accessoireItems.forEach(accessoireItem => {
+    const orderKey = (n: string): number => {
+      const low = n.toLowerCase();
+      if (low.includes('baguette')) return 0;
+      if (low.includes('fourchette')) return 1;
+      return 2; // cuillere
+    };
+    const sortedAccessoires = [...accessoireItems].sort((a, b) => orderKey(a.menuItem.name) - orderKey(b.menuItem.name));
+    let freeRemainingPool = newFreeCount;
+
+    sortedAccessoires.forEach(accessoireItem => {
       const quantity = accessoireItem.quantity;
       const name = accessoireItem.menuItem.name;
-      
-      const freeForThis = Math.min(quantity, newFreeCount);
-      const paidForThis = Math.max(0, quantity - newFreeCount);
+
+      const freeForThis = Math.min(quantity, freeRemainingPool);
+      freeRemainingPool = Math.max(0, freeRemainingPool - freeForThis);
+      const paidForThis = Math.max(0, quantity - freeForThis);
       const expectedPrice = paidForThis > 0 ? (paidForThis * 0.5 / quantity) : 0;
-      
+
       if (Math.abs(accessoireItem.menuItem.price - expectedPrice) > 0.001) {
         const restaurantId = getRestaurantId();
         if (restaurantId) {
           removeItem(accessoireItem.menuItem.id);
-          
+
           let baseName = "Accessoire";
           if (name.toLowerCase().includes("baguette")) baseName = "Baguettes";
           else if (name.toLowerCase().includes("fourchette")) baseName = "Fourchettes";
           else if (name.toLowerCase().includes("cuillère") || name.toLowerCase().includes("cuillere")) baseName = "Cuillères";
-          
+
           const updatedAccessoireItem = {
             id: `${baseName.toLowerCase()}-${Date.now()}`,
             name: paidForThis > 0 ? `${baseName} (${freeForThis} gratuite(s) + ${paidForThis} payante(s))` : baseName,
