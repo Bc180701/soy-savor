@@ -251,25 +251,24 @@ const ComposerSushi = () => {
       return;
     }
     
-    // For topping, check if enrobage is not nori, otherwise clear toppings
-    if (step === 5 && selectedEnrobages.some(e => e.name.toLowerCase().includes("nori")) && selectedToppings.length > 0) {
+    // Step 5 (sauce) - require at least one sauce
+    if (step === 5 && selectedSauces.length === 0) {
       toast({
-        title: "Information",
-        description: "Les toppings ne sont pas disponibles avec l'enrobage feuille d'algue nori",
+        title: "Sélection requise",
+        description: "Veuillez sélectionner au moins une sauce",
+        variant: "destructive",
       });
-      setSelectedToppings([]);
+      return;
     }
 
-    // Step 6 (sauce) - complete current creation
+    // Step 6 (topping) - check nori incompatibility, then complete current creation
     if (step === 6) {
-      // Step 6 (sauce) - complete current creation
-      if (selectedSauces.length === 0) {
+      if (selectedEnrobages.some(e => e.name.toLowerCase().includes("nori")) && selectedToppings.length > 0) {
         toast({
-          title: "Sélection requise",
-          description: "Veuillez sélectionner au moins une sauce",
-          variant: "destructive",
+          title: "Information",
+          description: "Les toppings ne sont pas disponibles avec l'enrobage feuille d'algue nori",
         });
-        return;
+        setSelectedToppings([]);
       }
       
       // Save current creation
@@ -379,9 +378,9 @@ const ComposerSushi = () => {
       case 4:
         return <GarnituresSelection selectedGarnitures={selectedGarnitures} garnituresOptions={garnituresOptions} onGarnitureSelect={handleGarnitureSelect} />;
       case 5:
-        return <ToppingSelection selectedToppings={selectedToppings} toppingOptions={toppingOptions} selectedEnrobages={selectedEnrobages} onToppingSelect={handleToppingSelect} />;
-      case 6:
         return <SauceSelection selectedSauces={selectedSauces} sauceOptions={sauceOptions} onSauceSelect={handleSauceSelect} />;
+      case 6:
+        return <ToppingSelection selectedToppings={selectedToppings} toppingOptions={toppingOptions} selectedEnrobages={selectedEnrobages} onToppingSelect={handleToppingSelect} />;
       default:
         return null;
     }
