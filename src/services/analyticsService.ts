@@ -121,23 +121,42 @@ export const getOrderCountsByStatus = async (restaurantId?: string): Promise<Rec
 
 export const getTotalRevenue = async (restaurantId?: string): Promise<number> => {
   try {
-    let query = supabase
-      .from('orders')
-      .select('total')
-      .eq('payment_status', 'paid');
-    
-    if (restaurantId) {
-      query = query.eq('restaurant_id', restaurantId);
+    // Pagination pour contourner la limite de 1000 lignes de Supabase
+    const pageSize = 1000;
+    let from = 0;
+    let total = 0;
+    let keepFetching = true;
+
+    while (keepFetching) {
+      let query = supabase
+        .from('orders')
+        .select('total')
+        .eq('payment_status', 'paid')
+        .range(from, from + pageSize - 1);
+
+      if (restaurantId) {
+        query = query.eq('restaurant_id', restaurantId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching total revenue:", error);
+        return 0;
+      }
+
+      if (!data || data.length === 0) break;
+
+      total += data.reduce((sum, order) => sum + Number(order.total || 0), 0);
+
+      if (data.length < pageSize) {
+        keepFetching = false;
+      } else {
+        from += pageSize;
+      }
     }
-    
-    const { data, error } = await query;
-    
-    if (error) {
-      console.error("Error fetching total revenue:", error);
-      return 0;
-    }
-    
-    return data.reduce((sum, order) => sum + order.total, 0);
+
+    return total;
   } catch (error) {
     console.error("Unexpected error fetching total revenue:", error);
     return 0;
