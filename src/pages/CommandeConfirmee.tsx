@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useSearchParams, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useCart } from "@/hooks/use-cart";
 
 const CommandeConfirmee = () => {
   const [searchParams] = useSearchParams();
@@ -19,6 +20,7 @@ const CommandeConfirmee = () => {
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [hasError, setHasError] = useState(false);
   const { toast } = useToast();
+  const { clearCart } = useCart();
 
   // Vérifier et créer la commande via l'edge function
   useEffect(() => {
@@ -30,8 +32,8 @@ const CommandeConfirmee = () => {
         setOrderCreated(true);
         setFinalOrderId(orderId);
         
-        // Vider le panier localStorage
-        localStorage.removeItem('cart-storage');
+        // Vider le panier (store + localStorage)
+        clearCart();
         localStorage.removeItem('delivery-info');
         
         return;
@@ -82,8 +84,8 @@ const CommandeConfirmee = () => {
           setOrderCreated(true);
           setFinalOrderId(data.orderId);
           
-          // Vider le panier localStorage
-          localStorage.removeItem('cart-storage');
+          // Vider le panier (store + localStorage) après paiement validé
+          clearCart();
           localStorage.removeItem('delivery-info');
           
           toast({
