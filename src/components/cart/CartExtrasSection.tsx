@@ -1074,7 +1074,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🥢 Baguettes
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''} (pool partagé)
+              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''}
             </span>
           </h4>
           <div className="space-y-2 p-3 border rounded-lg bg-white">
@@ -1135,7 +1135,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🍴 Fourchettes
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''} (pool partagé)
+              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''}
             </span>
           </h4>
           <div className="space-y-2 p-3 border rounded-lg bg-white">
@@ -1196,7 +1196,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🥄 Cuillères
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''} (pool partagé)
+              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''}
             </span>
           </h4>
           <div className="space-y-2 p-3 border rounded-lg bg-white">
