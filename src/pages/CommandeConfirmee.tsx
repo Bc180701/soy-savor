@@ -32,8 +32,8 @@ const CommandeConfirmee = () => {
         setOrderCreated(true);
         setFinalOrderId(orderId);
         
-        // Vider le panier localStorage
-        localStorage.removeItem('cart-storage');
+        // Vider le panier (store + localStorage)
+        clearCart();
         localStorage.removeItem('delivery-info');
         
         return;
