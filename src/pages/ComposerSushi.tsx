@@ -378,9 +378,9 @@ const ComposerSushi = () => {
       case 4:
         return <GarnituresSelection selectedGarnitures={selectedGarnitures} garnituresOptions={garnituresOptions} onGarnitureSelect={handleGarnitureSelect} />;
       case 5:
-        return <ToppingSelection selectedToppings={selectedToppings} toppingOptions={toppingOptions} selectedEnrobages={selectedEnrobages} onToppingSelect={handleToppingSelect} />;
-      case 6:
         return <SauceSelection selectedSauces={selectedSauces} sauceOptions={sauceOptions} onSauceSelect={handleSauceSelect} />;
+      case 6:
+        return <ToppingSelection selectedToppings={selectedToppings} toppingOptions={toppingOptions} selectedEnrobages={selectedEnrobages} onToppingSelect={handleToppingSelect} />;
       default:
         return null;
     }
