@@ -20,6 +20,7 @@ const CommandeConfirmee = () => {
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [hasError, setHasError] = useState(false);
   const { toast } = useToast();
+  const { clearCart } = useCart();
 
   // Vérifier et créer la commande via l'edge function
   useEffect(() => {
