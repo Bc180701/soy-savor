@@ -1196,7 +1196,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🥄 Cuillères
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getFreeCuilleres()} gratuite{getFreeCuilleres() > 1 ? 's' : ''}
+              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''} (pool partagé)
             </span>
           </h4>
           <div className="space-y-2 p-3 border rounded-lg bg-white">
