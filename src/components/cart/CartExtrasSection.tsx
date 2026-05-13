@@ -174,27 +174,36 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       }
     });
 
-    // Recalculer les couverts (baguettes, fourchettes, cuillères)
+    // Recalculer les couverts (baguettes, fourchettes, cuillères) avec pool partagé
     const accessoireItems = items.filter(item => item.menuItem.category === "Accessoire");
-    
-    accessoireItems.forEach(accessoireItem => {
+    const orderKey = (n: string): number => {
+      const low = n.toLowerCase();
+      if (low.includes('baguette')) return 0;
+      if (low.includes('fourchette')) return 1;
+      return 2; // cuillere
+    };
+    const sortedAccessoires = [...accessoireItems].sort((a, b) => orderKey(a.menuItem.name) - orderKey(b.menuItem.name));
+    let freeRemainingPool = newFreeCount;
+
+    sortedAccessoires.forEach(accessoireItem => {
       const quantity = accessoireItem.quantity;
       const name = accessoireItem.menuItem.name;
-      
-      const freeForThis = Math.min(quantity, newFreeCount);
-      const paidForThis = Math.max(0, quantity - newFreeCount);
+
+      const freeForThis = Math.min(quantity, freeRemainingPool);
+      freeRemainingPool = Math.max(0, freeRemainingPool - freeForThis);
+      const paidForThis = Math.max(0, quantity - freeForThis);
       const expectedPrice = paidForThis > 0 ? (paidForThis * 0.5 / quantity) : 0;
-      
+
       if (Math.abs(accessoireItem.menuItem.price - expectedPrice) > 0.001) {
         const restaurantId = getRestaurantId();
         if (restaurantId) {
           removeItem(accessoireItem.menuItem.id);
-          
+
           let baseName = "Accessoire";
           if (name.toLowerCase().includes("baguette")) baseName = "Baguettes";
           else if (name.toLowerCase().includes("fourchette")) baseName = "Fourchettes";
           else if (name.toLowerCase().includes("cuillère") || name.toLowerCase().includes("cuillere")) baseName = "Cuillères";
-          
+
           const updatedAccessoireItem = {
             id: `${baseName.toLowerCase()}-${Date.now()}`,
             name: paidForThis > 0 ? `${baseName} (${freeForThis} gratuite(s) + ${paidForThis} payante(s))` : baseName,
@@ -284,10 +293,47 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
   // Supprimer la fonction getDisabledAccompagnements - on permet toujours d'ajouter des accompagnements
 
-  // Calculer les couverts gratuits (1 par 10€ pour chaque type)
-  const getFreeBaguettes = () => Math.floor(getTotalPrice() / 10);
-  const getFreeFourchettes = () => Math.floor(getTotalPrice() / 10);
-  const getFreeCuilleres = () => Math.floor(getTotalPrice() / 10);
+  // Pool partagé : 1 couvert gratuit par 10€, réparti entre baguettes/fourchettes/cuillères
+  // Ordre de priorité d'attribution : baguettes -> fourchettes -> cuillères
+  const FREE_UTENSIL_ORDER: Array<'baguette' | 'fourchette' | 'cuillere'> = ['baguette', 'fourchette', 'cuillere'];
+
+  const getUtensilQtyInCart = (kind: 'baguette' | 'fourchette' | 'cuillere'): number => {
+    const item = items.find(i => {
+      if (i.menuItem.category !== 'Accessoire') return false;
+      const n = i.menuItem.name.toLowerCase();
+      if (kind === 'baguette') return n.includes('baguette');
+      if (kind === 'fourchette') return n.includes('fourchette');
+      return n.includes('cuillère') || n.includes('cuillere');
+    });
+    return item ? item.quantity : 0;
+  };
+
+  const getTotalFreeUtensilsPool = () => Math.floor(getTotalPrice() / 10);
+
+  // Renvoie combien de couverts gratuits restent attribuables à ce type, en tenant compte des autres déjà au panier
+  const getFreeForUtensil = (kind: 'baguette' | 'fourchette' | 'cuillere', overrideQty?: number) => {
+    const pool = getTotalFreeUtensilsPool();
+    let used = 0;
+    for (const k of FREE_UTENSIL_ORDER) {
+      const q = k === kind ? (overrideQty ?? getUtensilQtyInCart(k)) : getUtensilQtyInCart(k);
+      if (k === kind) {
+        return Math.min(q, Math.max(0, pool - used));
+      }
+      used += q;
+    }
+    return 0;
+  };
+
+  const getFreeBaguettes = () => getFreeForUtensil('baguette', baguettesQuantity || getUtensilQtyInCart('baguette'));
+  const getFreeFourchettes = () => getFreeForUtensil('fourchette', fourchettesQuantity || getUtensilQtyInCart('fourchette'));
+  const getFreeCuilleres = () => getFreeForUtensil('cuillere', cuilleresQuantity || getUtensilQtyInCart('cuillere'));
+
+  // Total restant disponible dans le pool (pour l'affichage du badge)
+  const getRemainingFreePool = () => {
+    const pool = getTotalFreeUtensilsPool();
+    const used = getUtensilQtyInCart('baguette') + getUtensilQtyInCart('fourchette') + getUtensilQtyInCart('cuillere');
+    return Math.max(0, pool - Math.min(used, pool));
+  };
 
   // Vérifier si les couverts sont déjà dans le panier
   const baguettesInCart = items.find(item => 
@@ -737,7 +783,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
-    const freeCount = getFreeBaguettes();
+    const freeCount = getFreeForUtensil('baguette', quantity);
     const paidCount = Math.max(0, quantity - freeCount);
     
     if (baguettesInCart) {
@@ -771,7 +817,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
-    const freeCount = getFreeFourchettes();
+    const freeCount = getFreeForUtensil('fourchette', quantity);
     const paidCount = Math.max(0, quantity - freeCount);
     
     if (fourchettesInCart) {
@@ -805,7 +851,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
-    const freeCount = getFreeCuilleres();
+    const freeCount = getFreeForUtensil('cuillere', quantity);
     const paidCount = Math.max(0, quantity - freeCount);
     
     if (cuilleresInCart) {
@@ -1028,7 +1074,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🥢 Baguettes
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getFreeBaguettes()} gratuite{getFreeBaguettes() > 1 ? 's' : ''}
+              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''} (pool partagé)
             </span>
           </h4>
           <div className="space-y-2 p-3 border rounded-lg bg-white">
@@ -1089,7 +1135,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🍴 Fourchettes
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getFreeFourchettes()} gratuite{getFreeFourchettes() > 1 ? 's' : ''}
+              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''} (pool partagé)
             </span>
           </h4>
           <div className="space-y-2 p-3 border rounded-lg bg-white">
@@ -1150,7 +1196,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
           <h4 className="font-semibold text-gray-800 flex items-center gap-2">
             🥄 Cuillères
             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              {getFreeCuilleres()} gratuite{getFreeCuilleres() > 1 ? 's' : ''}
+              {getRemainingFreePool()} gratuit{getRemainingFreePool() > 1 ? 's' : ''} restant{getRemainingFreePool() > 1 ? 's' : ''} (pool partagé)
             </span>
           </h4>
           <div className="space-y-2 p-3 border rounded-lg bg-white">
