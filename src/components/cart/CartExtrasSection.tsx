@@ -817,7 +817,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
-    const freeCount = getFreeFourchettes();
+    const freeCount = getFreeForUtensil('fourchette', quantity);
     const paidCount = Math.max(0, quantity - freeCount);
     
     if (fourchettesInCart) {
