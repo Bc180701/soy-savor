@@ -254,8 +254,24 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     "Gingembre"
   ];
 
+  // Vérifier si la commande contient uniquement des Sushi Push Roll (hors extras)
+  const isPushRollOnlyOrder = () => {
+    const productItems = items.filter(item =>
+      item.menuItem.category !== "Sauce" &&
+      item.menuItem.category !== "Accompagnement" &&
+      item.menuItem.category !== "Accessoire"
+    );
+    if (productItems.length === 0) return false;
+    return productItems.every(item => {
+      const cat = (item.menuItem.category || "").toLowerCase();
+      return cat === "sushi push roll" || cat === "sushi-push-roll";
+    });
+  };
+
   // Calculer le nombre de sauces gratuites selon le total du panier
   const getFreeSaucesCount = () => {
+    // Pas de sauces supplémentaires gratuites si la commande ne contient que des Push Rolls
+    if (isPushRollOnlyOrder()) return 0;
     const total = getTotalPrice();
     return Math.floor(total / 10);
   };
