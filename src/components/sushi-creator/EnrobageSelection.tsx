@@ -64,7 +64,7 @@ export const EnrobageSelection = ({
   return (
     <div>
       <h3 className="text-xl font-bold mb-4">Choisis l'enrobage (extérieur)</h3>
-      <p className="text-sm text-gray-500 mb-4">1 enrobage inclus, supplément +1€ (max 2)</p>
+      <p className="text-sm text-gray-500 mb-4">un enrobage inclus, supplément +1€ (max 2)</p>
 
       {classicOptions.length > 0 && (
         <>
