@@ -783,7 +783,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const restaurantId = getRestaurantId();
     if (!restaurantId) return;
 
-    const freeCount = getFreeBaguettes();
+    const freeCount = getFreeForUtensil('baguette', quantity);
     const paidCount = Math.max(0, quantity - freeCount);
     
     if (baguettesInCart) {
