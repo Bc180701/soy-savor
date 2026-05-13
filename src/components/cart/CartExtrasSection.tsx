@@ -284,10 +284,47 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
 
   // Supprimer la fonction getDisabledAccompagnements - on permet toujours d'ajouter des accompagnements
 
-  // Calculer les couverts gratuits (1 par 10€ pour chaque type)
-  const getFreeBaguettes = () => Math.floor(getTotalPrice() / 10);
-  const getFreeFourchettes = () => Math.floor(getTotalPrice() / 10);
-  const getFreeCuilleres = () => Math.floor(getTotalPrice() / 10);
+  // Pool partagé : 1 couvert gratuit par 10€, réparti entre baguettes/fourchettes/cuillères
+  // Ordre de priorité d'attribution : baguettes -> fourchettes -> cuillères
+  const FREE_UTENSIL_ORDER: Array<'baguette' | 'fourchette' | 'cuillere'> = ['baguette', 'fourchette', 'cuillere'];
+
+  const getUtensilQtyInCart = (kind: 'baguette' | 'fourchette' | 'cuillere'): number => {
+    const item = items.find(i => {
+      if (i.menuItem.category !== 'Accessoire') return false;
+      const n = i.menuItem.name.toLowerCase();
+      if (kind === 'baguette') return n.includes('baguette');
+      if (kind === 'fourchette') return n.includes('fourchette');
+      return n.includes('cuillère') || n.includes('cuillere');
+    });
+    return item ? item.quantity : 0;
+  };
+
+  const getTotalFreeUtensilsPool = () => Math.floor(getTotalPrice() / 10);
+
+  // Renvoie combien de couverts gratuits restent attribuables à ce type, en tenant compte des autres déjà au panier
+  const getFreeForUtensil = (kind: 'baguette' | 'fourchette' | 'cuillere', overrideQty?: number) => {
+    const pool = getTotalFreeUtensilsPool();
+    let used = 0;
+    for (const k of FREE_UTENSIL_ORDER) {
+      const q = k === kind ? (overrideQty ?? getUtensilQtyInCart(k)) : getUtensilQtyInCart(k);
+      if (k === kind) {
+        return Math.min(q, Math.max(0, pool - used));
+      }
+      used += q;
+    }
+    return 0;
+  };
+
+  const getFreeBaguettes = () => getFreeForUtensil('baguette', baguettesQuantity || getUtensilQtyInCart('baguette'));
+  const getFreeFourchettes = () => getFreeForUtensil('fourchette', fourchettesQuantity || getUtensilQtyInCart('fourchette'));
+  const getFreeCuilleres = () => getFreeForUtensil('cuillere', cuilleresQuantity || getUtensilQtyInCart('cuillere'));
+
+  // Total restant disponible dans le pool (pour l'affichage du badge)
+  const getRemainingFreePool = () => {
+    const pool = getTotalFreeUtensilsPool();
+    const used = getUtensilQtyInCart('baguette') + getUtensilQtyInCart('fourchette') + getUtensilQtyInCart('cuillere');
+    return Math.max(0, pool - Math.min(used, pool));
+  };
 
   // Vérifier si les couverts sont déjà dans le panier
   const baguettesInCart = items.find(item => 
