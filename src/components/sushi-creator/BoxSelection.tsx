@@ -55,10 +55,6 @@ export const BoxSelection = ({ selectedBox, boxOptions, onBoxSelect }: BoxSelect
           className="max-w-xs w-full h-auto"
         />
       </div>
-      
-      <p className="text-xs text-gray-500 mt-4">
-        Tout supplément au-delà des choix inclus: +1€
-      </p>
     </div>
   );
 };
