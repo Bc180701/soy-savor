@@ -84,8 +84,8 @@ const CommandeConfirmee = () => {
           setOrderCreated(true);
           setFinalOrderId(data.orderId);
           
-          // Vider le panier localStorage
-          localStorage.removeItem('cart-storage');
+          // Vider le panier (store + localStorage) après paiement validé
+          clearCart();
           localStorage.removeItem('delivery-info');
           
           toast({
