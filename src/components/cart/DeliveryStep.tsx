@@ -115,9 +115,11 @@ export const DeliveryStep = ({
     }
   }, [eventInfo.hasEventProducts, eventInfo.deliveryEnabled, deliveryInfo.orderType]);
 
-  // Calculer le sous-total sans les frais de livraison pour le popup livraison gratuite
-  // Note: orderTotal inclut les frais de livraison, on doit recalculer le subtotal
-  const subtotalForFreeDelivery = deliveryInfo.orderType === "delivery" ? orderTotal - 5 : orderTotal;
+  // Sous-total réel (sans frais de livraison) pour le popup livraison gratuite
+  // Fallback: si subtotal n'est pas fourni, on reconstitue depuis orderTotal en retirant les 5€ uniquement quand ils sont facturés
+  const subtotalForFreeDelivery = subtotal !== undefined
+    ? subtotal
+    : (deliveryInfo.orderType === "delivery" && orderTotal < 40 ? orderTotal - 5 : orderTotal);
   
   // Pop-up pour livraison gratuite si sous-total entre 25€ et 35€
   useEffect(() => {
