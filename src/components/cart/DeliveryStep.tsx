@@ -52,6 +52,7 @@ interface DeliveryStepProps {
   cartRestaurant?: Restaurant | null;
   cartExtras?: CartExtras | null;
   orderTotal: number;
+  subtotal?: number;
 }
 
 export const DeliveryStep = ({
@@ -64,7 +65,8 @@ export const DeliveryStep = ({
   isLoggedIn,
   cartRestaurant,
   cartExtras,
-  orderTotal
+  orderTotal,
+  subtotal
 }: DeliveryStepProps) => {
   const [isValidatingPostalCode, setIsValidatingPostalCode] = useState(false);
   const [useStoredInfo, setUseStoredInfo] = useState(false);
