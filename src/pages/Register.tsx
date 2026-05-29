@@ -29,6 +29,7 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [promotion, setPromotion] = useState<Promotion | null>(null);
   const [loadingPromotion, setLoadingPromotion] = useState(true);
+  const [existingAccount, setExistingAccount] = useState<{ createdAt: string | null } | null>(null);
   
   useEffect(() => {
     const fetchPromotion = async () => {
