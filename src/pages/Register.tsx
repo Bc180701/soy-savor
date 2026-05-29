@@ -233,6 +233,30 @@ const Register = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleRegister} className="space-y-4">
+              {existingAccount && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Compte déjà existant</AlertTitle>
+                  <AlertDescription className="space-y-2">
+                    <p>
+                      Un compte avec l'adresse <strong>{email}</strong> existe déjà
+                      {existingAccount.createdAt && formatCreatedAt(existingAccount.createdAt) && (
+                        <> (créé le {formatCreatedAt(existingAccount.createdAt)})</>
+                      )}.
+                    </p>
+                    <p>
+                      <Link to="/login" className="underline font-medium">
+                        Se connecter
+                      </Link>{" "}
+                      ou{" "}
+                      <Link to="/reset-password" className="underline font-medium">
+                        réinitialiser le mot de passe
+                      </Link>
+                      .
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
