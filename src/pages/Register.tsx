@@ -116,6 +116,7 @@ const Register = () => {
     }
     
     setIsLoading(true);
+    setExistingAccount(null);
     
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -130,18 +131,34 @@ const Register = () => {
       });
       
       if (error) {
-        let errorMessage = error.message;
-        
-        // Gestion spécifique pour l'utilisateur déjà enregistré
-        if (error.message.includes("User already registered") || error.message.includes("already")) {
-          errorMessage = "Cette adresse email est déjà utilisée. Vous avez déjà un compte ? Connectez-vous ou utilisez une autre adresse email.";
+        const isAlreadyRegistered =
+          error.message.includes("User already registered") ||
+          error.message.toLowerCase().includes("already");
+
+        if (isAlreadyRegistered) {
+          // Récupérer la date de création du compte existant
+          let createdAt: string | null = null;
+          try {
+            const { data: checkData } = await supabase.functions.invoke("check-user-exists", {
+              body: { email },
+            });
+            createdAt = checkData?.created_at ?? null;
+          } catch (e) {
+            console.error("check-user-exists error:", e);
+          }
+          setExistingAccount({ createdAt });
+          toast({
+            variant: "destructive",
+            title: "Compte déjà existant",
+            description: "Cette adresse email est déjà utilisée.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erreur d'inscription",
+            description: error.message,
+          });
         }
-        
-        toast({
-          variant: "destructive",
-          title: "Erreur d'inscription",
-          description: errorMessage,
-        });
       } else {
         // Récupérer le code promo
         const promoCode = promotion?.code || "BIENVENUE";
@@ -164,6 +181,19 @@ const Register = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const formatCreatedAt = (iso: string | null) => {
+    if (!iso) return null;
+    try {
+      return new Intl.DateTimeFormat("fr-FR", {
+        dateStyle: "long",
+        timeStyle: "short",
+        timeZone: "Europe/Paris",
+      }).format(new Date(iso));
+    } catch {
+      return null;
     }
   };
   
