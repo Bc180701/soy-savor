@@ -264,7 +264,7 @@ const Register = () => {
                   type="email"
                   placeholder="votre@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setExistingAccount(null); }}
                   required
                 />
               </div>
