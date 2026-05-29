@@ -28,3 +28,7 @@ verify_jwt = false
 # Restaurant alert function must be public
 [functions.send-restaurant-alert]
 verify_jwt = false
+
+# Vérification d'existence d'utilisateur (page d'inscription publique)
+[functions.check-user-exists]
+verify_jwt = false
