@@ -28,14 +28,6 @@ export const BoissonOfferteSelector = ({
       restaurant_id: restaurantId
     },
     {
-      id: 'oasis-tropical',
-      name: "Oasis tropical",
-      description: "Boisson aux fruits tropicaux",
-      price: 0,
-      category: 'boissons' as any,
-      restaurant_id: restaurantId
-    },
-    {
       id: 'eau-gazeuse',
       name: "Eau gazeuse",
       description: "Bouteille d'eau gazeuse",
