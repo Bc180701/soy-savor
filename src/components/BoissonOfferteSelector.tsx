@@ -28,14 +28,6 @@ export const BoissonOfferteSelector = ({
       restaurant_id: restaurantId
     },
     {
-      id: 'oasis-tropical',
-      name: "Oasis tropical",
-      description: "Boisson aux fruits tropicaux",
-      price: 0,
-      category: 'boissons' as any,
-      restaurant_id: restaurantId
-    },
-    {
       id: 'eau-gazeuse',
       name: "Eau gazeuse",
       description: "Bouteille d'eau gazeuse",
@@ -63,14 +55,6 @@ export const BoissonOfferteSelector = ({
       id: 'fuzetea-noir-peche',
       name: "Fuzetea thé noir pêche",
       description: "Thé glacé à la pêche",
-      price: 0,
-      category: 'boissons' as any,
-      restaurant_id: restaurantId
-    },
-    {
-      id: 'orangina',
-      name: "Orangina",
-      description: "Boisson pétillante à l'orange",
       price: 0,
       category: 'boissons' as any,
       restaurant_id: restaurantId
