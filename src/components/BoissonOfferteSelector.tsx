@@ -60,14 +60,6 @@ export const BoissonOfferteSelector = ({
       restaurant_id: restaurantId
     },
     {
-      id: 'orangina',
-      name: "Orangina",
-      description: "Boisson pétillante à l'orange",
-      price: 0,
-      category: 'boissons' as any,
-      restaurant_id: restaurantId
-    },
-    {
       id: 'coca-cola-cherry',
       name: "Coca-Cola cherry",
       description: "Coca-Cola parfum cerise",
