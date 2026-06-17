@@ -103,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("📧 Destinataire:", customerEmail);
     
     const emailResponse = await resend.emails.send({
-      from: Deno.env.get("EMAIL_FROM") || "SUSHIEATS <noreply@emailsend.clwebdesign.fr>",
+      from: Deno.env.get("EMAIL_FROM") || "SUSHIEATS <confirmation@email.contact.sushieats.fr>",
       to: [customerEmail],
       subject: subject,
       html: htmlContent,
