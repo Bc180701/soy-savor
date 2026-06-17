@@ -201,7 +201,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       return 2; // cuillere
     };
     const sortedAccessoires = [...accessoireItems].sort((a, b) => orderKey(a.menuItem.name) - orderKey(b.menuItem.name));
-    let freeRemainingPool = newFreeCount;
+    let freeRemainingPool = newFreeUtensilCount;
 
     sortedAccessoires.forEach(accessoireItem => {
       const quantity = accessoireItem.quantity;
