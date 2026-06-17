@@ -54,10 +54,24 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       .reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
   };
 
+  // Total des Sushi Push Roll uniquement (ils ont déjà leurs sauces incluses)
+  const getPushRollTotal = () => {
+    return items
+      .filter(item => {
+        const cat = (item.menuItem.category || "").toLowerCase();
+        return cat === "sushi push roll" || cat === "sushi-push-roll";
+      })
+      .reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
+  };
+
   // Recalculer les prix des sauces/accompagnements/couverts quand le total du panier change
   useEffect(() => {
     const productsTotal = getProductsOnlyTotal();
     const newFreeCount = Math.floor(productsTotal / 10);
+    // Pour les sauces uniquement: exclure la valeur des Sushi Push Roll
+    // (ils ont déjà leurs sauces obligatoires attribuées)
+    const sauceBaseTotal = Math.max(0, productsTotal - getPushRollTotal());
+    const newFreeSauceCount = Math.floor(sauceBaseTotal / 10);
     
     // Recalculer les sauces
     const sauceItems = items.filter(item => 
