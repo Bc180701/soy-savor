@@ -133,21 +133,24 @@ const PanierContent = () => {
   
   // Les prix sont déjà TTC, calculer la TVA incluse pour affichage
   const subtotal = cartTotal;
-  const deliveryFee = deliveryInfo.orderType === "delivery" ? calculateDeliveryFee(subtotal) : 0;
-  
+
   // Calculate discount if promo code is applied
   const discount = appliedPromoCode 
     ? appliedPromoCode.isPercentage 
       ? (subtotal * appliedPromoCode.discount / 100)
       : appliedPromoCode.discount
     : 0;
-  
+
   // Calculer la réduction des desserts offerts par l'événement
   const eventDessertDiscount = calculateDessertDiscount(items);
-  
+
+  // Sous-total NET (après réductions) — base pour la livraison gratuite
+  const subtotalAfterDiscount = Math.max(0, subtotal - discount - eventDessertDiscount);
+  const deliveryFee = deliveryInfo.orderType === "delivery" ? calculateDeliveryFee(subtotalAfterDiscount) : 0;
+
   // Le total TTC (sans ajouter de TVA car déjà incluse dans les prix)
   const orderTotal = subtotal + deliveryFee + tip - discount - eventDessertDiscount;
-  
+
   // TVA incluse dans le total TTC (10%) - pour affichage uniquement
   const tax = orderTotal / 1.1 * 0.1;
 
@@ -490,7 +493,7 @@ const PanierContent = () => {
               cartRestaurant={cartRestaurant}
               cartExtras={cartExtras}
               orderTotal={orderTotal}
-              subtotal={subtotal}
+              subtotal={subtotalAfterDiscount}
             />
           );
       case CheckoutStep.Payment:
