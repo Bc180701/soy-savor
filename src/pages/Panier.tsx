@@ -493,7 +493,7 @@ const PanierContent = () => {
               cartRestaurant={cartRestaurant}
               cartExtras={cartExtras}
               orderTotal={orderTotal}
-              subtotal={subtotal}
+              subtotal={subtotalAfterDiscount}
             />
           );
       case CheckoutStep.Payment:
