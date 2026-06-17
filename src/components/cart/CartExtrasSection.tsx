@@ -286,8 +286,9 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
   const getFreeSaucesCount = () => {
     // Pas de sauces supplémentaires gratuites si la commande ne contient que des Push Rolls
     if (isPushRollOnlyOrder()) return 0;
-    const total = getTotalPrice();
-    return Math.floor(total / 10);
+    // Exclure la valeur des Sushi Push Roll (sauces déjà incluses)
+    const base = Math.max(0, getProductsOnlyTotal() - getPushRollTotal());
+    return Math.floor(base / 10);
   };
 
   const getTotalSelectedSauces = () => {
