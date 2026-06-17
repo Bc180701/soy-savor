@@ -73,6 +73,10 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const sauceBaseTotal = Math.max(0, productsTotal - getPushRollTotal());
     const newFreeSauceCount = Math.floor(sauceBaseTotal / 10);
     
+    // Pour les couverts (baguettes, fourchettes, cuillères): exclure aussi la valeur des Sushi Push Roll
+    const utensilBaseTotal = Math.max(0, productsTotal - getPushRollTotal());
+    const newFreeUtensilCount = Math.floor(utensilBaseTotal / 10);
+    
     // Recalculer les sauces
     const sauceItems = items.filter(item => 
       item.menuItem.category === "Sauce" && 
