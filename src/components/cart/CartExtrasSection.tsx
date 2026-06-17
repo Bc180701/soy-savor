@@ -343,7 +343,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     return item ? item.quantity : 0;
   };
 
-  const getTotalFreeUtensilsPool = () => Math.floor(getTotalPrice() / 10);
+  const getTotalFreeUtensilsPool = () => Math.floor(Math.max(0, getProductsOnlyTotal() - getPushRollTotal()) / 10);
 
   // Renvoie combien de couverts gratuits restent attribuables à ce type, en tenant compte des autres déjà au panier
   const getFreeForUtensil = (kind: 'baguette' | 'fourchette' | 'cuillere', overrideQty?: number) => {
