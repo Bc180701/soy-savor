@@ -73,6 +73,10 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     const sauceBaseTotal = Math.max(0, productsTotal - getPushRollTotal());
     const newFreeSauceCount = Math.floor(sauceBaseTotal / 10);
     
+    // Pour les couverts (baguettes, fourchettes, cuillères): exclure aussi la valeur des Sushi Push Roll
+    const utensilBaseTotal = Math.max(0, productsTotal - getPushRollTotal());
+    const newFreeUtensilCount = Math.floor(utensilBaseTotal / 10);
+    
     // Recalculer les sauces
     const sauceItems = items.filter(item => 
       item.menuItem.category === "Sauce" && 
@@ -197,7 +201,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
       return 2; // cuillere
     };
     const sortedAccessoires = [...accessoireItems].sort((a, b) => orderKey(a.menuItem.name) - orderKey(b.menuItem.name));
-    let freeRemainingPool = newFreeCount;
+    let freeRemainingPool = newFreeUtensilCount;
 
     sortedAccessoires.forEach(accessoireItem => {
       const quantity = accessoireItem.quantity;
@@ -339,7 +343,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
     return item ? item.quantity : 0;
   };
 
-  const getTotalFreeUtensilsPool = () => Math.floor(getTotalPrice() / 10);
+  const getTotalFreeUtensilsPool = () => Math.floor(Math.max(0, getProductsOnlyTotal() - getPushRollTotal()) / 10);
 
   // Renvoie combien de couverts gratuits restent attribuables à ce type, en tenant compte des autres déjà au panier
   const getFreeForUtensil = (kind: 'baguette' | 'fourchette' | 'cuillere', overrideQty?: number) => {
