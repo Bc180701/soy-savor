@@ -88,7 +88,7 @@ export const CartExtrasSection = ({ onExtrasChange }: CartExtrasSectionProps) =>
         .filter(item => item.menuItem.id !== sauceItem.menuItem.id)
         .reduce((sum, item) => sum + item.quantity, 0);
       
-      const freeRemaining = Math.max(0, newFreeCount - otherSaucesCount);
+      const freeRemaining = Math.max(0, newFreeSauceCount - otherSaucesCount);
       const freeForThis = Math.min(quantity, freeRemaining);
       const paidForThis = quantity - freeForThis;
       
