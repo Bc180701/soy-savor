@@ -103,7 +103,40 @@ export async function sendOrderToPrinter(order: Order): Promise<{
         });
       });
     } else {
-      console.error('❌ [PRINT] Aucune source de données pour les articles !');
+      console.warn('⚠️ [PRINT] Aucune source locale, fallback DB sur orders.items_summary');
+      try {
+        const { data: dbOrder, error: dbErr } = await supabase
+          .from('orders')
+          .select('items_summary')
+          .eq('id', order.id)
+          .single();
+
+        if (dbErr) {
+          console.error('❌ [PRINT] Erreur fallback DB:', dbErr);
+        } else if (dbOrder?.items_summary && Array.isArray(dbOrder.items_summary) && dbOrder.items_summary.length > 0) {
+          console.log('📦 [PRINT] Utilisation items_summary depuis DB:', dbOrder.items_summary.length, 'articles');
+          (dbOrder.items_summary as any[]).forEach((item: any) => {
+            items.push({
+              name: item.name || 'Produit',
+              quantity: item.quantity || 1,
+              price: item.price ?? item.unit_price ?? 0,
+              description: item.description || '',
+              specialInstructions: item.special_instructions || '',
+            });
+          });
+        } else {
+          console.error('❌ [PRINT] Aucune source de données pour les articles, même en DB !');
+        }
+      } catch (e) {
+        console.error('❌ [PRINT] Exception fallback DB:', e);
+      }
+    }
+
+    if (items.length === 0) {
+      return {
+        success: false,
+        message: 'Impression annulée : aucun article trouvé pour cette commande',
+      };
     }
 
     // Préparer les données de la commande avec l'ID du restaurant
