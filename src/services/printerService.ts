@@ -4,6 +4,7 @@
  */
 
 import { Order } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
 // URLs des serveurs OVH par restaurant
 const OVH_SERVER_URL = "https://sushieats.fr/add-order.php";
