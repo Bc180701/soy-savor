@@ -27,6 +27,8 @@ interface CartStore {
   plateauCount: number;
   freeDessertCount: number;
   getRemainingFreeDesserts: () => number;
+  // Synchronise les sauces liées aux Sushi Push Roll avec les produits réellement présents
+  syncPushRollSauces: () => void;
   // Nouvelle méthode pour vérifier la compatibilité du restaurant
   checkRestaurantCompatibility: (restaurantId: string) => boolean;
   // Nouvelle méthode pour ajouter des articles avec un restaurant spécifique
