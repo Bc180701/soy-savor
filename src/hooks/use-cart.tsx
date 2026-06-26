@@ -79,6 +79,45 @@ export const useCart = create<CartStore>()(
         return Math.max(0, state.plateauCount - state.freeDessertCount);
       },
 
+      syncPushRollSauces: () => {
+        const state = get();
+        const sauceRegex = /^Sauce .+ \((.+)\)$/;
+        const productQty = new Map<string, number>();
+        for (const it of state.items) {
+          const n = it.menuItem.name || '';
+          if (!sauceRegex.test(n)) {
+            productQty.set(n, (productQty.get(n) || 0) + it.quantity);
+          }
+        }
+        const remaining = new Map(productQty);
+        const newItems: typeof state.items = [];
+        let changed = false;
+        for (const it of state.items) {
+          const n = it.menuItem.name || '';
+          const m = n.match(sauceRegex);
+          if (!m) { newItems.push(it); continue; }
+          const product = m[1];
+          const allowed = remaining.get(product) || 0;
+          if (allowed <= 0) {
+            console.log('🗑️ Sauce orpheline supprimée (aucun produit lié):', n);
+            changed = true;
+            continue;
+          }
+          const take = Math.min(it.quantity, allowed);
+          if (take !== it.quantity) {
+            console.log('🔧 Quantité sauce ajustée:', n, it.quantity, '→', take);
+            newItems.push({ ...it, quantity: take });
+            changed = true;
+          } else {
+            newItems.push(it);
+          }
+          remaining.set(product, allowed - take);
+        }
+        if (changed) {
+          set({ ...state, items: newItems });
+        }
+      },
+
       checkRestaurantCompatibility: (restaurantId: string) => {
         const state = get();
         // Si le panier est vide, n'importe quel restaurant est compatible
