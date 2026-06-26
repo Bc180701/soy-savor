@@ -39,8 +39,15 @@ export const CartStep = ({
     plateauCount,
     freeDessertCount,
     getRemainingFreeDesserts,
-    addItem
+    addItem,
+    syncPushRollSauces
   } = useCart();
+
+  // Nettoie les sauces orphelines de Sushi Push Roll au chargement et à chaque changement du panier
+  useEffect(() => {
+    syncPushRollSauces();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length]);
   
   const { cartRestaurant } = useCartRestaurant();
   const { freeDessertsEnabled, eventName, eventProductsCount, calculateDessertDiscount } = useEventFreeDesserts(cartRestaurant?.id);
