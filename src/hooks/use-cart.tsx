@@ -155,10 +155,31 @@ export const useCart = create<CartStore>()(
       
       addItem: (item, quantity, specialInstructions) => {
         console.log("🛒 addItem appelé:", item.name, "quantité:", quantity);
-        
+
+        const pushRollSauceRegex = /^Sauce .+ \((.+)\)$/;
+        const isPushRollSauce = pushRollSauceRegex.test(item.name || '');
+
         set((state) => {
+          // Fusionner les sauces de Sushi Push Roll par nom (même sauce + même produit lié)
+          if (isPushRollSauce) {
+            const existingByName = state.items.find(
+              ci => ci.menuItem.name === item.name
+            );
+            if (existingByName) {
+              console.log("🛒 Fusion sauce push roll identique:", item.name);
+              return {
+                ...state,
+                items: state.items.map(ci =>
+                  ci.menuItem.name === item.name
+                    ? { ...ci, quantity: ci.quantity + quantity }
+                    : ci
+                )
+              };
+            }
+          }
+
           const existingItem = state.items.find(cartItem => cartItem.menuItem.id === item.id);
-          
+
           if (existingItem) {
             console.log("🛒 Mise à jour quantité article existant:", item.name, "nouvelle quantité:", existingItem.quantity + quantity);
             return {
@@ -183,22 +204,46 @@ export const useCart = create<CartStore>()(
         console.log("🛒 Suppression article:", itemId);
         const state = get();
         const itemToRemove = state.items.find(item => item.menuItem.id === itemId);
+        if (!itemToRemove) return;
+
+        const pushRollSauceRegex = /^Sauce .+ \((.+)\)$/;
+        const removedName = itemToRemove.menuItem.name || '';
+        const sauceMatch = removedName.match(pushRollSauceRegex);
+
         let newItems = state.items.filter(item => item.menuItem.id !== itemId);
-        
-        // Si c'est un Sushi Push Roll, supprimer aussi la sauce liée
-        if (itemToRemove && itemToRemove.menuItem.name) {
-          const productName = itemToRemove.menuItem.name;
+
+        if (sauceMatch) {
+          // Suppression d'une sauce push roll → décrémente d'autant le produit lié
+          const linkedProductName = sauceMatch[1];
+          const decrementBy = itemToRemove.quantity;
+          newItems = newItems
+            .map(item => {
+              if (item.menuItem.name === linkedProductName) {
+                const newQty = item.quantity - decrementBy;
+                if (newQty <= 0) {
+                  console.log("🗑️ Suppression produit lié (sauce supprimée):", linkedProductName);
+                  return null;
+                }
+                console.log("🔻 Décrément produit lié:", linkedProductName, item.quantity, "→", newQty);
+                return { ...item, quantity: newQty };
+              }
+              return item;
+            })
+            .filter(Boolean) as typeof newItems;
+        } else {
+          // Suppression d'un produit → supprimer toutes les sauces liées
+          const productName = removedName;
           newItems = newItems.filter(item => {
             const name = item.menuItem.name || '';
-            // Sauce liée = contient le nom du produit entre parenthèses
-            if (name.includes('Sauce Soja') && name.includes(`(${productName})`)) {
+            const m = name.match(pushRollSauceRegex);
+            if (m && m[1] === productName) {
               console.log("🗑️ Suppression sauce liée:", name);
               return false;
             }
             return true;
           });
         }
-        
+
         set({ ...state, items: newItems });
       },
       
@@ -207,17 +252,61 @@ export const useCart = create<CartStore>()(
           get().removeItem(itemId);
           return;
         }
-        
+
         console.log("🛒 Mise à jour quantité:", itemId, "nouvelle quantité:", quantity);
-        set((state) => ({
-          ...state,
-          items: state.items.map(item =>
-            item.menuItem.id === itemId
-              ? { ...item, quantity }
-              : item
-          )
-        }));
+
+        const state = get();
+        const target = state.items.find(it => it.menuItem.id === itemId);
+        if (!target) return;
+
+        const pushRollSauceRegex = /^Sauce .+ \((.+)\)$/;
+        const sauceMatch = (target.menuItem.name || '').match(pushRollSauceRegex);
+
+        let newItems = state.items.map(item =>
+          item.menuItem.id === itemId ? { ...item, quantity } : item
+        );
+
+        if (sauceMatch) {
+          // Modification de quantité sur une sauce push roll
+          const linkedProductName = sauceMatch[1];
+          const delta = quantity - target.quantity;
+
+          if (delta < 0) {
+            // Décrémentation sauce → décrémenter d'autant le produit lié
+            newItems = newItems
+              .map(item => {
+                if (item.menuItem.name === linkedProductName) {
+                  const newQty = item.quantity + delta; // delta négatif
+                  if (newQty <= 0) {
+                    console.log("🗑️ Produit lié supprimé (qté sauce réduite):", linkedProductName);
+                    return null;
+                  }
+                  return { ...item, quantity: newQty };
+                }
+                return item;
+              })
+              .filter(Boolean) as typeof newItems;
+          } else if (delta > 0) {
+            // Plafonner la sauce à la quantité du produit lié
+            const productItem = newItems.find(it => it.menuItem.name === linkedProductName);
+            const maxAllowed = productItem ? productItem.quantity : 0;
+            if (quantity > maxAllowed) {
+              console.log("🔧 Sauce plafonnée à la quantité du produit:", quantity, "→", maxAllowed);
+              newItems = newItems.map(item =>
+                item.menuItem.id === itemId ? { ...item, quantity: maxAllowed } : item
+              );
+            }
+          }
+        }
+
+        set({ ...state, items: newItems });
+
+        // Si on a modifié un produit (non-sauce), aligner les sauces liées
+        if (!sauceMatch) {
+          get().syncPushRollSauces();
+        }
       },
+
       
       clearCart: () => {
         console.log("🧹 Vidage du panier");
