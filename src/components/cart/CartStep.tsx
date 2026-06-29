@@ -47,7 +47,8 @@ export const CartStep = ({
   useEffect(() => {
     syncPushRollSauces();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items.length]);
+  }, [items.length, items.map(i => `${i.menuItem.id}:${i.quantity}`).join('|')]);
+
   
   const { cartRestaurant } = useCartRestaurant();
   const { freeDessertsEnabled, eventName, eventProductsCount, calculateDessertDiscount } = useEventFreeDesserts(cartRestaurant?.id);
