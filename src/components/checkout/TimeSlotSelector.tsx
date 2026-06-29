@@ -585,6 +585,13 @@ const TimeSlotSelector = ({
         Choisissez l'heure à laquelle vous souhaitez {orderType === "delivery" ? "être livré" : "récupérer votre commande"} pour <span className={isEventMode ? "font-semibold text-red-600" : ""}>{formattedDate}</span>
       </p>
 
+      {orderType === "delivery" && (
+        <p className="text-sm text-amber-700">
+          Les horaires de livraison peuvent être légèrement décalés les week-ends en cas de forte affluence. Merci de votre compréhension.
+        </p>
+      )}
+
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {timeSlots.map((slot) => (
           <button
