@@ -411,6 +411,23 @@ serve(async (req) => {
 
       console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId, 'avec', itemsSummary.length, 'articles');
 
+      // Marquer TOUS les cart_backup de ce client comme utilisés pour éviter la contamination entre commandes
+      const emailToMark = order.client_email || session.customer_details?.email || session.metadata?.clientEmail;
+      if (emailToMark) {
+        const { error: markError, count } = await supabase
+          .from('cart_backup')
+          .update({ is_used: true }, { count: 'exact' })
+          .eq('session_id', emailToMark)
+          .eq('is_used', false);
+        if (markError) {
+          console.error('⚠️ Erreur marquage cart_backup is_used=true:', markError);
+        } else {
+          console.log(`🧹 ${count ?? 0} cart_backup marqué(s) is_used=true pour ${emailToMark}`);
+        }
+      }
+
+
+
       // Enregistrer l'utilisation du code promo si présent
       if (orderData.promo_code && orderData.client_email) {
         console.log('💳 Enregistrement utilisation code promo:', orderData.promo_code, 'pour', orderData.client_email);
