@@ -136,21 +136,47 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
             );
           }
 
-          // 🔄 Charger tous les cart_backup d'un coup
-          console.log("📦 Chargement global des cart_backup...");
-
-          const clientEmails = verifiedOrders
-            .map(o => o.clientEmail)
-            .filter(Boolean);
+          // 🔄 Charger les cart_backup UNIQUEMENT pour les commandes sans items_summary
+          console.log("📦 Vérification des commandes nécessitant cart_backup...");
 
           let ordersWithCartBackup = [...verifiedOrders];
 
-          if (clientEmails.length > 0) {
+          // 1. Récupérer un booléen has_items_summary pour toutes les commandes en une seule requête
+          const orderIds = verifiedOrders.map(o => o.id);
+          const summaryFlags: Record<string, boolean> = {};
+
+          if (orderIds.length > 0) {
+            try {
+              const { data: summaryRows, error: summaryError } = await supabase
+                .from("orders")
+                .select("id, items_summary")
+                .in("id", orderIds);
+
+              if (summaryError) throw summaryError;
+
+              summaryRows?.forEach((row: any) => {
+                const s = row.items_summary;
+                summaryFlags[row.id] = Array.isArray(s) && s.length > 0;
+              });
+            } catch (err: any) {
+              console.error("💥 Erreur vérification items_summary:", err);
+            }
+          }
+
+          // 2. Ne charger cart_backup QUE pour les commandes sans items_summary
+          const ordersNeedingBackup = verifiedOrders.filter(
+            o => o.clientEmail && !summaryFlags[o.id]
+          );
+          const emailsNeedingBackup = ordersNeedingBackup
+            .map(o => o.clientEmail)
+            .filter(Boolean);
+
+          if (emailsNeedingBackup.length > 0) {
             try {
               const { data: cartBackups, error: cartError } = await supabase
                 .from("cart_backup")
                 .select("session_id, cart_items, created_at")
-                .in("session_id", clientEmails)
+                .in("session_id", emailsNeedingBackup)
                 .eq("is_used", false)
                 .order("created_at", { ascending: false });
 
@@ -159,29 +185,36 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
               const latestCartMap: Record<string, any[]> = {};
               cartBackups?.forEach(cb => {
                 if (!latestCartMap[cb.session_id]) {
-                  latestCartMap[cb.session_id] = Array.isArray(cb.cart_items) 
-                    ? cb.cart_items 
+                  latestCartMap[cb.session_id] = Array.isArray(cb.cart_items)
+                    ? cb.cart_items
                     : [];
                 }
               });
 
               ordersWithCartBackup = verifiedOrders.map(order => {
+                // Si items_summary existe → ne PAS attacher cart_backup (évite contamination)
+                if (summaryFlags[order.id]) return order;
                 if (!order.clientEmail) return order;
                 const cartItems = latestCartMap[order.clientEmail] || [];
                 return { ...order, cartBackupItems: cartItems };
               });
 
               const cartBackupCount = ordersWithCartBackup.filter(o => o.cartBackupItems?.length).length;
-              console.log(`✅ ${verifiedOrders.length} commandes validées (${cartBackupCount} avec cart_backup)`);
+              const withSummary = Object.values(summaryFlags).filter(Boolean).length;
+              console.log(`✅ ${verifiedOrders.length} commandes: ${withSummary} avec items_summary (cart_backup ignoré), ${cartBackupCount} avec cart_backup`);
             } catch (err: any) {
-              console.error("💥 Erreur récupération globale des cart_backup:", err);
+              console.error("💥 Erreur récupération cart_backup:", err);
               toast({
                 title: "Erreur cart_backup",
                 description: "Impossible de charger les articles des commandes",
                 variant: "destructive",
               });
             }
+          } else {
+            const withSummary = Object.values(summaryFlags).filter(Boolean).length;
+            console.log(`✅ ${verifiedOrders.length} commandes: ${withSummary} avec items_summary (aucun cart_backup nécessaire)`);
           }
+
 
           setOrders(ordersWithCartBackup);
           setCachedOrders(ordersWithCartBackup, restId, daysBack);
