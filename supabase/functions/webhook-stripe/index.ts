@@ -411,10 +411,6 @@ serve(async (req) => {
 
       console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId, 'avec', itemsSummary.length, 'articles');
 
-
-
-
-
       // Enregistrer l'utilisation du code promo si présent
       if (orderData.promo_code && orderData.client_email) {
         console.log('💳 Enregistrement utilisation code promo:', orderData.promo_code, 'pour', orderData.client_email);
