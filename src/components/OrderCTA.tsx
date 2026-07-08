@@ -29,7 +29,7 @@ export const OrderCTA = () => {
       <h2 className="text-3xl font-bold mb-4 better-times-gold">Envie de sushi?</h2>
       <p className="text-gray-600 mb-8 max-w-xl mx-auto">
         Commandez en ligne et dégustez nos délicieux plats préparés avec soin par nos chefs.
-        Livraison à domicile ou à emporter.
+        Livraison à domicile ou à emporter
       </p>
       <Button asChild size="lg" className="rounded-full px-8 transition-all">
         <Link to="/commander" className="flex items-center gap-2">
