@@ -74,23 +74,34 @@ const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
         const { data: categoriesData } = await categoriesQuery;
         setCategories(categoriesData || []);
 
-        // Fetch orders
-        let query = supabase
-          .from('orders')
-          .select('items_summary')
-          .eq('payment_status', 'paid');
+        // Fetch orders with pagination (Supabase caps each request at 1000 rows)
+        const PAGE_SIZE = 1000;
+        let from = 0;
+        const data: { items_summary: any }[] = [];
+        while (true) {
+          let query = supabase
+            .from('orders')
+            .select('items_summary')
+            .eq('payment_status', 'paid')
+            .range(from, from + PAGE_SIZE - 1);
 
-        if (restaurantId) {
-          query = query.eq('restaurant_id', restaurantId);
-        }
+          if (restaurantId) {
+            query = query.eq('restaurant_id', restaurantId);
+          }
 
-        const { data, error } = await query;
+          const { data: pageData, error } = await query;
 
-        if (error) {
-          console.error("Error fetching orders:", error);
-          setAllProducts([]);
-          setFilteredProducts([]);
-          return;
+          if (error) {
+            console.error("Error fetching orders:", error);
+            setAllProducts([]);
+            setFilteredProducts([]);
+            return;
+          }
+
+          if (!pageData || pageData.length === 0) break;
+          data.push(...pageData);
+          if (pageData.length < PAGE_SIZE) break;
+          from += PAGE_SIZE;
         }
 
         // Aggregate products from all orders
