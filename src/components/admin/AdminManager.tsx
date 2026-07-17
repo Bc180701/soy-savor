@@ -45,13 +45,13 @@ const AdminManager = () => {
   // Enable order notifications for admins
   const { hasNewOrders, audioEnabled, enableAudio, clearNotifications } = useOrderNotifications(true, currentRestaurant?.id);
 
-  // Auto-refresh for orders section every 5 minutes
+  // Auto-refresh timestamp toutes les 5 min (sans reload complet pour éviter la
+  // déconnexion pendant un renouvellement de token Supabase)
   useEffect(() => {
     if (!autoRefresh || activeSection !== "orders") return;
 
     const interval = setInterval(() => {
       setLastRefresh(new Date());
-      window.location.reload();
     }, 300000);
 
     return () => clearInterval(interval);
