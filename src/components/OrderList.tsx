@@ -70,6 +70,16 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     }
   }, [restaurantId]);
 
+  // Auto-refresh des commandes toutes les 2 minutes
+  useEffect(() => {
+    if (restaurantId === undefined) return;
+    const interval = setInterval(() => {
+      console.log('⏰ [OrderList] Auto-refresh 2min');
+      refreshOrders();
+    }, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [restaurantId, refreshOrders]);
+
   // Filtrer les commandes par événement actif (basé sur la date de l'événement)
   const eventOrdersMap = useMemo(() => {
     const map = new Map<string, { event: typeof activeEvents[0]; orders: Order[] }>();
