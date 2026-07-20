@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+
 import FileUpload from "@/components/ui/file-upload";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -113,6 +115,25 @@ const PopupSectionEditor = ({ data, onSave }: Props) => {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label>Titre (optionnel)</Label>
+            <Input
+              value={values.title || ""}
+              onChange={(e) => update("title", e.target.value)}
+              placeholder="Ex : Offre spéciale"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Description (optionnel)</Label>
+            <Textarea
+              value={values.description || ""}
+              onChange={(e) => update("description", e.target.value)}
+              placeholder="Décrivez votre offre..."
+              rows={3}
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Texte du bouton</Label>
@@ -135,15 +156,23 @@ const PopupSectionEditor = ({ data, onSave }: Props) => {
           {values.image_url && (
             <div className="pt-2">
               <h3 className="text-sm font-semibold mb-2">Aperçu</h3>
-              <div className="mx-auto w-full max-w-[280px] rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
-                <div className="aspect-[3/4] w-full">
-                  <img
-                    src={values.image_url}
-                    alt="Aperçu pop-up"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-3 flex justify-center">
+              <div className="mx-auto w-full max-w-[350px] rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+                <img
+                  src={values.image_url}
+                  alt="Aperçu pop-up"
+                  className="w-full h-auto block"
+                />
+                <div className="p-4 space-y-3">
+                  {values.title && (
+                    <h2 className="text-lg font-semibold text-gray-900 text-center">
+                      {values.title}
+                    </h2>
+                  )}
+                  {values.description && (
+                    <p className="text-sm text-gray-600 text-center whitespace-pre-line">
+                      {values.description}
+                    </p>
+                  )}
                   <Button type="button" className="bg-gold-600 hover:bg-gold-700 text-white w-full">
                     {values.button_text || "En savoir plus"}
                   </Button>
@@ -151,6 +180,7 @@ const PopupSectionEditor = ({ data, onSave }: Props) => {
               </div>
             </div>
           )}
+
         </CardContent>
       </Card>
 
