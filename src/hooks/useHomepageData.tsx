@@ -103,6 +103,14 @@ export interface FooterSection {
   };
 }
 
+export interface PopupSection {
+  enabled: boolean;
+  display_on: "home" | "commander" | "both";
+  image_url: string;
+  button_text: string;
+  button_link: string;
+}
+
 export interface HomepageData {
   hero_section: HeroSection;
   custom_creation_section: CustomCreationSection;
@@ -114,6 +122,7 @@ export interface HomepageData {
   contact_info: ContactInfo;
   header_section: HeaderSection;
   footer_section: FooterSection;
+  popup_section: PopupSection;
 }
 
 interface UseHomepageDataResult {
