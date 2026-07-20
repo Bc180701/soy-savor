@@ -38,7 +38,12 @@ const HomepagePopup = ({ data, page }: Props) => {
     if (/^https?:\/\//i.test(data.button_link)) {
       window.open(data.button_link, "_blank", "noopener,noreferrer");
     } else {
-      window.location.href = data.button_link;
+      // Navigation SPA pour éviter un rechargement complet (qui provoquait un flash de sélection restaurant)
+      navigate(data.button_link);
+      // Forcer le déclenchement du scroll d'ancre si on est déjà sur la même route
+      setTimeout(() => {
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      }, 50);
     }
     handleClose();
   };
