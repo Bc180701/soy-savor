@@ -25,6 +25,8 @@ import { BoissonOfferteSelector } from "@/components/BoissonOfferteSelector";
 import { OffreGourmandeSelector } from "@/components/OffreGourmandeSelector";
 import { DessertSelector } from "@/components/DessertSelector";
 import SEOHead from "@/components/SEOHead";
+import HomepagePopup from "@/components/HomepagePopup";
+import { useHomepageData } from "@/hooks/useHomepageData";
 import commanderHeroImage from "@/assets/commander-hero.jpg";
 
 import { useOrderingLockStatus } from "@/hooks/useOrderingLockStatus";
@@ -36,6 +38,7 @@ const CommanderContent = () => {
   const { toast } = useToast();
   const location = useLocation();
   const { addItem: addToCart, checkRestaurantCompatibility, clearCart, selectedRestaurantId, checkDessertForBoissonOffer } = useCartWithRestaurant();
+  const { data: homepageData } = useHomepageData();
   const { setOrderingLocked } = useCart();
   const { isOrderingLocked, isLoading: isOrderingStatusLoading } = useOrderingLockStatus();
   const { currentRestaurant, setCurrentRestaurant, restaurants, isLoading: isRestaurantsLoading } = useRestaurantContext();
@@ -382,7 +385,11 @@ const CommanderContent = () => {
         structuredData={structuredData}
       />
 
-      
+
+      {currentRestaurant && (
+        <HomepagePopup data={homepageData?.popup_section} page="commander" />
+      )}
+
       <div className="container mx-auto py-24 px-4">
         <RestaurantSelectionDialog
           open={showRestaurantDialog}

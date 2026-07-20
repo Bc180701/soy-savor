@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import HeroSectionEditor from "./homepage-editor/HeroSectionEditor";
 import PromotionsEditor from "./homepage-editor/PromotionsEditor";
 import CustomCreationSectionEditor from "./homepage-editor/CustomCreationSectionEditor";
+import PopupSectionEditor from "./homepage-editor/PopupSectionEditor";
 
 import GoogleReviewsEditor from "./homepage-editor/GoogleReviewsEditor";
 import HeaderSectionEditor from "./homepage-editor/HeaderSectionEditor";
@@ -135,6 +136,7 @@ const HomepageEditor = () => {
           <TabsTrigger value="featured_products">Produits mis en avant</TabsTrigger>
           <TabsTrigger value="promotions">Promotions</TabsTrigger>
           <TabsTrigger value="google_reviews">Avis Google</TabsTrigger>
+          <TabsTrigger value="popup">Pop-up</TabsTrigger>
           
           <TabsTrigger value="restaurants">Nos Restaurants</TabsTrigger>
         </TabsList>
@@ -257,6 +259,23 @@ const HomepageEditor = () => {
           </Card>
         </TabsContent>
 
+
+        <TabsContent value="popup">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pop-up promotionnel</CardTitle>
+              <CardDescription>
+                Affichez un pop-up (format vertical) sur la page d'accueil et/ou sur la page Commander (après sélection du restaurant).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PopupSectionEditor
+                data={homepageData.popup_section}
+                onSave={(data) => saveHomepageData('popup_section', data)}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="restaurants">
           <Card>

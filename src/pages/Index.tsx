@@ -8,6 +8,7 @@ import { CustomCreationSection } from "@/components/CustomCreationSection";
 import FeaturedProductsSection from "@/components/FeaturedProductsSection";
 import GoogleReviewsSection from "@/components/GoogleReviewsSection";
 import EventBanner from "@/components/EventBanner";
+import HomepagePopup from "@/components/HomepagePopup";
 import { useHomepageData, HomepageData } from "@/hooks/useHomepageData";
 import { usePromotions } from "@/hooks/usePromotions";
 import { supabase } from "@/integrations/supabase/client";
@@ -132,6 +133,13 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       instagram_aria: "Instagram",
     },
   },
+  popup_section: {
+    enabled: false,
+    display_on: "home",
+    image_url: "",
+    button_text: "En savoir plus",
+    button_link: "/commander",
+  },
 };
 
 const Index = () => {
@@ -158,8 +166,12 @@ const Index = () => {
   
   return (
     <>
+      {/* Popup marketing */}
+      <HomepagePopup data={homepageData?.popup_section} page="home" />
+
       {/* Event Banner - shown during preorder/event period */}
       <EventBanner />
+      
       
       {/* Hero Section */}
       <HeroSection 

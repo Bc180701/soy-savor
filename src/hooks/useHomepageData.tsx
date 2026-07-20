@@ -103,6 +103,14 @@ export interface FooterSection {
   };
 }
 
+export interface PopupSection {
+  enabled: boolean;
+  display_on: "home" | "commander" | "both";
+  image_url: string;
+  button_text: string;
+  button_link: string;
+}
+
 export interface HomepageData {
   hero_section: HeroSection;
   custom_creation_section: CustomCreationSection;
@@ -114,6 +122,7 @@ export interface HomepageData {
   contact_info: ContactInfo;
   header_section: HeaderSection;
   footer_section: FooterSection;
+  popup_section: PopupSection;
 }
 
 interface UseHomepageDataResult {
@@ -199,6 +208,13 @@ export const useHomepageData = (): UseHomepageDataResult => {
         instagram_aria: "Instagram",
       },
     },
+    popup_section: {
+      enabled: false,
+      display_on: "home",
+      image_url: "",
+      button_text: "En savoir plus",
+      button_link: "/commander",
+    },
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -226,6 +242,7 @@ export const useHomepageData = (): UseHomepageDataResult => {
           contact_info: data.contact_info,
           header_section: data.header_section,
           footer_section: data.footer_section,
+          popup_section: data.popup_section,
         };
 
         sections.forEach((section: any) => {
@@ -249,6 +266,8 @@ export const useHomepageData = (): UseHomepageDataResult => {
             homepageData.header_section = section.section_data as unknown as HeaderSection;
           } else if (section.section_name === 'footer_section') {
             homepageData.footer_section = section.section_data as unknown as FooterSection;
+          } else if (section.section_name === 'popup_section') {
+            homepageData.popup_section = section.section_data as unknown as PopupSection;
           }
         });
 
