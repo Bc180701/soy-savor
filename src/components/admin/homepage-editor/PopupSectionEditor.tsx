@@ -41,18 +41,88 @@ const defaultPopup: PopupSection = {
 };
 
 
+type LinkType = "url" | "category" | "product";
+
+const detectLinkType = (link: string): { type: LinkType; value: string } => {
+  const anchor = parseAnchorFromLink(link || "");
+  if (anchor?.type === "category") return { type: "category", value: anchor.slug };
+  if (anchor?.type === "product") return { type: "product", value: anchor.slug };
+  return { type: "url", value: link || "" };
+};
+
 const PopupSectionEditor = ({ data, onSave }: Props) => {
   const [saving, setSaving] = useState(false);
   const [values, setValues] = useState<PopupSection>({ ...defaultPopup, ...data });
   const { toast } = useToast();
 
+  const initial = useMemo(() => detectLinkType(data?.button_link || ""), [data?.button_link]);
+  const [linkType, setLinkType] = useState<LinkType>(initial.type);
+  const [linkValue, setLinkValue] = useState<string>(initial.value);
+
+  const [categoryOptions, setCategoryOptions] = useState<{ name: string; slug: string }[]>([]);
+  const [productOptions, setProductOptions] = useState<{ name: string; slug: string }[]>([]);
+
   useEffect(() => {
     setValues({ ...defaultPopup, ...data });
+    const det = detectLinkType(data?.button_link || "");
+    setLinkType(det.type);
+    setLinkValue(det.value);
   }, [data]);
+
+  // Charger les noms uniques de catégories & produits (dédupliqués entre restaurants)
+  useEffect(() => {
+    (async () => {
+      const [{ data: cats }, { data: prods }] = await Promise.all([
+        supabase.from("categories").select("name").order("name"),
+        supabase
+          .from("products")
+          .select("name")
+          .eq("is_hidden", false)
+          .order("name"),
+      ]);
+      const dedupe = (rows: { name: string }[] | null) => {
+        const seen = new Set<string>();
+        const out: { name: string; slug: string }[] = [];
+        (rows || []).forEach((r) => {
+          const n = (r.name || "").trim();
+          if (!n || seen.has(n.toLowerCase())) return;
+          seen.add(n.toLowerCase());
+          // Slug computed via link-anchor utility
+          out.push({ name: n, slug: n });
+        });
+        return out;
+      };
+      // slug filled after import to avoid circular import cost
+      const { slugify } = await import("@/lib/link-anchor");
+      const withSlug = (arr: { name: string; slug: string }[]) =>
+        arr.map((x) => ({ name: x.name, slug: slugify(x.name) }));
+      setCategoryOptions(withSlug(dedupe(cats)));
+      setProductOptions(withSlug(dedupe(prods)));
+    })();
+  }, []);
 
   const update = <K extends keyof PopupSection>(key: K, value: PopupSection[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }));
   };
+
+  const handleLinkTypeChange = (t: LinkType) => {
+    setLinkType(t);
+    if (t === "url") {
+      setLinkValue(values.button_link.startsWith("#") ? "" : values.button_link);
+      update("button_link", values.button_link.startsWith("#") ? "" : values.button_link);
+    } else {
+      setLinkValue("");
+      update("button_link", "");
+    }
+  };
+
+  const handleLinkValueChange = (v: string) => {
+    setLinkValue(v);
+    if (linkType === "category") update("button_link", buildCategoryLink(v));
+    else if (linkType === "product") update("button_link", buildProductLink(v));
+    else update("button_link", v);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
