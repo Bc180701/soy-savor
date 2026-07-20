@@ -2,6 +2,7 @@
 import { useRef } from "react";
 import { MenuCategory, MenuItem } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { slugify } from "@/lib/link-anchor";
 import CategoryContent from "./CategoryContent";
 
 interface ProductsDisplayProps {
@@ -34,6 +35,7 @@ const ProductsDisplay = ({ categories, onAddToCart, categoryRefs }: ProductsDisp
             key={category.id}
             id={category.id}
             data-category-id={category.id}
+            data-category-slug={slugify(category.name)}
             ref={el => refs.current[category.id] = el}
           >
             <CategoryContent 
@@ -48,3 +50,4 @@ const ProductsDisplay = ({ categories, onAddToCart, categoryRefs }: ProductsDisp
 };
 
 export default ProductsDisplay;
+
