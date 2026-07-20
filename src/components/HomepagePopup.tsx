@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +14,7 @@ const storageKey = (page: string) => `popup_dismissed_${page}`;
 
 const HomepagePopup = ({ data, page }: Props) => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!data?.enabled || !data?.image_url) return;
@@ -36,7 +38,12 @@ const HomepagePopup = ({ data, page }: Props) => {
     if (/^https?:\/\//i.test(data.button_link)) {
       window.open(data.button_link, "_blank", "noopener,noreferrer");
     } else {
-      window.location.href = data.button_link;
+      // Navigation SPA pour éviter un rechargement complet (qui provoquait un flash de sélection restaurant)
+      navigate(data.button_link);
+      // Forcer le déclenchement du scroll d'ancre si on est déjà sur la même route
+      setTimeout(() => {
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      }, 50);
     }
     handleClose();
   };
