@@ -107,9 +107,12 @@ export interface PopupSection {
   enabled: boolean;
   display_on: "home" | "commander" | "both";
   image_url: string;
+  title?: string;
+  description?: string;
   button_text: string;
   button_link: string;
 }
+
 
 export interface HomepageData {
   hero_section: HeroSection;
