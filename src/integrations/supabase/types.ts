@@ -714,6 +714,8 @@ export type Database = {
           prep_time: number | null
           price: number
           restaurant_id: string
+          supplements: Json
+          supplements_enabled: boolean
           updated_at: string | null
         }
         Insert: {
@@ -735,6 +737,8 @@ export type Database = {
           prep_time?: number | null
           price: number
           restaurant_id: string
+          supplements?: Json
+          supplements_enabled?: boolean
           updated_at?: string | null
         }
         Update: {
@@ -756,6 +760,8 @@ export type Database = {
           prep_time?: number | null
           price?: number
           restaurant_id?: string
+          supplements?: Json
+          supplements_enabled?: boolean
           updated_at?: string | null
         }
         Relationships: [
