@@ -924,6 +924,30 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
         onClose={() => setPendingSushiPushRollItem(null)}
         onConfirm={handleSushiPushRollSauceConfirm}
       />
+
+      {/* Modale de sélection de supplément */}
+      <SupplementDialog
+        item={pendingSupplementItem}
+        onClose={() => setPendingSupplementItem(null)}
+        onSelect={(supplement) => {
+          const item = pendingSupplementItem;
+          setPendingSupplementItem(null);
+          if (!item) return;
+          const finalItem: MenuItem = supplement
+            ? {
+                ...item,
+                id: `${item.id}-sup-${supplement.name.replace(/\s+/g, '-')}-${Date.now()}`,
+                name: `${item.name} + ${supplement.name}`,
+                price: Number(item.price) + Number(supplement.price),
+              }
+            : item;
+          onAddToCart(finalItem);
+          toast({
+            title: "Ajouté au panier",
+            description: `${finalItem.name} a été ajouté à votre panier`,
+          });
+        }}
+      />
     </>
   );
 };
