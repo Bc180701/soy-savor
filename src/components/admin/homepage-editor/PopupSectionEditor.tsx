@@ -211,24 +211,97 @@ const PopupSectionEditor = ({ data, onSave }: Props) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Texte du bouton</Label>
+            <Input
+              value={values.button_text}
+              onChange={(e) => update("button_text", e.target.value)}
+              placeholder="En savoir plus"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Type de lien</Label>
+            <Select
+              value={linkType}
+              onValueChange={(v) => handleLinkTypeChange(v as LinkType)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="url">URL libre (interne ou externe)</SelectItem>
+                <SelectItem value="category">
+                  Catégorie de la page Commander
+                </SelectItem>
+                <SelectItem value="product">
+                  Produit de la page Commander
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Les catégories et produits sont dédupliqués : la sélection cible
+              automatiquement le bon élément selon le restaurant du visiteur.
+            </p>
+          </div>
+
+          {linkType === "url" && (
             <div className="space-y-2">
-              <Label>Texte du bouton</Label>
+              <Label>Lien</Label>
               <Input
-                value={values.button_text}
-                onChange={(e) => update("button_text", e.target.value)}
-                placeholder="En savoir plus"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Lien de destination</Label>
-              <Input
-                value={values.button_link}
-                onChange={(e) => update("button_link", e.target.value)}
+                value={linkValue}
+                onChange={(e) => handleLinkValueChange(e.target.value)}
                 placeholder="/commander ou https://..."
               />
             </div>
+          )}
+
+          {linkType === "category" && (
+            <div className="space-y-2">
+              <Label>Catégorie</Label>
+              <Select
+                value={linkValue}
+                onValueChange={handleLinkValueChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une catégorie" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {categoryOptions.map((c) => (
+                    <SelectItem key={c.slug} value={c.slug}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {linkType === "product" && (
+            <div className="space-y-2">
+              <Label>Produit</Label>
+              <Select
+                value={linkValue}
+                onValueChange={handleLinkValueChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un produit" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {productOptions.map((p) => (
+                    <SelectItem key={p.slug} value={p.slug}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="text-xs text-muted-foreground break-all">
+            Lien final enregistré : <code>{values.button_link || "(vide)"}</code>
           </div>
+
 
           {values.image_url && (
             <div className="pt-2">
