@@ -208,6 +208,13 @@ export const useHomepageData = (): UseHomepageDataResult => {
         instagram_aria: "Instagram",
       },
     },
+    popup_section: {
+      enabled: false,
+      display_on: "home",
+      image_url: "",
+      button_text: "En savoir plus",
+      button_link: "/commander",
+    },
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -235,6 +242,7 @@ export const useHomepageData = (): UseHomepageDataResult => {
           contact_info: data.contact_info,
           header_section: data.header_section,
           footer_section: data.footer_section,
+          popup_section: data.popup_section,
         };
 
         sections.forEach((section: any) => {
