@@ -70,6 +70,11 @@ const productFormSchema = z.object({
   is_best_seller: z.boolean().default(false),
   is_gluten_free: z.boolean().default(false),
   allergens: z.array(z.string()).default([]),
+  supplements_enabled: z.boolean().default(false),
+  supplements: z.array(z.object({
+    name: z.string(),
+    price: z.coerce.number().min(0),
+  })).default([]),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -154,6 +159,8 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     is_best_seller: product?.is_best_seller || false,
     is_gluten_free: product?.is_gluten_free || false,
     allergens: product?.allergens || [],
+    supplements_enabled: product?.supplements_enabled || false,
+    supplements: Array.isArray(product?.supplements) ? product.supplements : [],
   };
 
   const form = useForm<ProductFormValues>({
