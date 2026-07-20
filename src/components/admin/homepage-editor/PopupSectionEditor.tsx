@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { PopupSection } from "@/hooks/useHomepageData";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  buildCategoryLink,
+  buildProductLink,
+  parseAnchorFromLink,
+} from "@/lib/link-anchor";
+
 
 interface Props {
   data: PopupSection;
