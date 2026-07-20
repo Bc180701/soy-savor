@@ -56,13 +56,12 @@ const HomepagePopup = ({ data, page }: Props) => {
           >
             <X className="h-4 w-4 text-gray-700" />
           </button>
-          <div className="aspect-[3/4] w-full">
-            <img
-              src={data.image_url}
-              alt="Annonce"
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <img
+            src={data.image_url}
+            alt="Annonce"
+            className="w-full h-auto block"
+          />
+
           {data.button_text && (
             <div className="p-3">
               <Button
