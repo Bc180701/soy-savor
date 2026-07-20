@@ -14,6 +14,7 @@ const storageKey = (page: string) => `popup_dismissed_${page}`;
 
 const HomepagePopup = ({ data, page }: Props) => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!data?.enabled || !data?.image_url) return;
