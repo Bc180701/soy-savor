@@ -27,6 +27,11 @@ export type SushiCategory =
   | "Accompagnement"
   | "Accessoire";
 
+export interface ProductSupplement {
+  name: string;
+  price: number;
+}
+
 export interface CarteItem {
   id: string;
   name: string;
@@ -44,6 +49,8 @@ export interface CarteItem {
   pieces?: number;
   prepTime?: number;
   originalPrice?: number; // Added for free dessert promotion
+  supplementsEnabled?: boolean;
+  supplements?: ProductSupplement[];
 }
 
 export interface CarteCategory {
