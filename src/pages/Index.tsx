@@ -132,6 +132,13 @@ const DEFAULT_HOMEPAGE_DATA: HomepageData = {
       instagram_aria: "Instagram",
     },
   },
+  popup_section: {
+    enabled: false,
+    display_on: "home",
+    image_url: "",
+    button_text: "En savoir plus",
+    button_link: "/commander",
+  },
 };
 
 const Index = () => {

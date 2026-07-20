@@ -266,6 +266,8 @@ export const useHomepageData = (): UseHomepageDataResult => {
             homepageData.header_section = section.section_data as unknown as HeaderSection;
           } else if (section.section_name === 'footer_section') {
             homepageData.footer_section = section.section_data as unknown as FooterSection;
+          } else if (section.section_name === 'popup_section') {
+            homepageData.popup_section = section.section_data as unknown as PopupSection;
           }
         });
 
