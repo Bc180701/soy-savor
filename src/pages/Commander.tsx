@@ -385,7 +385,11 @@ const CommanderContent = () => {
         structuredData={structuredData}
       />
 
-      
+
+      {currentRestaurant && (
+        <HomepagePopup data={homepageData?.popup_section} page="commander" />
+      )}
+
       <div className="container mx-auto py-24 px-4">
         <RestaurantSelectionDialog
           open={showRestaurantDialog}
