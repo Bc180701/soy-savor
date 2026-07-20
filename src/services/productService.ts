@@ -301,7 +301,9 @@ export const getMenuData = async (restaurantId?: string): Promise<MenuCategory[]
           isGlutenFree: product.is_gluten_free || false,
           allergens: product.allergens || [],
           pieces: product.pieces,
-          prepTime: product.prep_time || 10
+          prepTime: product.prep_time || 10,
+          supplementsEnabled: (product as any).supplements_enabled || false,
+          supplements: Array.isArray((product as any).supplements) ? (product as any).supplements : []
         })) as MenuItem[];
 
       console.log(`📂 Catégorie ${category.name}: ${categoryProducts.length} produits`);

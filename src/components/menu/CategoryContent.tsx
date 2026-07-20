@@ -19,6 +19,7 @@ import { useWrapSelection } from "@/hooks/useWrapSelection";
 import { WrapSelectionModal } from "./WrapSelectionModal";
 import { WineFormatSelector } from "./WineFormatSelector";
 import PokeSauceDialog from "./PokeSauceDialog";
+import SupplementDialog from "./SupplementDialog";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
 import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
@@ -36,6 +37,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [clickedButton, setClickedButton] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
   const [pendingSushiPushRollItem, setPendingSushiPushRollItem] = useState<MenuItem | null>(null);
+  const [pendingSupplementItem, setPendingSupplementItem] = useState<MenuItem | null>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
@@ -235,6 +237,13 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
     console.log("🟩 CategoryContent.handleAddToCart called with:", item.name);
     setClickedButton(item.id);
     
+    // PRIORITÉ -1: Supplément configuré sur le produit
+    const validSupplements = (item.supplements || []).filter(s => s?.name && s.name.trim() !== "");
+    if (item.supplementsEnabled && validSupplements.length > 0) {
+      setPendingSupplementItem(item);
+      return;
+    }
+
     // PRIORITÉ 0: Sushi Push Roll → popup sauce soja (sauf CHOCO DUBAÏ)
     if (isSushiPushRollCategory(item.category) && !item.name.toUpperCase().includes('CHOCO')) {
       console.log("🍣 Sushi Push Roll détecté, ouverture popup sauce soja");
@@ -914,6 +923,30 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
         open={!!pendingSushiPushRollItem}
         onClose={() => setPendingSushiPushRollItem(null)}
         onConfirm={handleSushiPushRollSauceConfirm}
+      />
+
+      {/* Modale de sélection de supplément */}
+      <SupplementDialog
+        item={pendingSupplementItem}
+        onClose={() => setPendingSupplementItem(null)}
+        onSelect={(supplement) => {
+          const item = pendingSupplementItem;
+          setPendingSupplementItem(null);
+          if (!item) return;
+          const finalItem: MenuItem = supplement
+            ? {
+                ...item,
+                id: `${item.id}-sup-${supplement.name.replace(/\s+/g, '-')}-${Date.now()}`,
+                name: `${item.name} + ${supplement.name}`,
+                price: Number(item.price) + Number(supplement.price),
+              }
+            : item;
+          onAddToCart(finalItem);
+          toast({
+            title: "Ajouté au panier",
+            description: `${finalItem.name} a été ajouté à votre panier`,
+          });
+        }}
       />
     </>
   );
