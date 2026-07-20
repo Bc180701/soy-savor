@@ -25,9 +25,12 @@ const defaultPopup: PopupSection = {
   enabled: false,
   display_on: "home",
   image_url: "",
+  title: "",
+  description: "",
   button_text: "En savoir plus",
   button_link: "/commander",
 };
+
 
 const PopupSectionEditor = ({ data, onSave }: Props) => {
   const [saving, setSaving] = useState(false);
