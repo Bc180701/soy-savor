@@ -496,15 +496,19 @@ const CommanderContent = () => {
         {currentRestaurant && <RestaurantStatusBanner />}
 
         {!currentRestaurant ? (
-          <div className="text-center py-12">
-            <p className="text-lg text-gray-600 mb-4">Veuillez sélectionner un restaurant pour voir le menu.</p>
-            <button
-              onClick={() => setShowRestaurantDialog(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Choisir un restaurant
-            </button>
-          </div>
+          isRestaurantsLoading || preselectedRestaurantId ? (
+            <LoadingSpinner message="Chargement du restaurant..." />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-lg text-gray-600 mb-4">Veuillez sélectionner un restaurant pour voir le menu.</p>
+              <button
+                onClick={() => setShowRestaurantDialog(true)}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Choisir un restaurant
+              </button>
+            </div>
+          )
         ) : (
           <>
             {!isAuthenticated && <PromotionalBanner />}
