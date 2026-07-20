@@ -1,4 +1,6 @@
+import { slugify } from "@/lib/link-anchor";
 import { Separator } from "@/components/ui/separator";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -454,11 +456,13 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
               otherItems.map((item, index) => (
                 <motion.div
                   key={item.id}
+                  data-product-slug={slugify(item.name)}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
                 >
+
                   <Card className={`overflow-hidden transition-shadow rounded-xl h-full ${
                     isBoxDuMidi(category) && isAfter2PM() 
                       ? 'bg-gray-100 cursor-not-allowed border-0' 

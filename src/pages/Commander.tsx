@@ -235,6 +235,74 @@ const CommanderContent = () => {
     loadMenuData();
   }, [currentRestaurant?.id, toast]);
 
+  // Scroll vers une catégorie ou un produit ciblé par le hash (#cat=..., #prod=...)
+  useEffect(() => {
+    if (isLoading || categories.length === 0) return;
+
+    let cancelled = false;
+    const runScroll = async () => {
+      const hash = window.location.hash;
+      if (!hash) return;
+      const { parseAnchorFromHash, slugify } = await import("@/lib/link-anchor");
+      if (cancelled) return;
+      const target = parseAnchorFromHash(hash);
+      if (!target) return;
+
+      const findCategory = (slug: string) =>
+        categories.find((c) => slugify(c.name) === slug);
+
+      let categoryToScroll: MenuCategory | undefined;
+      let productSlug: string | null = null;
+
+      if (target.type === "category") {
+        categoryToScroll = findCategory(target.slug);
+      } else if (target.type === "product") {
+        productSlug = target.slug;
+        categoryToScroll = categories.find((c) =>
+          c.items.some((it) => slugify(it.name) === productSlug)
+        );
+      }
+
+      if (!categoryToScroll) return;
+      setActiveCategory(categoryToScroll.id);
+
+      setTimeout(() => {
+        if (productSlug) {
+          const productEl = document.querySelector<HTMLElement>(
+            `[data-product-slug="${productSlug}"]`
+          );
+          if (productEl) {
+            productEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            productEl.classList.add("ring-2", "ring-gold-500", "rounded-xl");
+            setTimeout(
+              () =>
+                productEl.classList.remove(
+                  "ring-2",
+                  "ring-gold-500",
+                  "rounded-xl"
+                ),
+              2500
+            );
+            return;
+          }
+        }
+        const catEl = categoryRefs.current[categoryToScroll!.id];
+        if (catEl) {
+          catEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 350);
+    };
+
+    runScroll();
+    window.addEventListener("hashchange", runScroll);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("hashchange", runScroll);
+    };
+  }, [isLoading, categories]);
+
+
+
   const handleRestaurantSelected = (restaurant: Restaurant) => {
     console.log("🏪 Nouveau restaurant sélectionné:", restaurant.name, "ID:", restaurant.id);
     console.log("🏪 Restaurant actuel avant changement:", currentRestaurant?.name, "ID:", currentRestaurant?.id);

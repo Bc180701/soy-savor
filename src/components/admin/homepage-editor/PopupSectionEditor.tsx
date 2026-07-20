@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { PopupSection } from "@/hooks/useHomepageData";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  buildCategoryLink,
+  buildProductLink,
+  parseAnchorFromLink,
+} from "@/lib/link-anchor";
+
 
 interface Props {
   data: PopupSection;
@@ -34,18 +41,88 @@ const defaultPopup: PopupSection = {
 };
 
 
+type LinkType = "url" | "category" | "product";
+
+const detectLinkType = (link: string): { type: LinkType; value: string } => {
+  const anchor = parseAnchorFromLink(link || "");
+  if (anchor?.type === "category") return { type: "category", value: anchor.slug };
+  if (anchor?.type === "product") return { type: "product", value: anchor.slug };
+  return { type: "url", value: link || "" };
+};
+
 const PopupSectionEditor = ({ data, onSave }: Props) => {
   const [saving, setSaving] = useState(false);
   const [values, setValues] = useState<PopupSection>({ ...defaultPopup, ...data });
   const { toast } = useToast();
 
+  const initial = useMemo(() => detectLinkType(data?.button_link || ""), [data?.button_link]);
+  const [linkType, setLinkType] = useState<LinkType>(initial.type);
+  const [linkValue, setLinkValue] = useState<string>(initial.value);
+
+  const [categoryOptions, setCategoryOptions] = useState<{ name: string; slug: string }[]>([]);
+  const [productOptions, setProductOptions] = useState<{ name: string; slug: string }[]>([]);
+
   useEffect(() => {
     setValues({ ...defaultPopup, ...data });
+    const det = detectLinkType(data?.button_link || "");
+    setLinkType(det.type);
+    setLinkValue(det.value);
   }, [data]);
+
+  // Charger les noms uniques de catégories & produits (dédupliqués entre restaurants)
+  useEffect(() => {
+    (async () => {
+      const [{ data: cats }, { data: prods }] = await Promise.all([
+        supabase.from("categories").select("name").order("name"),
+        supabase
+          .from("products")
+          .select("name")
+          .eq("is_hidden", false)
+          .order("name"),
+      ]);
+      const dedupe = (rows: { name: string }[] | null) => {
+        const seen = new Set<string>();
+        const out: { name: string; slug: string }[] = [];
+        (rows || []).forEach((r) => {
+          const n = (r.name || "").trim();
+          if (!n || seen.has(n.toLowerCase())) return;
+          seen.add(n.toLowerCase());
+          // Slug computed via link-anchor utility
+          out.push({ name: n, slug: n });
+        });
+        return out;
+      };
+      // slug filled after import to avoid circular import cost
+      const { slugify } = await import("@/lib/link-anchor");
+      const withSlug = (arr: { name: string; slug: string }[]) =>
+        arr.map((x) => ({ name: x.name, slug: slugify(x.name) }));
+      setCategoryOptions(withSlug(dedupe(cats)));
+      setProductOptions(withSlug(dedupe(prods)));
+    })();
+  }, []);
 
   const update = <K extends keyof PopupSection>(key: K, value: PopupSection[K]) => {
     setValues((prev) => ({ ...prev, [key]: value }));
   };
+
+  const handleLinkTypeChange = (t: LinkType) => {
+    setLinkType(t);
+    if (t === "url") {
+      setLinkValue(values.button_link.startsWith("#") ? "" : values.button_link);
+      update("button_link", values.button_link.startsWith("#") ? "" : values.button_link);
+    } else {
+      setLinkValue("");
+      update("button_link", "");
+    }
+  };
+
+  const handleLinkValueChange = (v: string) => {
+    setLinkValue(v);
+    if (linkType === "category") update("button_link", buildCategoryLink(v));
+    else if (linkType === "product") update("button_link", buildProductLink(v));
+    else update("button_link", v);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,24 +211,97 @@ const PopupSectionEditor = ({ data, onSave }: Props) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Texte du bouton</Label>
+            <Input
+              value={values.button_text}
+              onChange={(e) => update("button_text", e.target.value)}
+              placeholder="En savoir plus"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Type de lien</Label>
+            <Select
+              value={linkType}
+              onValueChange={(v) => handleLinkTypeChange(v as LinkType)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="url">URL libre (interne ou externe)</SelectItem>
+                <SelectItem value="category">
+                  Catégorie de la page Commander
+                </SelectItem>
+                <SelectItem value="product">
+                  Produit de la page Commander
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Les catégories et produits sont dédupliqués : la sélection cible
+              automatiquement le bon élément selon le restaurant du visiteur.
+            </p>
+          </div>
+
+          {linkType === "url" && (
             <div className="space-y-2">
-              <Label>Texte du bouton</Label>
+              <Label>Lien</Label>
               <Input
-                value={values.button_text}
-                onChange={(e) => update("button_text", e.target.value)}
-                placeholder="En savoir plus"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Lien de destination</Label>
-              <Input
-                value={values.button_link}
-                onChange={(e) => update("button_link", e.target.value)}
+                value={linkValue}
+                onChange={(e) => handleLinkValueChange(e.target.value)}
                 placeholder="/commander ou https://..."
               />
             </div>
+          )}
+
+          {linkType === "category" && (
+            <div className="space-y-2">
+              <Label>Catégorie</Label>
+              <Select
+                value={linkValue}
+                onValueChange={handleLinkValueChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une catégorie" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {categoryOptions.map((c) => (
+                    <SelectItem key={c.slug} value={c.slug}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {linkType === "product" && (
+            <div className="space-y-2">
+              <Label>Produit</Label>
+              <Select
+                value={linkValue}
+                onValueChange={handleLinkValueChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un produit" />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {productOptions.map((p) => (
+                    <SelectItem key={p.slug} value={p.slug}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="text-xs text-muted-foreground break-all">
+            Lien final enregistré : <code>{values.button_link || "(vide)"}</code>
           </div>
+
 
           {values.image_url && (
             <div className="pt-2">
