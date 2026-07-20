@@ -929,16 +929,16 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
       <SupplementDialog
         item={pendingSupplementItem}
         onClose={() => setPendingSupplementItem(null)}
-        onSelect={(supplement) => {
+        onSelect={(supplements) => {
           const item = pendingSupplementItem;
           setPendingSupplementItem(null);
           if (!item) return;
-          const finalItem: MenuItem = supplement
+          const finalItem: MenuItem = supplements.length > 0
             ? {
                 ...item,
-                id: `${item.id}-sup-${supplement.name.replace(/\s+/g, '-')}-${Date.now()}`,
-                name: `${item.name} + ${supplement.name}`,
-                price: Number(item.price) + Number(supplement.price),
+                id: `${item.id}-sup-${supplements.map(s => s.name.replace(/\s+/g, '-')).join('-')}-${Date.now()}`,
+                name: `${item.name} + ${supplements.map(s => s.name).join(' + ')}`,
+                price: Number(item.price) + supplements.reduce((sum, s) => sum + Number(s.price), 0),
               }
             : item;
           onAddToCart(finalItem);
