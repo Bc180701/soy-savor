@@ -292,6 +292,8 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_best_seller: data.is_best_seller,
             is_gluten_free: data.is_gluten_free,
             allergens: data.allergens,
+            supplements_enabled: data.supplements_enabled,
+            supplements: (data.supplements || []).filter(s => s.name && s.name.trim() !== ""),
             updated_at: new Date().toISOString(),
           } as any)
           .eq("id", product.id)
@@ -332,6 +334,8 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             is_best_seller: data.is_best_seller,
             is_gluten_free: data.is_gluten_free,
             allergens: data.allergens,
+            supplements_enabled: data.supplements_enabled,
+            supplements: (data.supplements || []).filter(s => s.name && s.name.trim() !== ""),
             restaurant_id: currentRestaurant.id,
           } as any)
           .select();
