@@ -45,8 +45,8 @@ const HomepagePopup = ({ data, page }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? handleClose() : setOpen(o))}>
-      <DialogContent className="p-0 max-w-[340px] bg-transparent border-0 shadow-none [&>button]:hidden">
-        <DialogTitle className="sr-only">Annonce</DialogTitle>
+      <DialogContent className="p-0 max-w-[425px] bg-transparent border-0 shadow-none [&>button]:hidden">
+        <DialogTitle className="sr-only">{data.title || "Annonce"}</DialogTitle>
         <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl">
           <button
             type="button"
@@ -58,21 +58,34 @@ const HomepagePopup = ({ data, page }: Props) => {
           </button>
           <img
             src={data.image_url}
-            alt="Annonce"
+            alt={data.title || "Annonce"}
             className="w-full h-auto block"
           />
 
-          {data.button_text && (
-            <div className="p-3">
-              <Button
-                onClick={handleClick}
-                className="w-full bg-gold-600 hover:bg-gold-700 text-white"
-              >
-                {data.button_text}
-              </Button>
+          {(data.title || data.description || data.button_text) && (
+            <div className="p-4 space-y-3">
+              {data.title && (
+                <h2 className="text-lg font-semibold text-gray-900 text-center">
+                  {data.title}
+                </h2>
+              )}
+              {data.description && (
+                <p className="text-sm text-gray-600 text-center whitespace-pre-line">
+                  {data.description}
+                </p>
+              )}
+              {data.button_text && (
+                <Button
+                  onClick={handleClick}
+                  className="w-full bg-gold-600 hover:bg-gold-700 text-white"
+                >
+                  {data.button_text}
+                </Button>
+              )}
             </div>
           )}
         </div>
+
       </DialogContent>
     </Dialog>
   );
