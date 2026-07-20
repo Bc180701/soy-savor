@@ -238,10 +238,13 @@ const CommanderContent = () => {
   // Scroll vers une catégorie ou un produit ciblé par le hash (#cat=..., #prod=...)
   useEffect(() => {
     if (isLoading || categories.length === 0) return;
-    const hash = window.location.hash;
-    if (!hash) return;
 
-    import("@/lib/link-anchor").then(({ parseAnchorFromHash, slugify }) => {
+    let cancelled = false;
+    const runScroll = async () => {
+      const hash = window.location.hash;
+      if (!hash) return;
+      const { parseAnchorFromHash, slugify } = await import("@/lib/link-anchor");
+      if (cancelled) return;
       const target = parseAnchorFromHash(hash);
       if (!target) return;
 
@@ -263,7 +266,6 @@ const CommanderContent = () => {
       if (!categoryToScroll) return;
       setActiveCategory(categoryToScroll.id);
 
-      // Attendre le rendu, puis scroller
       setTimeout(() => {
         if (productSlug) {
           const productEl = document.querySelector<HTMLElement>(
@@ -274,7 +276,11 @@ const CommanderContent = () => {
             productEl.classList.add("ring-2", "ring-gold-500", "rounded-xl");
             setTimeout(
               () =>
-                productEl.classList.remove("ring-2", "ring-gold-500", "rounded-xl"),
+                productEl.classList.remove(
+                  "ring-2",
+                  "ring-gold-500",
+                  "rounded-xl"
+                ),
               2500
             );
             return;
@@ -285,8 +291,16 @@ const CommanderContent = () => {
           catEl.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }, 350);
-    });
+    };
+
+    runScroll();
+    window.addEventListener("hashchange", runScroll);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("hashchange", runScroll);
+    };
   }, [isLoading, categories]);
+
 
 
   const handleRestaurantSelected = (restaurant: Restaurant) => {
