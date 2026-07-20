@@ -754,6 +754,89 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
           />
         </div>
 
+        <FormField
+          control={form.control}
+          name="supplements_enabled"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <FormControl>
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Suppléments</FormLabel>
+                <FormDescription>
+                  Proposer des suppléments optionnels lors de l'ajout au panier
+                </FormDescription>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        {form.watch("supplements_enabled") && (
+          <FormField
+            control={form.control}
+            name="supplements"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Liste des suppléments</FormLabel>
+                <FormDescription>
+                  Ajoutez un nom et un prix pour chaque supplément proposé
+                </FormDescription>
+                <div className="space-y-2 mt-2">
+                  {(field.value || []).map((sup: any, index: number) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <Input
+                        placeholder="Nom du supplément"
+                        value={sup.name || ""}
+                        onChange={(e) => {
+                          const list = [...(field.value || [])];
+                          list[index] = { ...list[index], name: e.target.value };
+                          field.onChange(list);
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Prix"
+                        className="w-28"
+                        value={sup.price ?? ""}
+                        onChange={(e) => {
+                          const list = [...(field.value || [])];
+                          list[index] = { ...list[index], price: parseFloat(e.target.value) || 0 };
+                          field.onChange(list);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const list = [...(field.value || [])];
+                          list.splice(index, 1);
+                          field.onChange(list);
+                        }}
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => field.onChange([...(field.value || []), { name: "", price: 0 }])}
+                  >
+                    + Ajouter un supplément
+                  </Button>
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
+
+
+
         <div className="flex justify-end space-x-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             Annuler
