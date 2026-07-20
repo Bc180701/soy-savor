@@ -215,9 +215,12 @@ export const useHomepageData = (): UseHomepageDataResult => {
       enabled: false,
       display_on: "home",
       image_url: "",
+      title: "",
+      description: "",
       button_text: "En savoir plus",
       button_link: "/commander",
     },
+
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
