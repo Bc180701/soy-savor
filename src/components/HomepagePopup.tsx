@@ -14,6 +14,7 @@ const storageKey = (page: string) => `popup_dismissed_${page}`;
 
 const HomepagePopup = ({ data, page }: Props) => {
   const [open, setOpen] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,8 +25,23 @@ const HomepagePopup = ({ data, page }: Props) => {
     const dismissed = sessionStorage.getItem(storageKey(page));
     if (dismissed) return;
 
-    const t = setTimeout(() => setOpen(true), 600);
-    return () => clearTimeout(t);
+    let cancelled = false;
+    const img = new Image();
+    img.src = data.image_url;
+    const onReady = () => {
+      if (cancelled) return;
+      setImageLoaded(true);
+      setTimeout(() => !cancelled && setOpen(true), 300);
+    };
+    if (img.complete && img.naturalWidth > 0) {
+      onReady();
+    } else {
+      img.onload = onReady;
+      img.onerror = () => {}; // n'affiche pas si erreur
+    }
+    return () => {
+      cancelled = true;
+    };
   }, [data, page]);
 
   const handleClose = () => {
