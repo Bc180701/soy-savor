@@ -147,8 +147,8 @@ export async function sendOrderToPrinter(order: Order): Promise<{
 
         const { data: backups } = await supabase
           .from('cart_backup')
-          .select('items, created_at')
-          .eq('user_email', order.clientEmail)
+          .select('cart_items, created_at')
+          .eq('session_id', order.clientEmail)
           .gte('created_at', windowStart)
           .lte('created_at', windowEnd)
           .order('created_at', { ascending: false });
