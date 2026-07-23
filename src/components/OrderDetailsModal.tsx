@@ -157,7 +157,27 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         } else {
           setCartBackupItems([]);
         }
-        
+
+        // Récupérer les descriptions des produits standards depuis la base
+        if (Array.isArray(completeOrderDetails.items_summary)) {
+          const names = completeOrderDetails.items_summary
+            .map((it: any) => it?.name)
+            .filter((n: any) => typeof n === 'string' && n.length > 0);
+          if (names.length > 0) {
+            const { data: products } = await supabase
+              .from('products')
+              .select('name, description')
+              .in('name', names);
+            const map = new Map<string, string>();
+            (products || []).forEach((p: any) => {
+              if (p.description) map.set(normalizeItemName(p.name), p.description);
+            });
+            setProductDescriptions(map);
+          } else {
+            setProductDescriptions(new Map());
+          }
+        }
+
         // Récupérer le nombre de commandes du client
         const orderCount = await fetchCustomerOrderCount(
           completeOrderDetails.client_email,
