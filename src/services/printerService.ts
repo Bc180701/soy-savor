@@ -164,7 +164,7 @@ export async function sendOrderToPrinter(order: Order): Promise<{
         let bestBackup: any[] | null = null;
         let bestScore = 0;
         for (const b of backups || []) {
-          const backupItems = (b.items as any[]) || [];
+          const backupItems = (b.cart_items as any[]) || [];
           let score = 0;
           for (const it of items) {
             const n = normalize(it.name);
