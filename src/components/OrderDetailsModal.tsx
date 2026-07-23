@@ -27,6 +27,14 @@ interface OrderDetailsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const normalizeItemName = (name?: string) =>
+  (name || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<any | null>(null);
@@ -41,13 +49,12 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     }
   }, [order, open]);
 
-  const fetchCartBackupItems = async (clientEmail: string, orderCreatedAt?: string) => {
+  const fetchCartBackupItems = async (clientEmail: string, orderCreatedAt?: string, orderItems: any[] = []) => {
     try {
       let query = supabase
         .from('cart_backup')
         .select('cart_items, created_at')
-        .eq('session_id', clientEmail)
-        .eq('is_used', false);
+        .eq('session_id', clientEmail);
 
       if (orderCreatedAt) {
         const orderTime = new Date(orderCreatedAt).getTime();
@@ -63,8 +70,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         return [];
       }
 
-      const orderItemNames = Array.isArray(orderDetails?.items_summary)
-        ? orderDetails.items_summary.map((item: any) => normalizeItemName(item?.name)).filter(Boolean)
+      const orderItemNames = Array.isArray(orderItems)
+        ? orderItems.map((item: any) => normalizeItemName(item?.name)).filter(Boolean)
         : [];
 
       const getBackupScore = (backup: any) => {
@@ -142,7 +149,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         if (completeOrderDetails.client_email) {
           const backupItems = await fetchCartBackupItems(
             completeOrderDetails.client_email,
-            completeOrderDetails.created_at
+            completeOrderDetails.created_at,
+            Array.isArray(completeOrderDetails.items_summary) ? completeOrderDetails.items_summary : []
           );
           setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
         } else {
