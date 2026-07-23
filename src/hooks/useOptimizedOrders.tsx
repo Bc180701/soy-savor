@@ -156,31 +156,19 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
 
               if (cartError) throw cartError;
 
-              // Grouper les cart_backup par email (triés du + récent au + ancien)
-              const backupsByEmail: Record<string, Array<{ created_at: string; cart_items: any[] }>> = {};
+              const latestCartMap: Record<string, any[]> = {};
               cartBackups?.forEach(cb => {
-                if (!backupsByEmail[cb.session_id]) backupsByEmail[cb.session_id] = [];
-                backupsByEmail[cb.session_id].push({
-                  created_at: cb.created_at,
-                  cart_items: Array.isArray(cb.cart_items) ? cb.cart_items : [],
-                });
+                if (!latestCartMap[cb.session_id]) {
+                  latestCartMap[cb.session_id] = Array.isArray(cb.cart_items) 
+                    ? cb.cart_items 
+                    : [];
+                }
               });
-
-              // Associer à chaque commande le cart_backup temporellement le plus proche
-              // (créé avant la commande, dans une fenêtre de 2h). Évite qu'un panier
-              // ultérieur du même email contamine une ancienne commande.
-              const WINDOW_BEFORE_MS = 2 * 60 * 60 * 1000; // 2h avant
-              const WINDOW_AFTER_MS = 5 * 60 * 1000; // 5min après (tolérance)
 
               ordersWithCartBackup = verifiedOrders.map(order => {
                 if (!order.clientEmail) return order;
-                const orderTime = new Date((order as any).created_at || (order as any).createdAt).getTime();
-                const candidates = backupsByEmail[order.clientEmail] || [];
-                const match = candidates.find(cb => {
-                  const cbTime = new Date(cb.created_at).getTime();
-                  return cbTime <= orderTime + WINDOW_AFTER_MS && cbTime >= orderTime - WINDOW_BEFORE_MS;
-                });
-                return { ...order, cartBackupItems: match?.cart_items || [] };
+                const cartItems = latestCartMap[order.clientEmail] || [];
+                return { ...order, cartBackupItems: cartItems };
               });
 
               const cartBackupCount = ordersWithCartBackup.filter(o => o.cartBackupItems?.length).length;
