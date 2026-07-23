@@ -283,21 +283,36 @@ serve(async (req) => {
       let itemsSource = 'stripe';
       
       try {
-        console.log('🔍 Récupération des line_items depuis Stripe...');
-        const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
-          expand: ['data.price.product']
-        });
-        
-        if (lineItems.data && lineItems.data.length > 0) {
-          itemsSummary = lineItems.data.map((item: any) => ({
+        console.log('🔍 Récupération des line_items depuis Stripe (avec pagination)...');
+        const allLineItems: any[] = [];
+        let startingAfter: string | undefined = undefined;
+        let hasMore = true;
+
+        while (hasMore) {
+          const params: any = {
+            limit: 100,
+            expand: ['data.price.product'],
+          };
+          if (startingAfter) params.starting_after = startingAfter;
+
+          const page = await stripe.checkout.sessions.listLineItems(session.id, params);
+          if (page.data && page.data.length > 0) {
+            allLineItems.push(...page.data);
+            startingAfter = page.data[page.data.length - 1].id;
+          }
+          hasMore = !!page.has_more;
+        }
+
+        if (allLineItems.length > 0) {
+          itemsSummary = allLineItems.map((item: any) => ({
             id: item.price?.product?.metadata?.product_id || item.price?.product?.id || 'unknown',
             name: item.description || item.price?.product?.name || 'Produit inconnu',
             price: (item.amount_total || 0) / 100,
             quantity: item.quantity || 1,
             unit_price: (item.price?.unit_amount || 0) / 100
           }));
-          
-          console.log('✅ Line items récupérés depuis Stripe:', itemsSummary.length, 'articles');
+
+          console.log('✅ Line items récupérés depuis Stripe:', itemsSummary.length, 'articles (toutes pages)');
         } else {
           throw new Error('Aucun line_item retourné par Stripe');
         }
