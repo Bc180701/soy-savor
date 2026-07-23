@@ -88,9 +88,10 @@ serve(async (req) => {
 
     // Replace order_items
     await supabase.from('order_items').delete().eq('order_id', orderId);
+    const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
     const orderItemsRows = itemsSummary.map((it) => ({
       order_id: orderId,
-      product_id: it.id && it.id !== 'unknown' ? it.id : null,
+      product_id: it.id && isUuid(it.id) ? it.id : null,
       quantity: it.quantity,
       price: it.unit_price || it.price,
       special_instructions: `RESYNC: ${it.name}`
