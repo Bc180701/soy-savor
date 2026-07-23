@@ -447,27 +447,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
                     {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
-                      orderDetails.items_summary.map((item: any, index: number) => (
-                        <div key={index} className="p-4 flex justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium text-lg">
-                              {item.name}
-                            </div>
-                            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
-                            {item.special_instructions && (
-                              <div className="text-sm text-muted-foreground italic mt-1">
-                                "{item.special_instructions}"
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right min-w-[100px]">
-                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
-                            <div className="font-semibold text-lg">
-                              {formatEuro((item.quantity || 1) * (item.price || 0))}
-                            </div>
-                          </div>
-                        </div>
-                      ))
+                      <DecodedItemsList items={orderDetails.items_summary} />
                     ) : cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
