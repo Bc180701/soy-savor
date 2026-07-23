@@ -41,6 +41,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
   const [customerDetails, setCustomerDetails] = useState<any | null>(null);
   const [addressDetails, setAddressDetails] = useState<any | null>(null);
   const [cartBackupItems, setCartBackupItems] = useState<any[]>([]);
+  const [productDescriptions, setProductDescriptions] = useState<Map<string, string>>(new Map());
   const [customerOrderCount, setCustomerOrderCount] = useState<number>(0);
 
   useEffect(() => {
@@ -156,7 +157,27 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         } else {
           setCartBackupItems([]);
         }
-        
+
+        // Récupérer les descriptions des produits standards depuis la base
+        if (Array.isArray(completeOrderDetails.items_summary)) {
+          const names = completeOrderDetails.items_summary
+            .map((it: any) => it?.name)
+            .filter((n: any) => typeof n === 'string' && n.length > 0);
+          if (names.length > 0) {
+            const { data: products } = await supabase
+              .from('products')
+              .select('name, description')
+              .in('name', names);
+            const map = new Map<string, string>();
+            (products || []).forEach((p: any) => {
+              if (p.description) map.set(normalizeItemName(p.name), p.description);
+            });
+            setProductDescriptions(map);
+          } else {
+            setProductDescriptions(new Map());
+          }
+        }
+
         // Récupérer le nombre de commandes du client
         const orderCount = await fetchCustomerOrderCount(
           completeOrderDetails.client_email,
@@ -321,10 +342,6 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
       return [];
     }
 
-    if (!cartBackupItems.length) {
-      return orderDetails.items_summary;
-    }
-
     const backupItemsByName = new Map<string, any>();
     cartBackupItems.forEach((item: any) => {
       const name = normalizeItemName(item?.menuItem?.name);
@@ -336,8 +353,10 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     return orderDetails.items_summary.map((item: any) => {
       if (item?.description) return item;
 
-      const backupItem = backupItemsByName.get(normalizeItemName(item?.name));
-      const description = backupItem?.menuItem?.description;
+      const normalized = normalizeItemName(item?.name);
+      const backupItem = backupItemsByName.get(normalized);
+      const description =
+        backupItem?.menuItem?.description || productDescriptions.get(normalized);
 
       return description ? {
         ...item,
@@ -345,7 +364,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         special_instructions: item.special_instructions || backupItem?.specialInstructions,
       } : item;
     });
-  }, [orderDetails?.items_summary, cartBackupItems]);
+  }, [orderDetails?.items_summary, cartBackupItems, productDescriptions]);
 
   // Utilisation d'une feuille latérale pour les petits écrans et d'une boîte de dialogue pour les écrans plus grands
   const isMobile = window.innerWidth < 768;
