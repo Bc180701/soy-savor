@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -51,8 +51,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
 
       if (orderCreatedAt) {
         const orderTime = new Date(orderCreatedAt).getTime();
-        const windowStart = new Date(orderTime - 2 * 60 * 60 * 1000).toISOString();
-        const windowEnd = new Date(orderTime + 5 * 60 * 1000).toISOString();
+        const windowStart = new Date(orderTime - 3 * 60 * 60 * 1000).toISOString();
+        const windowEnd = new Date(orderTime + 15 * 60 * 1000).toISOString();
         query = query.gte('created_at', windowStart).lte('created_at', windowEnd);
       }
 
@@ -63,12 +63,29 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         return [];
       }
 
+      const orderItemNames = Array.isArray(orderDetails?.items_summary)
+        ? orderDetails.items_summary.map((item: any) => normalizeItemName(item?.name)).filter(Boolean)
+        : [];
+
+      const getBackupScore = (backup: any) => {
+        const backupNames = Array.isArray(backup?.cart_items)
+          ? backup.cart_items.map((item: any) => normalizeItemName(item?.menuItem?.name)).filter(Boolean)
+          : [];
+        return orderItemNames.reduce((score, orderName) => (
+          backupNames.some((backupName) => backupName === orderName) ? score + 1 : score
+        ), 0);
+      };
+
       const closestBackup = orderCreatedAt
-        ? data.reduce((closest: any, current: any) => {
+        ? data.reduce((best: any, current: any) => {
             const orderTime = new Date(orderCreatedAt).getTime();
-            const closestDiff = Math.abs(new Date(closest.created_at).getTime() - orderTime);
+            const bestScore = getBackupScore(best);
+            const currentScore = getBackupScore(current);
+            if (currentScore !== bestScore) return currentScore > bestScore ? current : best;
+
+            const bestDiff = Math.abs(new Date(best.created_at).getTime() - orderTime);
             const currentDiff = Math.abs(new Date(current.created_at).getTime() - orderTime);
-            return currentDiff < closestDiff ? current : closest;
+            return currentDiff < bestDiff ? current : best;
           }, data[0])
         : data[0];
 
@@ -291,6 +308,37 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     return null;
   };
 
+  const enrichedItemsSummary = useMemo(() => {
+    if (!orderDetails?.items_summary || !Array.isArray(orderDetails.items_summary)) {
+      return [];
+    }
+
+    if (!cartBackupItems.length) {
+      return orderDetails.items_summary;
+    }
+
+    const backupItemsByName = new Map<string, any>();
+    cartBackupItems.forEach((item: any) => {
+      const name = normalizeItemName(item?.menuItem?.name);
+      if (name && !backupItemsByName.has(name)) {
+        backupItemsByName.set(name, item);
+      }
+    });
+
+    return orderDetails.items_summary.map((item: any) => {
+      if (item?.description) return item;
+
+      const backupItem = backupItemsByName.get(normalizeItemName(item?.name));
+      const description = backupItem?.menuItem?.description;
+
+      return description ? {
+        ...item,
+        description,
+        special_instructions: item.special_instructions || backupItem?.specialInstructions,
+      } : item;
+    });
+  }, [orderDetails?.items_summary, cartBackupItems]);
+
   // Utilisation d'une feuille latérale pour les petits écrans et d'une boîte de dialogue pour les écrans plus grands
   const isMobile = window.innerWidth < 768;
   const freeProduct = getFreeProduct();
@@ -446,8 +494,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
-                      <DecodedItemsList items={orderDetails.items_summary} />
+                    {enrichedItemsSummary.length > 0 ? (
+                      <DecodedItemsList items={enrichedItemsSummary} />
                     ) : cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
@@ -715,8 +763,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
-                      <DecodedItemsList items={orderDetails.items_summary} />
+                    {enrichedItemsSummary.length > 0 ? (
+                      <DecodedItemsList items={enrichedItemsSummary} />
                     ) : cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
