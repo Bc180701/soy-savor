@@ -106,7 +106,10 @@ export const DecodedItemsList = ({ items }: DecodedItemsListProps) => {
             <div className="font-medium text-lg">
               {item.name}
             </div>
-            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
+            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1") ||
+              (item.description ? (
+                <div className="text-sm text-muted-foreground mt-1">{item.description}</div>
+              ) : null)}
             {item.special_instructions && (
               <div className="text-sm text-muted-foreground italic mt-1">
                 "{item.special_instructions}"
