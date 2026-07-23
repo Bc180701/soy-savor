@@ -41,38 +41,22 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     }
   }, [order, open]);
 
-  const fetchCartBackupItems = async (clientEmail: string, orderCreatedAt?: string) => {
+  const fetchCartBackupItems = async (clientEmail: string) => {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('cart_backup')
-        .select('cart_items, created_at')
+        .select('cart_items')
         .eq('session_id', clientEmail)
-        .eq('is_used', false);
-
-      if (orderCreatedAt) {
-        const orderTime = new Date(orderCreatedAt).getTime();
-        const windowStart = new Date(orderTime - 2 * 60 * 60 * 1000).toISOString();
-        const windowEnd = new Date(orderTime + 5 * 60 * 1000).toISOString();
-        query = query.gte('created_at', windowStart).lte('created_at', windowEnd);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false }).limit(10);
+        .eq('is_used', false)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (error || !data || data.length === 0) {
         console.log('No cart backup found for email:', clientEmail);
         return [];
       }
 
-      const closestBackup = orderCreatedAt
-        ? data.reduce((closest: any, current: any) => {
-            const orderTime = new Date(orderCreatedAt).getTime();
-            const closestDiff = Math.abs(new Date(closest.created_at).getTime() - orderTime);
-            const currentDiff = Math.abs(new Date(current.created_at).getTime() - orderTime);
-            return currentDiff < closestDiff ? current : closest;
-          }, data[0])
-        : data[0];
-
-      return closestBackup.cart_items || [];
+      return data[0].cart_items || [];
     } catch (error) {
       console.error('Error fetching cart backup:', error);
       return [];
@@ -123,10 +107,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         
         // Toujours récupérer cart_backup pour avoir les données complètes
         if (completeOrderDetails.client_email) {
-          const backupItems = await fetchCartBackupItems(
-            completeOrderDetails.client_email,
-            completeOrderDetails.created_at
-          );
+          const backupItems = await fetchCartBackupItems(completeOrderDetails.client_email);
           setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
         } else {
           setCartBackupItems([]);
@@ -446,9 +427,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
-                      <DecodedItemsList items={orderDetails.items_summary} />
-                    ) : cartBackupItems.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
                           <div className="flex-1">
@@ -470,6 +449,28 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                             <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
                             <div className="font-semibold text-lg">
                               {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                      orderDetails.items_summary.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.name}
+                            </div>
+                            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
+                            {item.special_instructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.special_instructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.price || 0))}
                             </div>
                           </div>
                         </div>
@@ -715,9 +716,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
-                      <DecodedItemsList items={orderDetails.items_summary} />
-                    ) : cartBackupItems.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
                           <div className="flex-1">
@@ -743,6 +742,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                           </div>
                         </div>
                       ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                      <DecodedItemsList items={orderDetails.items_summary} />
                     ) : orderDetails.order_items && orderDetails.order_items.length > 0 ? (
                      orderDetails.order_items.map((item: any, index: number) => (
                        <div key={item.id || index} className="p-4 flex justify-between">
