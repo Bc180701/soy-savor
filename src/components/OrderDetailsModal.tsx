@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -27,21 +27,12 @@ interface OrderDetailsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const normalizeItemName = (name?: string) =>
-  (name || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
 const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps) => {
   const [loading, setLoading] = useState(false);
   const [orderDetails, setOrderDetails] = useState<any | null>(null);
   const [customerDetails, setCustomerDetails] = useState<any | null>(null);
   const [addressDetails, setAddressDetails] = useState<any | null>(null);
   const [cartBackupItems, setCartBackupItems] = useState<any[]>([]);
-  const [productDescriptions, setProductDescriptions] = useState<Map<string, string>>(new Map());
   const [customerOrderCount, setCustomerOrderCount] = useState<number>(0);
 
   useEffect(() => {
@@ -50,54 +41,22 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     }
   }, [order, open]);
 
-  const fetchCartBackupItems = async (clientEmail: string, orderCreatedAt?: string, orderItems: any[] = []) => {
+  const fetchCartBackupItems = async (clientEmail: string) => {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('cart_backup')
-        .select('cart_items, created_at')
-        .eq('session_id', clientEmail);
-
-      if (orderCreatedAt) {
-        const orderTime = new Date(orderCreatedAt).getTime();
-        const windowStart = new Date(orderTime - 3 * 60 * 60 * 1000).toISOString();
-        const windowEnd = new Date(orderTime + 15 * 60 * 1000).toISOString();
-        query = query.gte('created_at', windowStart).lte('created_at', windowEnd);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false }).limit(10);
+        .select('cart_items')
+        .eq('session_id', clientEmail)
+        .eq('is_used', false)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (error || !data || data.length === 0) {
         console.log('No cart backup found for email:', clientEmail);
         return [];
       }
 
-      const orderItemNames = Array.isArray(orderItems)
-        ? orderItems.map((item: any) => normalizeItemName(item?.name)).filter(Boolean)
-        : [];
-
-      const getBackupScore = (backup: any) => {
-        const backupNames = Array.isArray(backup?.cart_items)
-          ? backup.cart_items.map((item: any) => normalizeItemName(item?.menuItem?.name)).filter(Boolean)
-          : [];
-        return orderItemNames.reduce((score, orderName) => (
-          backupNames.some((backupName) => backupName === orderName) ? score + 1 : score
-        ), 0);
-      };
-
-      const closestBackup = orderCreatedAt
-        ? data.reduce((best: any, current: any) => {
-            const orderTime = new Date(orderCreatedAt).getTime();
-            const bestScore = getBackupScore(best);
-            const currentScore = getBackupScore(current);
-            if (currentScore !== bestScore) return currentScore > bestScore ? current : best;
-
-            const bestDiff = Math.abs(new Date(best.created_at).getTime() - orderTime);
-            const currentDiff = Math.abs(new Date(current.created_at).getTime() - orderTime);
-            return currentDiff < bestDiff ? current : best;
-          }, data[0])
-        : data[0];
-
-      return closestBackup.cart_items || [];
+      return data[0].cart_items || [];
     } catch (error) {
       console.error('Error fetching cart backup:', error);
       return [];
@@ -148,36 +107,12 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         
         // Toujours récupérer cart_backup pour avoir les données complètes
         if (completeOrderDetails.client_email) {
-          const backupItems = await fetchCartBackupItems(
-            completeOrderDetails.client_email,
-            completeOrderDetails.created_at,
-            Array.isArray(completeOrderDetails.items_summary) ? completeOrderDetails.items_summary : []
-          );
+          const backupItems = await fetchCartBackupItems(completeOrderDetails.client_email);
           setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
         } else {
           setCartBackupItems([]);
         }
-
-        // Récupérer les descriptions des produits standards depuis la base
-        if (Array.isArray(completeOrderDetails.items_summary)) {
-          const names = completeOrderDetails.items_summary
-            .map((it: any) => it?.name)
-            .filter((n: any) => typeof n === 'string' && n.length > 0);
-          if (names.length > 0) {
-            const { data: products } = await supabase
-              .from('products')
-              .select('name, description')
-              .in('name', names);
-            const map = new Map<string, string>();
-            (products || []).forEach((p: any) => {
-              if (p.description) map.set(normalizeItemName(p.name), p.description);
-            });
-            setProductDescriptions(map);
-          } else {
-            setProductDescriptions(new Map());
-          }
-        }
-
+        
         // Récupérer le nombre de commandes du client
         const orderCount = await fetchCustomerOrderCount(
           completeOrderDetails.client_email,
@@ -337,35 +272,6 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     return null;
   };
 
-  const enrichedItemsSummary = useMemo(() => {
-    if (!orderDetails?.items_summary || !Array.isArray(orderDetails.items_summary)) {
-      return [];
-    }
-
-    const backupItemsByName = new Map<string, any>();
-    cartBackupItems.forEach((item: any) => {
-      const name = normalizeItemName(item?.menuItem?.name);
-      if (name && !backupItemsByName.has(name)) {
-        backupItemsByName.set(name, item);
-      }
-    });
-
-    return orderDetails.items_summary.map((item: any) => {
-      if (item?.description) return item;
-
-      const normalized = normalizeItemName(item?.name);
-      const backupItem = backupItemsByName.get(normalized);
-      const description =
-        backupItem?.menuItem?.description || productDescriptions.get(normalized);
-
-      return description ? {
-        ...item,
-        description,
-        special_instructions: item.special_instructions || backupItem?.specialInstructions,
-      } : item;
-    });
-  }, [orderDetails?.items_summary, cartBackupItems, productDescriptions]);
-
   // Utilisation d'une feuille latérale pour les petits écrans et d'une boîte de dialogue pour les écrans plus grands
   const isMobile = window.innerWidth < 768;
   const freeProduct = getFreeProduct();
@@ -521,9 +427,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {enrichedItemsSummary.length > 0 ? (
-                      <DecodedItemsList items={enrichedItemsSummary} />
-                    ) : cartBackupItems.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
                           <div className="flex-1">
@@ -545,6 +449,28 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                             <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
                             <div className="font-semibold text-lg">
                               {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                      orderDetails.items_summary.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.name}
+                            </div>
+                            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
+                            {item.special_instructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.special_instructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.price || 0))}
                             </div>
                           </div>
                         </div>
@@ -790,9 +716,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {enrichedItemsSummary.length > 0 ? (
-                      <DecodedItemsList items={enrichedItemsSummary} />
-                    ) : cartBackupItems.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
                           <div className="flex-1">
@@ -818,6 +742,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                           </div>
                         </div>
                       ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                      <DecodedItemsList items={orderDetails.items_summary} />
                     ) : orderDetails.order_items && orderDetails.order_items.length > 0 ? (
                      orderDetails.order_items.map((item: any, index: number) => (
                        <div key={item.id || index} className="p-4 flex justify-between">
