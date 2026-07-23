@@ -132,6 +132,68 @@ export async function sendOrderToPrinter(order: Order): Promise<{
       }
     }
 
+    // Enrichir les descriptions manquantes (surtout Sushi Créa / Poké Créa) depuis cart_backup en DB
+    const needsEnrichment = items.some(
+      (it) =>
+        !it.description &&
+        (/sushi\s+cr[ée]a/i.test(it.name) || /pok[ée]\s+cr[ée]a/i.test(it.name))
+    );
+
+    if (needsEnrichment && order.clientEmail) {
+      try {
+        const orderTime = new Date((order as any).createdAt || order.scheduledFor).getTime();
+        const windowStart = new Date(orderTime - 3 * 60 * 60 * 1000).toISOString();
+        const windowEnd = new Date(orderTime + 15 * 60 * 1000).toISOString();
+
+        const { data: backups } = await supabase
+          .from('cart_backup')
+          .select('items, created_at')
+          .eq('user_email', order.clientEmail)
+          .gte('created_at', windowStart)
+          .lte('created_at', windowEnd)
+          .order('created_at', { ascending: false });
+
+        const normalize = (s: string) =>
+          (s || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '');
+
+        // Trouver le backup avec le meilleur score de correspondance
+        let bestBackup: any[] | null = null;
+        let bestScore = 0;
+        for (const b of backups || []) {
+          const backupItems = (b.items as any[]) || [];
+          let score = 0;
+          for (const it of items) {
+            const n = normalize(it.name);
+            if (backupItems.some((bi: any) => normalize(bi.menuItem?.name || '') === n)) {
+              score++;
+            }
+          }
+          if (score > bestScore) {
+            bestScore = score;
+            bestBackup = backupItems;
+          }
+        }
+
+        if (bestBackup && bestScore > 0) {
+          console.log('📦 [PRINT] Enrichissement descriptions depuis cart_backup (score:', bestScore, ')');
+          for (const it of items) {
+            if (it.description) continue;
+            const n = normalize(it.name);
+            const match = bestBackup.find((bi: any) => normalize(bi.menuItem?.name || '') === n);
+            if (match?.menuItem?.description) {
+              it.description = match.menuItem.description;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('❌ [PRINT] Exception enrichissement descriptions:', e);
+      }
+    }
+
     if (items.length === 0) {
       return {
         success: false,
