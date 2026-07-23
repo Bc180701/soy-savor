@@ -342,10 +342,6 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
       return [];
     }
 
-    if (!cartBackupItems.length) {
-      return orderDetails.items_summary;
-    }
-
     const backupItemsByName = new Map<string, any>();
     cartBackupItems.forEach((item: any) => {
       const name = normalizeItemName(item?.menuItem?.name);
@@ -357,8 +353,10 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     return orderDetails.items_summary.map((item: any) => {
       if (item?.description) return item;
 
-      const backupItem = backupItemsByName.get(normalizeItemName(item?.name));
-      const description = backupItem?.menuItem?.description;
+      const normalized = normalizeItemName(item?.name);
+      const backupItem = backupItemsByName.get(normalized);
+      const description =
+        backupItem?.menuItem?.description || productDescriptions.get(normalized);
 
       return description ? {
         ...item,
@@ -366,7 +364,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         special_instructions: item.special_instructions || backupItem?.specialInstructions,
       } : item;
     });
-  }, [orderDetails?.items_summary, cartBackupItems]);
+  }, [orderDetails?.items_summary, cartBackupItems, productDescriptions]);
 
   // Utilisation d'une feuille latérale pour les petits écrans et d'une boîte de dialogue pour les écrans plus grands
   const isMobile = window.innerWidth < 768;
