@@ -41,6 +41,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
   const [customerDetails, setCustomerDetails] = useState<any | null>(null);
   const [addressDetails, setAddressDetails] = useState<any | null>(null);
   const [cartBackupItems, setCartBackupItems] = useState<any[]>([]);
+  const [productDescriptions, setProductDescriptions] = useState<Map<string, string>>(new Map());
   const [customerOrderCount, setCustomerOrderCount] = useState<number>(0);
 
   useEffect(() => {
