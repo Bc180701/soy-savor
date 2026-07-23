@@ -174,7 +174,7 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
 
               ordersWithCartBackup = verifiedOrders.map(order => {
                 if (!order.clientEmail) return order;
-                const orderTime = new Date(order.created_at).getTime();
+                const orderTime = new Date((order as any).created_at || (order as any).createdAt).getTime();
                 const candidates = backupsByEmail[order.clientEmail] || [];
                 const match = candidates.find(cb => {
                   const cbTime = new Date(cb.created_at).getTime();
