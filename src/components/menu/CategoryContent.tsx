@@ -22,6 +22,7 @@ import { WrapSelectionModal } from "./WrapSelectionModal";
 import { WineFormatSelector } from "./WineFormatSelector";
 import PokeSauceDialog from "./PokeSauceDialog";
 import SupplementDialog from "./SupplementDialog";
+import RequiredChoiceDialog from "./RequiredChoiceDialog";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
 import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
@@ -40,6 +41,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
   const [pendingSushiPushRollItem, setPendingSushiPushRollItem] = useState<MenuItem | null>(null);
   const [pendingSupplementItem, setPendingSupplementItem] = useState<MenuItem | null>(null);
+  const [pendingRequiredChoiceItem, setPendingRequiredChoiceItem] = useState<MenuItem | null>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
