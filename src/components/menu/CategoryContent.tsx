@@ -963,6 +963,40 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
           });
         }}
       />
+
+      {/* Modale de choix obligatoires (ex: Chaud/Froid) */}
+      <RequiredChoiceDialog
+        item={pendingRequiredChoiceItem}
+        onClose={() => setPendingRequiredChoiceItem(null)}
+        onConfirm={(choices) => {
+          const item = pendingRequiredChoiceItem;
+          setPendingRequiredChoiceItem(null);
+          if (!item) return;
+          const suffix = choices.map((c) => c.value).join(" / ");
+          const decoratedItem: MenuItem = {
+            ...item,
+            id: `${item.id}-opt-${choices.map((c) => c.value.replace(/\s+/g, "-")).join("-")}-${Date.now()}`,
+            name: `${item.name} (${suffix})`,
+            // Retirer les options obligatoires pour éviter une nouvelle popup en cascade
+            requiredOptions: [],
+          };
+
+          // Enchaîner sur les suppléments s'ils existent
+          const validSupplements = (decoratedItem.supplements || []).filter(
+            (s) => s?.name && s.name.trim() !== ""
+          );
+          if (decoratedItem.supplementsEnabled && validSupplements.length > 0) {
+            setPendingSupplementItem(decoratedItem);
+            return;
+          }
+
+          onAddToCart(decoratedItem);
+          toast({
+            title: "Ajouté au panier",
+            description: `${decoratedItem.name} a été ajouté à votre panier`,
+          });
+        }}
+      />
     </>
   );
 };
