@@ -884,13 +884,21 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
                     </div>
                     <Input
                       placeholder="Choix séparés par une virgule (ex: Chaud, Froid)"
-                      value={(opt.choices || []).join(", ")}
+                      value={opt._raw ?? (opt.choices || []).join(", ")}
                       onChange={(e) => {
+                        const raw = e.target.value;
                         const list = [...(field.value || [])];
                         list[index] = {
                           ...list[index],
-                          choices: e.target.value.split(",").map((c: string) => c.trim()).filter(Boolean),
+                          _raw: raw,
+                          choices: raw.split(",").map((c: string) => c.trim()).filter(Boolean),
                         };
+                        field.onChange(list);
+                      }}
+                      onBlur={() => {
+                        const list = [...(field.value || [])];
+                        const { _raw, ...clean } = list[index] || {};
+                        list[index] = clean;
                         field.onChange(list);
                       }}
                     />
