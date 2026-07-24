@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getAllOrders } from "@/services/orderService";
 import { Order } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OrdersCache {
   orders: Order[];
@@ -135,10 +136,55 @@ export function useOptimizedOrders(restaurantId: string | null, daysBack: number
             );
           }
 
-          console.log(`✅ ${verifiedOrders.length} commandes validées`);
+          // 🔄 Charger tous les cart_backup d'un coup
+          console.log("📦 Chargement global des cart_backup...");
 
-          setOrders(verifiedOrders);
-          setCachedOrders(verifiedOrders, restId, daysBack);
+          const clientEmails = verifiedOrders
+            .map(o => o.clientEmail)
+            .filter(Boolean);
+
+          let ordersWithCartBackup = [...verifiedOrders];
+
+          if (clientEmails.length > 0) {
+            try {
+              const { data: cartBackups, error: cartError } = await supabase
+                .from("cart_backup")
+                .select("session_id, cart_items, created_at")
+                .in("session_id", clientEmails)
+                .eq("is_used", false)
+                .order("created_at", { ascending: false });
+
+              if (cartError) throw cartError;
+
+              const latestCartMap: Record<string, any[]> = {};
+              cartBackups?.forEach(cb => {
+                if (!latestCartMap[cb.session_id]) {
+                  latestCartMap[cb.session_id] = Array.isArray(cb.cart_items) 
+                    ? cb.cart_items 
+                    : [];
+                }
+              });
+
+              ordersWithCartBackup = verifiedOrders.map(order => {
+                if (!order.clientEmail) return order;
+                const cartItems = latestCartMap[order.clientEmail] || [];
+                return { ...order, cartBackupItems: cartItems };
+              });
+
+              const cartBackupCount = ordersWithCartBackup.filter(o => o.cartBackupItems?.length).length;
+              console.log(`✅ ${verifiedOrders.length} commandes validées (${cartBackupCount} avec cart_backup)`);
+            } catch (err: any) {
+              console.error("💥 Erreur récupération globale des cart_backup:", err);
+              toast({
+                title: "Erreur cart_backup",
+                description: "Impossible de charger les articles des commandes",
+                variant: "destructive",
+              });
+            }
+          }
+
+          setOrders(ordersWithCartBackup);
+          setCachedOrders(ordersWithCartBackup, restId, daysBack);
 
           if (loadTime > 3000) {
             console.warn("🐌 Chargement lent:", loadTime + "ms");

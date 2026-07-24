@@ -307,7 +307,6 @@ serve(async (req) => {
           itemsSummary = allLineItems.map((item: any) => ({
             id: item.price?.product?.metadata?.product_id || item.price?.product?.id || 'unknown',
             name: item.description || item.price?.product?.name || 'Produit inconnu',
-            description: item.price?.product?.description || '',
             price: (item.amount_total || 0) / 100,
             quantity: item.quantity || 1,
             unit_price: (item.price?.unit_amount || 0) / 100

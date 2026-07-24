@@ -97,10 +97,6 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
     if (!orderId) return;
     
     setLoading(true);
-    setOrderDetails(null);
-    setCustomerDetails(null);
-    setAddressDetails(null);
-    setCartBackupItems([]);
     try {
       const completeOrderDetails = await fetchOrderWithDetails(orderId);
       
@@ -109,10 +105,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
         setCustomerDetails(completeOrderDetails.customer);
         setAddressDetails(completeOrderDetails.delivery_address);
         
-        // items_summary est la source fiable de la commande passée.
-        // cart_backup ne sert qu'en fallback pour les anciennes commandes sans snapshot.
-        const hasItemsSummary = Array.isArray(completeOrderDetails.items_summary) && completeOrderDetails.items_summary.length > 0;
-        if (!hasItemsSummary && completeOrderDetails.client_email) {
+        // Toujours récupérer cart_backup pour avoir les données complètes
+        if (completeOrderDetails.client_email) {
           const backupItems = await fetchCartBackupItems(completeOrderDetails.client_email);
           setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
         } else {
@@ -433,29 +427,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
-                      orderDetails.items_summary.map((item: any, index: number) => (
-                        <div key={index} className="p-4 flex justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium text-lg">
-                              {item.name}
-                            </div>
-                            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
-                            {item.special_instructions && (
-                              <div className="text-sm text-muted-foreground italic mt-1">
-                                "{item.special_instructions}"
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right min-w-[100px]">
-                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
-                            <div className="font-semibold text-lg">
-                              {formatEuro((item.quantity || 1) * (item.price || 0))}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : cartBackupItems.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
                           <div className="flex-1">
@@ -477,6 +449,28 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                             <div className="text-base">{item.quantity} x {formatEuro(item.menuItem?.price || 0)}</div>
                             <div className="font-semibold text-lg">
                               {formatEuro((item.quantity || 1) * (item.menuItem?.price || 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                      orderDetails.items_summary.map((item: any, index: number) => (
+                        <div key={index} className="p-4 flex justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-lg">
+                              {item.name}
+                            </div>
+                            {formatCustomProduct(item.description, "text-sm text-muted-foreground mt-1")}
+                            {item.special_instructions && (
+                              <div className="text-sm text-muted-foreground italic mt-1">
+                                "{item.special_instructions}"
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right min-w-[100px]">
+                            <div className="text-base">{item.quantity} x {formatEuro(item.price || 0)}</div>
+                            <div className="font-semibold text-lg">
+                              {formatEuro((item.quantity || 1) * (item.price || 0))}
                             </div>
                           </div>
                         </div>
@@ -722,9 +716,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Produits commandés</h3>
                   <div className="border rounded-md divide-y">
-                    {orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
-                      <DecodedItemsList items={orderDetails.items_summary} />
-                    ) : cartBackupItems.length > 0 ? (
+                    {cartBackupItems.length > 0 ? (
                       cartBackupItems.map((item: any, index: number) => (
                         <div key={index} className="p-4 flex justify-between">
                           <div className="flex-1">
@@ -750,6 +742,8 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                           </div>
                         </div>
                       ))
+                    ) : orderDetails.items_summary && orderDetails.items_summary.length > 0 ? (
+                      <DecodedItemsList items={orderDetails.items_summary} />
                     ) : orderDetails.order_items && orderDetails.order_items.length > 0 ? (
                      orderDetails.order_items.map((item: any, index: number) => (
                        <div key={item.id || index} className="p-4 flex justify-between">

@@ -49,10 +49,14 @@ export const formatCustomProduct = (description?: string, className?: string) =>
     );
   }
 
-  // For any other product, display description as regular text
-  return (
-    <div className={className || "mt-1 text-xs text-gray-600"}>
-      {description}
-    </div>
-  );
+  // For other custom products, display as regular text
+  if (description.length > 100) {
+    return (
+      <div className={className || "mt-1 text-xs text-gray-600"}>
+        {description}
+      </div>
+    );
+  }
+
+  return null;
 };
