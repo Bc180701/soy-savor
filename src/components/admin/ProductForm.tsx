@@ -75,6 +75,10 @@ const productFormSchema = z.object({
     name: z.string(),
     price: z.coerce.number().min(0),
   })).default([]),
+  required_options: z.array(z.object({
+    label: z.string(),
+    choices: z.array(z.string()).default([]),
+  })).default([]),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -161,6 +165,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     allergens: product?.allergens || [],
     supplements_enabled: product?.supplements_enabled || false,
     supplements: Array.isArray(product?.supplements) ? product.supplements : [],
+    required_options: Array.isArray(product?.required_options) ? product.required_options : [],
   };
 
   const form = useForm<ProductFormValues>({
@@ -294,6 +299,9 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             allergens: data.allergens,
             supplements_enabled: data.supplements_enabled,
             supplements: (data.supplements || []).filter(s => s.name && s.name.trim() !== ""),
+            required_options: (data.required_options || [])
+              .map((o: any) => ({ label: (o.label || "").trim(), choices: (o.choices || []).map((c: string) => c.trim()).filter(Boolean) }))
+              .filter((o: any) => o.label && o.choices.length >= 2),
             updated_at: new Date().toISOString(),
           } as any)
           .eq("id", product.id)
@@ -336,6 +344,9 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             allergens: data.allergens,
             supplements_enabled: data.supplements_enabled,
             supplements: (data.supplements || []).filter(s => s.name && s.name.trim() !== ""),
+            required_options: (data.required_options || [])
+              .map((o: any) => ({ label: (o.label || "").trim(), choices: (o.choices || []).map((c: string) => c.trim()).filter(Boolean) }))
+              .filter((o: any) => o.label && o.choices.length >= 2),
             restaurant_id: currentRestaurant.id,
           } as any)
           .select();
@@ -834,6 +845,71 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             )}
           />
         )}
+
+        <FormField
+          control={form.control}
+          name="required_options"
+          render={({ field }) => (
+            <FormItem className="rounded-md border p-4">
+              <FormLabel>Choix obligatoires</FormLabel>
+              <FormDescription>
+                Ex : "Température" avec les choix "Chaud" et "Froid". Le client devra sélectionner
+                une valeur avant l'ajout au panier. Aucun impact sur le prix.
+              </FormDescription>
+              <div className="space-y-4 mt-2">
+                {(field.value || []).map((opt: any, index: number) => (
+                  <div key={index} className="rounded-md border p-3 space-y-2 bg-gray-50">
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        placeholder="Libellé (ex: Température)"
+                        value={opt.label || ""}
+                        onChange={(e) => {
+                          const list = [...(field.value || [])];
+                          list[index] = { ...list[index], label: e.target.value };
+                          field.onChange(list);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const list = [...(field.value || [])];
+                          list.splice(index, 1);
+                          field.onChange(list);
+                        }}
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="Choix séparés par une virgule (ex: Chaud, Froid)"
+                      value={(opt.choices || []).join(", ")}
+                      onChange={(e) => {
+                        const list = [...(field.value || [])];
+                        list[index] = {
+                          ...list[index],
+                          choices: e.target.value.split(",").map((c: string) => c.trim()).filter(Boolean),
+                        };
+                        field.onChange(list);
+                      }}
+                    />
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => field.onChange([...(field.value || []), { label: "", choices: [] }])}
+                >
+                  + Ajouter un choix obligatoire
+                </Button>
+              </div>
+            </FormItem>
+          )}
+        />
+
+
 
 
 

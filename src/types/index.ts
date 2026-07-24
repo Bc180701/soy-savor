@@ -32,6 +32,11 @@ export interface ProductSupplement {
   price: number;
 }
 
+export interface RequiredOption {
+  label: string;
+  choices: string[];
+}
+
 export interface CarteItem {
   id: string;
   name: string;
@@ -51,6 +56,7 @@ export interface CarteItem {
   originalPrice?: number; // Added for free dessert promotion
   supplementsEnabled?: boolean;
   supplements?: ProductSupplement[];
+  requiredOptions?: RequiredOption[];
 }
 
 export interface CarteCategory {

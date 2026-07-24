@@ -713,6 +713,7 @@ export type Database = {
           pieces: number | null
           prep_time: number | null
           price: number
+          required_options: Json
           restaurant_id: string
           supplements: Json
           supplements_enabled: boolean
@@ -736,6 +737,7 @@ export type Database = {
           pieces?: number | null
           prep_time?: number | null
           price: number
+          required_options?: Json
           restaurant_id: string
           supplements?: Json
           supplements_enabled?: boolean
@@ -759,6 +761,7 @@ export type Database = {
           pieces?: number | null
           prep_time?: number | null
           price?: number
+          required_options?: Json
           restaurant_id?: string
           supplements?: Json
           supplements_enabled?: boolean

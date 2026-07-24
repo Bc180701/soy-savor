@@ -22,6 +22,7 @@ import { WrapSelectionModal } from "./WrapSelectionModal";
 import { WineFormatSelector } from "./WineFormatSelector";
 import PokeSauceDialog from "./PokeSauceDialog";
 import SupplementDialog from "./SupplementDialog";
+import RequiredChoiceDialog from "./RequiredChoiceDialog";
 import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
 import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
@@ -40,6 +41,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const [expandedItems, setExpandedItems] = useState<{[key: string]: boolean}>({});
   const [pendingSushiPushRollItem, setPendingSushiPushRollItem] = useState<MenuItem | null>(null);
   const [pendingSupplementItem, setPendingSupplementItem] = useState<MenuItem | null>(null);
+  const [pendingRequiredChoiceItem, setPendingRequiredChoiceItem] = useState<MenuItem | null>(null);
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { currentRestaurant } = useRestaurantContext();
@@ -238,7 +240,16 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const handleAddToCart = (item: MenuItem) => {
     console.log("🟩 CategoryContent.handleAddToCart called with:", item.name);
     setClickedButton(item.id);
-    
+
+    // PRIORITÉ -2: Choix obligatoires (Chaud/Froid, etc.) — sans impact prix
+    const validRequired = (item.requiredOptions || []).filter(
+      (o) => o?.label && Array.isArray(o.choices) && o.choices.length > 0
+    );
+    if (validRequired.length > 0) {
+      setPendingRequiredChoiceItem(item);
+      return;
+    }
+
     // PRIORITÉ -1: Supplément configuré sur le produit
     const validSupplements = (item.supplements || []).filter(s => s?.name && s.name.trim() !== "");
     if (item.supplementsEnabled && validSupplements.length > 0) {
@@ -949,6 +960,40 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
           toast({
             title: "Ajouté au panier",
             description: `${finalItem.name} a été ajouté à votre panier`,
+          });
+        }}
+      />
+
+      {/* Modale de choix obligatoires (ex: Chaud/Froid) */}
+      <RequiredChoiceDialog
+        item={pendingRequiredChoiceItem}
+        onClose={() => setPendingRequiredChoiceItem(null)}
+        onConfirm={(choices) => {
+          const item = pendingRequiredChoiceItem;
+          setPendingRequiredChoiceItem(null);
+          if (!item) return;
+          const suffix = choices.map((c) => c.value).join(" / ");
+          const decoratedItem: MenuItem = {
+            ...item,
+            id: `${item.id}-opt-${choices.map((c) => c.value.replace(/\s+/g, "-")).join("-")}-${Date.now()}`,
+            name: `${item.name} (${suffix})`,
+            // Retirer les options obligatoires pour éviter une nouvelle popup en cascade
+            requiredOptions: [],
+          };
+
+          // Enchaîner sur les suppléments s'ils existent
+          const validSupplements = (decoratedItem.supplements || []).filter(
+            (s) => s?.name && s.name.trim() !== ""
+          );
+          if (decoratedItem.supplementsEnabled && validSupplements.length > 0) {
+            setPendingSupplementItem(decoratedItem);
+            return;
+          }
+
+          onAddToCart(decoratedItem);
+          toast({
+            title: "Ajouté au panier",
+            description: `${decoratedItem.name} a été ajouté à votre panier`,
           });
         }}
       />
