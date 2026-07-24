@@ -846,6 +846,71 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
           />
         )}
 
+        <FormField
+          control={form.control}
+          name="required_options"
+          render={({ field }) => (
+            <FormItem className="rounded-md border p-4">
+              <FormLabel>Choix obligatoires</FormLabel>
+              <FormDescription>
+                Ex : "Température" avec les choix "Chaud" et "Froid". Le client devra sélectionner
+                une valeur avant l'ajout au panier. Aucun impact sur le prix.
+              </FormDescription>
+              <div className="space-y-4 mt-2">
+                {(field.value || []).map((opt: any, index: number) => (
+                  <div key={index} className="rounded-md border p-3 space-y-2 bg-gray-50">
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        placeholder="Libellé (ex: Température)"
+                        value={opt.label || ""}
+                        onChange={(e) => {
+                          const list = [...(field.value || [])];
+                          list[index] = { ...list[index], label: e.target.value };
+                          field.onChange(list);
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const list = [...(field.value || [])];
+                          list.splice(index, 1);
+                          field.onChange(list);
+                        }}
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="Choix séparés par une virgule (ex: Chaud, Froid)"
+                      value={(opt.choices || []).join(", ")}
+                      onChange={(e) => {
+                        const list = [...(field.value || [])];
+                        list[index] = {
+                          ...list[index],
+                          choices: e.target.value.split(",").map((c: string) => c.trim()).filter(Boolean),
+                        };
+                        field.onChange(list);
+                      }}
+                    />
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => field.onChange([...(field.value || []), { label: "", choices: [] }])}
+                >
+                  + Ajouter un choix obligatoire
+                </Button>
+              </div>
+            </FormItem>
+          )}
+        />
+
+
+
 
 
         <div className="flex justify-end space-x-2">
