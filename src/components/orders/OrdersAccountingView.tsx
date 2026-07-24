@@ -299,19 +299,17 @@ const OrdersAccountingView = ({
         <div class="items-section">
           <div class="section-title">ARTICLES</div>
           ${(() => {
-            // Utiliser cart_backup en priorité (comme OrderDetailsModal)
             let itemsToDisplay = [];
+            let usingCartBackup = false;
             
-            if (cartBackupItems && cartBackupItems.length > 0) {
-              // Format CartBackupItem (depuis cart_backup)
-              itemsToDisplay = cartBackupItems;
-              console.log('🔍 [PRINT] Utilisation cartBackupItems:', itemsToDisplay);
-            } else if (order.itemsSummary && order.itemsSummary.length > 0) {
-              // Format order_items (fallback)
+            if (order.itemsSummary && order.itemsSummary.length > 0) {
               itemsToDisplay = order.itemsSummary;
             } else if (order.items && order.items.length > 0) {
-              // Format items (fallback)
               itemsToDisplay = order.items;
+            } else if (cartBackupItems && cartBackupItems.length > 0) {
+              itemsToDisplay = cartBackupItems;
+              usingCartBackup = true;
+              console.warn('⚠️ [PRINT] Fallback cartBackupItems sans lien order_id:', itemsToDisplay);
             } else {
               return '<div class="item">Aucun article trouvé</div>';
             }
@@ -321,7 +319,7 @@ const OrdersAccountingView = ({
               
               let itemDescription = '';
               
-              if (cartBackupItems && cartBackupItems.length > 0) {
+              if (usingCartBackup) {
                 // Format CartBackupItem: { menuItem: { name, price, description }, quantity }
                 itemName = item.menuItem?.name || `Produit ${item.menuItem?.id?.substring(0, 8) || 'inconnu'}`;
                 itemQuantity = item.quantity || 1;

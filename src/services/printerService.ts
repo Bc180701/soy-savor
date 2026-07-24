@@ -64,22 +64,9 @@ export async function sendOrderToPrinter(order: Order): Promise<{
       items: order.items?.length || 0
     });
     
-    // Utiliser cart_backup en priorité (le plus complet)
-    if (order.cartBackupItems && order.cartBackupItems.length > 0) {
-      console.log('📦 [PRINT] Utilisation de cartBackupItems');
-      order.cartBackupItems.forEach((item: any) => {
-        items.push({
-          name: item.menuItem?.name || 'Produit',
-          quantity: item.quantity || 1,
-          price: item.menuItem?.price || 0,
-          description: item.menuItem?.description || '',
-          specialInstructions: item.specialInstructions || '',
-        });
-      });
-    } 
-    // Sinon utiliser itemsSummary (fallback principal)
-    else if (order.itemsSummary && order.itemsSummary.length > 0) {
-      console.log('📦 [PRINT] Utilisation de itemsSummary (fallback)');
+    // itemsSummary est le snapshot fiable de la commande passée.
+    if (order.itemsSummary && order.itemsSummary.length > 0) {
+      console.log('📦 [PRINT] Utilisation de itemsSummary');
       order.itemsSummary.forEach((item: any) => {
         items.push({
           name: item.name || 'Produit',
@@ -89,10 +76,10 @@ export async function sendOrderToPrinter(order: Order): Promise<{
           specialInstructions: item.special_instructions || '',
         });
       });
-    }
-    // Fallback sur items (dernier recours)
+    } 
+    // Fallback sur items (dernier recours local)
     else if (order.items && order.items.length > 0) {
-      console.log('📦 [PRINT] Utilisation de items (dernier recours)');
+      console.log('📦 [PRINT] Utilisation de items (dernier recours local)');
       order.items.forEach((item: any) => {
         items.push({
           name: item.name || 'Produit',
@@ -100,6 +87,19 @@ export async function sendOrderToPrinter(order: Order): Promise<{
           price: item.price || 0,
           description: item.description || '',
           specialInstructions: item.special_instructions || '',
+        });
+      });
+    }
+    // cart_backup n'est pas lié à un order_id : l'utiliser seulement si aucune autre source n'existe.
+    else if (order.cartBackupItems && order.cartBackupItems.length > 0) {
+      console.warn('⚠️ [PRINT] Fallback cartBackupItems sans lien order_id');
+      order.cartBackupItems.forEach((item: any) => {
+        items.push({
+          name: item.menuItem?.name || 'Produit',
+          quantity: item.quantity || 1,
+          price: item.menuItem?.price || 0,
+          description: item.menuItem?.description || '',
+          specialInstructions: item.specialInstructions || '',
         });
       });
     } else {
