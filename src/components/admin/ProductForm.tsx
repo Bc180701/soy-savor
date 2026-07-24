@@ -75,6 +75,10 @@ const productFormSchema = z.object({
     name: z.string(),
     price: z.coerce.number().min(0),
   })).default([]),
+  required_options: z.array(z.object({
+    label: z.string(),
+    choices: z.array(z.string()).default([]),
+  })).default([]),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
