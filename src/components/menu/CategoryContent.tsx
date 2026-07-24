@@ -240,7 +240,16 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   const handleAddToCart = (item: MenuItem) => {
     console.log("🟩 CategoryContent.handleAddToCart called with:", item.name);
     setClickedButton(item.id);
-    
+
+    // PRIORITÉ -2: Choix obligatoires (Chaud/Froid, etc.) — sans impact prix
+    const validRequired = (item.requiredOptions || []).filter(
+      (o) => o?.label && Array.isArray(o.choices) && o.choices.length > 0
+    );
+    if (validRequired.length > 0) {
+      setPendingRequiredChoiceItem(item);
+      return;
+    }
+
     // PRIORITÉ -1: Supplément configuré sur le produit
     const validSupplements = (item.supplements || []).filter(s => s?.name && s.name.trim() !== "");
     if (item.supplementsEnabled && validSupplements.length > 0) {
