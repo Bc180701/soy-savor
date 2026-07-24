@@ -165,6 +165,7 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
     allergens: product?.allergens || [],
     supplements_enabled: product?.supplements_enabled || false,
     supplements: Array.isArray(product?.supplements) ? product.supplements : [],
+    required_options: Array.isArray(product?.required_options) ? product.required_options : [],
   };
 
   const form = useForm<ProductFormValues>({
@@ -298,6 +299,9 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             allergens: data.allergens,
             supplements_enabled: data.supplements_enabled,
             supplements: (data.supplements || []).filter(s => s.name && s.name.trim() !== ""),
+            required_options: (data.required_options || [])
+              .map((o: any) => ({ label: (o.label || "").trim(), choices: (o.choices || []).map((c: string) => c.trim()).filter(Boolean) }))
+              .filter((o: any) => o.label && o.choices.length >= 2),
             updated_at: new Date().toISOString(),
           } as any)
           .eq("id", product.id)
@@ -340,6 +344,9 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
             allergens: data.allergens,
             supplements_enabled: data.supplements_enabled,
             supplements: (data.supplements || []).filter(s => s.name && s.name.trim() !== ""),
+            required_options: (data.required_options || [])
+              .map((o: any) => ({ label: (o.label || "").trim(), choices: (o.choices || []).map((c: string) => c.trim()).filter(Boolean) }))
+              .filter((o: any) => o.label && o.choices.length >= 2),
             restaurant_id: currentRestaurant.id,
           } as any)
           .select();
