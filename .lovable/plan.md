@@ -68,7 +68,7 @@ Avant de commander le matériel, il faut trancher ce point avec le client (et v�
 - Migration légère : ajout de `orders.source` (`web` | `kiosk`) et `orders.kiosk_ticket_number`, plus les valeurs de `payment_method` (`card_terminal`, `cash`) — le site actuel n'est pas impacté (valeurs par défaut).
 - Insertion des commandes borne via une **edge function dédiée** (pas d'insert direct depuis la borne) : elle valide le panier, recalcule le total côté serveur, réserve le numéro de ticket, écrit `items_summary` et déclenche l'envoi vers la queue d'impression St Martin.
 - Réutilisation par copie ciblée depuis le projet actuel : logique produits/suppléments/choix obligatoires, calculateurs Sushi/Poké, formatage des lignes de commande. Le code borne a son propre layout tactile (grandes cibles, pas de hover).
-- Impression du ticket client : `window.print()` avec une CSS ticket 80 mm sur l'imprimante par défaut du mini-PC — pas de driver à écrire.
+- Impression du ticket client : envoi vers l'**imprimante ePOS réseau déjà utilisée** (même chemin que les tickets actuels), la borne n'a donc aucun périphérique local. Repli possible : `window.print()` avec une CSS ticket 80 mm si une imprimante locale est ajoutée un jour.
 
 ## Prochaines étapes
 
