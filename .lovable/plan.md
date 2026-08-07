@@ -26,14 +26,18 @@ Oui, c'est jouable. Le site actuel reste intact : la borne devient un **projet s
 
 ## Matériel recommandé
 
+Comme le TPE (Stripe Terminal) et l'imprimante cuisine (ePOS réseau) ne sont **pas branchés** à la borne, le poste de la borne n'a besoin que d'un navigateur et d'une connexion réseau. Une **tablette Windows** suffit donc.
+
 | Élément | Recommandation | Pourquoi |
 |---|---|---|
-| Borne | Écran tactile 22"–27" + **mini-PC Windows** (NUC ou équivalent) sur pied/totem | Chromium en mode kiosque, impression locale simple, pilotes TPE disponibles |
+| Borne | **Tablette Windows 11 Pro** 12"–15" sur pied/support antivol (ex. Surface Pro + dock), ou écran tactile 22"–27" + mini-PC si le client veut du grand format | Chromium en mode kiosque suffit ; aucun périphérique à piloter |
+| Alternative | Tablette Android/iPad en mode kiosque possible si on renonce à `window.print()` local | Impression ticket client via ePOS réseau uniquement |
 | Navigateur | Chrome/Edge `--kiosk`, démarrage auto au boot, veille écran désactivée | Aucune barre d'adresse, impossible de sortir du site |
-| Imprimante ticket client | Epson TM-m30III (USB ou réseau) posée dans le totem | Même famille que les imprimantes déjà en place |
+| Ticket client | Imprimé via l'**imprimante ePOS réseau existante** (même mécanisme qu'aujourd'hui), pas d'imprimante dédiée à la borne | Rien de nouveau à installer |
 | Imprimante cuisine | **Celle déjà installée**, aucun changement | Le flux d'impression existant est réutilisé tel quel |
-| Réseau | Ethernet filaire pour la borne et le TPE | Une borne en Wi-Fi qui décroche = commandes perdues |
-| Onduleur | Petit UPS | Coupure en pleine transaction = litige de paiement |
+| Réseau | Ethernet filaire pour la borne (dock USB-C/RJ45 sur tablette) et pour le TPE ; Wi-Fi acceptable en secours | Une borne qui décroche = commandes perdues |
+| Alimentation | Tablette branchée en permanence via son dock ; petit UPS si possible | La batterie évite déjà les micro-coupures |
+
 
 ## Choix du TPE — ma recommandation
 
@@ -64,7 +68,7 @@ Avant de commander le matériel, il faut trancher ce point avec le client (et v�
 - Migration légère : ajout de `orders.source` (`web` | `kiosk`) et `orders.kiosk_ticket_number`, plus les valeurs de `payment_method` (`card_terminal`, `cash`) — le site actuel n'est pas impacté (valeurs par défaut).
 - Insertion des commandes borne via une **edge function dédiée** (pas d'insert direct depuis la borne) : elle valide le panier, recalcule le total côté serveur, réserve le numéro de ticket, écrit `items_summary` et déclenche l'envoi vers la queue d'impression St Martin.
 - Réutilisation par copie ciblée depuis le projet actuel : logique produits/suppléments/choix obligatoires, calculateurs Sushi/Poké, formatage des lignes de commande. Le code borne a son propre layout tactile (grandes cibles, pas de hover).
-- Impression du ticket client : `window.print()` avec une CSS ticket 80 mm sur l'imprimante par défaut du mini-PC — pas de driver à écrire.
+- Impression du ticket client : envoi vers l'**imprimante ePOS réseau déjà utilisée** (même chemin que les tickets actuels), la borne n'a donc aucun périphérique local. Repli possible : `window.print()` avec une CSS ticket 80 mm si une imprimante locale est ajoutée un jour.
 
 ## Prochaines étapes
 
