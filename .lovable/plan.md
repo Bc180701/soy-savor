@@ -38,6 +38,9 @@ Comme le TPE (Stripe Terminal) et l'imprimante cuisine (ePOS réseau) ne sont **
 | Réseau | Ethernet filaire pour la borne (dock USB-C/RJ45 sur tablette) et pour le TPE ; Wi-Fi acceptable en secours | Une borne qui décroche = commandes perdues |
 | Alimentation | Tablette branchée en permanence via son dock ; petit UPS si possible | La batterie évite déjà les micro-coupures |
 
+**Tout-en-un tactile 15" type AliExpress (~240 €)** : techniquement suffisant puisque la borne n'exécute qu'un navigateur, mais à surveiller — la variante à ce prix est un **RK3566 / 4 Go / Android 11** (SoC bas de gamme, site React lourd = scroll saccadé), Android impose un kiosque + MDM tiers et fait perdre `window.print()` local, la prise doit être basculée en **UE**, et il n'y a aucun SAV local. Si ce choix est retenu, prévoir **deux unités** (une en spare) — cela reste moins cher qu'un tout-en-un pro (Aures, Elo, HP RP9) garanti en France. Par défaut, le plan reste sur tablette Windows 11 Pro sur support antivol.
+
+
 
 ## Choix du TPE — ma recommandation
 
