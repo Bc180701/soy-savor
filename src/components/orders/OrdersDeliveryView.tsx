@@ -2,7 +2,7 @@
 import { Order } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Eye, Clock, Navigation, Printer } from "lucide-react";
+import { MapPin, Phone, Eye, Clock, Navigation, Printer, Copy } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   DropdownMenu,
@@ -50,6 +50,57 @@ const OrdersDeliveryView = ({
     }
   };
 
+  // Marqueurs de compléments d'adresse : tout ce qui suit est ignoré pour la navigation.
+  // Deux familles :
+  //  - "nommés" : suivis d'un nom libre (résidence, domaine, chez...)
+  //  - "numérotés" : ne coupent que s'ils sont suivis d'un numéro / code (n°10, Bat B, Appt 23)
+  const NAMED_MARKERS = /\b(residence|resid|logement|interphone|digicode|batiment|domaine|lotissement|chez)\b/;
+  const NUMBERED_MARKERS = /\b(n\s?°|no|num|appt?|apart|appartement|appart|bat|bloc|etage|esc|escalier|porte|code|bp|boite)\b\.?\s*[°n]?\s*[0-9a-z]{1,5}\b/;
+
+  // Types de voie : garantissent que la partie conservée reste une vraie adresse
+  const STREET_TYPE = /\b(rue|avenue|av|bd|boulevard|chemin|impasse|allee|allees|route|place|quai|traverse|cours|voie|montee|lieu[- ]?dit|hameau|clos|square|passage|sentier|chum)\b/;
+
+  const stripAccents = (s: string) =>
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const cleanStreet = (rawStreet: string): string => {
+    const street = (rawStreet || '').trim();
+    if (!street) return '';
+
+    // On cherche l'index sur une version sans accents / minuscule,
+    // mais on découpe la chaîne d'origine pour préserver l'écriture du client.
+    const haystack = stripAccents(street.toLowerCase());
+
+    let cutIndex = -1;
+    for (const regex of [NAMED_MARKERS, NUMBERED_MARKERS]) {
+      const match = haystack.match(regex);
+      if (match && match.index !== undefined && match.index > 2) {
+        if (cutIndex === -1 || match.index < cutIndex) cutIndex = match.index;
+      }
+    }
+
+    if (cutIndex === -1) return street;
+
+    let result = street.slice(0, cutIndex).replace(/[\s,;.\-–]+$/g, '').trim();
+
+    // Sécurité : on ne coupe que si la partie conservée reste une adresse exploitable
+    // (un type de voie présent, et pas une fin coupée sur un article : "Rue de la ...")
+    const kept = stripAccents(result.toLowerCase());
+    const lastWord = kept.split(/[\s,]+/).filter(Boolean).pop() || '';
+    const isArticle = /^(de|du|des|la|le|les|l|d|au|aux|et)$/.test(lastWord);
+    if (result.length < 5 || !STREET_TYPE.test(kept) || isArticle) {
+      return street;
+    }
+
+    return result;
+  };
+
+  const buildNavAddress = (street?: string, postalCode?: string, city?: string): string => {
+    const cleanedStreet = cleanStreet(street || '');
+    const locality = [postalCode, city].filter(Boolean).join(' ').trim();
+    return [cleanedStreet, locality, 'France'].filter(Boolean).join(', ');
+  };
+
   const openInMaps = (address: string, app: 'google' | 'apple' | 'waze') => {
     const encodedAddress = encodeURIComponent(address);
     let url = '';
@@ -59,7 +110,7 @@ const OrdersDeliveryView = ({
         url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
         break;
       case 'apple':
-        url = `maps://?q=${encodedAddress}`;
+        url = `https://maps.apple.com/?q=${encodedAddress}`;
         break;
       case 'waze':
         url = `https://waze.com/ul?q=${encodedAddress}&navigate=yes`;
@@ -67,6 +118,22 @@ const OrdersDeliveryView = ({
     }
     
     window.open(url, '_blank');
+  };
+
+  const copyAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      toast({
+        title: "Adresse copiée",
+        description: address,
+      });
+    } catch {
+      toast({
+        title: "Copie impossible",
+        description: "Sélectionnez l'adresse manuellement.",
+        variant: "destructive",
+      });
+    }
   };
 
   const printOrder = async (order: Order) => {
@@ -427,44 +494,58 @@ const OrdersDeliveryView = ({
                         )}
                       </span>
                       
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="link" 
-                            size="sm" 
-                            className="p-0 h-auto text-xs text-gold-600 flex items-center gap-1 mt-1"
-                          >
-                            <Navigation className="h-3 w-3" />
-                            Naviguer
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem 
-                            onClick={() => openInMaps(
-                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
-                              'google'
-                            )}
-                          >
-                            Google Maps
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => openInMaps(
-                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
-                              'apple'
-                            )}
-                          >
-                            Apple Plans
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => openInMaps(
-                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
-                              'waze'
-                            )}
-                          >
-                            Waze
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-3 mt-1">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="link" 
+                              size="sm" 
+                              className="p-0 h-auto text-xs text-gold-600 flex items-center gap-1"
+                            >
+                              <Navigation className="h-3 w-3" />
+                              Naviguer
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem 
+                              onClick={() => openInMaps(
+                                buildNavAddress(order.deliveryStreet, order.deliveryPostalCode, order.deliveryCity), 
+                                'google'
+                              )}
+                            >
+                              Google Maps
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => openInMaps(
+                                buildNavAddress(order.deliveryStreet, order.deliveryPostalCode, order.deliveryCity), 
+                                'apple'
+                              )}
+                            >
+                              Apple Plans
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => openInMaps(
+                                buildNavAddress(order.deliveryStreet, order.deliveryPostalCode, order.deliveryCity), 
+                                'waze'
+                              )}
+                            >
+                              Waze
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="p-0 h-auto text-xs text-gray-600 flex items-center gap-1"
+                          onClick={() => copyAddress(
+                            `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`
+                          )}
+                        >
+                          <Copy className="h-3 w-3" />
+                          Copier l'adresse
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
