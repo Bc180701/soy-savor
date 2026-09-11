@@ -84,8 +84,11 @@ const OrdersDeliveryView = ({
     let result = street.slice(0, cutIndex).replace(/[\s,;.\-–]+$/g, '').trim();
 
     // Sécurité : on ne coupe que si la partie conservée reste une adresse exploitable
+    // (un type de voie présent, et pas une fin coupée sur un article : "Rue de la ...")
     const kept = stripAccents(result.toLowerCase());
-    if (result.length < 5 || !STREET_TYPE.test(kept)) {
+    const lastWord = kept.split(/[\s,]+/).filter(Boolean).pop() || '';
+    const isArticle = /^(de|du|des|la|le|les|l|d|au|aux|et)$/.test(lastWord);
+    if (result.length < 5 || !STREET_TYPE.test(kept) || isArticle) {
       return street;
     }
 
