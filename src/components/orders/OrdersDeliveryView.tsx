@@ -2,7 +2,7 @@
 import { Order } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Eye, Clock, Navigation, Printer } from "lucide-react";
+import { MapPin, Phone, Eye, Clock, Navigation, Printer, Copy } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   DropdownMenu,
@@ -50,6 +50,55 @@ const OrdersDeliveryView = ({
     }
   };
 
+  // Marqueurs de compléments d'adresse : tout ce qui suit est ignoré pour la navigation
+  const COMPLEMENT_MARKERS = [
+    'n°', 'no ', 'n ° ', 'appt', 'apt ', 'appartement', 'appart',
+    'bat ', 'bat.', 'batiment', 'bâtiment', 'bloc ',
+    'residence', 'résidence', 'res ', 'rés ', 'resid',
+    'logement', 'etage', 'étage', 'esc ', 'escalier', 'porte ',
+    'interphone', 'digicode', 'code ', 'chez ', 'villa ',
+    'domaine', 'lot ', 'boite', 'boîte', 'bp ',
+  ];
+
+  const stripAccents = (s: string) =>
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const cleanStreet = (rawStreet: string): string => {
+    const street = (rawStreet || '').trim();
+    if (!street) return '';
+
+    // On travaille sur une version sans accents / minuscule pour trouver l'index,
+    // mais on découpe la chaîne d'origine pour préserver l'écriture du client.
+    const haystack = stripAccents(street.toLowerCase());
+
+    let cutIndex = -1;
+    for (const marker of COMPLEMENT_MARKERS) {
+      const normalizedMarker = stripAccents(marker);
+      const idx = haystack.indexOf(normalizedMarker);
+      // On ignore un marqueur en tout début de chaîne (ex: "Villa Romana" seul)
+      if (idx > 2 && (cutIndex === -1 || idx < cutIndex)) {
+        cutIndex = idx;
+      }
+    }
+
+    let result = cutIndex === -1 ? street : street.slice(0, cutIndex);
+    result = result.replace(/[\s,;.-]+$/g, '').trim();
+
+    // Si le nettoyage ne laisse rien d'exploitable, on garde l'adresse d'origine
+    const withoutNumber = result.replace(/\d+/g, '').trim();
+    if (result.length < 3 || withoutNumber.length < 3) {
+      return street;
+    }
+
+    return result;
+  };
+
+  const buildNavAddress = (street?: string, postalCode?: string, city?: string): string => {
+    const cleanedStreet = cleanStreet(street || '');
+    const locality = [postalCode, city].filter(Boolean).join(' ').trim();
+    return [cleanedStreet, locality, 'France'].filter(Boolean).join(', ');
+  };
+
   const openInMaps = (address: string, app: 'google' | 'apple' | 'waze') => {
     const encodedAddress = encodeURIComponent(address);
     let url = '';
@@ -59,7 +108,7 @@ const OrdersDeliveryView = ({
         url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
         break;
       case 'apple':
-        url = `maps://?q=${encodedAddress}`;
+        url = `https://maps.apple.com/?q=${encodedAddress}`;
         break;
       case 'waze':
         url = `https://waze.com/ul?q=${encodedAddress}&navigate=yes`;
@@ -67,6 +116,22 @@ const OrdersDeliveryView = ({
     }
     
     window.open(url, '_blank');
+  };
+
+  const copyAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      toast({
+        title: "Adresse copiée",
+        description: address,
+      });
+    } catch {
+      toast({
+        title: "Copie impossible",
+        description: "Sélectionnez l'adresse manuellement.",
+        variant: "destructive",
+      });
+    }
   };
 
   const printOrder = async (order: Order) => {
