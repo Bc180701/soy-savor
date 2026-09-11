@@ -492,44 +492,58 @@ const OrdersDeliveryView = ({
                         )}
                       </span>
                       
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="link" 
-                            size="sm" 
-                            className="p-0 h-auto text-xs text-gold-600 flex items-center gap-1 mt-1"
-                          >
-                            <Navigation className="h-3 w-3" />
-                            Naviguer
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem 
-                            onClick={() => openInMaps(
-                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
-                              'google'
-                            )}
-                          >
-                            Google Maps
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => openInMaps(
-                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
-                              'apple'
-                            )}
-                          >
-                            Apple Plans
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => openInMaps(
-                              `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`, 
-                              'waze'
-                            )}
-                          >
-                            Waze
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-3 mt-1">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="link" 
+                              size="sm" 
+                              className="p-0 h-auto text-xs text-gold-600 flex items-center gap-1"
+                            >
+                              <Navigation className="h-3 w-3" />
+                              Naviguer
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem 
+                              onClick={() => openInMaps(
+                                buildNavAddress(order.deliveryStreet, order.deliveryPostalCode, order.deliveryCity), 
+                                'google'
+                              )}
+                            >
+                              Google Maps
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => openInMaps(
+                                buildNavAddress(order.deliveryStreet, order.deliveryPostalCode, order.deliveryCity), 
+                                'apple'
+                              )}
+                            >
+                              Apple Plans
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => openInMaps(
+                                buildNavAddress(order.deliveryStreet, order.deliveryPostalCode, order.deliveryCity), 
+                                'waze'
+                              )}
+                            >
+                              Waze
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="p-0 h-auto text-xs text-gray-600 flex items-center gap-1"
+                          onClick={() => copyAddress(
+                            `${order.deliveryStreet}, ${order.deliveryPostalCode} ${order.deliveryCity}`
+                          )}
+                        >
+                          <Copy className="h-3 w-3" />
+                          Copier l'adresse
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
