@@ -50,15 +50,15 @@ const OrdersDeliveryView = ({
     }
   };
 
-  // Marqueurs de compléments d'adresse : tout ce qui suit est ignoré pour la navigation
-  const COMPLEMENT_MARKERS = [
-    'n°', 'no ', 'n ° ', 'appt', 'apt ', 'appartement', 'appart',
-    'bat ', 'bat.', 'batiment', 'bâtiment', 'bloc ',
-    'residence', 'résidence', 'res ', 'rés ', 'resid',
-    'logement', 'etage', 'étage', 'esc ', 'escalier', 'porte ',
-    'interphone', 'digicode', 'code ', 'chez ', 'villa ',
-    'domaine', 'lot ', 'boite', 'boîte', 'bp ',
-  ];
+  // Marqueurs de compléments d'adresse : tout ce qui suit est ignoré pour la navigation.
+  // Deux familles :
+  //  - "nommés" : suivis d'un nom libre (résidence, domaine, chez...)
+  //  - "numérotés" : ne coupent que s'ils sont suivis d'un numéro / code (n°10, Bat B, Appt 23)
+  const NAMED_MARKERS = /\b(residence|resid|logement|interphone|digicode|batiment|domaine|lotissement|chez)\b/;
+  const NUMBERED_MARKERS = /\b(n\s?°|no|num|appt?|apart|appartement|appart|bat|bloc|etage|esc|escalier|porte|code|bp|boite)\b\.?\s*[°n]?\s*[0-9a-z]{1,5}\b/;
+
+  // Types de voie : garantissent que la partie conservée reste une vraie adresse
+  const STREET_TYPE = /\b(rue|avenue|av|bd|boulevard|chemin|impasse|allee|allees|route|place|quai|traverse|cours|voie|montee|lieu[- ]?dit|hameau|clos|square|passage|sentier|chum)\b/;
 
   const stripAccents = (s: string) =>
     s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -67,26 +67,25 @@ const OrdersDeliveryView = ({
     const street = (rawStreet || '').trim();
     if (!street) return '';
 
-    // On travaille sur une version sans accents / minuscule pour trouver l'index,
+    // On cherche l'index sur une version sans accents / minuscule,
     // mais on découpe la chaîne d'origine pour préserver l'écriture du client.
     const haystack = stripAccents(street.toLowerCase());
 
     let cutIndex = -1;
-    for (const marker of COMPLEMENT_MARKERS) {
-      const normalizedMarker = stripAccents(marker);
-      const idx = haystack.indexOf(normalizedMarker);
-      // On ignore un marqueur en tout début de chaîne (ex: "Villa Romana" seul)
-      if (idx > 2 && (cutIndex === -1 || idx < cutIndex)) {
-        cutIndex = idx;
+    for (const regex of [NAMED_MARKERS, NUMBERED_MARKERS]) {
+      const match = haystack.match(regex);
+      if (match && match.index !== undefined && match.index > 2) {
+        if (cutIndex === -1 || match.index < cutIndex) cutIndex = match.index;
       }
     }
 
-    let result = cutIndex === -1 ? street : street.slice(0, cutIndex);
-    result = result.replace(/[\s,;.-]+$/g, '').trim();
+    if (cutIndex === -1) return street;
 
-    // Si le nettoyage ne laisse rien d'exploitable, on garde l'adresse d'origine
-    const withoutNumber = result.replace(/\d+/g, '').trim();
-    if (result.length < 3 || withoutNumber.length < 3) {
+    let result = street.slice(0, cutIndex).replace(/[\s,;.\-–]+$/g, '').trim();
+
+    // Sécurité : on ne coupe que si la partie conservée reste une adresse exploitable
+    const kept = stripAccents(result.toLowerCase());
+    if (result.length < 5 || !STREET_TYPE.test(kept)) {
       return street;
     }
 
