@@ -17,12 +17,11 @@ const SupplementDialog = ({ item, onClose, onSelect }: SupplementDialogProps) =>
   const [groupChoices, setGroupChoices] = useState<Record<string, string>>({});
 
   const supplements = useMemo(
-    () =>
-      (item?.supplements || []).filter(
-        (s) => s?.name && s.name.trim() !== "" && !s.soldOut
-      ),
+    () => (item?.supplements || []).filter((s) => s?.name && s.name.trim() !== ""),
     [item?.supplements]
   );
+
+  const isOut = (s: ProductSupplement) => !!s.soldOut;
 
   // Groupes de choix uniques (un seul choix possible par groupe)
   const groups = useMemo(() => {
@@ -40,12 +39,13 @@ const SupplementDialog = ({ item, onClose, onSelect }: SupplementDialogProps) =>
     [supplements]
   );
 
-  // Pré-sélection : l'option "incluse" (ou la première disponible) de chaque groupe
+  // Pré-sélection : l'option "incluse" (ou la première en stock) de chaque groupe
   useEffect(() => {
     setSelected([]);
     const defaults: Record<string, string> = {};
     groups.forEach(([groupName, choices]) => {
-      const preselected = choices.find((c) => c.isDefault) || choices[0];
+      const available = choices.filter((c) => !c.soldOut);
+      const preselected = available.find((c) => c.isDefault) || available[0];
       if (preselected) defaults[groupName] = preselected.name;
     });
     setGroupChoices(defaults);
