@@ -104,36 +104,61 @@ const SupplementDialog = ({ item, onClose, onSelect }: SupplementDialogProps) =>
               <p className="font-medium mb-2">{groupName}</p>
               <div className="flex flex-col gap-2">
                 {choices.map((c) => {
+                  const out = isOut(c);
                   const isSelected = groupChoices[groupName] === c.name;
                   const isFree = Number(c.price || 0) === 0;
                   return (
                     <button
                       key={c.name}
                       type="button"
+                      disabled={out}
                       onClick={() => setGroupChoices((prev) => ({ ...prev, [groupName]: c.name }))}
                       className={`flex items-center justify-between gap-3 rounded-md border p-3 text-left transition-colors ${
-                        isSelected ? "border-gold-600 bg-gold-50" : "hover:bg-gray-50"
+                        out
+                          ? "border-dashed opacity-70 cursor-not-allowed"
+                          : isSelected
+                            ? "border-gold-600 bg-gold-50"
+                            : "hover:bg-gray-50"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <span
                           className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                            isSelected ? "border-gold-600" : "border-gray-400"
+                            isSelected && !out ? "border-gold-600" : "border-gray-400"
                           }`}
                         >
-                          {isSelected && <span className="h-2 w-2 rounded-full bg-gold-600" />}
+                          {isSelected && !out && (
+                            <span className="h-2 w-2 rounded-full bg-gold-600" />
+                          )}
                         </span>
-                        <span className={isSelected ? "font-medium" : ""}>{c.name}</span>
+                        <span
+                          className={`${isSelected && !out ? "font-medium" : ""} ${
+                            out ? "text-muted-foreground line-through" : ""
+                          }`}
+                        >
+                          {c.name}
+                        </span>
                       </div>
-                      <span className={isFree ? "text-gray-500 text-sm" : "text-gold-600"}>
-                        {isFree ? "Inclus" : `+${Number(c.price).toFixed(2)}€`}
-                      </span>
+                      {out ? (
+                        <span className="rounded-full border border-destructive/30 px-2 py-0.5 text-xs font-medium text-destructive">
+                          Rupture de stock
+                        </span>
+                      ) : (
+                        <span className={isFree ? "text-gray-500 text-sm" : "text-gold-600"}>
+                          {isFree ? "Inclus" : `+${Number(c.price).toFixed(2)}€`}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
-                {choices.length === 1 && (
+                {choices.length === 1 && !choices.some(isOut) && (
                   <p className="text-xs text-gray-500">
                     Les autres options ne sont pas disponibles actuellement.
+                  </p>
+                )}
+                {choices.every(isOut) && (
+                  <p className="text-xs font-medium text-destructive">
+                    Toutes les options de cette base sont en rupture de stock.
                   </p>
                 )}
               </div>
