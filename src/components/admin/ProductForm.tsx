@@ -794,52 +794,105 @@ const ProductForm = ({ product, categories, onSave, onCancel }: ProductFormProps
               <FormItem>
                 <FormLabel>Liste des suppléments</FormLabel>
                 <FormDescription>
-                  Ajoutez un nom et un prix pour chaque supplément proposé
+                  Laissez « Groupe » vide pour une option cochable libre (ex : Shot Espresso).
+                  Indiquez un groupe (ex : « Base ») pour un choix unique obligatoire : le client
+                  ne pourra en choisir qu'un seul. Cochez « Inclus » sur l'option présélectionnée
+                  et « Rupture » pour masquer temporairement une option.
                 </FormDescription>
-                <div className="space-y-2 mt-2">
+                <div className="space-y-3 mt-2">
                   {(field.value || []).map((sup: any, index: number) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <Input
-                        placeholder="Nom du supplément"
-                        value={sup.name || ""}
-                        onChange={(e) => {
-                          const list = [...(field.value || [])];
-                          list[index] = { ...list[index], name: e.target.value };
-                          field.onChange(list);
-                        }}
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Prix"
-                        className="w-28"
-                        value={sup.price ?? ""}
-                        onChange={(e) => {
-                          const list = [...(field.value || [])];
-                          list[index] = { ...list[index], price: parseFloat(e.target.value) || 0 };
-                          field.onChange(list);
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const list = [...(field.value || [])];
-                          list.splice(index, 1);
-                          field.onChange(list);
-                        }}
-                      >
-                        Supprimer
-                      </Button>
+                    <div key={index} className="rounded-md border p-3 space-y-2 bg-gray-50">
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          placeholder="Nom du supplément"
+                          value={sup.name || ""}
+                          onChange={(e) => {
+                            const list = [...(field.value || [])];
+                            list[index] = { ...list[index], name: e.target.value };
+                            field.onChange(list);
+                          }}
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Prix"
+                          className="w-28"
+                          value={sup.price ?? ""}
+                          onChange={(e) => {
+                            const list = [...(field.value || [])];
+                            list[index] = { ...list[index], price: parseFloat(e.target.value) || 0 };
+                            field.onChange(list);
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const list = [...(field.value || [])];
+                            list.splice(index, 1);
+                            field.onChange(list);
+                          }}
+                        >
+                          Supprimer
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-4 items-center">
+                        <Input
+                          placeholder="Groupe (ex: Base) — vide = option libre"
+                          className="w-64"
+                          value={sup.group || ""}
+                          onChange={(e) => {
+                            const list = [...(field.value || [])];
+                            list[index] = { ...list[index], group: e.target.value };
+                            field.onChange(list);
+                          }}
+                        />
+                        <label className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={!!sup.isDefault}
+                            onCheckedChange={(checked) => {
+                              const list = [...(field.value || [])];
+                              const groupName = (list[index]?.group || "").trim();
+                              list[index] = { ...list[index], isDefault: !!checked };
+                              // Une seule option incluse par groupe
+                              if (checked && groupName) {
+                                list.forEach((s: any, i: number) => {
+                                  if (i !== index && (s.group || "").trim() === groupName) {
+                                    list[i] = { ...s, isDefault: false };
+                                  }
+                                });
+                              }
+                              field.onChange(list);
+                            }}
+                          />
+                          Inclus (présélectionné)
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={!!sup.soldOut}
+                            onCheckedChange={(checked) => {
+                              const list = [...(field.value || [])];
+                              list[index] = { ...list[index], soldOut: !!checked };
+                              field.onChange(list);
+                            }}
+                          />
+                          Rupture de stock
+                        </label>
+                      </div>
                     </div>
                   ))}
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => field.onChange([...(field.value || []), { name: "", price: 0 }])}
+                    onClick={() =>
+                      field.onChange([
+                        ...(field.value || []),
+                        { name: "", price: 0, group: "", isDefault: false, soldOut: false },
+                      ])
+                    }
                   >
                     + Ajouter un supplément
                   </Button>
