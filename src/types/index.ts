@@ -30,6 +30,12 @@ export type SushiCategory =
 export interface ProductSupplement {
   name: string;
   price: number;
+  /** Nom du groupe de choix exclusif (ex: "Base"). Vide = option cochable libre. */
+  group?: string;
+  /** Option présélectionnée du groupe (ex: Lait de vache inclus à 0€) */
+  isDefault?: boolean;
+  /** En rupture de stock : masquée côté client */
+  soldOut?: boolean;
 }
 
 export interface RequiredOption {
