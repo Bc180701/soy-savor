@@ -74,6 +74,9 @@ const productFormSchema = z.object({
   supplements: z.array(z.object({
     name: z.string(),
     price: z.coerce.number().min(0),
+    group: z.string().optional().default(""),
+    isDefault: z.boolean().optional().default(false),
+    soldOut: z.boolean().optional().default(false),
   })).default([]),
   required_options: z.array(z.object({
     label: z.string(),
