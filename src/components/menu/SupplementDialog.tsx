@@ -54,22 +54,32 @@ const SupplementDialog = ({ item, onClose, onSelect }: SupplementDialogProps) =>
   if (!item) return null;
 
   const toggleOptional = (name: string) => {
+    const target = optionals.find((s) => s.name === name);
+    if (target && isOut(target)) return;
     setSelected((prev) =>
       prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
     );
   };
 
   const chosenGroupSupplements = groups
-    .map(([groupName, choices]) => choices.find((c) => c.name === groupChoices[groupName]))
+    .map(([groupName, choices]) =>
+      choices.find((c) => c.name === groupChoices[groupName] && !isOut(c))
+    )
     .filter(Boolean) as ProductSupplement[];
 
-  const chosenOptionals = optionals.filter((s) => selected.includes(s.name));
+  const chosenOptionals = optionals.filter((s) => selected.includes(s.name) && !isOut(s));
 
   const allChoices = [...chosenGroupSupplements, ...chosenOptionals];
   const totalExtra = allChoices.reduce((sum, s) => sum + Number(s.price || 0), 0);
 
-  const allGroupsChosen = groups.every(([groupName]) => !!groupChoices[groupName]);
-  const hasGroups = groups.length > 0;
+  // Groupes où au moins une option est en stock / groupes entièrement en rupture
+  const groupsWithStock = groups.filter(([, choices]) => choices.some((c) => !isOut(c)));
+  const groupsWithoutStock = groups.filter(([, choices]) => !choices.some((c) => !isOut(c)));
+
+  const allGroupsChosen =
+    groupsWithoutStock.length === 0 &&
+    groupsWithStock.every(([groupName]) => !!groupChoices[groupName]);
+  const hasGroups = groupsWithStock.length > 0;
 
   const handleConfirm = () => {
     if (!allGroupsChosen) return;
