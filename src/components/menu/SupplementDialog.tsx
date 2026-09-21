@@ -169,25 +169,47 @@ const SupplementDialog = ({ item, onClose, onSelect }: SupplementDialogProps) =>
             <div>
               {hasGroups && <p className="font-medium mb-2">Options supplémentaires</p>}
               <div className="flex flex-col gap-2">
-                {optionals.map((s) => {
-                  const isChecked = selected.includes(s.name);
-                  return (
-                    <button
-                      key={s.name}
-                      type="button"
-                      onClick={() => toggleOptional(s.name)}
-                      className={`flex items-center justify-between gap-3 rounded-md border p-3 text-left transition-colors ${
-                        isChecked ? "border-gold-600 bg-gold-50" : "hover:bg-gray-50"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Checkbox checked={isChecked} onCheckedChange={() => toggleOptional(s.name)} />
-                        <span className="font-medium">{s.name}</span>
-                      </div>
-                      <span className="text-gold-600">+{Number(s.price).toFixed(2)}€</span>
-                    </button>
-                  );
-                })}
+                {[...optionals]
+                  .sort((a, b) => Number(isOut(a)) - Number(isOut(b)))
+                  .map((s) => {
+                    const out = isOut(s);
+                    const isChecked = selected.includes(s.name) && !out;
+                    return (
+                      <button
+                        key={s.name}
+                        type="button"
+                        disabled={out}
+                        onClick={() => toggleOptional(s.name)}
+                        className={`flex items-center justify-between gap-3 rounded-md border p-3 text-left transition-colors ${
+                          out
+                            ? "border-dashed opacity-70 cursor-not-allowed"
+                            : isChecked
+                              ? "border-gold-600 bg-gold-50"
+                              : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={isChecked}
+                            disabled={out}
+                            onCheckedChange={() => toggleOptional(s.name)}
+                          />
+                          <span
+                            className={`font-medium ${out ? "text-muted-foreground line-through" : ""}`}
+                          >
+                            {s.name}
+                          </span>
+                        </div>
+                        {out ? (
+                          <span className="rounded-full border border-destructive/30 px-2 py-0.5 text-xs font-medium text-destructive">
+                            Rupture de stock
+                          </span>
+                        ) : (
+                          <span className="text-gold-600">+{Number(s.price).toFixed(2)}€</span>
+                        )}
+                      </button>
+                    );
+                  })}
               </div>
             </div>
           )}
