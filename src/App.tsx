@@ -62,6 +62,7 @@ const App = () => (
                 <Route path="admin" element={<Admin />} />
                 <Route path="push-roll" element={<SushiPushRollProvence />} />
                 <Route path="sushi-push-roll-provence" element={<SushiPushRollProvence />} />
+                <Route path="test-panier" element={<TestPanier />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
