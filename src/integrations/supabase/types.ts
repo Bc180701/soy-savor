@@ -117,6 +117,36 @@ export type Database = {
           },
         ]
       }
+      checkout_drafts: {
+        Row: {
+          created_at: string
+          id: string
+          is_used: boolean
+          order_id: string | null
+          payload: Json
+          restaurant_id: string | null
+          stripe_session_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_used?: boolean
+          order_id?: string | null
+          payload: Json
+          restaurant_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_used?: boolean
+          order_id?: string | null
+          payload?: Json
+          restaurant_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Relationships: []
+      }
       day_based_promotions: {
         Row: {
           applicable_categories: string[] | null

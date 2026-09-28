@@ -81,6 +81,22 @@ serve(async (req) => {
     // Traiter l'événement
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
+      // Charger le panier complet sauvegardé avant paiement (draft) et le fusionner dans les metadata
+      if (session.metadata?.draft_id) {
+        try {
+          const { data: draft } = await supabase
+            .from('checkout_drafts')
+            .select('payload')
+            .eq('id', session.metadata.draft_id)
+            .maybeSingle();
+          if (draft?.payload) {
+            session.metadata = { ...session.metadata, ...draft.payload };
+            console.log('📦 Draft chargé:', session.metadata.draft_id);
+          }
+        } catch (e) {
+          console.error('❌ Erreur chargement draft:', e);
+        }
+      }
       console.log('💳 Session complétée:', session.id);
       
       // On initialisera Stripe plus tard avec la bonne clé restaurant
