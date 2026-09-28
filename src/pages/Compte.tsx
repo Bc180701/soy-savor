@@ -290,8 +290,26 @@ const Compte = () => {
                           <div className="flex justify-between text-sm text-muted-foreground">
                             <span>Total: {order.total.toFixed(2)} €</span>
                             <span>{order.orderType === 'delivery' ? 'Livraison' : 
-                                  order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}</span>
+                                   order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}</span>
                           </div>
+
+                          <div className="mt-3">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={reorderingId === order.id}
+                              onClick={() => handleReorder(order.id)}
+                              className="border-gold-500 text-gold-700 hover:bg-gold-50"
+                            >
+                              {reorderingId === order.id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                              )}
+                              Recommander
+                            </Button>
+                          </div>
+                          
                           
                           <AnimatePresence>
                             {expandedOrderId === order.id && (
