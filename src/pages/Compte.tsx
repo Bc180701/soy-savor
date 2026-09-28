@@ -9,10 +9,13 @@ import { Order } from "@/types";
 import { getOrdersByUser } from "@/services/orderService";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Eye, EyeOff, ShoppingBag } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2, RotateCcw, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ProfileForm from "@/components/profile/ProfileForm";
 import { DecodedItemsList } from "@/components/DecodedItemsList";
+import { useCart } from "@/hooks/use-cart";
+import { rebuildCartFromOrder } from "@/utils/reorder";
+import { useNavigate } from "react-router-dom";
 
 const Compte = () => {
   const { orders: localOrders, clearOrders } = useOrder();
