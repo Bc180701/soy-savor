@@ -518,17 +518,17 @@ serve(async (req) => {
         .select('id')
         .single();
       if (draftError) console.error('❌ Erreur sauvegarde draft:', draftError);
-      if (draft?.id) sessionData.metadata.draft_id = draft.id;
+      if (draft?.id) (sessionData.metadata as any).draft_id = draft.id;
 
       // Toutes les valeurs metadata doivent faire ≤ 500 caractères
       for (const key of Object.keys(sessionData.metadata)) {
-        const val = String(sessionData.metadata[key] ?? '');
+        const val = String((sessionData.metadata as any)[key] ?? '');
         if (val.length > 500) {
           if (key === 'items_summary' || !draft?.id) {
             // items_summary est dans le draft : on ne l'envoie pas tronqué
-            sessionData.metadata[key] = key === 'items_summary' ? '' : val.slice(0, 500);
+            (sessionData.metadata as any)[key] = key === 'items_summary' ? '' : val.slice(0, 500);
           } else {
-            sessionData.metadata[key] = val.slice(0, 500);
+            (sessionData.metadata as any)[key] = val.slice(0, 500);
           }
         }
       }
