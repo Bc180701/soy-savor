@@ -9,10 +9,13 @@ import { Order } from "@/types";
 import { getOrdersByUser } from "@/services/orderService";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, Eye, EyeOff, ShoppingBag } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2, RotateCcw, ShoppingBag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ProfileForm from "@/components/profile/ProfileForm";
 import { DecodedItemsList } from "@/components/DecodedItemsList";
+import { useCart } from "@/hooks/use-cart";
+import { rebuildCartFromOrder } from "@/utils/reorder";
+import { useNavigate } from "react-router-dom";
 
 const Compte = () => {
   const { orders: localOrders, clearOrders } = useOrder();
@@ -22,7 +25,49 @@ const Compte = () => {
   const [activeTab, setActiveTab] = useState("profil");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<Record<string, any[]>>({}); 
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { addItemWithRestaurant, clearCart } = useCart();
+  const navigate = useNavigate();
+
+  // Recréer le panier à partir d'une commande passée
+  const handleReorder = async (orderId: string) => {
+    setReorderingId(orderId);
+    try {
+      const { added, skipped } = await rebuildCartFromOrder(
+        orderId,
+        addItemWithRestaurant,
+        clearCart
+      );
+
+      if (added === 0) {
+        toast({
+          variant: "destructive",
+          title: "Impossible de recréer ce panier",
+          description:
+            "Les articles de cette commande ne sont plus disponibles à la carte.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Panier recréé",
+        description:
+          skipped.length > 0
+            ? `${added} article(s) ajouté(s). Non disponibles : ${skipped.join(", ")}`
+            : `${added} article(s) ajouté(s) à votre panier.`,
+      });
+      navigate("/panier");
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: e?.message || "Impossible de recréer ce panier.",
+      });
+    } finally {
+      setReorderingId(null);
+    }
+  };
 
   // Vérifier si l'utilisateur est connecté
   useEffect(() => {
@@ -245,8 +290,26 @@ const Compte = () => {
                           <div className="flex justify-between text-sm text-muted-foreground">
                             <span>Total: {order.total.toFixed(2)} €</span>
                             <span>{order.orderType === 'delivery' ? 'Livraison' : 
-                                  order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}</span>
+                                   order.orderType === 'pickup' ? 'À emporter' : 'Sur place'}</span>
                           </div>
+
+                          <div className="mt-3">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={reorderingId === order.id}
+                              onClick={() => handleReorder(order.id)}
+                              className="border-gold-500 text-gold-700 hover:bg-gold-50"
+                            >
+                              {reorderingId === order.id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                              )}
+                              Recommander
+                            </Button>
+                          </div>
+                          
                           
                           <AnimatePresence>
                             {expandedOrderId === order.id && (
