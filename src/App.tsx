@@ -24,6 +24,7 @@ import NosRestaurants from "./pages/NosRestaurants";
 import MentionsLegales from "./pages/MentionsLegales";
 import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import SushiPushRollProvence from "./pages/geo/SushiPushRollProvence";
+import TestPanier from "./pages/TestPanier";
 import { RestaurantProvider } from "./hooks/useRestaurantContext";
 import { EventFreeDessertPopupProvider } from "./hooks/useEventFreeDessertPopup";
 import { EventFreeDessertPopup } from "./components/menu/EventFreeDessertPopup";
@@ -62,6 +63,7 @@ const App = () => (
                 <Route path="admin" element={<Admin />} />
                 <Route path="push-roll" element={<SushiPushRollProvence />} />
                 <Route path="sushi-push-roll-provence" element={<SushiPushRollProvence />} />
+                <Route path="test-panier" element={<TestPanier />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
