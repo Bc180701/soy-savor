@@ -106,7 +106,7 @@ export const rebuildCartFromOrder = async (
       name: product.name,
       description: product.description || "",
       price: Number(product.price),
-      image: product.image_url || "",
+      imageUrl: product.image_url || undefined,
       category: product.category_id,
       pieces: product.pieces || undefined,
       restaurant_id: restaurantId,
