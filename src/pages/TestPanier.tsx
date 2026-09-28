@@ -11,13 +11,13 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 const TestPanier = () => {
   const [loading, setLoading] = useState(false);
   const { addItemWithRestaurant, clearCart, items } = useCart();
-  const { selectedRestaurant } = useRestaurantContext();
+  const { currentRestaurant } = useRestaurantContext();
   const navigate = useNavigate();
 
   const total = items.reduce((t, i) => t + i.menuItem.price * i.quantity, 0);
 
   const fill = async (lines: number) => {
-    const restaurantId = selectedRestaurant?.id;
+    const restaurantId = currentRestaurant?.id;
     if (!restaurantId) {
       toast.error("Choisissez d'abord un restaurant sur la page Commander");
       return;
@@ -76,7 +76,7 @@ const TestPanier = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Restaurant : {selectedRestaurant?.name || "aucun (choisissez-en un sur Commander)"}
+            Restaurant : {currentRestaurant?.name || "aucun (choisissez-en un sur Commander)"}
           </p>
           <p className="text-sm">
             Panier actuel : <strong>{items.length}</strong> lignes — <strong>{total.toFixed(2)} €</strong>
