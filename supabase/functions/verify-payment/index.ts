@@ -161,7 +161,15 @@ serve(async (req) => {
     }
 
     // Récupérer les métadonnées
-    const metadata = session.metadata || {};
+    let metadata: any = session.metadata || {};
+    if (metadata.draft_id) {
+      const { data: draft } = await supabase
+        .from('checkout_drafts')
+        .select('payload')
+        .eq('id', metadata.draft_id)
+        .maybeSingle();
+      if (draft?.payload) metadata = { ...metadata, ...draft.payload };
+    }
     console.log('📋 Métadonnées disponibles:', metadata);
 
     // Vérifier si l'utilisateur est connecté

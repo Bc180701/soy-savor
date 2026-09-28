@@ -505,8 +505,39 @@ serve(async (req) => {
         itemsSummaryLen: itemsSummaryStr.length
       });
 
+      // Sauvegarder le panier complet côté serveur (plus de dépendance à la limite 500 car. de Stripe)
+      const draftPayload: Record<string, string> = {
+        items_summary: itemsSummaryStr,
+        customer_notes: customerNotes || '',
+        cart_sauces: sessionData.metadata.cart_sauces,
+        cart_accompagnements: sessionData.metadata.cart_accompagnements,
+      };
+      const { data: draft, error: draftError } = await supabase
+        .from('checkout_drafts')
+        .insert({ restaurant_id: targetRestaurantId, payload: draftPayload })
+        .select('id')
+        .single();
+      if (draftError) console.error('❌ Erreur sauvegarde draft:', draftError);
+      if (draft?.id) sessionData.metadata.draft_id = draft.id;
+
+      // Toutes les valeurs metadata doivent faire ≤ 500 caractères
+      for (const key of Object.keys(sessionData.metadata)) {
+        const val = String(sessionData.metadata[key] ?? '');
+        if (val.length > 500) {
+          if (key === 'items_summary' || !draft?.id) {
+            // items_summary est dans le draft : on ne l'envoie pas tronqué
+            sessionData.metadata[key] = key === 'items_summary' ? '' : val.slice(0, 500);
+          } else {
+            sessionData.metadata[key] = val.slice(0, 500);
+          }
+        }
+      }
+
       session = await stripe.checkout.sessions.create(sessionData);
       console.log('✅ [STEP 24] Session Stripe créée avec succès:', session.id);
+      if (draft?.id) {
+        await supabase.from('checkout_drafts').update({ stripe_session_id: session.id }).eq('id', draft.id);
+      }
       
     } catch (error) {
       console.error('❌ [STEP 24] Erreur création session Stripe:', {
