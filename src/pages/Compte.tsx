@@ -25,7 +25,49 @@ const Compte = () => {
   const [activeTab, setActiveTab] = useState("profil");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<Record<string, any[]>>({}); 
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { addItemWithRestaurant, clearCart } = useCart();
+  const navigate = useNavigate();
+
+  // Recréer le panier à partir d'une commande passée
+  const handleReorder = async (orderId: string) => {
+    setReorderingId(orderId);
+    try {
+      const { added, skipped } = await rebuildCartFromOrder(
+        orderId,
+        addItemWithRestaurant,
+        clearCart
+      );
+
+      if (added === 0) {
+        toast({
+          variant: "destructive",
+          title: "Impossible de recréer ce panier",
+          description:
+            "Les articles de cette commande ne sont plus disponibles à la carte.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Panier recréé",
+        description:
+          skipped.length > 0
+            ? `${added} article(s) ajouté(s). Non disponibles : ${skipped.join(", ")}`
+            : `${added} article(s) ajouté(s) à votre panier.`,
+      });
+      navigate("/panier");
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: e?.message || "Impossible de recréer ce panier.",
+      });
+    } finally {
+      setReorderingId(null);
+    }
+  };
 
   // Vérifier si l'utilisateur est connecté
   useEffect(() => {
