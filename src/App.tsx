@@ -24,6 +24,7 @@ import NosRestaurants from "./pages/NosRestaurants";
 import MentionsLegales from "./pages/MentionsLegales";
 import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import SushiPushRollProvence from "./pages/geo/SushiPushRollProvence";
+import TestPanier from "./pages/TestPanier";
 import { RestaurantProvider } from "./hooks/useRestaurantContext";
 import { EventFreeDessertPopupProvider } from "./hooks/useEventFreeDessertPopup";
 import { EventFreeDessertPopup } from "./components/menu/EventFreeDessertPopup";
