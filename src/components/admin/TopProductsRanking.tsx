@@ -30,15 +30,24 @@ const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [period, setPeriod] = useState<string>("30");
 
   useEffect(() => {
     const fetchTopProducts = async () => {
       setLoading(true);
       try {
         // Fetch product codes for decoding
-        const { data: productCodes } = await supabase
-          .from('product_codes')
-          .select('code, item_name');
+        const productCodes: { code: string; item_name: string }[] = [];
+        for (let f = 0; ; f += 1000) {
+          const { data: pc } = await supabase
+            .from('product_codes')
+            .select('code, item_name')
+            .order('code')
+            .range(f, f + 999);
+          if (!pc || pc.length === 0) break;
+          productCodes.push(...pc);
+          if (pc.length < 1000) break;
+        }
 
         const codeToName = new Map<string, string>();
         productCodes?.forEach(pc => {
@@ -83,10 +92,17 @@ const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
             .from('orders')
             .select('items_summary')
             .eq('payment_status', 'paid')
+            .order('created_at', { ascending: true })
+            .order('id', { ascending: true })
             .range(from, from + PAGE_SIZE - 1);
 
           if (restaurantId) {
             query = query.eq('restaurant_id', restaurantId);
+          }
+          if (period !== "all") {
+            const since = new Date();
+            since.setDate(since.getDate() - Number(period));
+            query = query.gte('created_at', since.toISOString());
           }
 
           const { data: pageData, error } = await query;
@@ -127,7 +143,10 @@ const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
                 return;
               }
 
-              const categoryId = productToCategory.get(name.toLowerCase());
+              // Regrouper les variantes (ex: "Ube Latte (Froid) + Lait d'avoine") sous le produit de base
+              const baseName = name.split(' + ')[0].replace(/\s*\([^)]*\)\s*$/, '').trim() || name;
+              if (productToCategory.has(baseName.toLowerCase())) name = baseName;
+              const categoryId = productToCategory.get(name.toLowerCase()) || productToCategory.get(baseName.toLowerCase());
               const existing = productMap.get(name) || { quantity: 0, revenue: 0, categoryId };
               productMap.set(name, {
                 quantity: existing.quantity + quantity,
@@ -162,7 +181,7 @@ const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
     };
 
     fetchTopProducts();
-  }, [restaurantId]);
+  }, [restaurantId, period]);
 
   // Filter products when category changes
   useEffect(() => {
@@ -249,6 +268,18 @@ const TopProductsRanking = ({ restaurantId }: TopProductsRankingProps) => {
                   {category.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">7 derniers jours</SelectItem>
+              <SelectItem value="30">30 derniers jours</SelectItem>
+              <SelectItem value="90">3 derniers mois</SelectItem>
+              <SelectItem value="365">12 derniers mois</SelectItem>
+              <SelectItem value="all">Depuis le début</SelectItem>
             </SelectContent>
           </Select>
         </div>
