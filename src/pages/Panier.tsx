@@ -16,6 +16,15 @@ import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
 import { format, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { fr } from "date-fns/locale";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Interface pour les informations de livraison
 interface DeliveryInfo {
@@ -51,6 +60,7 @@ const PanierContent = () => {
   const { calculateDessertDiscount, freeDessertsEnabled } = useEventFreeDesserts(cartRestaurant?.id);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
+  const [unavailableError, setUnavailableError] = useState<{ title: string; message: string } | null>(null);
   
   // Scroll automatique en haut à chaque changement d'étape
   useEffect(() => {
@@ -441,14 +451,33 @@ const PanierContent = () => {
         console.error("Erreur lors de la création de la session Stripe:", error);
         let message = "Une erreur est survenue lors de l'initialisation du paiement.";
         let title = "Erreur de paiement";
+        let isUnavailable = false;
         try {
-          const body = await (error as any)?.context?.json?.();
+          const ctx: any = (error as any)?.context;
+          let body: any = null;
+          if (ctx) {
+            try {
+              body = await ctx.json();
+            } catch {
+              if (typeof ctx?.text === "function") {
+                try {
+                  body = JSON.parse(await ctx.text());
+                } catch {}
+              }
+            }
+          }
           if (body?.unavailable_products) {
+            isUnavailable = true;
             title = "Produit indisponible";
-            message = body.error;
+            message = body.error || message;
           }
         } catch {}
-        toast({ title, description: message, variant: "destructive" });
+        if (isUnavailable) {
+          // Affichage en pop-up pour que le message soit bien visible
+          setUnavailableError({ title, message });
+        } else {
+          toast({ title, description: message, variant: "destructive" });
+        }
         return;
       }
 
@@ -553,6 +582,19 @@ const PanierContent = () => {
           {renderStep()}
         </motion.div>
       </div>
+
+      {/* Pop-up produit indisponible */}
+      <AlertDialog open={!!unavailableError} onOpenChange={(open) => !open && setUnavailableError(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{unavailableError?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{unavailableError?.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setUnavailableError(null)}>Compris</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
