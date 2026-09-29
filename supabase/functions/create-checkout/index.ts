@@ -200,6 +200,32 @@ serve(async (req) => {
       });
     }
 
+    // Vérifier que les produits du panier sont toujours actifs (désactivés/masqués après ajout au panier)
+    try {
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const productIds = [...new Set(items.map((i: any) => i?.menuItem?.id).filter((id: any) => typeof id === 'string' && uuidRe.test(id)))];
+      if (productIds.length > 0) {
+        const { data: prods } = await supabase
+          .from('products')
+          .select('id, name, is_new, is_hidden')
+          .in('id', productIds);
+        const unavailable = (prods || []).filter((p: any) => p.is_new === false || p.is_hidden === true);
+        if (unavailable.length > 0) {
+          const names = unavailable.map((p: any) => p.name).join(', ');
+          console.warn('⛔ Produits désactivés dans le panier:', names);
+          return new Response(JSON.stringify({
+            error: `Produit(s) plus disponible(s) : ${names}. Retirez-le(s) de votre panier pour continuer.`,
+            unavailable_products: unavailable.map((p: any) => p.id),
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409,
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Vérification disponibilité produits échouée:', e);
+    }
+
     // Créer les line items pour Stripe
     const lineItems = [];
     

@@ -439,11 +439,16 @@ const PanierContent = () => {
 
       if (error) {
         console.error("Erreur lors de la création de la session Stripe:", error);
-        toast({
-          title: "Erreur de paiement",
-          description: "Une erreur est survenue lors de l'initialisation du paiement.",
-          variant: "destructive",
-        });
+        let message = "Une erreur est survenue lors de l'initialisation du paiement.";
+        let title = "Erreur de paiement";
+        try {
+          const body = await (error as any)?.context?.json?.();
+          if (body?.unavailable_products) {
+            title = "Produit indisponible";
+            message = body.error;
+          }
+        } catch {}
+        toast({ title, description: message, variant: "destructive" });
         return;
       }
 
