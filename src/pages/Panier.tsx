@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { buttonVariants, Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useCart, useCartTotal } from "@/hooks/use-cart";
 import { useToast } from "@/components/ui/use-toast";
@@ -590,8 +591,21 @@ const PanierContent = () => {
             <AlertDialogTitle>{unavailableError?.title}</AlertDialogTitle>
             <AlertDialogDescription>{unavailableError?.message}</AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setUnavailableError(null)}>Compris</AlertDialogAction>
+          <AlertDialogFooter className="flex-col sm:flex-col gap-2">
+            <Button
+              onClick={() => {
+                setUnavailableError(null);
+                setCurrentStep(CheckoutStep.Cart);
+              }}
+            >
+              Retour au panier
+            </Button>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "outline" })}
+              onClick={() => setUnavailableError(null)}
+            >
+              Compris
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
