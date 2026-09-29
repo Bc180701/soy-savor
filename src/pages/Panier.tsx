@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useCart, useCartTotal } from "@/hooks/use-cart";
 import { useToast } from "@/components/ui/use-toast";
