@@ -61,13 +61,22 @@ const PanierContent = () => {
   const { calculateDessertDiscount, freeDessertsEnabled } = useEventFreeDesserts(cartRestaurant?.id);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
-  const [unavailableError, setUnavailableError] = useState<{ title: string; message: string } | null>(null);
+  const [unavailableError, setUnavailableError] = useState<{ title: string; message: string; target?: 'cart' | 'delivery' | null } | null>(null);
   
   // Scroll automatique en haut à chaque changement d'étape
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentStep]);
   const [loading, setLoading] = useState(false);
+
+  // Retour arrière depuis Stripe (cache du navigateur) : on débloque le bouton
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setLoading(false);
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
   const [allergies, setAllergies] = useState<string[]>([]);
   const [tip, setTip] = useState<number>(0);
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
@@ -286,214 +295,234 @@ const PanierContent = () => {
     return true;
   };
 
+  // Journalise le résultat de chaque tentative de paiement (pour comprendre les blocages côté client)
+  const logCheckoutAttempt = (outcome: string, details?: string, startedAt?: number, scheduledFor?: string) => {
+    try {
+      void (supabase as any).from('checkout_attempts').insert({
+        restaurant_id: cartRestaurant?.id || selectedRestaurantId || null,
+        client_email: deliveryInfo.email || null,
+        order_type: deliveryInfo.orderType,
+        scheduled_for: scheduledFor || deliveryInfo.pickupTime || null,
+        outcome: outcome.slice(0, 50),
+        details: details ? String(details).slice(0, 1000) : null,
+        duration_ms: startedAt ? Math.round(Date.now() - startedAt) : null,
+        user_agent: (navigator.userAgent || '').slice(0, 500),
+      }).then(() => {});
+    } catch {}
+  };
+
+  // Évite qu'un appel réseau bloqué fasse tourner le bouton indéfiniment
+  const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+    Promise.race([
+      promise,
+      new Promise<T>((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), ms)),
+    ]);
+
+  const showCheckoutPopup = (title: string, message: string, target: 'cart' | 'delivery' | null = null) => {
+    setUnavailableError({ title, message, target });
+  };
+
   const handleStripeCheckout = async () => {
+    const startedAt = Date.now();
+    let scheduledForLog: string | undefined;
+    let redirecting = false;
     try {
       setLoading(true);
       
       if (!validateDeliveryInfo()) {
+        logCheckoutAttempt('invalid_form', undefined, startedAt);
         setLoading(false);
         return;
       }
 
-      // 💾 SAUVEGARDE PRÉVENTIVE DU PANIER AVANT LE CHECKOUT
-      console.log("💾 Sauvegarde préventive du panier...");
+      // 💾 SAUVEGARDE PRÉVENTIVE DU PANIER AVANT LE CHECKOUT (non bloquante)
       const restaurantIdForBackup = cartRestaurant?.id || selectedRestaurantId;
-      
-      // Validation : ne pas insérer si pas de restaurant_id valide (UUID = 36 chars)
-      if (!restaurantIdForBackup || restaurantIdForBackup.length < 10) {
-        console.warn("⚠️ Pas de restaurant_id valide, sauvegarde du panier impossible");
-      } else {
+      if (restaurantIdForBackup && restaurantIdForBackup.length >= 10) {
         try {
-          const { error: backupError } = await supabase
+          void supabase
             .from('cart_backup')
             .insert({
               session_id: deliveryInfo.email || 'anonymous',
               cart_items: items as any,
               restaurant_id: restaurantIdForBackup
+            })
+            .then(({ error: backupError }) => {
+              if (backupError) console.error("Erreur lors de la sauvegarde du panier:", backupError);
             });
-          
-          if (backupError) {
-            console.error("Erreur lors de la sauvegarde du panier:", backupError);
-          } else {
-            console.log("✅ Panier sauvegardé avec succès pour:", deliveryInfo.email);
-          }
         } catch (backupError) {
           console.error("Erreur critique lors de la sauvegarde:", backupError);
         }
       }
 
-      // 🚨 VÉRIFICATION FINALE DU CRÉNEAU AVANT PAIEMENT
-      if (deliveryInfo.orderType === 'delivery' && cartRestaurant && deliveryInfo.pickupTime) {
-        try {
-          console.log("🔒 Vérification finale du créneau avant paiement...");
-          
-          // Créer la date - utiliser la date d'événement si applicable
-          const [hours, minutes] = deliveryInfo.pickupTime.split(':') || ["12", "00"];
-          let scheduledForISO: string;
-          
-          if (eventInfo.hasEventProducts && eventInfo.eventDate) {
-            scheduledForISO = `${eventInfo.eventDate}T${hours}:${minutes}:00`;
-          } else {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            scheduledForISO = `${year}-${month}-${day}T${hours}:${minutes}:00`;
-          }
-          
-          console.log("📅 Heure sélectionnée stockée telle quelle:", scheduledForISO);
-          
-          const { data: verification, error } = await supabase.functions.invoke('verify-time-slot', {
-            body: {
-              restaurantId: cartRestaurant.id,
-              orderType: deliveryInfo.orderType,
-              scheduledFor: scheduledForISO
-            }
-          });
-
-          if (error || !verification?.available) {
-            setLoading(false);
-            toast({
-              title: "Créneau non disponible",
-              description: verification?.message || "Ce créneau de livraison n'est plus disponible. Veuillez en choisir un autre.",
-              variant: "destructive",
-            });
-            setCurrentStep(CheckoutStep.DeliveryDetails); // Retour à l'étape de sélection du créneau
-            return;
-          }
-          console.log("✅ Créneau confirmé disponible, proceeding au paiement...");
-        } catch (error) {
-          setLoading(false);
-          console.error("❌ Erreur lors de la vérification finale:", error);
-          toast({
-            title: "Erreur de vérification",
-            description: "Erreur lors de la vérification du créneau. Veuillez réessayer.",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      // If delivery is selected and postal code is invalid, prevent proceeding
-      if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
-        toast({
-          title: "Code postal non desservi",
-          description: "Nous ne livrons pas dans cette zone. Veuillez choisir un autre code postal ou opter pour le retrait en magasin.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Validate postal code again before proceeding - maintenant avec le restaurant du panier
-      if (deliveryInfo.orderType === "delivery" && deliveryInfo.postalCode && cartRestaurant?.id) {
-        const isValidPostalCode = await checkPostalCodeDelivery(deliveryInfo.postalCode, cartRestaurant.id);
-        if (!isValidPostalCode) {
-          toast({
-            title: "Code postal non desservi",
-            description: `Nous ne livrons pas dans la zone ${deliveryInfo.postalCode} pour ${cartRestaurant.name}. Veuillez choisir un autre mode de livraison.`,
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Créer la date - Utiliser la date de l'événement si produit événement dans le panier
+      // Date/heure choisie (date d'événement si applicable)
       const [hours, minutes] = deliveryInfo.pickupTime?.split(':') || ["12", "00"];
       let localISOString: string;
-      
       if (eventInfo.hasEventProducts && eventInfo.eventDate) {
-        // Utiliser la date de l'événement (ex: 2025-12-24)
         localISOString = `${eventInfo.eventDate}T${hours}:${minutes}:00`;
-        console.log("🎄 Commande événement - Date:", eventInfo.eventDate, "Heure:", deliveryInfo.pickupTime);
       } else {
-        // Utiliser la date d'aujourd'hui
         const today = new Date();
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         localISOString = `${year}-${month}-${day}T${hours}:${minutes}:00`;
       }
-      
+      scheduledForLog = localISOString;
       console.log("📅 Heure sélectionnée pour checkout (sans conversion):", localISOString);
-      
-      // Recalcule le montant total incluant le pourboire et les desserts offerts juste avant l'appel à Stripe
+
+      // 🚨 VÉRIFICATION FINALE DU CRÉNEAU AVANT PAIEMENT
+      if (deliveryInfo.orderType === 'delivery' && cartRestaurant && deliveryInfo.pickupTime) {
+        try {
+          const { data: verification, error } = await withTimeout(
+            supabase.functions.invoke('verify-time-slot', {
+              body: {
+                restaurantId: cartRestaurant.id,
+                orderType: deliveryInfo.orderType,
+                scheduledFor: localISOString
+              }
+            }),
+            15000
+          );
+
+          if (error || !verification?.available) {
+            const msg = verification?.message || "Ce créneau de livraison n'est plus disponible. Veuillez en choisir un autre.";
+            logCheckoutAttempt(error ? 'slot_check_error' : 'slot_full', error?.message || msg, startedAt, localISOString);
+            showCheckoutPopup(
+              "Créneau plus disponible",
+              `${msg} Choisissez un autre horaire de livraison pour continuer.`,
+              'delivery'
+            );
+            return;
+          }
+        } catch (error: any) {
+          const isTimeout = error?.message === 'TIMEOUT';
+          logCheckoutAttempt(isTimeout ? 'slot_check_timeout' : 'slot_check_exception', error?.message, startedAt, localISOString);
+          showCheckoutPopup(
+            isTimeout ? "Connexion trop lente" : "Erreur de vérification",
+            isTimeout
+              ? "La vérification du créneau prend trop de temps. Vérifiez votre connexion internet puis réessayez."
+              : "Erreur lors de la vérification du créneau. Veuillez réessayer."
+          );
+          return;
+        }
+      }
+
+      if (deliveryInfo.orderType === "delivery" && deliveryInfo.isPostalCodeValid === false) {
+        logCheckoutAttempt('postal_code_invalid', deliveryInfo.postalCode, startedAt, localISOString);
+        showCheckoutPopup(
+          "Code postal non desservi",
+          "Nous ne livrons pas dans cette zone. Choisissez un autre code postal ou optez pour le retrait au restaurant.",
+          'delivery'
+        );
+        return;
+      }
+
+      if (deliveryInfo.orderType === "delivery" && deliveryInfo.postalCode && cartRestaurant?.id) {
+        const isValidPostalCode = await checkPostalCodeDelivery(deliveryInfo.postalCode, cartRestaurant.id);
+        if (!isValidPostalCode) {
+          logCheckoutAttempt('postal_code_invalid', deliveryInfo.postalCode, startedAt, localISOString);
+          showCheckoutPopup(
+            "Code postal non desservi",
+            `Nous ne livrons pas dans la zone ${deliveryInfo.postalCode} pour ${cartRestaurant.name}. Choisissez le retrait au restaurant ou une autre adresse.`,
+            'delivery'
+          );
+          return;
+        }
+      }
+
       const finalOrderTotal = subtotal + tax + deliveryFee + tip - discount - eventDessertDiscount;
       
-      // Appel à la fonction edge pour créer la session de paiement - avec restaurant ID
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          items,
-          subtotal,
-          tax,
-          deliveryFee,
-          tip,
-          discount: discount + eventDessertDiscount, // Inclure les desserts offerts dans la réduction
-          promoCode: appliedPromoCode?.code,
-          total: finalOrderTotal,
-          orderType: deliveryInfo.orderType,
-          clientName: deliveryInfo.name,
-          clientEmail: deliveryInfo.email,
-          clientPhone: deliveryInfo.phone,
-          deliveryStreet: deliveryInfo.street,
-          deliveryCity: deliveryInfo.city,
-          deliveryPostalCode: deliveryInfo.postalCode,
-          customerNotes: deliveryInfo.notes || '',
-          scheduledFor: localISOString,
-          restaurantId: cartRestaurant?.id, // Ajout du restaurant ID
-          cartExtras: cartExtras, // Ajout des extras du panier
-          successUrl: `${window.location.origin}/commande-confirmee`,
-          cancelUrl: `${window.location.origin}/panier`,
-        },
-      });
+      let data: any;
+      let error: any;
+      try {
+        const res = await withTimeout(
+          supabase.functions.invoke('create-checkout', {
+            body: {
+              items,
+              subtotal,
+              tax,
+              deliveryFee,
+              tip,
+              discount: discount + eventDessertDiscount,
+              promoCode: appliedPromoCode?.code,
+              total: finalOrderTotal,
+              orderType: deliveryInfo.orderType,
+              clientName: deliveryInfo.name,
+              clientEmail: deliveryInfo.email,
+              clientPhone: deliveryInfo.phone,
+              deliveryStreet: deliveryInfo.street,
+              deliveryCity: deliveryInfo.city,
+              deliveryPostalCode: deliveryInfo.postalCode,
+              customerNotes: deliveryInfo.notes || '',
+              scheduledFor: localISOString,
+              restaurantId: cartRestaurant?.id,
+              cartExtras: cartExtras,
+              successUrl: `${window.location.origin}/commande-confirmee`,
+              cancelUrl: `${window.location.origin}/panier`,
+            },
+          }),
+          30000
+        );
+        data = res.data;
+        error = res.error;
+      } catch (e: any) {
+        const isTimeout = e?.message === 'TIMEOUT';
+        logCheckoutAttempt(isTimeout ? 'checkout_timeout' : 'checkout_exception', e?.message, startedAt, localISOString);
+        showCheckoutPopup(
+          isTimeout ? "Connexion trop lente" : "Erreur de paiement",
+          isTimeout
+            ? "La page de paiement met trop de temps à s'ouvrir. Vérifiez votre connexion internet puis réessayez."
+            : "Une erreur est survenue lors de l'ouverture du paiement. Veuillez réessayer."
+        );
+        return;
+      }
 
       if (error) {
         console.error("Erreur lors de la création de la session Stripe:", error);
-        let message = "Une erreur est survenue lors de l'initialisation du paiement.";
-        let title = "Erreur de paiement";
-        let isUnavailable = false;
+        let body: any = null;
         try {
           const ctx: any = (error as any)?.context;
-          let body: any = null;
           if (ctx) {
             try {
               body = await ctx.json();
             } catch {
               if (typeof ctx?.text === "function") {
-                try {
-                  body = JSON.parse(await ctx.text());
-                } catch {}
+                try { body = JSON.parse(await ctx.text()); } catch {}
               }
             }
           }
-          if (body?.unavailable_products) {
-            isUnavailable = true;
-            title = "Produit indisponible";
-            message = body.error || message;
-          }
         } catch {}
-        if (isUnavailable) {
-          // Affichage en pop-up pour que le message soit bien visible
-          setUnavailableError({ title, message });
+        if (body?.unavailable_products) {
+          logCheckoutAttempt('product_unavailable', body.error, startedAt, localISOString);
+          showCheckoutPopup("Produit indisponible", body.error || "Un produit de votre panier n'est plus disponible.", 'cart');
         } else {
-          toast({ title, description: message, variant: "destructive" });
+          logCheckoutAttempt('checkout_error', body?.details || body?.error || error?.message, startedAt, localISOString);
+          showCheckoutPopup(
+            "Erreur de paiement",
+            "Le paiement n'a pas pu être ouvert. Veuillez réessayer dans un instant ; si le problème continue, contactez le restaurant."
+          );
         }
         return;
       }
 
+      if (!data?.url) {
+        logCheckoutAttempt('checkout_no_url', JSON.stringify(data || {}).slice(0, 500), startedAt, localISOString);
+        showCheckoutPopup("Erreur de paiement", "Le paiement n'a pas pu être ouvert. Veuillez réessayer.");
+        return;
+      }
+
+      logCheckoutAttempt('redirect_stripe', data.sessionId, startedAt, localISOString);
       // Rediriger vers la page de paiement Stripe
+      redirecting = true;
       window.location.href = data.url;
+      return; // on garde le bouton en chargement pendant la redirection
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur:", error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors du paiement.",
-        variant: "destructive",
-      });
+      logCheckoutAttempt('client_exception', error?.message, startedAt, scheduledForLog);
+      showCheckoutPopup("Erreur", "Une erreur est survenue lors du paiement. Veuillez réessayer.");
     } finally {
-      setLoading(false);
+      // Le bouton reste en chargement uniquement si on part vers Stripe
+      if (!redirecting) setLoading(false);
     }
   };
 
@@ -592,14 +621,17 @@ const PanierContent = () => {
             <AlertDialogDescription>{unavailableError?.message}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-col gap-2">
-            <Button
-              onClick={() => {
-                setUnavailableError(null);
-                setCurrentStep(CheckoutStep.Cart);
-              }}
-            >
-              Retour au panier
-            </Button>
+            {unavailableError?.target && (
+              <Button
+                onClick={() => {
+                  const target = unavailableError?.target;
+                  setUnavailableError(null);
+                  setCurrentStep(target === 'delivery' ? CheckoutStep.DeliveryDetails : CheckoutStep.Cart);
+                }}
+              >
+                {unavailableError?.target === 'delivery' ? "Changer l'horaire / l'adresse" : "Retour au panier"}
+              </Button>
+            )}
             <AlertDialogAction
               className={buttonVariants({ variant: "outline" })}
               onClick={() => setUnavailableError(null)}
