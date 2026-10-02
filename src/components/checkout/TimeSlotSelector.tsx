@@ -228,14 +228,13 @@ const TimeSlotSelector = ({
         console.log("🎄 [TimeSlotSelector] Récupération créneaux pour événement:", dateString);
       }
       
-      // Récupérer toutes les commandes du jour en une seule requête
-      const ordersPromise = supabase
-        .from('orders')
-        .select('scheduled_for, order_type, payment_status')
-        .gte('scheduled_for', startOfDay.toISOString())
-        .lt('scheduled_for', endOfDay.toISOString())
-        .eq('restaurant_id', cartRestaurant?.id)
-        .in('payment_status', ['paid', 'pending']); // Inclure paid ET pending
+      // Récupérer les créneaux occupés via une fonction serveur (voit toutes les commandes,
+      // sans exposer de données client) — une requête directe ne verrait que les commandes du client
+      const ordersPromise = (supabase.rpc as any)('get_occupied_slots', {
+        p_restaurant_id: cartRestaurant?.id,
+        p_start: startOfDay.toISOString(),
+        p_end: endOfDay.toISOString(),
+      });
 
       // Récupérer tous les créneaux bloqués du jour en une seule requête
       const blockedSlotsPromise = supabase
