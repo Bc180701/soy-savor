@@ -117,6 +117,45 @@ export type Database = {
           },
         ]
       }
+      checkout_attempts: {
+        Row: {
+          client_email: string | null
+          created_at: string
+          details: string | null
+          duration_ms: number | null
+          id: string
+          order_type: string | null
+          outcome: string
+          restaurant_id: string | null
+          scheduled_for: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          client_email?: string | null
+          created_at?: string
+          details?: string | null
+          duration_ms?: number | null
+          id?: string
+          order_type?: string | null
+          outcome: string
+          restaurant_id?: string | null
+          scheduled_for?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          client_email?: string | null
+          created_at?: string
+          details?: string | null
+          duration_ms?: number | null
+          id?: string
+          order_type?: string | null
+          outcome?: string
+          restaurant_id?: string | null
+          scheduled_for?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       checkout_drafts: {
         Row: {
           created_at: string
