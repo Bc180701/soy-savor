@@ -68,6 +68,15 @@ const PanierContent = () => {
     window.scrollTo(0, 0);
   }, [currentStep]);
   const [loading, setLoading] = useState(false);
+
+  // Retour arrière depuis Stripe (cache du navigateur) : on débloque le bouton
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setLoading(false);
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
   const [allergies, setAllergies] = useState<string[]>([]);
   const [tip, setTip] = useState<number>(0);
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo>({
