@@ -61,7 +61,7 @@ const PanierContent = () => {
   const { calculateDessertDiscount, freeDessertsEnabled } = useEventFreeDesserts(cartRestaurant?.id);
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.Cart);
-  const [unavailableError, setUnavailableError] = useState<{ title: string; message: string } | null>(null);
+  const [unavailableError, setUnavailableError] = useState<{ title: string; message: string; target?: 'cart' | 'delivery' | null } | null>(null);
   
   // Scroll automatique en haut à chaque changement d'étape
   useEffect(() => {
@@ -316,6 +316,7 @@ const PanierContent = () => {
   const handleStripeCheckout = async () => {
     const startedAt = Date.now();
     let scheduledForLog: string | undefined;
+    let redirecting = false;
     try {
       setLoading(true);
       
@@ -502,6 +503,7 @@ const PanierContent = () => {
 
       logCheckoutAttempt('redirect_stripe', data.sessionId, startedAt, localISOString);
       // Rediriger vers la page de paiement Stripe
+      redirecting = true;
       window.location.href = data.url;
       return; // on garde le bouton en chargement pendant la redirection
       
@@ -511,11 +513,7 @@ const PanierContent = () => {
       showCheckoutPopup("Erreur", "Une erreur est survenue lors du paiement. Veuillez réessayer.");
     } finally {
       // Le bouton reste en chargement uniquement si on part vers Stripe
-      setTimeout(() => {
-        if (document.visibilityState === 'visible' && !window.location.href.includes('checkout.stripe.com')) {
-          setLoading(false);
-        }
-      }, 0);
+      if (!redirecting) setLoading(false);
     }
   };
 
@@ -614,14 +612,17 @@ const PanierContent = () => {
             <AlertDialogDescription>{unavailableError?.message}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-col gap-2">
-            <Button
-              onClick={() => {
-                setUnavailableError(null);
-                setCurrentStep(CheckoutStep.Cart);
-              }}
-            >
-              Retour au panier
-            </Button>
+            {unavailableError?.target && (
+              <Button
+                onClick={() => {
+                  const target = unavailableError?.target;
+                  setUnavailableError(null);
+                  setCurrentStep(target === 'delivery' ? CheckoutStep.DeliveryDetails : CheckoutStep.Cart);
+                }}
+              >
+                {unavailableError?.target === 'delivery' ? "Changer l'horaire / l'adresse" : "Retour au panier"}
+              </Button>
+            )}
             <AlertDialogAction
               className={buttonVariants({ variant: "outline" })}
               onClick={() => setUnavailableError(null)}
