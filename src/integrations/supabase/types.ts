@@ -1696,6 +1696,14 @@ export type Database = {
       decode_items_summary: { Args: { encoded_summary: Json }; Returns: Json }
       generate_product_code: { Args: never; Returns: string }
       get_homepage_data: { Args: never; Returns: Json }
+      get_occupied_slots: {
+        Args: { p_end: string; p_restaurant_id: string; p_start: string }
+        Returns: {
+          order_type: string
+          payment_status: string
+          scheduled_for: string
+        }[]
+      }
       get_or_create_product_code:
         | {
             Args: { p_item_name: string; p_item_type?: string }
