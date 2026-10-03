@@ -17,6 +17,19 @@ export interface DayBasedPromotion {
   updatedAt: string;
 }
 
+const SAINT_MARTIN_DE_CRAU_ID = '22222222-2222-2222-2222-222222222222';
+
+export const isGourmetOfferAvailable = (restaurantId?: string, date = new Date()): boolean => {
+  if (restaurantId !== SAINT_MARTIN_DE_CRAU_ID) return true;
+
+  const parisWeekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris',
+    weekday: 'short',
+  }).format(date);
+
+  return parisWeekday !== 'Sat';
+};
+
 // Fonction pour récupérer toutes les promotions depuis la base de données
 export const fetchDayBasedPromotions = async (): Promise<DayBasedPromotion[]> => {
   try {
@@ -74,7 +87,9 @@ export const checkDayBasedPromotions = async (restaurantId?: string): Promise<Da
       isRestaurantApplicable = promotion.applicableRestaurants.includes(restaurantId);
     }
     
-    const isActive = isDayApplicable && isTimeApplicable && isRestaurantApplicable;
+    const isGourmetOffer = promotion.title.toLowerCase().includes('gourmande');
+    const isGourmetOfferAllowed = !isGourmetOffer || isGourmetOfferAvailable(restaurantId, now);
+    const isActive = isDayApplicable && isTimeApplicable && isRestaurantApplicable && isGourmetOfferAllowed;
     
     if (isActive) {
       console.log(`✅ Promotion active: ${promotion.title} pour restaurant ${restaurantId || 'tous'}`);
