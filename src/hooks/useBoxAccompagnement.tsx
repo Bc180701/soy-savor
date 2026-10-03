@@ -3,8 +3,11 @@ import { MenuItem } from "@/types";
 import { useCartWithRestaurant } from "./useCartWithRestaurant";
 import { toast } from "@/hooks/use-toast";
 import { useDessertBoissonOffer } from "./useDessertBoissonOffer";
+import { useRestaurantContext } from "./useRestaurantContext";
+import { isGourmetOfferAvailable } from "@/services/promotionService";
 
 export const useBoxAccompagnement = () => {
+  const { currentRestaurant } = useRestaurantContext();
   const [showAccompagnementSelector, setShowAccompagnementSelector] = useState(false);
   const [pendingBoxItem, setPendingBoxItem] = useState<{
     item: MenuItem;
@@ -81,8 +84,13 @@ export const useBoxAccompagnement = () => {
       
       addItem(freeAccompagnement, 1, "Accompagnement offert avec box");
       
-      // ✨ ACTIVATION DE L'OFFRE DESSERT/BOISSON EN CASCADE (avec popup automatique)
-      activateOffer();
+      // L'offre n'est pas proposée le samedi à Saint-Martin-de-Crau,
+      // où le premier créneau commence à 18 h.
+      if (isGourmetOfferAvailable(currentRestaurant?.id)) {
+        activateOffer();
+      } else {
+        deactivateOffer();
+      }
       
       // Nettoyer les états
       setPendingBoxItem(null);

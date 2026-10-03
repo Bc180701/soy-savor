@@ -1,1 +1,2 @@
 - Every checkout click outcome is logged client-side to `checkout_attempts` (outcome + details); check it first when customers report payment failures, since edge logs are short-lived.
+- Centralize Offre Gourmande availability in `promotionService` so promotional displays and cart-triggered dialogs enforce identical restaurant/day rules.
