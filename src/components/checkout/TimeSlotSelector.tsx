@@ -366,7 +366,7 @@ const TimeSlotSelector = ({
     let openSlots = todayOpeningHours.filter(slot => slot.is_open);
     
     if (restrictToMorningSlots) {
-      openSlots = openSlots.filter(slot => slot.slot_number === 1);
+      openSlots = openSlots.filter(slot => parseInt(slot.open_time.split(':')[0], 10) < 14);
       console.log("🍱 [TimeSlotSelector] Restriction Box du Midi: créneaux matin uniquement (slot 1)");
     }
 
