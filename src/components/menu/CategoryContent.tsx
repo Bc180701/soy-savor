@@ -27,6 +27,7 @@ import { useSpecialEvents } from "@/hooks/useSpecialEvents";
 import { useCartEventProducts } from "@/hooks/useCartEventProducts";
 import { useEventFreeDesserts } from "@/hooks/useEventFreeDesserts";
 import { useEventFreeDessertPopup } from "@/hooks/useEventFreeDessertPopup";
+import { useLunchBoxAvailability } from "@/hooks/useLunchBoxAvailability";
 
 interface CategoryContentProps {
   category: MenuCategory;
@@ -69,10 +70,8 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
   };
   
   // Vérifier si c'est après 14h
-  const isAfter2PM = () => {
-    const now = new Date();
-    return now.getHours() >= 14;
-  };
+  const lunchBoxAvailable = useLunchBoxAvailability(currentRestaurant?.id);
+  const isAfter2PM = () => !lunchBoxAvailable;
   
   // Vérifier si c'est une catégorie box du midi
   const isBoxDuMidi = (category: MenuCategory) => {
@@ -357,7 +356,7 @@ const CategoryContent = ({ category, onAddToCart }: CategoryContentProps) => {
             </h2>
             {isBoxDuMidi(category) && isAfter2PM() && (
               <span className="text-sm text-red-500 font-medium">
-                (Disponible jusqu'à 14h)
+                (Indisponible aujourd'hui : aucun créneau avant 14h)
               </span>
             )}
           </div>
