@@ -78,6 +78,10 @@ export const CartItemList = ({ items, removeItem, updateQuantity, maxFreeDessert
               {!["Sauce", "Accompagnement", "Accessoire"].includes(item.menuItem.category) && !item.menuItem.name.startsWith("Sauce Soja") ? (
                   (() => {
                     const isFreeDessertItem = item.specialInstructions?.includes('Dessert offert');
+                    const isSushiCrea = (item.menuItem.name || '').startsWith('Sushi Créa');
+                    if (isSushiCrea) {
+                      return <span className="text-sm text-muted-foreground">Quantité: {item.quantity}</span>;
+                    }
                     const maxQty = isFreeDessertItem ? maxFreeDesserts : Infinity;
                     const canIncrease = item.quantity < maxQty;
                     return (

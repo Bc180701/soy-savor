@@ -258,6 +258,8 @@ export const useCart = create<CartStore>()(
         const state = get();
         const target = state.items.find(it => it.menuItem.id === itemId);
         if (!target) return;
+        // Sushi Créa : prix calculé par box, pas d'augmentation de quantité dans le panier
+        if ((target.menuItem.name || '').startsWith('Sushi Créa') && quantity > target.quantity) return;
 
         const pushRollSauceRegex = /^Sauce .+ \((.+)\)$/;
         const sauceMatch = (target.menuItem.name || '').match(pushRollSauceRegex);
