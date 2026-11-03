@@ -1,3 +1,3 @@
-- [ ] Isolate admin detail articles by order ID and prioritize the purchase snapshot.
-- [ ] Make printing use the same order-specific snapshot, never the latest customer cart.
-- [ ] Test the two reported orders and document verification limitations.
+- [x] Isolate admin detail articles by order ID and prioritize the purchase snapshot.
+- [x] Make printing use the same order-specific snapshot, never the latest customer cart.
+- [x] Test isolation with the two reported snapshots; authenticated admin UI and physical printing remain unverified (external unmanaged session).
