@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { getOrderBackupItems, snapshotToPrintItems } from './orderSnapshot';
+import { getOrderBackupItems, snapshotToPrintItems } from '../src/utils/orderSnapshot';
 
 describe('separate orders from the same customer', () => {
   const firstId = '7ca8880f-7707-4a68-ae7f-e151ecedbc06';
