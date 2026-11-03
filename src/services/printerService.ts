@@ -5,6 +5,7 @@
 
 import { Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { getOrderBackupItems, snapshotToPrintItems } from "@/utils/orderSnapshot";
 
 // URLs des serveurs OVH par restaurant
 const OVH_SERVER_URL = "https://sushieats.fr/add-order.php";
@@ -54,81 +55,62 @@ export async function sendOrderToPrinter(order: Order): Promise<{
   try {
     console.log('🖨️ Envoi commande au serveur OVH:', order.id);
 
-    // Préparer les articles à imprimer
-    const items: PrintItem[] = [];
-    
-    // Log des sources de données disponibles pour debug
-    console.log('🔍 [PRINT] Sources de données disponibles:', {
-      cartBackupItems: order.cartBackupItems?.length || 0,
-      itemsSummary: order.itemsSummary?.length || 0,
-      items: order.items?.length || 0
-    });
-    
-    // Utiliser cart_backup en priorité (le plus complet)
-    if (order.cartBackupItems && order.cartBackupItems.length > 0) {
-      console.log('📦 [PRINT] Utilisation de cartBackupItems');
-      order.cartBackupItems.forEach((item: any) => {
-        items.push({
-          name: item.menuItem?.name || 'Produit',
-          quantity: item.quantity || 1,
-          price: item.menuItem?.price || 0,
-          description: item.menuItem?.description || '',
-          specialInstructions: item.specialInstructions || '',
-        });
-      });
-    } 
-    // Sinon utiliser itemsSummary (fallback principal)
-    else if (order.itemsSummary && order.itemsSummary.length > 0) {
-      console.log('📦 [PRINT] Utilisation de itemsSummary (fallback)');
-      order.itemsSummary.forEach((item: any) => {
-        items.push({
-          name: item.name || 'Produit',
-          quantity: item.quantity || 1,
-          price: item.price || 0,
-          description: item.description || '',
-          specialInstructions: item.special_instructions || '',
-        });
-      });
-    }
-    // Fallback sur items (dernier recours)
-    else if (order.items && order.items.length > 0) {
-      console.log('📦 [PRINT] Utilisation de items (dernier recours)');
-      order.items.forEach((item: any) => {
-        items.push({
-          name: item.name || 'Produit',
-          quantity: item.quantity || 1,
-          price: item.price || 0,
-          description: item.description || '',
-          specialInstructions: item.special_instructions || '',
-        });
-      });
-    } else {
-      console.warn('⚠️ [PRINT] Aucune source locale, fallback DB sur orders.items_summary');
-      try {
-        const { data: dbOrder, error: dbErr } = await supabase
-          .from('orders')
-          .select('items_summary')
-          .eq('id', order.id)
-          .single();
+    // Always read the purchase snapshot by order ID, before any local/cart data.
+    const { data: dbOrder, error: snapshotError } = await supabase
+      .from('orders')
+      .select('items_summary')
+      .eq('id', order.id)
+      .single();
 
-        if (dbErr) {
-          console.error('❌ [PRINT] Erreur fallback DB:', dbErr);
-        } else if (dbOrder?.items_summary && Array.isArray(dbOrder.items_summary) && dbOrder.items_summary.length > 0) {
-          console.log('📦 [PRINT] Utilisation items_summary depuis DB:', dbOrder.items_summary.length, 'articles');
-          (dbOrder.items_summary as any[]).forEach((item: any) => {
-            items.push({
-              name: item.name || 'Produit',
-              quantity: item.quantity || 1,
-              price: item.price ?? item.unit_price ?? 0,
-              description: item.description || '',
-              specialInstructions: item.special_instructions || '',
-            });
-          });
-        } else {
-          console.error('❌ [PRINT] Aucune source de données pour les articles, même en DB !');
+    if (snapshotError) {
+      return { success: false, message: 'Impossible de vérifier les articles de cette commande. Réessayez.' };
+    }
+
+    const summary = Array.isArray(dbOrder?.items_summary) ? dbOrder.items_summary : [];
+    const items: PrintItem[] = [];
+    if (summary.length > 0) {
+      let decodedSummary = summary;
+      if (typeof summary[0] === 'object' && summary[0] && 'n' in summary[0]) {
+        const { data, error } = await supabase.rpc('decode_items_summary', { encoded_summary: summary });
+        if (error || !Array.isArray(data)) {
+          return { success: false, message: 'Impossible de lire les articles de cette commande.' };
         }
-      } catch (e) {
-        console.error('❌ [PRINT] Exception fallback DB:', e);
+        decodedSummary = data;
+      }
+      items.push(...snapshotToPrintItems(decodedSummary));
+    } else {
+      // Legacy orders: only sources explicitly bound to this order are safe.
+      const { data: legacyItems, error: legacyError } = await supabase
+        .from('order_items')
+        .select('quantity, price, special_instructions, products(name, description)')
+        .eq('order_id', order.id);
+      if (legacyError) throw legacyError;
+      for (const item of legacyItems || []) {
+        items.push({
+          name: item.products?.name || 'Produit',
+          quantity: item.quantity,
+          price: item.price,
+          description: item.products?.description || '',
+          specialInstructions: item.special_instructions || '',
+        });
+      }
+      if (items.length === 0) {
+        const { data: backups, error: backupError } = await supabase
+          .from('cart_backup')
+          .select('order_id, cart_items')
+          .eq('order_id', order.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (backupError) throw backupError;
+        for (const item of getOrderBackupItems(order.id, backups || [])) {
+          items.push({
+            name: item.menuItem?.name || 'Produit',
+            quantity: item.quantity ?? 1,
+            price: item.menuItem?.price ?? 0,
+            description: item.menuItem?.description || '',
+            specialInstructions: item.specialInstructions || '',
+          });
+        }
       }
     }
 
