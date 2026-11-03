@@ -50,6 +50,7 @@ export const CartBackupDisplay = ({ order, onItemsRecovered }: CartBackupDisplay
   const fetchCartBackup = async () => {
     try {
       setLoading(true);
+      setCartBackup(null);
 
       // Calculer la date limite (24h avant la commande)
       const orderDate = new Date(order.createdAt);
@@ -59,7 +60,7 @@ export const CartBackupDisplay = ({ order, onItemsRecovered }: CartBackupDisplay
       const { data, error } = await supabase
         .from("cart_backup")
         .select("id, cart_items, created_at, session_id, is_used, restaurant_id")
-        .eq("session_id", order.clientEmail || "anonymous")
+        .eq("order_id", order.id)
         .gte("created_at", minDate.toISOString())
         .lte("created_at", orderDate.toISOString())
         .order("created_at", { ascending: false })
