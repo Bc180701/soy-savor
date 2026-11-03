@@ -212,6 +212,7 @@ serve(async (req) => {
       delivery_city: metadata.delivery_city || null,
       delivery_postal_code: metadata.delivery_postal_code || null,
       customer_notes: null,
+      items_summary: Array.isArray(metadata.purchase_items) ? metadata.purchase_items : [],
     };
 
     console.log('📝 Création commande avec:', {

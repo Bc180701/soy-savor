@@ -6,6 +6,7 @@
 import { Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { getOrderBackupItems, snapshotToPrintItems } from "@/utils/orderSnapshot";
+import { loadOrderPurchaseSnapshot } from '@/services/orderPurchaseSnapshot';
 
 // URLs des serveurs OVH par restaurant
 const OVH_SERVER_URL = "https://sushieats.fr/add-order.php";
@@ -69,14 +70,7 @@ export async function sendOrderToPrinter(order: Order): Promise<{
     const summary = Array.isArray(dbOrder?.items_summary) ? dbOrder.items_summary : [];
     const items: PrintItem[] = [];
     if (summary.length > 0) {
-      let decodedSummary = summary;
-      if (typeof summary[0] === 'object' && summary[0] && 'n' in summary[0]) {
-        const { data, error } = await supabase.rpc('decode_items_summary', { encoded_summary: summary });
-        if (error || !Array.isArray(data)) {
-          return { success: false, message: 'Impossible de lire les articles de cette commande.' };
-        }
-        decodedSummary = data;
-      }
+      const decodedSummary = await loadOrderPurchaseSnapshot(order.id, summary);
       items.push(...snapshotToPrintItems(decodedSummary));
     } else {
       // Legacy orders: only sources explicitly bound to this order are safe.

@@ -21,6 +21,7 @@ import { formatCustomProduct } from "@/utils/formatCustomProduct";
 import { formatEuro } from "@/utils/formatters";
 import { DecodedItemsList } from "@/components/DecodedItemsList";
 import { getOrderBackupItems } from "@/utils/orderSnapshot";
+import { loadOrderPurchaseSnapshot } from '@/services/orderPurchaseSnapshot';
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -107,6 +108,10 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
       if (requestId !== requestRef.current) return;
       
       if (completeOrderDetails) {
+        if (Array.isArray(completeOrderDetails.items_summary) && completeOrderDetails.items_summary.length > 0) {
+          completeOrderDetails.items_summary = await loadOrderPurchaseSnapshot(orderId, completeOrderDetails.items_summary);
+          if (requestId !== requestRef.current) return;
+        }
         setOrderDetails(completeOrderDetails);
         setCustomerDetails(completeOrderDetails.customer);
         setAddressDetails(completeOrderDetails.delivery_address);
