@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -20,6 +20,7 @@ import { MissingItemsAlert } from "@/components/admin/MissingItemsAlert";
 import { formatCustomProduct } from "@/utils/formatCustomProduct";
 import { formatEuro } from "@/utils/formatters";
 import { DecodedItemsList } from "@/components/DecodedItemsList";
+import { getOrderBackupItems } from "@/utils/orderSnapshot";
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -34,29 +35,29 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
   const [addressDetails, setAddressDetails] = useState<any | null>(null);
   const [cartBackupItems, setCartBackupItems] = useState<any[]>([]);
   const [customerOrderCount, setCustomerOrderCount] = useState<number>(0);
+  const requestRef = useRef(0);
 
   useEffect(() => {
     if (order && open) {
       fetchOrderDetails(order.id);
     }
+    return () => { requestRef.current += 1; };
   }, [order, open]);
 
-  const fetchCartBackupItems = async (clientEmail: string) => {
+  const fetchCartBackupItems = async (orderId: string) => {
     try {
       const { data, error } = await supabase
         .from('cart_backup')
-        .select('cart_items')
-        .eq('session_id', clientEmail)
-        .eq('is_used', false)
+        .select('cart_items, order_id')
+        .eq('order_id', orderId)
         .order('created_at', { ascending: false })
         .limit(1);
 
       if (error || !data || data.length === 0) {
-        console.log('No cart backup found for email:', clientEmail);
         return [];
       }
 
-      return data[0].cart_items || [];
+      return getOrderBackupItems(orderId, data);
     } catch (error) {
       console.error('Error fetching cart backup:', error);
       return [];
@@ -95,19 +96,25 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
 
   const fetchOrderDetails = async (orderId: string) => {
     if (!orderId) return;
-    
+    const requestId = ++requestRef.current;
+    setOrderDetails(null);
+    setCartBackupItems([]);
+    setCustomerDetails(null);
+    setAddressDetails(null);
     setLoading(true);
     try {
       const completeOrderDetails = await fetchOrderWithDetails(orderId);
+      if (requestId !== requestRef.current) return;
       
       if (completeOrderDetails) {
         setOrderDetails(completeOrderDetails);
         setCustomerDetails(completeOrderDetails.customer);
         setAddressDetails(completeOrderDetails.delivery_address);
         
-        // Toujours récupérer cart_backup pour avoir les données complètes
-        if (completeOrderDetails.client_email) {
-          const backupItems = await fetchCartBackupItems(completeOrderDetails.client_email);
+        // Only an order-linked backup may fill a missing purchase snapshot.
+        if (!completeOrderDetails.items_summary?.length && !completeOrderDetails.order_items?.length) {
+          const backupItems = await fetchCartBackupItems(orderId);
+          if (requestId !== requestRef.current) return;
           setCartBackupItems(Array.isArray(backupItems) ? backupItems : []);
         } else {
           setCartBackupItems([]);
@@ -118,12 +125,13 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
           completeOrderDetails.client_email,
           completeOrderDetails.client_phone
         );
+        if (requestId !== requestRef.current) return;
         setCustomerOrderCount(orderCount);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des détails de la commande:", error);
     } finally {
-      setLoading(false);
+      if (requestId === requestRef.current) setLoading(false);
     }
   };
 
