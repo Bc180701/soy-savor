@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
+import { stripeLinesToSnapshot } from '../_shared/purchaseSnapshot.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -320,13 +321,7 @@ serve(async (req) => {
         }
 
         if (allLineItems.length > 0) {
-          itemsSummary = allLineItems.map((item: any) => ({
-            id: item.price?.product?.metadata?.product_id || item.price?.product?.id || 'unknown',
-            name: item.description || item.price?.product?.name || 'Produit inconnu',
-            price: (item.amount_total || 0) / 100,
-            quantity: item.quantity || 1,
-            unit_price: (item.price?.unit_amount || 0) / 100
-          }));
+          itemsSummary = stripeLinesToSnapshot(allLineItems);
 
           console.log('✅ Line items récupérés depuis Stripe:', itemsSummary.length, 'articles (toutes pages)');
         } else {
@@ -392,6 +387,11 @@ serve(async (req) => {
         }
       }
       
+      // The server-side draft preserves all composition details without Stripe metadata limits.
+      if (Array.isArray(metadata?.purchase_items) && metadata.purchase_items.length > 0) {
+        itemsSummary = metadata.purchase_items;
+        itemsSource = 'purchase_draft';
+      }
       console.log(`📋 Articles finaux (source: ${itemsSource}):`, itemsSummary);
       
       const orderData = {

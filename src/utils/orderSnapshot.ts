@@ -8,7 +8,7 @@ export function snapshotToPrintItems(summary: any[]): any[] {
   return summary.map(item => ({
     name: item.name || 'Produit',
     quantity: item.quantity ?? 1,
-    price: item.price ?? item.unit_price ?? 0,
+    price: item.unit_price ?? item.price ?? 0,
     description: item.description || '',
     specialInstructions: item.special_instructions || '',
   }));

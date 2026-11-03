@@ -532,7 +532,8 @@ serve(async (req) => {
       });
 
       // Sauvegarder le panier complet côté serveur (plus de dépendance à la limite 500 car. de Stripe)
-      const draftPayload: Record<string, string> = {
+      const draftPayload = {
+        purchase_items: rawItemsSummary,
         items_summary: itemsSummaryStr,
         customer_notes: customerNotes || '',
         cart_sauces: sessionData.metadata.cart_sauces,

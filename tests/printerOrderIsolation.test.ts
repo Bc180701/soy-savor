@@ -31,6 +31,24 @@ mock.module('@/integrations/supabase/client', () => ({
 
 const { sendOrderToPrinter } = await import('../src/services/printerService');
 
+test('printer preserves creation composition in its payload', async () => {
+  const id = 'creation-order';
+  snapshots[id] = [{ name: 'Sushi Créa - Création 1', description: 'Base: Saumon; Sauce: Spicy; Topping: Sésame', price: 8.33, quantity: 1 }];
+  const originalFetch = globalThis.fetch;
+  let sent: any;
+  globalThis.fetch = mock(async (_url: any, options: any) => {
+    sent = JSON.parse(options.body);
+    return new Response(JSON.stringify({ status: 'ok' }));
+  }) as unknown as typeof fetch;
+  try {
+    const result = await sendOrderToPrinter({ id, scheduledFor: new Date('2026-11-03T19:00:00'), items: [] } as any);
+    expect(result.success).toBe(true);
+    expect(sent.items[0].description).toBe('Base: Saumon; Sauce: Spicy; Topping: Sésame');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('printer sends each order snapshot even when local cart belongs to the second purchase', async () => {
   const payloads: any[] = [];
   const originalFetch = globalThis.fetch;
