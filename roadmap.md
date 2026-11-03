@@ -1,0 +1,3 @@
+- [ ] Isolate admin detail articles by order ID and prioritize the purchase snapshot.
+- [ ] Make printing use the same order-specific snapshot, never the latest customer cart.
+- [ ] Test the two reported orders and document verification limitations.
