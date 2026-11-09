@@ -27,7 +27,7 @@ serve(async (req) => {
       throw new Error('GATEWAYAPI_TOKEN non configuré');
     }
 
-    console.log(`🔑 Token configuré: ${gatewayApiToken.substring(0, 10)}...`);
+    console.log('Service SMS configuré');
 
     // Nettoyer le numéro de téléphone (enlever espaces, tirets, etc.)
     const cleanPhoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');

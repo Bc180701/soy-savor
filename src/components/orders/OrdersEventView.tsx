@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 interface OrdersEventViewProps {
   orders: Order[];
+  onDelaySaved?: (orderId: string, updates: Partial<Order>) => void;
   eventName: string;
   onViewDetails: (order: Order) => void;
   onUpdateStatus: (orderId: string, newStatus: string) => void;
@@ -19,6 +20,7 @@ const OrdersEventView: React.FC<OrdersEventViewProps> = ({
   eventName,
   onViewDetails,
   onUpdateStatus,
+  onDelaySaved,
 }) => {
   const [subView, setSubView] = useState<string>("kitchen");
   const isMobile = useIsMobile();
@@ -72,6 +74,7 @@ const OrdersEventView: React.FC<OrdersEventViewProps> = ({
         
         <TabsContent value="kitchen" className="mt-0">
           <OrdersKitchenView 
+            onDelaySaved={onDelaySaved}
             orders={orders} 
             onViewDetails={onViewDetails} 
             onUpdateStatus={onUpdateStatus} 

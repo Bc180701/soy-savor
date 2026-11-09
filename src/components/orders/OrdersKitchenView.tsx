@@ -1,4 +1,5 @@
 
+import OrderDelayNotice from "./OrderDelayNotice";
 import { Order } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface OrdersKitchenViewProps {
   orders: Order[];
+  onDelaySaved?: (orderId: string, updates: Partial<Order>) => void;
   onViewDetails: (order: Order) => void;
   onUpdateStatus: (orderId: string, status: string) => void;
 }
@@ -20,13 +22,15 @@ interface OrdersKitchenViewProps {
 const OrdersKitchenView = ({ 
   orders, 
   onViewDetails, 
-  onUpdateStatus 
+  onUpdateStatus,
+  onDelaySaved
 }: OrdersKitchenViewProps) => {
   const [delayDialogOpen, setDelayDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(15);
   const [delayReason, setDelayReason] = useState("");
   const [isNotifying, setIsNotifying] = useState(false);
+  const [delayError, setDelayError] = useState("");
   const [printedOrders, setPrintedOrders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
@@ -79,56 +83,26 @@ const OrdersKitchenView = ({
         throw new Error("Commande introuvable");
       }
 
-      console.log("Envoi de la notification de retard pour la commande:", selectedOrderId);
-
-      // Préparer le message commun (pour SMS éventuel)
-      const delayMsg = `⏰ Retard de ${delayMinutes} min pour votre commande #${selectedOrderId.slice(0,8)}. Raison: ${delayReason}. Merci de votre compréhension.`;
-
-      if (selectedOrder.clientEmail) {
-        // Envoi par email via l'edge function dédiée
-        const { data, error } = await supabase.functions.invoke('notify-order-delay', {
-          body: {
-            orderId: selectedOrderId,
-            customerEmail: selectedOrder.clientEmail,
-            customerName: selectedOrder.clientName || "Client",
-            delayMinutes,
-            delayReason,
-            orderType: selectedOrder.orderType
-          }
-        });
-
-        if (error) {
-          console.error("Erreur lors de l'envoi de la notification email:", error);
-          throw error;
-        }
-        console.log("Notification email de retard envoyée avec succès:", data);
-      } else if (selectedOrder.clientPhone) {
-        // Fallback invité: envoi par SMS si pas d'email
-        const { data: smsData, error: smsError } = await supabase.functions.invoke('send-sms-notification', {
-          body: {
-            phoneNumber: selectedOrder.clientPhone,
-            message: delayMsg,
-            orderId: selectedOrderId,
-          }
-        });
-        if (smsError) {
-          console.error("Erreur lors de l'envoi du SMS de retard:", smsError);
-          throw smsError;
-        }
-        console.log("SMS de retard envoyé:", smsData);
-
-        // Aligner avec le comportement de l'email: consigner la note sur la commande
-        const { error: updateErr } = await supabase
-          .from('orders')
-          .update({ customer_notes: `${delayReason} (Retard de ${delayMinutes} min signalé)` } as any)
-          .eq('id', selectedOrderId);
-        if (updateErr) console.warn("Impossible d'ajouter la note de retard sur la commande:", updateErr);
-      } else {
-        throw new Error("Aucun moyen de contact (email ou téléphone) n'est disponible pour cette commande");
+      setDelayError("");
+      const { data, error } = await supabase.functions.invoke('notify-order-delay', {
+        body: { orderId: selectedOrderId, delayMinutes, delayReason: delayReason.trim() },
+      });
+      if (error) {
+        let message = error.message;
+        try {
+          const response = await error.context?.json();
+          message = response?.error || message;
+        } catch { /* Keep the invocation error when the response is unreadable. */ }
+        throw new Error(message);
       }
+      if (!data?.success) {
+        if (data?.notificationSent) onDelaySaved?.(selectedOrderId, {});
+        throw new Error(data?.error || "L’alerte n’a pas été envoyée");
+      }
+      onDelaySaved?.(selectedOrderId, { customerNotes: data.customerNotes });
 
       toast({
-        title: "Client notifié",
+        title: "Alerte envoyée",
         description: `Le client a été informé d'un retard de ${delayMinutes} minutes.`,
         variant: "default",
       });
@@ -137,6 +111,7 @@ const OrdersKitchenView = ({
       setDelayReason("");
       setSelectedOrderId(null);
     } catch (error: any) {
+      setDelayError(error.message || "Envoi impossible");
       console.error("Erreur lors de la notification de retard:", error);
       toast({
         title: "Erreur",
@@ -150,6 +125,9 @@ const OrdersKitchenView = ({
 
   const openDelayDialog = (orderId: string) => {
     setSelectedOrderId(orderId);
+    setDelayMinutes(15);
+    setDelayReason("");
+    setDelayError("");
     setDelayDialogOpen(true);
   };
 
@@ -510,6 +488,7 @@ const OrdersKitchenView = ({
               </CardHeader>
               
               <CardContent className="py-2">
+                <OrderDelayNotice notes={order.customerNotes} scheduled={order.scheduledFor} />
                 {/* Indication pour voir les détails */}
                 <div className="text-sm text-muted-foreground mb-2">
                   Cliquez sur "Détails" pour voir la liste des produits
@@ -628,6 +607,7 @@ const OrdersKitchenView = ({
             </div>
           </div>
           
+          {delayError && <p role="alert" className="text-sm text-destructive">{delayError}</p>}
           <DialogFooter>
             <Button 
               variant="outline" 
@@ -638,7 +618,7 @@ const OrdersKitchenView = ({
             </Button>
             <Button 
               onClick={handleDelayOrder}
-              disabled={!delayReason || isNotifying}
+              disabled={!delayReason.trim() || isNotifying}
               className="bg-amber-500 hover:bg-amber-600 text-white"
             >
               {isNotifying ? "Envoi en cours..." : "Notifier le client"}

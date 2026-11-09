@@ -1,3 +1,4 @@
+import OrderDelayNotice from "./OrderDelayNotice";
 
 import { Order } from "@/types";
 import { Badge } from "@/components/ui/badge";
@@ -483,6 +484,7 @@ const OrdersDeliveryView = ({
               </CardHeader>
               
               <CardContent className="py-2 space-y-2">
+                <OrderDelayNotice notes={order.customerNotes} scheduled={order.scheduledFor} />
                 {order.deliveryStreet && (
                   <div className="flex items-start space-x-2">
                     <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-500" />
