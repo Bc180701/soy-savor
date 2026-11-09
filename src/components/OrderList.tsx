@@ -216,6 +216,12 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
     }
   }, [toast, refreshOrders]);
 
+  const handleDelaySaved = useCallback((orderId: string, updates: Partial<Order>) => {
+    updateOrderLocally(orderId, updates);
+    setSelectedOrder(current => current?.id === orderId ? { ...current, ...updates } : current);
+    refreshOrders();
+  }, [updateOrderLocally, refreshOrders]);
+
   const handleViewDetails = useCallback((order: Order) => {
     setSelectedOrder(order);
   }, []);
@@ -382,6 +388,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
             
             <TabsContent value="kitchen" className="mt-0">
               <OrdersKitchenView 
+                onDelaySaved={handleDelaySaved}
                 orders={regularOrders} 
                 onViewDetails={handleViewDetails} 
                 onUpdateStatus={handleUpdateStatus} 
@@ -400,6 +407,7 @@ const OrderList: React.FC<OrderListProps> = ({ defaultTab = "accounting" }) => {
             {activeEventsList.map(({ id, event, orders: eventOrders }) => (
               <TabsContent key={id} value={`event-${id}`} className="mt-0">
                 <OrdersEventView
+                  onDelaySaved={handleDelaySaved}
                   orders={eventOrders}
                   eventName={event.name}
                   onViewDetails={handleViewDetails}

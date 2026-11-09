@@ -1,3 +1,4 @@
+import OrderDelayNotice from "./orders/OrderDelayNotice";
 
 import { useState, useEffect, useRef } from "react";
 import { 
@@ -389,6 +390,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
                 {/* Informations de livraison */}
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold">Informations de livraison</h3>
+                  <OrderDelayNotice notes={orderDetails.customer_notes} scheduled={orderDetails.scheduled_for} />
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
@@ -681,6 +683,7 @@ const OrderDetailsModal = ({ order, open, onOpenChange }: OrderDetailsModalProps
               {/* Informations de livraison */}
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Informations de livraison</h3>
+                  <OrderDelayNotice notes={orderDetails.customer_notes} scheduled={orderDetails.scheduled_for} />
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />

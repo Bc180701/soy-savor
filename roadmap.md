@@ -3,3 +3,6 @@
 - [x] Test isolation with the two reported snapshots; authenticated admin UI and physical printing remain unverified (external unmanaged session).
 - [x] Add order-specific recovery of missing Créa compositions for admin details and printing; authenticated recovery and physical printing remain unverified (external unmanaged session).
 - [x] Preserve complete compositions in future purchase snapshots; eight regression tests passed.
+- [x] Restore delay notification handling, verified persistence and immediate revised-time display.
+- [x] Run 13 regression tests and deploy notification functions; preview has no runtime errors.
+- [ ] Verify real alert receipt and authenticated admin display: external unmanaged Supabase prevents an authenticated test here.
