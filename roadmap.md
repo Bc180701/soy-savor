@@ -3,3 +3,5 @@
 - [x] Test isolation with the two reported snapshots; authenticated admin UI and physical printing remain unverified (external unmanaged session).
 - [x] Add order-specific recovery of missing Créa compositions for admin details and printing; authenticated recovery and physical printing remain unverified (external unmanaged session).
 - [x] Preserve complete compositions in future purchase snapshots; eight regression tests passed.
+- [ ] Restore delay notification sending, reliable persistence and immediate revised-time display.
+- [ ] Test delay handling and deploy the notification function; real delivery requires authenticated verification.
