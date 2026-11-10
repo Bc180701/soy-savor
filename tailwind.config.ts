@@ -20,6 +20,9 @@ export default {
 		},
 		extend: {
 			colors: {
+				'catering-accent': 'hsl(var(--catering-accent))',
+				'catering-ink': 'hsl(var(--catering-ink))',
+				'catering-on-dark': 'hsl(var(--catering-on-dark))',
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

@@ -34,6 +34,9 @@
     --ring: 222.2 84% 4.9%;
  
     --radius: 0.5rem;
+    --catering-accent: 42 64% 67%;
+    --catering-ink: 150 10% 10%;
+    --catering-on-dark: 0 0% 100%;
   }
  
   .dark {

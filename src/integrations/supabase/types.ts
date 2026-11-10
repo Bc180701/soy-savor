@@ -117,6 +117,60 @@ export type Database = {
           },
         ]
       }
+      catering_quote_requests: {
+        Row: {
+          audience: string
+          company: string
+          created_at: string
+          email: string
+          event_date: string
+          event_type: string
+          guests: number
+          id: string
+          location: string
+          name: string
+          needs: string
+          notification_error: string | null
+          notification_id: string | null
+          notification_status: string
+          phone: string
+        }
+        Insert: {
+          audience: string
+          company?: string
+          created_at?: string
+          email: string
+          event_date: string
+          event_type: string
+          guests: number
+          id?: string
+          location: string
+          name: string
+          needs?: string
+          notification_error?: string | null
+          notification_id?: string | null
+          notification_status?: string
+          phone: string
+        }
+        Update: {
+          audience?: string
+          company?: string
+          created_at?: string
+          email?: string
+          event_date?: string
+          event_type?: string
+          guests?: number
+          id?: string
+          location?: string
+          name?: string
+          needs?: string
+          notification_error?: string | null
+          notification_id?: string | null
+          notification_status?: string
+          phone?: string
+        }
+        Relationships: []
+      }
       checkout_attempts: {
         Row: {
           client_email: string | null
