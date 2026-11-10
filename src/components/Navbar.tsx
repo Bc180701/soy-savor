@@ -116,8 +116,8 @@ const Navbar = () => {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-white/90 backdrop-blur-sm shadow-sm py-2"
+        scrolled || location.pathname === "/traiteur"
+          ? "bg-background/95 backdrop-blur-sm shadow-sm py-2"
           : "bg-transparent py-4"
       }`}
     >
