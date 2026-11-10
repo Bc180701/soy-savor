@@ -19,7 +19,8 @@ interface DeliveryOrder {
   total: number; items_summary?: any;
 }
 
-const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: any; error: any }>;
+const rpc = (fn: string, args: Record<string, unknown>): Promise<{ data: any; error: any }> =>
+  (supabase.rpc as any).call(supabase, fn, args) as Promise<{ data: any; error: any }>;
 
 const timeOf = (s: string) => (s?.match(/T?(\d{2}:\d{2})/)?.[1] ?? "");
 
@@ -82,8 +83,14 @@ const Livraison = () => {
     e.preventDefault();
     if (!restaurant || !password) return;
     setLoggingIn(true);
-    const { data, error } = await rpc("delivery_login", { p_restaurant_id: restaurant.id, p_password: password });
-    setLoggingIn(false);
+    let data: any = null, error: any = null;
+    try {
+      ({ data, error } = await rpc("delivery_login", { p_restaurant_id: restaurant.id, p_password: password }));
+    } catch (err) {
+      error = err;
+    } finally {
+      setLoggingIn(false);
+    }
     if (error || !data?.ok) return toast.error("Mot de passe incorrect");
     const s = { token: data.token, expiresAt: data.expires_at, label: data.label };
     saveDeliverySession(slug, s);
