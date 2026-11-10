@@ -8,5 +8,5 @@
 - [x] User confirmed the real delay alert works; supplied admin screenshot shows +15 minutes and revised pickup at 12:15 for the test order.
 - [x] Create the catering page with supplied photos, separate business/private sections and menu entry.
 - [x] Store quote requests securely and add admin access with owner email notifications.
-- [ ] Test both real form submissions, email acceptance and mobile rendering; remove only test requests.
+- [x] Test both real form submissions, confirm stored rows and Resend acceptance, check mobile rendering with hosted assets; remove only test requests. Authenticated admin UI and inbox receipt remain unverified.
 - [ ] Replace provisional descriptive copy with SushiEats offer texts when supplied (waiting for user).
