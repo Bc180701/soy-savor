@@ -25,6 +25,7 @@ import MentionsLegales from "./pages/MentionsLegales";
 import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import SushiPushRollProvence from "./pages/geo/SushiPushRollProvence";
 import TestPanier from "./pages/TestPanier";
+import Livraison from "./pages/Livraison";
 import { RestaurantProvider } from "./hooks/useRestaurantContext";
 import { EventFreeDessertPopupProvider } from "./hooks/useEventFreeDessertPopup";
 import { EventFreeDessertPopup } from "./components/menu/EventFreeDessertPopup";
@@ -41,6 +42,7 @@ const App = () => (
             <Sonner />
             <EventFreeDessertPopup />
             <Routes>
+              <Route path="/livraison/:slug" element={<Livraison />} />
               <Route path="/" element={<Layout><Outlet /></Layout>}>
                 <Route index element={<Index />} />
                 <Route path="carte" element={<Carte />} />

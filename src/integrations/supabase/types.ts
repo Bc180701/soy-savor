@@ -248,6 +248,47 @@ export type Database = {
           },
         ]
       }
+      delivery_access_codes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          last_used_at: string | null
+          password_hash: string
+          restaurant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          last_used_at?: string | null
+          password_hash: string
+          restaurant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_used_at?: string | null
+          password_hash?: string
+          restaurant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_access_codes_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       delivery_locations: {
         Row: {
           city: string
@@ -279,6 +320,41 @@ export type Database = {
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_sessions: {
+        Row: {
+          code_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          restaurant_id: string
+          token_hash: string
+        }
+        Insert: {
+          code_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          restaurant_id: string
+          token_hash: string
+        }
+        Update: {
+          code_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          restaurant_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_sessions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_access_codes"
             referencedColumns: ["id"]
           },
         ]
@@ -1694,6 +1770,23 @@ export type Database = {
         Returns: Json
       }
       decode_items_summary: { Args: { encoded_summary: Json }; Returns: Json }
+      delivery_admin_create_code: {
+        Args: { p_label: string; p_password: string; p_restaurant_id: string }
+        Returns: string
+      }
+      delivery_get_orders: { Args: { p_token: string }; Returns: Json }
+      delivery_login: {
+        Args: { p_password: string; p_restaurant_id: string }
+        Returns: Json
+      }
+      delivery_session_restaurant: {
+        Args: { p_token: string }
+        Returns: string
+      }
+      delivery_update_status: {
+        Args: { p_order_id: string; p_status: string; p_token: string }
+        Returns: Json
+      }
       generate_product_code: { Args: never; Returns: string }
       get_homepage_data: { Args: never; Returns: Json }
       get_occupied_slots: {
