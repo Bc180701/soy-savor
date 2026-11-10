@@ -37,6 +37,7 @@ const navigationItems = [
   { id: "users", label: "Utilisateurs", icon: Users },
   { id: "blocked-slots", label: "Créneaux bloqués", icon: Clock },
   { id: "delivery-page", label: "Page livraison", icon: MapPin },
+  { id: "catering", label: "Demandes traiteur", icon: Utensils },
   { id: "promotions", label: "Promotions", icon: Tag },
   { id: "special-events", label: "Événements Spéciaux", icon: Gift },
   { id: "homepage", label: "Page d'accueil", icon: Home },

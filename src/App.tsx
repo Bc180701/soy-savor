@@ -26,6 +26,7 @@ import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import SushiPushRollProvence from "./pages/geo/SushiPushRollProvence";
 import TestPanier from "./pages/TestPanier";
 import Livraison from "./pages/Livraison";
+import Traiteur from "./pages/Traiteur";
 import { RestaurantProvider } from "./hooks/useRestaurantContext";
 import { EventFreeDessertPopupProvider } from "./hooks/useEventFreeDessertPopup";
 import { EventFreeDessertPopup } from "./components/menu/EventFreeDessertPopup";
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path="composer-poke" element={<ComposerPoke />} />
                 <Route path="panier" element={<Panier />} />
                 <Route path="contact" element={<Contact />} />
+                <Route path="traiteur" element={<Traiteur />} />
                 <Route path="nos-restaurants" element={<NosRestaurants />} />
                 <Route path="compte" element={<Compte />} />
                 <Route path="login" element={<Login />} />
