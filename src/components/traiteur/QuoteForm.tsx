@@ -34,7 +34,7 @@ export default function QuoteForm({ audience }: { audience: "business" | "privat
   };
   if (submitted) return <div role="status" className="py-12 space-y-4 text-center">
     <CheckCircle2 className="mx-auto size-10 text-catering-accent" />
-    <h3 className="font-serif text-2xl">Demande de devis reçue</h3>
+    <h3 className="font-morning-waves font-bold text-catering-accent text-3xl">Demande de devis reçue</h3>
     <p className="text-muted-foreground">Votre projet a bien été transmis à SushiEats.</p>
     <Button variant="outline" onClick={() => { form.reset(); setSubmitted(false); }}>Nouvelle demande</Button>
   </div>;
@@ -63,7 +63,7 @@ export default function QuoteForm({ audience }: { audience: "business" | "privat
     <div className="hidden" aria-hidden="true"><input tabIndex={-1} autoComplete="off" {...form.register("website")} /></div>
     <p className="text-xs text-muted-foreground">Vos coordonnées seront utilisées pour répondre à votre demande. <Link to="/politique-confidentialite" className="underline">Confidentialité</Link></p>
     {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
-    <Button type="submit" className="w-full bg-catering-accent text-catering-ink hover:bg-catering-accent/90" disabled={form.formState.isSubmitting}>
+    <Button type="submit" variant="destructive" className="w-full font-semibold" disabled={form.formState.isSubmitting}>
       {form.formState.isSubmitting ? <><Loader2 className="animate-spin" /> Envoi en cours…</> : <>Envoyer ma demande <ArrowRight /></>}
     </Button>
   </form></Form>;
