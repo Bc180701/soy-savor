@@ -23,6 +23,7 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import TestOrderNotification from "./TestOrderNotification";
 import DeliveryPhoneManager from "./DeliveryPhoneManager";
+import DeliveryAccessManager from "./DeliveryAccessManager";
 import { BluetoothManager } from "./BluetoothManager";
 import { ImageOptimizer } from "./ImageOptimizer";
 import OrdersCSVExport from "./OrdersCSVExport";
@@ -106,6 +107,8 @@ const AdminManager = () => {
         return <HomepageEditor />;
       case "admins":
         return <AdminInviteManager />;
+      case "delivery-page":
+        return <DeliveryAccessManager />;
       case "stripe-keys":
         return <StripeKeysManager />;
       case "printers":
@@ -139,6 +142,7 @@ const AdminManager = () => {
       products: "Produits",
       users: "Utilisateurs",
       "blocked-slots": "Créneaux bloqués",
+      "delivery-page": "Page livraison",
       promotions: "Promotions",
       homepage: "Page d'accueil",
       admins: "Administrateurs",
