@@ -24,15 +24,16 @@ export default function Traiteur() {
           <h1 className="font-display text-catering-accent text-3xl md:text-5xl lg:text-6xl leading-tight max-w-4xl">Sushi Eats<br />Événements & Traiteur</h1>
           <p className="mt-6 text-base md:text-lg max-w-2xl leading-relaxed">Des créations gourmandes, des buffets soignés et des animations culinaires pour donner une autre dimension à vos événements.</p>
           <div className="flex flex-wrap gap-3 mt-8">
-            <Button size="lg" variant="destructive" className="font-semibold whitespace-normal h-auto min-h-11" asChild><a href="#entreprises">Pour mon entreprise <ArrowRight /></a></Button>
-            <Button size="lg" variant="outline" className="border-catering-accent bg-transparent text-catering-accent hover:bg-catering-accent hover:text-catering-ink font-semibold whitespace-normal h-auto min-h-11" asChild><a href="#particuliers">Pour mon événement <ArrowRight /></a></Button>
+            <Button size="lg" variant="destructive" className="font-semibold whitespace-normal h-auto min-h-11 max-w-full py-3" asChild><a href="#entreprises"><span>Organiser un événement professionnel</span><ArrowRight className="shrink-0" /></a></Button>
+            <Button size="lg" variant="outline" className="border-catering-accent bg-transparent text-catering-accent hover:bg-catering-accent hover:text-catering-ink font-semibold whitespace-normal h-auto min-h-11 max-w-full py-3" asChild><a href="#particuliers"><span>Organiser un événement privé</span><ArrowRight className="shrink-0" /></a></Button>
           </div>
         </div>
         <a href="#entreprises" aria-label="Découvrir les prestations traiteur" className="absolute bottom-5 right-6 text-catering-on-dark"><ArrowDown size={24} /></a>
       </section>
       <section className="py-14 md:py-20 border-b border-border">
         <div className="container px-4 grid md:grid-cols-2 gap-8 md:gap-16 items-center">
-          <div><p className="text-lg leading-relaxed">SushiEats donne une autre dimension à vos réceptions.</p>
+          <div><h2 className="font-display text-catering-accent text-2xl md:text-3xl leading-tight">Des saveurs à partager, des moments à célébrer</h2>
+          <p className="mt-6 text-lg leading-relaxed">SushiEats donne une autre dimension à vos réceptions.</p>
           <p className="mt-4 text-muted-foreground leading-relaxed">Des créations gourmandes, des buffets soignés et des animations culinaires pour faire de chaque événement un moment unique.</p></div>
           <img src={table.url} alt="Créations SushiEats sur une table de réception" className="w-full aspect-[4/3] object-cover rounded-lg" loading="lazy" />
         </div>
