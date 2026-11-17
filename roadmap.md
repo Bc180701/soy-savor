@@ -9,5 +9,7 @@
 - [x] Create the catering page with supplied photos, separate business/private sections and menu entry.
 - [x] Store quote requests securely and add admin access with owner email notifications.
 - [x] Test both real form submissions, confirm stored rows and Resend acceptance, check mobile rendering with hosted assets; remove only test requests. Authenticated admin UI and inbox receipt remain unverified.
-- [ ] Replace provisional descriptive copy with SushiEats offer texts when supplied (waiting for user).
+- [ ] Apply supplied catering copy, menu label, three-part quote forms and service selections.
+- [ ] Replace global typography with Lovelo headings and Montserrat text; verify desktop/mobile rendering.
+- [ ] Review event-oriented gallery imagery (retain supplied photos pending user's choice).
 - [x] Harmonize catering page and quote forms with existing site typography, gold buttons and photo styling; desktop/mobile and both form openings checked with hosted photos.
