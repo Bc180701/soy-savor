@@ -61,7 +61,7 @@ export default function Traiteur() {
         </div>
       </section>
       <section className="py-16 md:py-24">
-        <div className="container px-4"><div className="flex flex-wrap items-end justify-between gap-4 mb-9"><h2 className="font-display text-catering-accent text-2xl md:text-3xl">À la table de SushiEats</h2><span className="text-sm text-muted-foreground">Le goût du partage</span></div>
+        <div className="container px-4"><div className="flex flex-wrap items-end justify-between gap-4 mb-9"><h2 className="font-display text-catering-accent text-2xl md:text-3xl">L'art de recevoir selon Sushi Eats</h2><span className="text-sm text-muted-foreground">Le goût du partage</span></div>
           <div className="grid grid-cols-3 gap-3 md:gap-6">{[{ asset: poke, alt: "Poké SushiEats" }, { asset: plateau, alt: "Plateau de sushi à partager" }, { asset: table, alt: "Sushis et sashimis SushiEats" }].map(item => <img key={item.asset.asset_id} src={item.asset.url} alt={item.alt} className="w-full aspect-[3/4] object-cover rounded-lg" loading="lazy" />)}</div>
         </div>
       </section>
