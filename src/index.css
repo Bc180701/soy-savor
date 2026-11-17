@@ -38,6 +38,12 @@
     --catering-accent: 42.94 64.5% 66.86%;
     --catering-ink: 0 0% 0%;
     --catering-on-dark: 0 0% 100%;
+    --delivery-start: 42.94 64.5% 66.86%;
+    --delivery-start-foreground: 222.2 84% 4.9%;
+    --delivery-success: 145 65% 29%;
+    --delivery-success-foreground: 0 0% 100%;
+    --delivery-navigation: 199 80% 34%;
+    --delivery-navigation-foreground: 0 0% 100%;
   }
  
   .dark {
@@ -132,6 +138,24 @@
 
 /* Styles pour les onglets d'administration de type WordPress */
 @layer components {
+  .delivery-start.delivery-start {
+    background-color: hsl(var(--delivery-start));
+    color: hsl(var(--delivery-start-foreground));
+  }
+  .delivery-success.delivery-success {
+    background-color: hsl(var(--delivery-success));
+    color: hsl(var(--delivery-success-foreground));
+  }
+  .delivery-navigation.delivery-navigation {
+    background-color: hsl(var(--delivery-navigation));
+    color: hsl(var(--delivery-navigation-foreground));
+  }
+  .delivery-start.delivery-start:hover, .delivery-success.delivery-success:hover, .delivery-navigation.delivery-navigation:hover {
+    filter: brightness(0.93);
+  }
+  .delivery-start.delivery-start:hover { background-color: hsl(var(--delivery-start)); }
+  .delivery-success.delivery-success:hover { background-color: hsl(var(--delivery-success)); }
+  .delivery-navigation.delivery-navigation:hover { background-color: hsl(var(--delivery-navigation)); }
   .admin-tabs {
     @apply border-b;
   }

@@ -13,3 +13,5 @@
 - [x] Replace global typography with Lovelo headings and Montserrat text; desktop/mobile, both forms and hosted fonts/photos verified without browser errors.
 - [x] Keep existing photos for now; user will replace them later.
 - [x] Harmonize catering page and quote forms with existing site typography, gold buttons and photo styling; desktop/mobile and both form openings checked with hosted photos.
+- [x] Keep delivered and completed orders out of active driver deliveries, and color driver buttons.
+- [x] Verify the Saint-Martin-de-Crau driver page after refresh: seven completed orders remain in delivered history, none active; three status regression tests passed.

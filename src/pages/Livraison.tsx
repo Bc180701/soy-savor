@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import {
   DELIVERY_RESTAURANTS, buildNavAddress, clearDeliverySession, loadDeliverySession,
   saveDeliverySession, StoredDeliverySession,
+  isDeliveryFinished,
 } from "@/utils/deliveryPortal";
 
 interface DeliveryOrder {
@@ -25,8 +26,9 @@ const rpc = (fn: string, args: Record<string, unknown>): Promise<{ data: any; er
 const timeOf = (s: string) => (s?.match(/T?(\d{2}:\d{2})/)?.[1] ?? "");
 
 const STATUS: Record<string, { label: string; cls: string }> = {
-  "out-for-delivery": { label: "En livraison", cls: "bg-orange-500 text-white" },
-  delivered: { label: "Livrée", cls: "bg-green-600 text-white" },
+  "out-for-delivery": { label: "En livraison", cls: "delivery-start" },
+  delivered: { label: "Livrée", cls: "delivery-success" },
+  completed: { label: "Livrée", cls: "delivery-success" },
   ready: { label: "Prête", cls: "bg-primary text-primary-foreground" },
 };
 
@@ -124,7 +126,7 @@ const Livraison = () => {
           </div>
           <Input type="password" autoFocus inputMode="text" autoComplete="current-password" placeholder="Mot de passe livreur"
             value={password} onChange={(e) => setPassword(e.target.value)} className="h-14 text-lg" />
-          <Button type="submit" disabled={loggingIn || !password} className="w-full h-14 text-lg">
+          <Button type="submit" disabled={loggingIn || !password} className="delivery-start w-full h-14 text-lg">
             {loggingIn ? "Vérification…" : "Commencer le service"}
           </Button>
           <p className="text-xs text-center text-muted-foreground">Connexion valable 5 heures sur ce téléphone.</p>
@@ -133,8 +135,8 @@ const Livraison = () => {
     );
   }
 
-  const active = orders.filter((o) => o.status !== "delivered");
-  const done = orders.filter((o) => o.status === "delivered");
+  const active = orders.filter((o) => !isDeliveryFinished(o.status));
+  const done = orders.filter((o) => isDeliveryFinished(o.status));
 
   const renderOrder = (o: DeliveryOrder) => {
     const address = buildNavAddress(o.delivery_street, o.delivery_postal_code, o.delivery_city);
@@ -166,13 +168,13 @@ const Livraison = () => {
         )}
 
         <div className="grid grid-cols-3 gap-2">
-          <Button asChild variant="outline" className="h-12">
+          <Button asChild className="delivery-navigation h-12">
             <a href={`https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`} target="_blank" rel="noreferrer"><Navigation className="h-4 w-4 mr-1" />Waze</a>
           </Button>
-          <Button asChild variant="outline" className="h-12">
+          <Button asChild className="delivery-navigation h-12">
             <a href={`https://maps.apple.com/?q=${encodeURIComponent(address)}`} target="_blank" rel="noreferrer">Plans</a>
           </Button>
-          <Button asChild variant="outline" className="h-12" disabled={!o.client_phone}>
+          <Button asChild className="delivery-success h-12" disabled={!o.client_phone}>
             <a href={o.client_phone ? `tel:${o.client_phone.replace(/\s/g, "")}` : undefined}><Phone className="h-4 w-4 mr-1" />Appel</a>
           </Button>
         </div>
@@ -190,11 +192,11 @@ const Livraison = () => {
           </div>
         )}
 
-        {o.status !== "delivered" && (
+        {!isDeliveryFinished(o.status) && (
           o.status === "out-for-delivery" ? (
-            <Button className="w-full h-14 text-lg" onClick={() => updateStatus(o.id, "delivered")}>Marquer livrée</Button>
+            <Button className="delivery-success w-full h-14 text-lg" onClick={() => updateStatus(o.id, "delivered")}>Marquer livrée</Button>
           ) : (
-            <Button className="w-full h-14 text-lg" variant="secondary" onClick={() => updateStatus(o.id, "out-for-delivery")}>Je pars en livraison</Button>
+            <Button className="delivery-start w-full h-14 text-lg" onClick={() => updateStatus(o.id, "out-for-delivery")}>Je pars en livraison</Button>
           )
         )}
       </article>
@@ -218,7 +220,7 @@ const Livraison = () => {
         {active.map(renderOrder)}
         {done.length > 0 && (
           <div className="pt-2">
-            <Button variant="ghost" className="w-full" onClick={() => setShowDone(!showDone)}>
+            <Button className="delivery-success w-full" onClick={() => setShowDone(!showDone)}>
               {showDone ? "Masquer" : "Voir"} les livrées ({done.length})
             </Button>
             {showDone && <div className="space-y-4 mt-3">{done.map(renderOrder)}</div>}

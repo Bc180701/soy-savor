@@ -8,6 +8,9 @@ export const deliverySlugForRestaurant = (restaurantId?: string | null) =>
 
 export const SESSION_DURATION_MS = 5 * 60 * 60 * 1000;
 
+export const isDeliveryFinished = (status: string) =>
+  status === "delivered" || status === "completed";
+
 export interface StoredDeliverySession {
   token: string;
   expiresAt: string;
