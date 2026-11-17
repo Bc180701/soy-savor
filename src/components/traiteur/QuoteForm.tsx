@@ -18,7 +18,7 @@ export default function QuoteForm({ audience }: { audience: "business" | "privat
   const [error, setError] = useState("");
   const [services, setServices] = useState<string[]>([]);
   const form = useForm<CateringQuote>({ resolver: zodResolver(cateringQuoteSchema), defaultValues: {
-    audience, name: "", email: "", phone: "", company: "", event_type: "", event_date: "", location: "", guests: 1, needs: "", website: "",
+    audience, name: "", email: "", phone: "", company: "", event_type: "", event_date: "", location: "", needs: "", website: "",
   }});
   const submit = async (values: CateringQuote) => {
     setError("");
@@ -44,7 +44,7 @@ export default function QuoteForm({ audience }: { audience: "business" | "privat
   </div>;
   const fields: { name: "name" | "email" | "phone" | "company" | "event_type" | "event_date" | "location" | "guests"; label: string; type?: string; maxLength?: number; placeholder?: string }[] = [
     { name: "name", label: "Nom et prénom", maxLength: 100, placeholder: "Votre nom" },
-    ...(audience === "business" ? [{ name: "company" as const, label: "Entreprise", maxLength: 150, placeholder: "Nom de votre entreprise" }] : []),
+    ...(audience === "business" ? [{ name: "company" as const, label: "Entreprise / Organisation", maxLength: 150, placeholder: "Nom de votre entreprise" }] : []),
     { name: "email", label: "E-mail", type: "email", maxLength: 255, placeholder: "vous@exemple.fr" },
     { name: "phone", label: "Téléphone", type: "tel", maxLength: 30, placeholder: "06 …" },
     { name: "event_type", label: "Type d’événement" },
@@ -58,7 +58,7 @@ export default function QuoteForm({ audience }: { audience: "business" | "privat
       <div className="grid sm:grid-cols-2 gap-5">
       {section.fields.map(item => <FormField key={item.name} control={form.control} name={item.name} render={({ field }) => <FormItem>
         <FormLabel>{item.label} <span aria-hidden="true">*</span></FormLabel>
-        {item.name === "event_type" ? <Select value={String(field.value)} onValueChange={field.onChange}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un type d’événement" /></SelectTrigger></FormControl><SelectContent>{(audience === "business" ? businessEventTypes : privateEventTypes).map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select> : <FormControl><Input {...field} type={item.type || "text"} placeholder={item.placeholder} maxLength={item.maxLength} min={item.type === "number" ? 1 : undefined} max={item.type === "number" ? 100000 : undefined} autoComplete={item.name === "name" ? "name" : item.name === "email" ? "email" : item.name === "phone" ? "tel" : undefined} /></FormControl>}
+        {item.name === "event_type" ? <Select value={String(field.value)} onValueChange={field.onChange}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un type d’événement" /></SelectTrigger></FormControl><SelectContent>{(audience === "business" ? businessEventTypes : privateEventTypes).map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select> : <FormControl><Input {...field} value={field.value ?? ""} type={item.type || "text"} placeholder={item.placeholder} maxLength={item.maxLength} min={item.type === "number" ? 1 : undefined} max={item.type === "number" ? 100000 : undefined} autoComplete={item.name === "name" ? "name" : item.name === "email" ? "email" : item.name === "phone" ? "tel" : undefined} /></FormControl>}
         <FormMessage />
       </FormItem>} />)}
       </div>
