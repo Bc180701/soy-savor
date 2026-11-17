@@ -69,7 +69,7 @@ export default function Traiteur() {
       <section className="bg-catering-ink text-catering-on-dark py-16 md:py-20 text-center"><div className="container px-4"><h2 className="font-display text-catering-accent text-2xl md:text-3xl">Une envie, une idée, un projet ?</h2><p className="mt-5 text-lg leading-relaxed">Imaginons ensemble une expérience SushiEats qui vous ressemble.</p><Button asChild size="lg" variant="destructive" className="mt-8 whitespace-normal h-auto min-h-11"><a href="mailto:contact@sushieats.fr">Parlons de votre événement <ArrowRight /></a></Button><div><a href="mailto:contact@sushieats.fr" className="inline-flex items-center gap-2 mt-6 underline underline-offset-4"><Mail size={18} />contact@sushieats.fr</a></div></div></section>
     </div>
     <Dialog open={audience !== null} onOpenChange={open => { if (!open) setAudience(null); }}><DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
-      <DialogHeader><DialogTitle className="font-display text-catering-accent text-2xl md:text-3xl leading-tight">Votre projet événementiel</DialogTitle><DialogDescription>Parlez-nous de votre événement, nous imaginons une prestation SushiEats adaptée à vos envies.</DialogDescription></DialogHeader>
+      <DialogHeader><DialogTitle className="font-display text-catering-accent text-xl md:text-3xl leading-tight pr-6">Votre projet événementiel</DialogTitle><DialogDescription>Parlez-nous de votre événement, nous imaginons une prestation SushiEats adaptée à vos envies.</DialogDescription></DialogHeader>
       {audience && <QuoteForm key={audience} audience={audience} />}
     </DialogContent></Dialog>
   </>;
