@@ -22,8 +22,7 @@ export default function Traiteur() {
         <div className="container px-4 text-catering-on-dark">
           <p className="text-sm md:text-base font-medium mb-4">Entreprises & événements privés</p>
           <h1 className="font-display text-catering-accent text-3xl md:text-5xl lg:text-6xl leading-tight max-w-4xl">Sushi Eats<br />Événements & Traiteur</h1>
-          <p className="mt-6 text-lg md:text-xl max-w-2xl leading-relaxed">Bien plus qu'un traiteur, une expérience à partager.</p>
-          <p className="mt-3 text-base md:text-lg max-w-2xl leading-relaxed">Des créations gourmandes, des buffets soignés et des animations culinaires pour donner une autre dimension à vos événements.</p>
+          <p className="mt-6 text-base md:text-lg max-w-2xl leading-relaxed">Des créations gourmandes, des buffets soignés et des animations culinaires pour donner une autre dimension à vos événements.</p>
           <div className="flex flex-wrap gap-3 mt-8">
             <Button size="lg" variant="destructive" className="font-semibold whitespace-normal h-auto min-h-11" asChild><a href="#entreprises">Pour mon entreprise <ArrowRight /></a></Button>
             <Button size="lg" variant="outline" className="border-catering-accent bg-transparent text-catering-accent hover:bg-catering-accent hover:text-catering-ink font-semibold whitespace-normal h-auto min-h-11" asChild><a href="#particuliers">Pour mon événement <ArrowRight /></a></Button>
@@ -33,8 +32,7 @@ export default function Traiteur() {
       </section>
       <section className="py-14 md:py-20 border-b border-border">
         <div className="container px-4 grid md:grid-cols-2 gap-8 md:gap-16 items-center">
-          <div><h2 className="font-display text-catering-accent text-2xl md:text-3xl leading-tight">Bien plus qu’un traiteur, une expérience à partager.</h2>
-          <p className="mt-6 text-lg leading-relaxed">SushiEats donne une autre dimension à vos réceptions.</p>
+          <div><p className="text-lg leading-relaxed">SushiEats donne une autre dimension à vos réceptions.</p>
           <p className="mt-4 text-muted-foreground leading-relaxed">Des créations gourmandes, des buffets soignés et des animations culinaires pour faire de chaque événement un moment unique.</p></div>
           <img src={table.url} alt="Créations SushiEats sur une table de réception" className="w-full aspect-[4/3] object-cover rounded-lg" loading="lazy" />
         </div>
