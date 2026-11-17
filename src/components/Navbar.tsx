@@ -109,7 +109,6 @@ const Navbar = () => {
     { name: "Accueil", path: "/" },
     { name: "Carte", path: "/carte" },
     { name: "Commander", path: "/commander" },
-    { name: "Événements & Traiteur", path: "/traiteur" },
     { name: "Contact", path: "/contact" },
   ];
 
