@@ -115,11 +115,11 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				sans: ['Noto Sans', 'sans-serif'],
-				serif: ['Playfair Display', 'serif'],
-				display: ['Montserrat', 'sans-serif'],
-				japanese: ['"Noto Sans JP"', 'sans-serif'],
-				'morning-waves': ['Morning Waves', 'Dancing Script', 'cursive'],
+				sans: ['Montserrat', 'sans-serif'],
+				serif: ['Lovelo', 'Montserrat', 'sans-serif'],
+				display: ['Lovelo', 'Montserrat', 'sans-serif'],
+				japanese: ['Montserrat', 'sans-serif'],
+				'morning-waves': ['Lovelo', 'Montserrat', 'sans-serif'],
 			},
 			keyframes: {
 				'accordion-down': {

@@ -1,4 +1,5 @@
 
+@import './fonts.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -76,7 +77,13 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Montserrat', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Lovelo', 'Montserrat', sans-serif;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -92,13 +99,13 @@
   
   /* Styles de fonts avec Google Fonts - Using semantic color tokens */
   .morning-waves-gold {
-    font-family: 'Dancing Script', cursive;
+    font-family: 'Lovelo', 'Montserrat', sans-serif;
     color: hsl(45 95% 74%); /* gold-500 equivalent */
     font-weight: 700;
   }
   
   .morning-waves-gold-gradient {
-    font-family: 'Dancing Script', cursive;
+    font-family: 'Lovelo', 'Montserrat', sans-serif;
     font-weight: 700;
     background: linear-gradient(135deg, hsl(45 95% 74%), hsl(45 89% 61%));
     -webkit-background-clip: text;
@@ -108,13 +115,13 @@
   
   /* Alias pour better-times classes */
   .better-times-gold {
-    font-family: 'Dancing Script', cursive;
+    font-family: 'Lovelo', 'Montserrat', sans-serif;
     color: hsl(45 95% 74%); /* gold-500 equivalent */
     font-weight: 700;
   }
   
   .better-times-gold-gradient {
-    font-family: 'Dancing Script', cursive;
+    font-family: 'Lovelo', 'Montserrat', sans-serif;
     font-weight: 700;
     background: linear-gradient(135deg, hsl(45 95% 74%), hsl(45 89% 61%));
     -webkit-background-clip: text;

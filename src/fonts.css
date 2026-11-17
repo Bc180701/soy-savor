@@ -1,0 +1,36 @@
+/* Hosted font assets: solid Lovelo Black for headings, Montserrat for body copy. */
+@font-face {
+  font-family: 'Lovelo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/__l5e/assets-v1/a2304e29-2e74-4e75-9ed6-c45fbc4718fd/lovelo-black.woff') format('woff');
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/__l5e/assets-v1/5b11ad24-e53d-472c-9891-0c70dd150df6/montserrat-regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/__l5e/assets-v1/6925ea11-40af-49ae-83b1-958c3db2c267/montserrat-medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/__l5e/assets-v1/a5fa2f6c-e279-4c7b-9012-5fdd1c4232a5/montserrat-semibold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/__l5e/assets-v1/405a38b0-4476-4eb1-b797-242014c9dc07/montserrat-bold.ttf') format('truetype');
+}
