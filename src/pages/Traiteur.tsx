@@ -24,8 +24,8 @@ export default function Traiteur() {
           <h1 className="font-display text-catering-accent text-3xl md:text-5xl lg:text-6xl leading-tight max-w-4xl">Sushi Eats<br />Événements & Traiteur</h1>
           <p className="mt-6 text-base md:text-lg max-w-2xl leading-relaxed">Des créations gourmandes, des buffets soignés et des animations culinaires pour donner une autre dimension à vos événements.</p>
           <div className="flex flex-wrap gap-3 mt-8">
-            <Button size="lg" variant="destructive" className="font-semibold whitespace-normal h-auto min-h-11 max-w-full py-3" asChild><a href="#entreprises"><span>Organiser un événement professionnel</span><ArrowRight className="shrink-0" /></a></Button>
-            <Button size="lg" variant="outline" className="border-catering-accent bg-transparent text-catering-accent hover:bg-catering-accent hover:text-catering-ink font-semibold whitespace-normal h-auto min-h-11 max-w-full py-3" asChild><a href="#particuliers"><span>Organiser un événement privé</span><ArrowRight className="shrink-0" /></a></Button>
+            <Button size="lg" variant="destructive" className="font-semibold whitespace-normal h-auto min-h-11 max-w-full py-3" asChild><a href="#entreprises"><span>Événement professionnel</span><ArrowRight className="shrink-0" /></a></Button>
+            <Button size="lg" variant="outline" className="border-catering-accent bg-transparent text-catering-accent hover:bg-catering-accent hover:text-catering-ink font-semibold whitespace-normal h-auto min-h-11 max-w-full py-3" asChild><a href="#particuliers"><span>Événement privé</span><ArrowRight className="shrink-0" /></a></Button>
           </div>
         </div>
         <a href="#entreprises" aria-label="Découvrir les prestations traiteur" className="absolute bottom-5 right-6 text-catering-on-dark"><ArrowDown size={24} /></a>
