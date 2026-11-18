@@ -27,59 +27,27 @@ interface AdminUser {
 const AdminUsersList = () => {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchAdminUsers = async () => {
     try {
       setIsLoading(true);
-      console.log("🔄 Récupération des administrateurs...");
+      setLoadFailed(false);
+      const { data: usersData, error: usersError } = await supabase.functions.invoke<{
+        success: boolean;
+        users: AdminUser[];
+      }>('get-admin-users', { body: {} });
 
-      // Récupérer tous les utilisateurs avec les rôles administrateur et super_administrateur
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .in('role', ['administrateur', 'super_administrateur']);
-
-      if (rolesError) {
-        console.error("❌ Erreur lors de la récupération des rôles:", rolesError);
-        throw rolesError;
+      if (usersError || !usersData?.success || !Array.isArray(usersData.users)) {
+        throw usersError ?? new Error("Réponse invalide de la liste des administrateurs");
       }
 
-      console.log("📋 Rôles administrateur trouvés:", userRoles);
-
-      if (!userRoles || userRoles.length === 0) {
-        console.log("ℹ️ Aucun administrateur trouvé");
-        setAdminUsers([]);
-        return;
-      }
-
-      const adminUserIds = userRoles.filter(role => role && !('error' in role)).map(role => (role as any).user_id);
-
-      // Ensuite récupérer les détails des utilisateurs via la fonction Edge
-      const { data: usersData, error: usersError } = await supabase.functions.invoke('get-admin-users', {
-        body: { userIds: adminUserIds }
-      });
-
-      if (usersError) {
-        console.error("❌ Erreur lors de la récupération des utilisateurs:", usersError);
-        throw usersError;
-      }
-
-      if (!usersData?.success) {
-        throw new Error(usersData?.error || "Erreur lors de la récupération des administrateurs");
-      }
-
-      console.log("✅ Administrateurs récupérés:", usersData.users);
-      setAdminUsers(usersData.users || []);
-
-    } catch (error: any) {
-      console.error("💥 Erreur complète:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: error.message || "Impossible de récupérer la liste des administrateurs"
-      });
+      setAdminUsers(usersData.users);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des administrateurs:", error);
+      setLoadFailed(true);
     } finally {
       setIsLoading(false);
     }
@@ -161,7 +129,12 @@ const AdminUsersList = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {adminUsers.length === 0 ? (
+        {loadFailed ? (
+          <div className="space-y-3 py-8 text-center">
+            <p role="alert">Impossible de charger la liste des administrateurs.</p>
+            <Button variant="outline" onClick={fetchAdminUsers}>Réessayer</Button>
+          </div>
+        ) : adminUsers.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Aucun administrateur trouvé</p>

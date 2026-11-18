@@ -11,3 +11,4 @@
 - Catering quote forms submit through the public validated catering-quote edge function, persist server-side before notifying via the existing Resend provider, and expose stored requests only to admins so notification failures never lose leads.
 - Global typography is loaded through hosted font asset pointers and global CSS, with legacy heading utilities mapped to the heading family so existing pages inherit font changes.
 - Catering service selections are serialized with project details into the existing `needs` field, keeping the validated quote endpoint and admin/email storage compatible.
+- Resolve administrator accounts by server-selected role IDs after verifying super-admin access, so Auth directory pagination and caller-supplied IDs cannot affect the list.
