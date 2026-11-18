@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AdminManager from "@/components/admin/AdminManager";
 import { checkAdminRoleWithRetry } from "@/utils/adminUtils";
+import { isRevokedAdminSession } from "@/utils/adminPassword";
 import { useToast } from "@/components/ui/use-toast";
 
 const Admin = () => {
@@ -120,6 +121,41 @@ const Admin = () => {
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
+
+  useEffect(() => {
+    if (!isAuthorized) return;
+    let checking = false;
+    let active = true;
+    const validateSession = async () => {
+      if (checking || document.visibilityState !== "visible") return;
+      checking = true;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!active || !session) return;
+        const { error } = await supabase.auth.getUser(session.access_token);
+        if (active && isRevokedAdminSession(error)) {
+          const { data } = await supabase.auth.getSession();
+          if (active && data.session?.access_token === session.access_token) {
+            // Auth clears the revoked session and emits SIGNED_OUT; a network failure is not a logout.
+            await supabase.auth.refreshSession();
+          }
+        }
+      } catch {
+        // Keep the admin open during a temporary connection issue.
+      } finally {
+        checking = false;
+      }
+    };
+
+    void validateSession();
+    const timer = window.setInterval(validateSession, 30_000);
+    document.addEventListener("visibilitychange", validateSession);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", validateSession);
+    };
+  }, [isAuthorized]);
 
   if (isLoading || !isAuthorized) {
     return (

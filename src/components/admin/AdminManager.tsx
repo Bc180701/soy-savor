@@ -13,6 +13,7 @@ import DeliveryZonesManager from "./DeliveryZonesManager";
 import IngredientsManager from "./IngredientsManager";
 import OrderingLockControl from "./OrderingLockControl";
 import AdminInviteManager from "./AdminInviteManager";
+import AdminPasswordSettings from "./AdminPasswordSettings";
 import SpecialEventsManager from "./SpecialEventsManager";
 
 import StripeKeysManager from "./StripeKeysManager";
@@ -107,7 +108,12 @@ const AdminManager = () => {
       case "homepage":
         return <HomepageEditor />;
       case "admins":
-        return <AdminInviteManager />;
+        return (
+          <div className="space-y-6">
+            <AdminPasswordSettings />
+            <AdminInviteManager />
+          </div>
+        );
       case "delivery-page":
         return <DeliveryAccessManager />;
       case "catering":
