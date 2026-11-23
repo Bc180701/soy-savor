@@ -37,8 +37,8 @@ export default function QuoteForm({ audience }: { audience: "business" | "privat
     } catch { setError("La connexion a été interrompue. Veuillez réessayer."); }
   };
   if (submitted) return <div role="status" className="py-12 space-y-4 text-center">
-    <CheckCircle2 className="mx-auto size-10 text-catering-accent" />
-    <h3 className="font-morning-waves font-bold text-catering-accent text-3xl">Demande de devis reçue</h3>
+    <CheckCircle2 className="mx-auto size-10 text-catering-heading" />
+    <h3 className="font-morning-waves font-bold text-catering-heading text-3xl">Demande de devis reçue</h3>
     <p className="text-muted-foreground">Votre projet a bien été transmis à SushiEats.</p>
     <Button variant="outline" onClick={() => { form.reset(); setServices([]); setSubmitted(false); }}>Nouvelle demande</Button>
   </div>;
@@ -50,21 +50,22 @@ export default function QuoteForm({ audience }: { audience: "business" | "privat
     { name: "event_type", label: "Type d’événement" },
     { name: "event_date", label: "Date souhaitée", type: "date" },
     { name: "location", label: "Lieu de l’événement", maxLength: 300, placeholder: "Adresse ou ville" },
-    { name: "guests", label: "Nombre de convives", type: "number" },
+    { name: "guests", label: "Nombre de convives", type: "number", placeholder: "Ex. : 50 personnes" },
   ];
-  return <Form {...form}><form onSubmit={form.handleSubmit(submit)} className="space-y-5">
+  return <Form {...form}><form noValidate onSubmit={form.handleSubmit(submit)} className="space-y-5">
     {[{ title: "Vos coordonnées", fields: fields.filter(item => ["name", "company", "email", "phone"].includes(item.name)) }, { title: "Votre événement", fields: fields.filter(item => ["event_type", "event_date", "location", "guests"].includes(item.name)) }].map((section, index) => <fieldset key={section.title} className="border-t border-border pt-6">
-      <legend className="font-display text-catering-accent text-lg pr-4">{index + 1}. {section.title}</legend>
+      <legend className="font-display text-catering-heading text-lg pr-4">{index + 1}. {section.title}</legend>
       <div className="grid sm:grid-cols-2 gap-5">
       {section.fields.map(item => <FormField key={item.name} control={form.control} name={item.name} render={({ field }) => <FormItem>
-        <FormLabel>{item.label} <span aria-hidden="true">*</span></FormLabel>
-        {item.name === "event_type" ? <Select value={String(field.value)} onValueChange={field.onChange}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un type d’événement" /></SelectTrigger></FormControl><SelectContent>{(audience === "business" ? businessEventTypes : privateEventTypes).map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select> : <FormControl><Input {...field} value={field.value ?? ""} type={item.type || "text"} placeholder={item.placeholder} maxLength={item.maxLength} min={item.type === "number" ? 1 : undefined} max={item.type === "number" ? 100000 : undefined} autoComplete={item.name === "name" ? "name" : item.name === "email" ? "email" : item.name === "phone" ? "tel" : undefined} /></FormControl>}
+        <FormLabel>{item.label} {item.name !== "event_date" || field.value !== null ? <span aria-hidden="true">*</span> : null}</FormLabel>
+        {item.name === "event_type" ? <Select value={String(field.value ?? "")} onValueChange={field.onChange}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un type d’événement" /></SelectTrigger></FormControl><SelectContent>{(audience === "business" ? businessEventTypes : privateEventTypes).map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent></Select> : <FormControl><Input {...field} value={field.value ?? ""} disabled={item.name === "event_date" && field.value === null} type={item.type || "text"} placeholder={item.placeholder} maxLength={item.maxLength} min={item.type === "number" ? 1 : undefined} max={item.type === "number" ? 100000 : undefined} step={item.type === "number" ? 1 : undefined} autoComplete={item.name === "name" ? "name" : item.name === "email" ? "email" : item.name === "phone" ? "tel" : undefined} /></FormControl>}
+        {item.name === "event_date" && <label className="flex items-center gap-2 text-sm cursor-pointer"><Checkbox checked={field.value === null} onCheckedChange={checked => field.onChange(checked === true ? null : "")} />Date à définir</label>}
         <FormMessage />
       </FormItem>} />)}
       </div>
     </fieldset>)}
     <fieldset className="border-t border-border pt-6 space-y-5">
-      <legend className="font-display text-catering-accent text-lg pr-4">3. Votre prestation</legend>
+      <legend className="font-display text-catering-heading text-lg pr-4">3. Votre prestation</legend>
       <div className="space-y-3">{cateringServices.map((service, index) => <label key={service} htmlFor={`service-${audience}-${index}`} className="flex items-start gap-3 cursor-pointer text-sm leading-relaxed"><Checkbox id={`service-${audience}-${index}`} className="mt-1 shrink-0" checked={services.includes(service)} onCheckedChange={checked => setServices(previous => checked === true ? [...previous, service] : previous.filter(value => value !== service))} /><span>{service}</span></label>)}</div>
     <FormField control={form.control} name="needs" render={({ field }) => <FormItem>
       <FormLabel>Décrivez-nous votre projet</FormLabel>

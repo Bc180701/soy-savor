@@ -176,7 +176,7 @@ export type Database = {
           company: string
           created_at: string
           email: string
-          event_date: string
+          event_date: string | null
           event_type: string
           guests: number
           id: string
@@ -193,7 +193,7 @@ export type Database = {
           company?: string
           created_at?: string
           email: string
-          event_date: string
+          event_date?: string | null
           event_type: string
           guests: number
           id?: string
@@ -210,7 +210,7 @@ export type Database = {
           company?: string
           created_at?: string
           email?: string
-          event_date?: string
+          event_date?: string | null
           event_type?: string
           guests?: number
           id?: string

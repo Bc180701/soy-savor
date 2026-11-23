@@ -21,7 +21,7 @@ export default function CateringRequests() {
     <div className="flex items-center justify-between gap-4"><h2 className="text-xl font-semibold">Demandes de devis traiteur</h2><Button variant="outline" size="icon" title="Actualiser" aria-label="Actualiser les demandes" onClick={load}><RotateCcw /></Button></div>
     {loading ? <p>Chargement…</p> : error ? <p role="alert">{error}</p> : !requests.length ? <p className="text-muted-foreground">Aucune demande.</p> : requests.map(r => <article key={r.id} className="border rounded-lg bg-card p-5 space-y-3">
       <div className="flex flex-wrap justify-between gap-2"><h3 className="font-semibold">{r.company || r.name} — {r.audience === "business" ? "Entreprise" : "Particulier"}</h3><span className="text-sm text-muted-foreground">{new Date(r.created_at).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}</span></div>
-      <p>{r.event_type} · {r.event_date.split("-").reverse().join("/")} · {r.guests} personnes</p>
+      <p>{r.event_type} · {r.event_date ? r.event_date.split("-").reverse().join("/") : "Date à définir"} · {r.guests} personnes</p>
       <p>{r.location}</p>
       <p className="break-words">{r.name} · <a className="underline" href={`mailto:${encodeURIComponent(r.email)}`}>{r.email}</a> · <a className="underline" href={`tel:${r.phone.replace(/[^+\d]/g, "")}`}>{r.phone}</a></p>
       {r.needs && <p className="whitespace-pre-wrap">{r.needs}</p>}

@@ -21,6 +21,7 @@ export default {
 		extend: {
 			colors: {
 				'catering-accent': 'hsl(var(--catering-accent))',
+				'catering-heading': 'hsl(var(--catering-heading))',
 				'catering-ink': 'hsl(var(--catering-ink))',
 				'catering-on-dark': 'hsl(var(--catering-on-dark))',
 				border: 'hsl(var(--border))',

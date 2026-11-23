@@ -36,6 +36,7 @@
  
     --radius: 0.5rem;
     --catering-accent: 42.94 64.5% 66.86%;
+    --catering-heading: 42.94 54% 36%;
     --catering-ink: 0 0% 0%;
     --catering-on-dark: 0 0% 100%;
     --delivery-start: 42.94 64.5% 66.86%;
@@ -47,6 +48,7 @@
   }
  
   .dark {
+    --catering-heading: 42.94 64.5% 66.86%;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
  

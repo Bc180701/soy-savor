@@ -38,7 +38,7 @@ Deno.serve(async req => {
         body: JSON.stringify({
           from: "SUSHIEATS <confirmation@email.contact.sushieats.fr>", to: [OWNER_EMAIL], reply_to: quote.email,
           subject: `[Traiteur ${quote.audience === "business" ? "entreprise" : "particulier"}] Nouvelle demande de devis`,
-          text: `Nouvelle demande traiteur SUSHIEATS\nRéférence : ${saved.id}\n\nNom : ${quote.name}\nEntreprise : ${quote.company || "—"}\nE-mail : ${quote.email}\nTéléphone : ${quote.phone}\nÉvénement : ${quote.event_type}\nDate : ${quote.event_date.split("-").reverse().join("/")}\nLieu : ${quote.location}\nPersonnes : ${quote.guests}\n\nBesoins particuliers :\n${quote.needs || "Non précisés"}`,
+          text: `Nouvelle demande traiteur SUSHIEATS\nRéférence : ${saved.id}\n\nNom : ${quote.name}\nEntreprise : ${quote.company || "—"}\nE-mail : ${quote.email}\nTéléphone : ${quote.phone}\nÉvénement : ${quote.event_type}\nDate : ${quote.event_date ? quote.event_date.split("-").reverse().join("/") : "Date à définir"}\nLieu : ${quote.location}\nPersonnes : ${quote.guests}\n\nBesoins particuliers :\n${quote.needs || "Non précisés"}`,
         }),
       });
       const result = await response.json();

@@ -1,0 +1,1 @@
+ALTER TABLE public.catering_quote_requests ALTER COLUMN event_date DROP NOT NULL;
