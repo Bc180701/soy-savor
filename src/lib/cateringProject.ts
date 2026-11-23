@@ -1,11 +1,9 @@
 export const cateringServices = [
-  "Plateaux & assortiments de sushis",
-  "Buffets gastronomiques",
+  "Plateaux de sushis à partager",
+  "Buffets sur mesure",
   "Cocktails dînatoires",
-  "Animations culinaires & ateliers de dégustation",
-  "Scénographie & art de la table",
-  "Prestations événementielles sur mesure",
-  "Accompagnement & conseil personnalisé",
+  "Show Sushi – Préparation en direct",
+  "Je ne sais pas encore, conseillez-moi",
 ] as const;
 
 export const businessEventTypes = ["Repas d’équipe", "Séminaire", "Cocktail professionnel", "Inauguration", "Réception d’entreprise", "Soirée d’entreprise", "Autre événement"];

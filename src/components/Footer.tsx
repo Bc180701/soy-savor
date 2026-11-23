@@ -101,6 +101,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/traiteur" className="text-muted-foreground hover:text-catering-on-dark transition-colors">
+                  Événements & Traiteur
+                </Link>
+              </li>
+              <li>
                 <Link to="/contact" className="text-gray-400 hover:text-white transition-colors">
                   {homepageData?.header_section?.nav_links?.contact || "Contact"}
                 </Link>

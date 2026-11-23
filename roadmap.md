@@ -18,3 +18,6 @@
 - [x] Dispatch automatic printing after confirmed payment without changing manual admin printing.
 - [x] Test concurrent confirmation, full snapshot payloads and non-blocking failures; deploy both payment confirmation functions and verify OVH acceptance with one fictitious ticket. Actual paid-checkout and physical paper output remain unverified; no test order was saved.
 - [x] Add one admin-controlled automatic printing switch covering both restaurants, enforced at the server-side claim. Three setting tests and 14 dispatcher tests passed; transactional database checks verified admin permissions, both restaurants, deduplication and no catch-up. Desktop/mobile control checked with simulated responses; real authenticated admin UI remains unverified (external unmanaged session). Global setting remains enabled.
+- [ ] Finalize catering navigation, copy, four illustrated services and form-choice contact button from the supplied brief.
+- [ ] Update both quote forms with five services, an undefined date option and French guest-count validation; verify real submissions and stored notifications.
+- [ ] Add the catering intervention area once the user supplies it.
