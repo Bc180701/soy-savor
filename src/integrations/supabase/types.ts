@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      automatic_print_jobs: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          order_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          order_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          order_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automatic_print_jobs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_time_slots: {
         Row: {
           blocked_date: string
@@ -626,6 +658,7 @@ export type Database = {
       orders: {
         Row: {
           allergies: string[] | null
+          auto_print_eligible: boolean
           client_email: string | null
           client_name: string | null
           client_phone: string | null
@@ -659,6 +692,7 @@ export type Database = {
         }
         Insert: {
           allergies?: string[] | null
+          auto_print_eligible?: boolean
           client_email?: string | null
           client_name?: string | null
           client_phone?: string | null
@@ -692,6 +726,7 @@ export type Database = {
         }
         Update: {
           allergies?: string[] | null
+          auto_print_eligible?: boolean
           client_email?: string | null
           client_name?: string | null
           client_phone?: string | null
@@ -1817,6 +1852,7 @@ export type Database = {
     }
     Functions: {
       check_table_exists: { Args: { table_name: string }; Returns: boolean }
+      claim_automatic_print: { Args: { p_order_id: string }; Returns: Json }
       cleanup_old_cart_backups: { Args: never; Returns: undefined }
       count_table_rows: { Args: { table_name: string }; Returns: number }
       create_admin_user: {

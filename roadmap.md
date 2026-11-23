@@ -15,3 +15,5 @@
 - [x] Harmonize catering page and quote forms with existing site typography, gold buttons and photo styling; desktop/mobile and both form openings checked with hosted photos.
 - [x] Keep delivered and completed orders out of active driver deliveries, and color driver buttons.
 - [x] Verify the Saint-Martin-de-Crau driver page after refresh: seven completed orders remain in delivered history, none active; three status regression tests passed.
+- [x] Dispatch automatic printing after confirmed payment without changing manual admin printing.
+- [x] Test concurrent confirmation, full snapshot payloads and non-blocking failures; deploy both payment confirmation functions and verify OVH acceptance with one fictitious ticket. Actual paid-checkout and physical paper output remain unverified; no test order was saved.

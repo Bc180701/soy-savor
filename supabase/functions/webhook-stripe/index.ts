@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { stripeLinesToSnapshot } from '../_shared/purchaseSnapshot.ts';
+import { scheduleAutomaticPrint } from '../_shared/automaticPrint.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -80,8 +81,13 @@ serve(async (req) => {
     console.log('🎯 Événement Stripe reçu:', event.type);
 
     // Traiter l'événement
-    if (event.type === 'checkout.session.completed') {
+    if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
       const session = event.data.object;
+      if (session.payment_status !== 'paid') {
+        return new Response(JSON.stringify({ received: true, awaitingPayment: true }), {
+          status: 200, headers: { 'Content-Type': 'application/json' },
+        });
+      }
       // Charger le panier complet sauvegardé avant paiement (draft) et le fusionner dans les metadata
       if (session.metadata?.draft_id) {
         try {
@@ -115,6 +121,7 @@ serve(async (req) => {
 
       if (existingOrder) {
         console.log('🔍 Commande existante détectée:', existingOrder.id);
+        await scheduleAutomaticPrint(supabase, existingOrder.id);
         
         // Vérifier si cette commande a des order_items
         const { data: existingItems, error: itemsCheckError } = await supabase
@@ -441,6 +448,7 @@ serve(async (req) => {
       }
 
       console.log('✅ Commande créée avec ID:', order.id, 'pour restaurant:', restaurantId, 'avec', itemsSummary.length, 'articles');
+      await scheduleAutomaticPrint(supabase, order.id);
 
       // Enregistrer l'utilisation du code promo si présent
       if (orderData.promo_code && orderData.client_email) {

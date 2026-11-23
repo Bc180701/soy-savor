@@ -2,6 +2,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import Stripe from 'https://esm.sh/stripe@14.21.0';
+import { scheduleAutomaticPrint } from '../_shared/automaticPrint.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,6 +42,7 @@ serve(async (req) => {
 
     if (existingOrder) {
       console.log('✅ Commande déjà existante:', existingOrder.id);
+      await scheduleAutomaticPrint(supabase, existingOrder.id);
       
       // Récupérer les détails complets de la commande existante
       const { data: orderDetails, error: detailsError } = await supabase
@@ -235,6 +237,7 @@ serve(async (req) => {
     }
 
     console.log('✅ Commande créée:', order.id);
+    await scheduleAutomaticPrint(supabase, order.id);
 
     // Ajouter les articles depuis items_summary ou items dans les métadonnées
     const itemsData = metadata.items_summary || metadata.items;

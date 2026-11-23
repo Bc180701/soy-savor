@@ -1,0 +1,1 @@
+CREATE POLICY automatic_print_service_only ON public.automatic_print_jobs FOR ALL TO service_role USING (true) WITH CHECK (true);
