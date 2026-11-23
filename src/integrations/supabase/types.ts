@@ -46,6 +46,27 @@ export type Database = {
           },
         ]
       }
+      automatic_print_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blocked_time_slots: {
         Row: {
           blocked_date: string

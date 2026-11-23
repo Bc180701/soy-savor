@@ -10,6 +10,7 @@ import { useRestaurantContext } from "@/hooks/useRestaurantContext";
 
 import { Eye, EyeOff, Printer, TestTube, RefreshCw, Bluetooth } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import AutomaticPrintControl from './AutomaticPrintControl';
 
 // Types pour le Bluetooth mobile
 interface MobileBluetoothDevice {
@@ -577,6 +578,8 @@ export default function PrintersManager() {
 
   if (!isAuthenticated) {
     return (
+      <div className="space-y-6">
+        <AutomaticPrintControl />
       <div className="max-w-md mx-auto mt-8">
         <Card>
           <CardHeader>
@@ -608,11 +611,13 @@ export default function PrintersManager() {
           </CardContent>
         </Card>
       </div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      <AutomaticPrintControl />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
