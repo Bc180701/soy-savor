@@ -8,6 +8,7 @@ Ces fichiers PHP doivent être uploadés sur votre hébergement OVH pour permett
 
 - **add-order.php** : Reçoit les commandes depuis votre site React
 - **Test_print.php** : Interrogé par l'imprimante pour récupérer les commandes à imprimer
+- **order-time.php** : Formatage commun de l'horaire réservé en France, sans ajout fixe d'heures
 
 ## 🚀 Installation sur OVH
 
@@ -27,8 +28,9 @@ Utilisez un client FTP comme FileZilla, Cyberduck, ou WinSCP.
 ### 2. Upload des fichiers
 
 1. Naviguez vers le dossier `/www/` (racine de votre site)
-2. Uploadez les 2 fichiers PHP :
+2. Uploadez les 3 fichiers PHP (`order-time.php` avant le modèle de ticket) :
    - `add-order.php`
+   - `order-time.php`
    - `Test_print.php`
 
 ### 3. Permissions

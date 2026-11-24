@@ -1,4 +1,5 @@
 <?php
+    require_once __DIR__ . '/order-time.php';
     header('Content-Type: text/xml; charset=UTF-8');
 
     define("PRINT_QUEUE_DIR", "print-queue-chateaurenard");
@@ -99,10 +100,8 @@
         $xml .= '<text width="1" height="1" em="true">COMMANDE #' . escapeXml($shortId) . '</text>' . "\n";
         $xml .= '<feed line="1"/>' . "\n";
         
-        // Format date - Add 2 hours for France timezone (GMT+2)
-        $orderDate = new DateTime($order['scheduledFor']);
-        $orderDate->modify('+2 hours');
-        $xml .= '<text width="2" height="2">' . $orderDate->format('d/m/Y H:i') . '</text>' . "\n";
+        // Display the booked French slot in winter and summer alike.
+        $xml .= '<text width="2" height="2">' . escapeXml(formatBookedOrderTime($order)) . '</text>' . "\n";
         $xml .= '<text width="1" height="1"/>' . "\n"; // Reset font size to normal
         $xml .= '<feed line="1"/>' . "\n";
         

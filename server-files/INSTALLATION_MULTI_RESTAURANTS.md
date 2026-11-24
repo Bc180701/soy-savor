@@ -17,6 +17,7 @@ Chaque restaurant a sa **propre queue d'impression** et son **propre fichier Tes
 ```
 /www/
 ├── add-order.php                      # Point d'entrée unique (route vers les bonnes queues)
+├── order-time.php                     # Horaire réservé, commun aux modèles de ticket
 ├── Test_print_chateaurenard.php      # Pour imprimante Châteaurenard
 ├── Test_print_st_martin.php          # Pour imprimante St Martin
 ├── print-queue-chateaurenard/        # Queue Châteaurenard (créé auto)
@@ -38,6 +39,7 @@ Chaque restaurant a sa **propre queue d'impression** et son **propre fichier Tes
 2. **Fichiers à uploader :**
    ```
    ✅ add-order.php
+   ✅ order-time.php
    ✅ Test_print_chateaurenard.php
    ✅ Test_print_st_martin.php
    ```
@@ -45,6 +47,8 @@ Chaque restaurant a sa **propre queue d'impression** et son **propre fichier Tes
 3. **Permissions :**
    - Tous les fichiers : `644` (lecture/écriture pour propriétaire)
    - Les dossiers seront créés automatiquement avec les bonnes permissions
+
+Pour la correction des horaires, envoyer `order-time.php` avant de remplacer les deux modèles `Test_print_*`. Ne pas modifier ni supprimer les dossiers de file d'attente ou d'archive. Les horaires sont rendus en France, sans ajout fixe de deux heures, pour les valeurs ISO comme pour les anciens horaires locaux.
 
 ---
 

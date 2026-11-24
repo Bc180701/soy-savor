@@ -7,6 +7,7 @@ import { Order } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { getOrderBackupItems, snapshotToPrintItems } from "@/utils/orderSnapshot";
 import { loadOrderPurchaseSnapshot } from '@/services/orderPurchaseSnapshot';
+import { fromZonedTime } from 'date-fns-tz';
 
 // URLs des serveurs OVH par restaurant
 const OVH_SERVER_URL = "https://sushieats.fr/add-order.php";
@@ -59,7 +60,7 @@ export async function sendOrderToPrinter(order: Order): Promise<{
     // Always read the purchase snapshot by order ID, before any local/cart data.
     const { data: dbOrder, error: snapshotError } = await supabase
       .from('orders')
-      .select('items_summary')
+      .select('items_summary, scheduled_for')
       .eq('id', order.id)
       .single();
 
@@ -123,7 +124,10 @@ export async function sendOrderToPrinter(order: Order): Promise<{
       clientPhone: order.clientPhone || '',
       clientEmail: order.clientEmail,
       orderType: order.orderType,
-      scheduledFor: order.scheduledFor.toISOString(),
+      // Read the booked French slot by order ID, independent of this device's timezone.
+      scheduledFor: dbOrder?.scheduled_for
+        ? fromZonedTime(dbOrder.scheduled_for, 'Europe/Paris').toISOString()
+        : order.scheduledFor.toISOString(),
       items: items,
       subtotal: order.subtotal,
       tax: order.tax,

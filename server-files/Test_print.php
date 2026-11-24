@@ -15,6 +15,7 @@
  */
 
 header("Content-Type: text/xml; charset=utf-8");
+require_once __DIR__ . '/order-time.php';
 
 $queueDir = 'print-queue';
 $printedDir = 'print-archive';
@@ -96,7 +97,7 @@ echo '<?xml version="1.0" encoding="utf-8"?>';
         <!-- Info commande -->
         <text width="1" height="1" em="true">COMMANDE #<?php echo escapeXml(substr($order['id'], -8)); ?></text>
         <feed line="1"/>
-        <text><?php echo escapeXml(date('d/m/Y H:i', strtotime($order['scheduledFor'] ?? 'now'))); ?></text>
+        <text><?php echo escapeXml(formatBookedOrderTime($order)); ?></text>
         <feed line="1"/>
         <text>Client: <?php echo escapeXml($order['clientName'] ?? 'N/A'); ?></text>
         <feed line="1"/>
