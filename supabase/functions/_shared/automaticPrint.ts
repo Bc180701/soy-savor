@@ -1,4 +1,6 @@
 /** Same OVH payload as manual printing; automatic dispatch never uses a customer cart. */
+import { fromZonedTime } from 'npm:date-fns-tz@3.2.0';
+
 const PRINT_URL = 'https://sushieats.fr/add-order.php';
 const RESTAURANTS = new Set([
   '11111111-1111-1111-1111-111111111111',
@@ -23,8 +25,9 @@ export function automaticPrintPayload(order: any, summary: any[]) {
     id: order.id, restaurant_id: order.restaurant_id,
     clientName: order.client_name || 'Client', clientPhone: order.client_phone || '',
     clientEmail: order.client_email || '', orderType: order.order_type,
-    // Preserve the booked French local value: no UTC conversion.
-    scheduledFor: order.scheduled_for, items,
+    // Transport only: OVH expects the same ISO instant as the manual admin button.
+    // The database slot stays unchanged; resolve Paris DST, never subtract a fixed hour.
+    scheduledFor: fromZonedTime(order.scheduled_for, 'Europe/Paris').toISOString(), items,
     subtotal: Number(order.subtotal), tax: Number(order.tax),
     deliveryFee: Number(order.delivery_fee || 0), tip: Number(order.tip || 0),
     discount: Number(order.discount || 0), total: Number(order.total),

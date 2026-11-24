@@ -21,3 +21,4 @@
 - [x] Finalize catering navigation, copy, four illustrated services and form-choice contact button from the supplied brief; desktop/mobile menu and photos checked.
 - [x] Update both quote forms with five services, an undefined date option and French guest-count validation; 10 tests passed, both real submissions saved and Resend accepted their notifications. Test requests removed; inbox receipt remains unverified.
 - [x] Add intervention around Châteaurenard, Saint-Martin-de-Crau and their surroundings as supplied by the user.
+- [x] Align automatic ticket time with the working manual-print payload; 16 dispatcher and 2 manual-print tests passed, winter/summer ISO values match the Paris admin path, and both confirmation functions deployed. No existing order reprinted; physical output awaits the next restaurant ticket.

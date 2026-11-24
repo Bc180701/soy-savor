@@ -47,15 +47,26 @@ Deno.test('both simultaneous confirmation paths send exactly one automatic ticke
   assertEquals(sends, 1); assertEquals(db.updates, [{ status: 'accepted', error_code: null }]);
 });
 
-Deno.test('ticket retains every composition, free sauce and utensil with raw booked time', () => {
+Deno.test('ticket retains every composition, free sauce and utensil with manual-print time format', () => {
   const payload = automaticPrintPayload(order, order.items_summary);
   assertEquals(payload.items.length, 3);
   assertEquals(payload.items[0].description, 'Base: Saumon; Sauce: Spicy; Topping: Sésame');
   assertEquals(payload.items[1], { name: 'Soja sucrée', quantity: 2, price: 0, description: '', specialInstructions: '' });
   assertEquals(payload.items[2].quantity, 2);
-  assertEquals(payload.scheduledFor, '2026-11-23T12:00:00');
+  assertEquals(payload.scheduledFor, '2026-11-23T11:00:00.000Z');
   assertEquals(payload.deliveryPostalCode, '13160');
   assertEquals(payload.restaurant_id, '11111111-1111-1111-1111-111111111111');
+});
+
+Deno.test('11:45 winter pickup uses the same ISO instant as the Paris admin button', () => {
+  const booked = { ...order, scheduled_for: '2026-11-24T11:45:00' };
+  assertEquals(automaticPrintPayload(booked, booked.items_summary).scheduledFor, '2026-11-24T10:45:00.000Z');
+  assertEquals(booked.scheduled_for, '2026-11-24T11:45:00');
+});
+
+Deno.test('11:45 summer pickup uses Paris summer time rather than a fixed one-hour adjustment', () => {
+  const booked = { ...order, scheduled_for: '2026-07-24T11:45:00' };
+  assertEquals(automaticPrintPayload(booked, booked.items_summary).scheduledFor, '2026-07-24T09:45:00.000Z');
 });
 
 Deno.test('large paid snapshot is not truncated to Stripe metadata length', () => {
