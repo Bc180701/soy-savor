@@ -9,15 +9,19 @@ import business from "@/assets/traiteur/plateau-entreprise.jpg.asset.json";
 import privateEvent from "@/assets/traiteur/evenement-prive.jpg.asset.json";
 import plateau from "@/assets/traiteur/plateau-signature.jpg.asset.json";
 import table from "@/assets/traiteur/sashimi-table.jpg.asset.json";
+import svcPlateaux from "@/assets/traiteur/plateaux-partager.jpg.asset.json";
+import svcBuffet from "@/assets/traiteur/buffet-convives.jpg.asset.json";
+import svcShow from "@/assets/traiteur/show-sushi.jpg.asset.json";
+import svcCocktail from "@/assets/traiteur/cocktail-dinatoire.jpg.asset.json";
 
 export default function Traiteur() {
   const [audience, setAudience] = useState<"business" | "private" | null>(null);
   const [choosingAudience, setChoosingAudience] = useState(false);
   const services = [
-    { title: "Plateaux à partager", description: "Des créations gourmandes pour vos réunions, anniversaires, réceptions et moments de convivialité.", asset: plateau, alt: "Plateau de sushis à partager SushiEats" },
-    { title: "Buffets sur mesure", description: "Des buffets personnalisés selon votre événement, le nombre de convives et vos envies.", asset: hero, alt: "Table garnie de créations SushiEats" },
-    { title: "Show Sushi – Préparation en direct", description: "Nos sushiman préparent leurs créations sous les yeux de vos invités, alliant savoir-faire, fraîcheur et convivialité.", asset: table, alt: "Sushis et sashimis préparés par SushiEats" },
-    { title: "Cocktails dînatoires", description: "Des créations adaptées à vos événements professionnels et privés.", asset: privateEvent, alt: "Assortiment de créations SushiEats pour une réception" },
+    { title: "Plateaux à partager", description: "Des créations gourmandes pour vos réunions, anniversaires, réceptions et moments de convivialité.", asset: svcPlateaux, alt: "Plateau de sushis à partager SushiEats" },
+    { title: "Buffets sur mesure", description: "Des buffets personnalisés selon votre événement, le nombre de convives et vos envies.", asset: svcBuffet, alt: "Table garnie de créations SushiEats" },
+    { title: "Show Sushi – Préparation en direct", description: "Nos sushiman préparent leurs créations sous les yeux de vos invités, alliant savoir-faire, fraîcheur et convivialité.", asset: svcShow, alt: "Sushis et sashimis préparés par SushiEats" },
+    { title: "Cocktails dînatoires", description: "Des créations adaptées à vos événements professionnels et privés.", asset: svcCocktail, alt: "Assortiment de créations SushiEats pour une réception" },
   ];
   return <>
     <SEOHead title="Sushi Eats Événements & Traiteur" description="Bien plus qu’un traiteur, une expérience à partager. Créations gourmandes, buffets soignés et animations culinaires pour vos événements professionnels et privés." canonical="https://sushi-eats.lovable.app/traiteur" ogType="website" />
