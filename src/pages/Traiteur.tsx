@@ -27,7 +27,7 @@ export default function Traiteur() {
     <SEOHead title="Sushi Eats Événements & Traiteur" description="Bien plus qu’un traiteur, une expérience à partager. Créations gourmandes, buffets soignés et animations culinaires pour vos événements professionnels et privés." canonical="https://sushi-eats.lovable.app/traiteur" ogType="website" />
     <div className="traiteur-page">
       <section className="relative isolate min-h-[560px] md:min-h-[600px] flex items-center py-24 md:py-28 overflow-hidden">
-        <img src={hero.url} alt="Table SushiEats avec plateaux de sushi et pokés à partager" className="absolute inset-0 -z-20 h-full w-full object-cover object-[center_58%]" fetchPriority="high" />
+        <img src={svcPlateaux.url} alt="Table SushiEats avec plateaux de sushi et pokés à partager" className="absolute inset-0 -z-20 h-full w-full object-cover object-center" fetchPriority="high" />
         <div className="absolute inset-0 -z-10 bg-catering-ink/60" />
         <div className="container px-4 text-catering-on-dark">
           <p className="text-sm md:text-base font-medium mb-4">Entreprises & événements privés</p>
