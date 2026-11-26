@@ -369,6 +369,24 @@ const PanierContent = () => {
       scheduledForLog = localISOString;
       console.log("📅 Heure sélectionnée pour checkout (sans conversion):", localISOString);
 
+      // ⏰ Refuser un créneau déjà passé (ex : page restée ouverte longtemps)
+      if (!eventInfo.hasEventProducts) {
+        const nowParis = new Intl.DateTimeFormat('sv-SE', {
+          timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false,
+        }).format(new Date()).replace(' ', 'T');
+        if (localISOString.slice(0, 16) < nowParis) {
+          logCheckoutAttempt('slot_past', localISOString, startedAt, localISOString);
+          setDeliveryInfo(prev => ({ ...prev, pickupTime: '' }));
+          showCheckoutPopup(
+            "Horaire dépassé",
+            "L'horaire choisi est déjà passé. Choisissez un nouvel horaire pour continuer.",
+            'delivery'
+          );
+          return;
+        }
+      }
+
       // 🚨 VÉRIFICATION FINALE DU CRÉNEAU AVANT PAIEMENT
       if (deliveryInfo.orderType === 'delivery' && cartRestaurant && deliveryInfo.pickupTime) {
         try {

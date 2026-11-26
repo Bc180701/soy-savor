@@ -342,7 +342,7 @@ const TimeSlotSelector = ({
       setTimeSlots(slots);
       
       // Auto-select first available slot
-      if (!selectedTime) {
+      if (!selectedTime || !slots.some((slot) => slot.value === selectedTime && !slot.disabled)) {
         const firstAvailable = slots.find((slot) => !slot.disabled);
         if (firstAvailable) {
           setSelectedSlot(firstAvailable.value);
@@ -519,8 +519,13 @@ const TimeSlotSelector = ({
     setTimeSlots(slots);
 
     // Sélectionner automatiquement le premier créneau disponible si aucun n'est sélectionné
-    if (!selectedTime) {
+    const selectedStillValid = !!selectedTime && slots.some((slot) => slot.value === selectedTime && !slot.disabled);
+    if (!selectedStillValid) {
       const firstAvailable = slots.find((slot) => !slot.disabled);
+      if (!firstAvailable && selectedTime) {
+        setSelectedSlot(null);
+        onSelect('');
+      }
       if (firstAvailable) {
         setSelectedSlot(firstAvailable.value);
         onSelect(firstAvailable.value);

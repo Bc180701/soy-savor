@@ -28,6 +28,19 @@ serve(async (req) => {
       );
     }
 
+    // Refuser un créneau déjà passé (comparaison en heure locale Europe/Paris)
+    const parisNow = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(new Date()).replace(' ', 'T');
+    const requestedLocal = String(scheduledFor).slice(0, 16);
+    if (requestedLocal < parisNow) {
+      return new Response(
+        JSON.stringify({ available: false, reason: 'past', message: "L'horaire choisi est déjà passé." }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Définir les limites par type de commande
     const limits = {
       delivery: 1,
