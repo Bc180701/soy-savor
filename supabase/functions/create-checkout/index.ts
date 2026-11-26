@@ -70,6 +70,20 @@ serve(async (req) => {
       orderType
     });
 
+    // Refuser un créneau déjà passé (heure locale Europe/Paris)
+    if (scheduledFor) {
+      const parisNow = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).format(new Date()).replace(' ', 'T');
+      if (String(scheduledFor).slice(0, 16) < parisNow) {
+        return new Response(JSON.stringify({
+          error: "L'horaire choisi est déjà passé. Choisissez un nouvel horaire.",
+          code: 'slot_past'
+        }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
       console.error('❌ [STEP 6] Panier vide ou invalide');
